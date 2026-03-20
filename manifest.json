@@ -1,0 +1,8 @@
+{
+  "display_name": "Mochi Phone",
+  "author": "justinggx",
+  "version": "4.5.2",
+  "loading_order": 1,
+  "requires": [],
+  "js": "index.js?v=344"
+}
