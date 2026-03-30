@@ -76,7 +76,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone {
   /* Frame */
   --rp-frame-bg:linear-gradient(160deg,#e8e8e8,#d0d0d0);
-  --rp-frame-sh:0 0 0 1.5px rgba(0,0,0,.12),0 0 0 9px #f5f5f5,0 0 0 10px rgba(0,0,0,.08),0 36px 80px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.5);
+  --rp-frame-sh:0 0 0 1.5px rgba(0,0,0,.12),0 0 0 1.5px rgba(0,0,0,.08),0 36px 80px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.5);
   --rp-btn-bg:#c0c0c0;
   --rp-island-bg:#000;
   --rp-island-ring:#f5f5f5;
@@ -171,7 +171,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── Star Night Theme ── */
 #rp-phone.rp-theme-star {
   --rp-frame-bg:linear-gradient(160deg,#2c1070,#1a0850);
-  --rp-frame-sh:0 0 0 1.5px rgba(100,60,200,.3),0 0 0 9px #0e0a30,0 0 0 10px rgba(100,60,200,.15),0 36px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(120,80,255,.2);
+  --rp-frame-sh:0 0 0 1.5px rgba(100,60,200,.3),0 0 0 1.5px rgba(100,60,200,.15),0 36px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(120,80,255,.2);
   --rp-btn-bg:#3a1a80;
   --rp-island-bg:#0a0620;
   --rp-island-ring:#0e0a30;
@@ -319,11 +319,52 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 }
 #rp-lock-date { display:none !important; }
 #rp-lock-notifs { width:100%; padding:14px 16px; display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+
+/* ── 滑动删除外层容器 ── */
+.rp-ln-wrap {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+/* 红色删除按钮层（藏在右侧，初始宽度0隐藏，避免透出） */
+.rp-ln-del-btn {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 72px;
+  background: #ff3b30;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  border-radius: 0 14px 14px 0;
+  user-select: none;
+  z-index: 1;
+  /* 初始完全隐藏，仅在父容器有 rp-ln-wrap-active 时显示 */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.rp-ln-wrap.rp-ln-wrap-active .rp-ln-del-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* 通知内容卡片（可左滑） */
 .rp-ln {
+  position: relative;
+  z-index: 2;
   background:var(--rp-ln-bg); backdrop-filter:blur(24px);
   border:1px solid var(--rp-ln-bd); border-radius:14px;
   padding:10px 14px; display:flex; flex-direction:column; gap:4px;
   box-shadow:0 2px 8px rgba(0,0,0,.08);
+  /* 使用 GPU 加速动画，提升 PC 端流畅度 */
+  transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+  transform: translateZ(0);
+  cursor: pointer;
+}
+.rp-ln.rp-ln-swiped {
+  transform: translateX(-72px) translateZ(0);
+  border-radius: 14px 0 0 14px;
 }
 .rp-ln-type { font-size:10px; font-weight:700; color:rgba(0,0,0,.4); text-transform:uppercase; letter-spacing:.6px; }
 .rp-ln-text { font-size:12px; color:var(--rp-ln-text); line-height:1.4; }
@@ -381,6 +422,106 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 
 .rp-home-indicator { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:90px; height:4px; background:var(--rp-indicator); border-radius:2px; }
 
+/* ── HOME PAGES (双屏横滑) ── */
+#rp-home-pages {
+  position:absolute; inset:0;
+  display:flex; flex-direction:row;
+  width:200%; overflow:hidden;
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+}
+.rp-home-page {
+  width:50%; flex-shrink:0;
+  position:relative; height:100%;
+  overflow:hidden;
+}
+/* 页面指示点 */
+#rp-home-dots {
+  position:absolute; bottom:22px; left:50%; transform:translateX(-50%);
+  display:flex; gap:6px; z-index:10;
+}
+.rp-home-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--rp-indicator,rgba(0,0,0,.25));
+  transition:background .25s, transform .25s;
+}
+.rp-home-dot-active {
+  background:var(--rp-clock-color,#e06080);
+  transform:scale(1.25);
+}
+/* ── 关于页 ── */
+#rp-about-page {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:20px 24px 36px;
+  /* 默认主题(Candy) token */
+  --rp-about-card-bg: rgba(255,240,245,.72);
+  --rp-about-card-bd: rgba(224,96,128,.18);
+  --rp-about-text: #7a2040;
+  --rp-about-hl-color: #a01838;
+  --rp-about-bg:var(--rp-screen-bg,#fff);
+}
+/* Star(深色)主题 */
+#rp-phone.rp-theme-star #rp-about-page {
+  --rp-about-card-bg: rgba(14,10,45,.78);
+  --rp-about-card-bd: rgba(168,85,247,.22);
+  --rp-about-text: #e0d8ff;
+  --rp-about-hl-color: #c8b4ff;
+}
+/* Misty主题 */
+#rp-phone.rp-theme-misty #rp-about-page {
+  --rp-about-card-bg: rgba(235,248,255,.72);
+  --rp-about-card-bd: rgba(140,175,210,.28);
+  --rp-about-text: #1a2e44;
+  --rp-about-hl-color: #1a4a7a;
+}
+#rp-about-deco {
+  width:160px; height:130px;
+  color:var(--rp-about-hl-color,#e06080);
+  flex-shrink:0;
+}
+/* 内容卡片：只包文字，壁纸完整透出 */
+.rp-about-card {
+  display:flex; flex-direction:column; align-items:center;
+  padding:18px 28px 20px;
+  border-radius:22px;
+  background:var(--rp-about-card-bg);
+  border:1px solid var(--rp-about-card-bd);
+  box-shadow:0 4px 20px rgba(0,0,0,.08);
+  backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  width:100%;
+}
+#rp-about-title {
+  font-size:18px; font-weight:700;
+  color:var(--rp-about-hl-color,#a01838);
+  text-shadow:none;
+  margin-top:0; letter-spacing:.5px;
+}
+#rp-about-author {
+  font-size:12px; font-weight:600;
+  color:var(--rp-about-text,#7a2040);
+  opacity:.75; margin-top:4px;
+  letter-spacing:.3px;
+}
+#rp-about-divider {
+  width:48px; height:1px;
+  background:var(--rp-about-text,#7a2040);
+  opacity:.2; margin:12px 0;
+}
+#rp-about-notice {
+  font-size:11.5px; line-height:1.8;
+  color:var(--rp-about-text,#7a2040);
+  text-align:center; opacity:.9;
+  text-shadow:none;
+}
+.rp-about-hl {
+  font-weight:700;
+  color:var(--rp-about-hl-color,#a01838);
+  opacity:1;
+}
+
 /* ── MESSAGES VIEW ── */
 #rp-view-messages { background:transparent !important; display:flex; flex-direction:column; }
 #rp-thread-list { flex:1; overflow-y:auto; scrollbar-width:none; }
@@ -433,6 +574,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-bwrap { display:flex; flex-direction:column; gap:2px; }
 .rp-out { align-items:flex-end; }
 .rp-in  { align-items:flex-start; }
+/* 编辑/删除按钮横排容器 */
+.rp-btn-row { display:flex; flex-direction:row; align-items:center; gap:2px; }
 .rp-bubble { max-width:72%; padding:9px 13px; border-radius:19px; font-size:13px; line-height:1.45; word-break:break-word; }
 .rp-sent { background:var(--rp-sent-bg); color:#fff; border-radius:var(--rp-bubble-radius-out); }
 .rp-recv { background:var(--rp-recv-bg); color:var(--rp-recv-color); border-radius:var(--rp-bubble-radius-in); }
@@ -619,6 +762,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   font-size: 28px !important;
   transition: transform .14s ease, filter .14s ease !important;
   filter: drop-shadow(0 1px 4px rgba(0,0,0,.35)) !important;
+  /* SVG 线条颜色始终跟随时钟颜色，通过 currentColor 继承，无需 JS 读取时机 */
+  color: var(--rp-clock-color) !important;
 }
 #rp-phone .rp-app-ico:active { transform: scale(.88) !important; }
 
@@ -1786,7 +1931,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── Misty Blue Hydrangea Theme ── */
 #rp-phone.rp-theme-misty {
   --rp-frame-bg:linear-gradient(160deg,#f0f4f8,#dce6ef,#e8eff5);
-  --rp-frame-sh:0 0 0 1.5px rgba(140,170,200,.3),0 0 0 9px #f5f8fc,0 0 0 10px rgba(140,170,200,.15),0 36px 80px rgba(80,110,140,.25),inset 0 1px 0 rgba(255,255,255,.9);
+  --rp-frame-sh:0 0 0 1.5px rgba(140,170,200,.3),0 0 0 1.5px rgba(140,170,200,.15),0 36px 80px rgba(80,110,140,.25),inset 0 1px 0 rgba(255,255,255,.9);
   --rp-btn-bg:#b0c4d8;
   --rp-island-bg:#1a2635;
   --rp-island-ring:#e8eff5;
@@ -2048,7 +2193,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-misty #rp-gen-diary{color:rgba(220,238,252,.90)!important;filter:drop-shadow(0 1px 3px rgba(0,20,60,.43))!important}
 /* Candy gen-diary explicit (candy has no theme class, CSS var handles it but be safe) */
 #rp-gen-diary{color:var(--rp-nav-btn,#c0306a)}
-/* 图标颜色统一由 lgRenderHomeIcons() 通过 RP_THEME_ICONS + RP_ICON_COLORS 管理，无需 CSS 覆盖 */
+/* 图标颜色由 CSS color: var(--rp-clock-color) + SVG currentColor 统一管理，与时钟颜色始终一致 */
 
 /* ══ 2048 GAME ══ */
 #rp-view-g2048{position:relative;background:transparent;display:flex;flex-direction:column;overflow:hidden;height:100%}
@@ -2464,15 +2609,41 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   --rp-xhs-shadow:0 10px 26px rgba(80,120,160,.10);
   --rp-xhs-shadow-2:0 18px 36px rgba(80,120,160,.14);
 }
-#rp-view-xhs,#rp-view-xhs-detail,#rp-view-xhs-compose{flex-direction:column!important;overflow:hidden!important;background:var(--rp-xhs-bg,#fff)!important;min-height:0!important;height:100%!important}
-#rp-view-xhs .rp-nav-bar,#rp-view-xhs-detail .rp-nav-bar,#rp-view-xhs-compose .rp-nav-bar{flex:0 0 auto!important;background:var(--rp-xhs-panel)!important;border-bottom:1px solid var(--rp-xhs-border)!important;backdrop-filter:blur(14px) saturate(1.08)!important;-webkit-backdrop-filter:blur(14px) saturate(1.08)!important}
+#rp-view-xhs,#rp-view-xhs-detail,#rp-view-xhs-compose{flex-direction:column!important;overflow:hidden!important;background:transparent!important;min-height:0!important;height:100%!important}
+/* XHS三主题：壁纸穿透，中央区域留白透出边缘壁纸 */
+#rp-phone.rp-theme-candy #rp-view-xhs,
+#rp-phone.rp-theme-candy #rp-view-xhs-detail,
+#rp-phone.rp-theme-candy #rp-view-xhs-compose,
+#rp-phone.rp-theme-star  #rp-view-xhs,
+#rp-phone.rp-theme-star  #rp-view-xhs-detail,
+#rp-phone.rp-theme-star  #rp-view-xhs-compose,
+#rp-phone.rp-theme-misty #rp-view-xhs,
+#rp-phone.rp-theme-misty #rp-view-xhs-detail,
+#rp-phone.rp-theme-misty #rp-view-xhs-compose {
+  background: var(--rp-home-wall) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+#rp-view-xhs .rp-nav-bar,#rp-view-xhs-detail .rp-nav-bar,#rp-view-xhs-compose .rp-nav-bar{flex:0 0 auto!important;background:rgba(255,255,255,.55)!important;border-bottom:1px solid var(--rp-xhs-border)!important;backdrop-filter:blur(18px) saturate(1.4)!important;-webkit-backdrop-filter:blur(18px) saturate(1.4)!important}
+#rp-phone.rp-theme-star #rp-view-xhs .rp-nav-bar,
+#rp-phone.rp-theme-star #rp-view-xhs-detail .rp-nav-bar,
+#rp-phone.rp-theme-star #rp-view-xhs-compose .rp-nav-bar{background:rgba(10,5,32,.55)!important;border-bottom-color:rgba(140,110,255,.2)!important}
+#rp-phone.rp-theme-misty #rp-view-xhs .rp-nav-bar,
+#rp-phone.rp-theme-misty #rp-view-xhs-detail .rp-nav-bar,
+#rp-phone.rp-theme-misty #rp-view-xhs-compose .rp-nav-bar{background:rgba(220,238,255,.55)!important;border-bottom-color:rgba(100,170,220,.18)!important}
 #rp-view-xhs .rp-nav-title,#rp-view-xhs-detail .rp-nav-title,#rp-view-xhs-compose .rp-nav-title{color:var(--rp-xhs-text)!important}
 #rp-view-xhs .rp-back,#rp-view-xhs-detail .rp-back,#rp-view-xhs-compose .rp-back,#rp-xhs-compose,#rp-xhs-refresh{color:var(--rp-xhs-accent)!important}
-#rp-xhs-list,#rp-xhs-detail-body{scrollbar-width:none;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important}
+#rp-xhs-list{scrollbar-width:none;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important;padding:8px 0 14px!important}
+#rp-xhs-detail-body{scrollbar-width:none;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important}
 #rp-xhs-list::-webkit-scrollbar,#rp-xhs-detail-body::-webkit-scrollbar{display:none}
-.rp-xhs-card{background:transparent!important;border:none!important;border-bottom:1px solid var(--rp-xhs-border)!important;border-radius:0!important;box-shadow:none!important;padding:12px 14px!important;margin:0!important;position:relative;overflow:hidden!important;transition:background .12s ease!important}
+/* XHS卡片：半透明磨砂玻璃，重要区域遮罩，边缘壁纸透出 */
+.rp-xhs-card{background:rgba(255,255,255,.62)!important;backdrop-filter:blur(14px) saturate(1.2)!important;-webkit-backdrop-filter:blur(14px) saturate(1.2)!important;border:none!important;border-bottom:1px solid var(--rp-xhs-border)!important;border-radius:0!important;box-shadow:none!important;padding:12px 14px!important;margin:0 8px!important;border-radius:16px!important;margin-bottom:6px!important;transition:background .12s ease!important}
+#rp-phone.rp-theme-star  .rp-xhs-card{background:rgba(14,8,40,.62)!important;backdrop-filter:blur(14px) saturate(1.2)!important;-webkit-backdrop-filter:blur(14px) saturate(1.2)!important}
+#rp-phone.rp-theme-misty .rp-xhs-card{background:rgba(225,242,255,.60)!important;backdrop-filter:blur(14px) saturate(1.2)!important;-webkit-backdrop-filter:blur(14px) saturate(1.2)!important}
 .rp-xhs-card::before{display:none}
-.rp-xhs-card:hover{background:var(--rp-xhs-soft,rgba(255,36,66,.03))!important}
+.rp-xhs-card:hover{background:rgba(255,255,255,.72)!important}
+#rp-phone.rp-theme-star  .rp-xhs-card:hover{background:rgba(18,10,50,.72)!important}
+#rp-phone.rp-theme-misty .rp-xhs-card:hover{background:rgba(225,245,255,.72)!important}
 .rp-xhs-card>div:first-child>div:first-child{box-shadow:0 8px 18px rgba(0,0,0,.08)!important}
 .rp-xhs-card>div:first-child>div:nth-child(2)>div:first-child,#rp-xhs-detail-body>div:nth-child(5){color:var(--rp-xhs-text)!important}
 .rp-xhs-card>div:first-child>div:nth-child(2)>div:nth-child(2){color:var(--rp-xhs-text-faint)!important}
@@ -2501,7 +2672,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-xhs-comment>div:first-child>div:first-child{display:flex!important;align-items:center!important;gap:6px!important;margin-bottom:5px!important}
 .rp-xhs-comment>div:first-child>div:nth-child(2){font-size:12px!important;line-height:1.74!important;color:var(--rp-xhs-text-soft)!important}
 .rp-xhs-comment [data-reply-cidx]{margin-top:7px!important;color:var(--rp-xhs-accent)!important;background:var(--rp-xhs-chip)!important;border-radius:999px!important;padding:4px 10px!important;display:inline-flex!important}
-#rp-xhs-detail-input-bar{flex:0 0 auto!important;background:var(--rp-xhs-panel)!important;border-top:1px solid var(--rp-xhs-border)!important;backdrop-filter:blur(14px) saturate(1.08)!important;-webkit-backdrop-filter:blur(14px) saturate(1.08)!important;padding:8px 12px 10px!important;position:relative!important;z-index:10!important}
+#rp-xhs-detail-input-bar{flex:0 0 auto!important;background:rgba(255,255,255,.72)!important;border-top:1px solid var(--rp-xhs-border)!important;backdrop-filter:blur(18px) saturate(1.4)!important;-webkit-backdrop-filter:blur(18px) saturate(1.4)!important;padding:8px 12px 10px!important;position:relative!important;z-index:10!important}
+#rp-phone.rp-theme-star  #rp-xhs-detail-input-bar{background:rgba(10,5,32,.72)!important;border-top-color:rgba(140,110,255,.2)!important}
+#rp-phone.rp-theme-misty #rp-xhs-detail-input-bar{background:rgba(220,240,255,.72)!important;border-top-color:rgba(100,170,220,.2)!important}
 #rp-xhs-detail-input,#rp-xhs-post-title,#rp-xhs-post-body{background:var(--rp-xhs-card)!important;border:1px solid var(--rp-xhs-border)!important;color:var(--rp-xhs-text)!important;box-shadow:0 4px 14px rgba(0,0,0,.03)!important}
 #rp-xhs-detail-input{border-radius:16px!important;padding:10px 14px!important;line-height:1.55!important;min-height:42px!important}
 #rp-xhs-detail-input::placeholder,#rp-xhs-post-title::placeholder,#rp-xhs-post-body::placeholder{color:var(--rp-xhs-text-faint)!important}
@@ -2510,7 +2683,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-view-xhs-compose .rp-nav-bar{padding-inline:12px!important}
 #rp-view-xhs-compose .rp-nav-bar .rp-back{padding:6px 10px!important;border-radius:999px!important;background:var(--rp-xhs-chip)!important;border:1px solid var(--rp-xhs-border)!important}
 #rp-view-xhs-compose .rp-nav-bar .rp-nav-title{font-weight:800!important;letter-spacing:.02em!important}
-#rp-view-xhs-compose>div:nth-child(2){padding:16px 14px 20px!important;background:linear-gradient(180deg,var(--rp-xhs-bg),transparent 18%)!important}
+#rp-view-xhs-compose>div:nth-child(2){padding:16px 14px 20px!important;background:transparent!important}
 #rp-view-xhs-compose>div:nth-child(2)>div{background:var(--rp-xhs-panel)!important;border:1px solid var(--rp-xhs-border)!important;border-radius:24px!important;padding:16px!important;box-shadow:var(--rp-xhs-shadow-2)!important;position:relative!important;overflow:hidden!important;backdrop-filter:blur(14px) saturate(1.08)!important;-webkit-backdrop-filter:blur(14px) saturate(1.08)!important}
 #rp-view-xhs-compose>div:nth-child(2)>div::before{content:"";position:absolute;inset:0 0 auto 0;height:64px;background:linear-gradient(180deg,rgba(255,255,255,.18),transparent);pointer-events:none}
 #rp-view-xhs-compose [style*="font-size:11px;color:#999"]{color:var(--rp-xhs-text-soft)!important;font-size:11.5px!important;font-weight:700!important;letter-spacing:.02em!important}
@@ -3291,6 +3464,18 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-sms-echo{display:block;margin-top:6px;padding:5px 10px;border-left:2px solid rgba(0,0,0,.18);font-size:13px;line-height:1.5;color:inherit;opacity:.82;font-style:normal;word-break:break-word}
 .rp-sms-echo .rp-sms-echo-name{font-weight:600;margin-right:0px}
 .rp-dark .rp-sms-echo{border-left-color:rgba(255,255,255,.22)}
+/* ── PHONE BLOCK DIVIDER（取代折叠块） ── */
+.rp-phone-divider{display:block;margin:8px 0 4px;border:none;border-top:1px solid rgba(0,0,0,.18);position:relative;text-align:center}
+.rp-phone-divider::before{content:attr(data-label);position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--SmartThemeChatBackground,#fff);padding:0 8px;font-size:11px;font-weight:600;color:rgba(0,0,0,.4);white-space:nowrap}
+.rp-dark .rp-phone-divider{border-top-color:rgba(255,255,255,.2)}
+.rp-dark .rp-phone-divider::before{color:rgba(255,255,255,.35);background:var(--SmartThemeChatBackground,#1a1a2e)}
+.rp-phone-echo-block{display:block;margin:2px 0;font-size:13px;line-height:1.55}
+.rp-phone-echo-name{font-weight:600;color:rgba(0,0,80,.65);margin-right:2px}
+.rp-phone-echo-moment-tag{font-size:10px;font-weight:700;color:rgba(180,40,80,.6);background:rgba(180,40,80,.08);border-radius:4px;padding:1px 5px;margin-right:4px;vertical-align:middle}
+.rp-dark .rp-phone-echo-name{color:rgba(160,175,255,.8)}
+.rp-dark .rp-phone-echo-moment-tag{color:rgba(200,140,170,.8);background:rgba(200,140,170,.12)}
+/* 隐藏旧 rp-sms-echo，统一用新样式 */
+.rp-sms-echo{display:none!important}
 /* ── WALLPAPER ── */
 .rp-wall-preview-img{width:100%;height:80px;border-radius:10px;object-fit:cover;display:block;border:1px solid rgba(0,0,0,.08);margin-bottom:10px}
 
@@ -3430,12 +3615,12 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 }
 .rp-folder-popup {
   background: rgba(255,255,255,0.18); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.28); border-radius: 26px; padding: 22px 28px;
-  display: flex; flex-direction: row; gap: 30px; align-items: flex-start;
+  border: 1px solid rgba(255,255,255,0.28); border-radius: 26px; padding: 18px 16px;
+  display: flex; flex-direction: row; gap: 14px; align-items: flex-start;
   box-shadow: 0 8px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.35);
 }
 .rp-folder-item {
-  min-width: 74px;
+  min-width: 60px;
   display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer;
   transition: transform .15s cubic-bezier(.34,1.56,.64,1);
 }
@@ -3542,6 +3727,54 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   color:#2f587d !important;
   filter:drop-shadow(0 1px 2px rgba(255,255,255,.38)) drop-shadow(0 0 3px rgba(20,60,90,.15)) !important;
 }
+/* ══ 黄金矿工 GAME ══ */
+#rp-view-ggold{position:relative;background:transparent;display:flex;flex-direction:column;overflow:hidden;height:100%}
+#ggold-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;flex-shrink:0;gap:4px}
+.ggold-score-box{background:rgba(255,255,255,.82);border:1px solid rgba(0,0,0,.08);border-radius:7px;padding:3px 8px;text-align:center;min-width:60px;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.ggold-score-lbl{font-size:9px;font-weight:700;color:rgba(60,40,10,.65);text-transform:uppercase;letter-spacing:.04em}
+.ggold-score-val{font-size:14px;font-weight:800;color:#4a3010}
+#ggold-round-info{font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.38);padding:2px 8px;border-radius:12px;text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;text-align:center}
+#ggold-timer-wrap{padding:2px 12px;flex-shrink:0}
+#ggold-timer-bg{height:5px;border-radius:3px;background:rgba(0,0,0,.15);overflow:hidden}
+#ggold-timer-bar{height:5px;border-radius:3px;background:var(--rp-wd-fill,linear-gradient(90deg,#f59e0b,#ef4444));transition:width .5s linear;width:100%}
+#ggold-canvas-wrap{display:flex;justify-content:center;padding:2px 0;flex-shrink:0}
+#ggold-canvas{border-radius:8px;display:block}
+#ggold-action-row{display:flex;justify-content:center;align-items:center;gap:10px;padding:3px 12px;flex-shrink:0}
+#ggold-launch-btn{padding:6px 22px;border-radius:18px;border:none;background:linear-gradient(135deg,var(--rp-nav-btn,#e05888),color-mix(in srgb,var(--rp-nav-btn,#e05888) 70%,#000 30%));color:#fff;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#ggold-launch-btn:disabled{opacity:.45;cursor:not-allowed}
+#ggold-turn-badge{font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.32);padding:2px 10px;border-radius:12px}
+#ggold-chat-hint{font-size:9.5px;color:rgba(224,64,122,.65);text-align:right;padding:0 14px 1px;flex-shrink:0}
+#ggold-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:blur(5px);cursor:pointer}
+#ggold-chat::-webkit-scrollbar{display:none}
+#ggold-input-row{display:flex;gap:6px;padding:6px 12px 10px;flex-shrink:0;border-top:1px solid rgba(0,0,0,.06)}
+#ggold-input{flex:1;border-radius:18px;border:1px solid rgba(0,0,0,.12);padding:6px 12px;font-size:13px;background:rgba(255,255,255,.88);font-family:inherit;outline:none;color:#1a1008}
+#ggold-send{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--rp-nav-btn,#e05888),color-mix(in srgb,var(--rp-nav-btn,#e05888) 70%,#000 30%));border:none;color:#fff;font-weight:800;cursor:pointer;font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#ggold-over{position:absolute;inset:0;background:rgba(0,0,0,.62);z-index:50;flex-direction:column;align-items:center;justify-content:center;gap:12px;display:none;border-radius:48px}
+.ggold-over-emoji{font-size:48px;line-height:1}
+.ggold-over-title{font-size:19px;font-weight:800;color:#fff}
+.ggold-over-sub{font-size:12px;color:rgba(255,255,255,.8);text-align:center;padding:0 20px;line-height:1.5;white-space:pre-line}
+.ggold-over-btn{padding:8px 18px;border-radius:20px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-top:2px}
+#ggold-mode-select{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:48px;backdrop-filter:blur(6px)}
+.ggold-mode-title{font-size:17px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.ggold-mode-sub{font-size:11px;color:rgba(255,255,255,.72);text-align:center;padding:0 24px;line-height:1.5;margin-top:-8px}
+.ggold-mode-btn{width:180px;padding:10px 0;border-radius:22px;border:none;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.22)}
+#ggold-mode-vs{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff}
+#ggold-mode-co{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.rp-folder-game-gold{color:#f6d7e3}
+#rp-phone.rp-theme-candy .rp-folder-game-gold{color:#ffeaf2 !important;filter:drop-shadow(0 0 5px rgba(255,255,255,.55)) drop-shadow(0 1px 3px rgba(120,20,50,.38)) !important}
+#rp-phone.rp-theme-star .rp-folder-game-gold{color:#f7f2ff !important;filter:drop-shadow(0 0 6px rgba(180,150,255,.55)) drop-shadow(0 1px 3px rgba(0,0,0,.42)) !important}
+#rp-phone.rp-theme-misty .rp-folder-game-gold{color:#2f587d !important;filter:drop-shadow(0 1px 2px rgba(255,255,255,.38)) drop-shadow(0 0 3px rgba(20,60,90,.15)) !important}
+#rp-phone.rp-theme-star #ggold-canvas{filter:brightness(.88) saturate(.9)}
+#rp-phone.rp-theme-misty #ggold-chat .game-msg-sys{color:rgba(200,228,255,.92);text-shadow:0 0 4px rgba(0,10,40,.8)}
+#rp-phone.rp-theme-misty #ggold-chat .game-msg-user{color:rgba(255,210,228,.92);text-shadow:0 0 4px rgba(0,10,40,.8)}
+#rp-phone.rp-theme-misty #ggold-chat .game-msg-char{color:rgba(185,228,255,.95)}
+#rp-phone.rp-theme-star #ggold-chat .game-msg-sys{color:rgba(210,200,255,.88)}
+#rp-phone.rp-theme-star #ggold-chat .game-msg-user{color:#f0c0ff}
+#rp-phone.rp-theme-star #ggold-chat .game-msg-char{color:#c8b8ff}
+#ggold-coop-bar{padding:0 12px 2px;flex-shrink:0;display:none}
+#ggold-coop-label{font-size:9.5px;color:rgba(255,255,255,.7);text-align:center;margin-bottom:2px}
+#ggold-coop-progress-bg{height:4px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
+#ggold-coop-progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#10b981,#34d399);transition:width .4s ease}
 
 @keyframes rpApiBlink{0%,100%{opacity:1}50%{opacity:.3}}
 #rp-api-blink{animation:rpApiBlink 1.6s ease-in-out infinite}
@@ -3582,11 +3815,32 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* 桌面端:hover 气泡时显示 */
 .rp-bwrap.rp-in:hover .rp-edit-btn,
 .rp-bwrap.rp-in .rp-edit-btn:focus { opacity:1; pointer-events:auto; }
+.rp-bwrap.rp-out:hover .rp-edit-btn,
+.rp-bwrap.rp-out .rp-edit-btn:focus { opacity:1; pointer-events:auto; }
 /* 触屏端:常驻半透明,随时可点 */
 @media (hover:none) and (pointer:coarse) {
   .rp-edit-btn { opacity:0.5; pointer-events:auto; }
 }
 .rp-edit-btn:hover,.rp-edit-btn:active { background:rgba(0,0,0,.14); opacity:1; }
+
+/* ── DELETE BUTTON ── */
+.rp-del-btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:50%;
+  background:rgba(0,0,0,.06); border:none; cursor:pointer;
+  color:#e05060; line-height:1;
+  flex-shrink:0; margin-left:2px; transition:opacity .15s,background .15s;
+  padding:3px; opacity:0; pointer-events:none;
+}
+.rp-bwrap.rp-in:hover .rp-del-btn,
+.rp-bwrap.rp-in .rp-del-btn:focus { opacity:1; pointer-events:auto; }
+.rp-bwrap.rp-out:hover .rp-del-btn,
+.rp-bwrap.rp-out .rp-del-btn:focus { opacity:1; pointer-events:auto; }
+@media (hover:none) and (pointer:coarse) {
+  .rp-del-btn { opacity:0.5; pointer-events:auto; }
+}
+.rp-del-btn:hover,.rp-del-btn:active { background:rgba(220,50,70,.15); opacity:1; }
+
 /* 游戏聊天铅笔 */
 .game-msg-char { position:relative; display:flex; align-items:flex-start; gap:4px; }
 .game-edit-btn {
@@ -3655,6 +3909,601 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 }
 .rp-inline-ok { background:var(--rp-nav-btn,#c0306a); color:#fff; }
 .rp-inline-cancel { background:rgba(0,0,0,.1); color:#555; }
+
+/* ══════════════════════════════════════════════════════════
+   🏦 BANK CARD MODULE - 银行卡资产模块 (重构 v2)
+   设计语言: 金融级高级感 · 浮雕质感 · 三主题全适配
+   ══════════════════════════════════════════════════════════ */
+
+/* ── CSS 设计 token (每主题独立覆盖) ── */
+#rp-phone {
+  --bank-bg-overlay: rgba(255,248,250,.18);
+  --bank-hero-grad: linear-gradient(145deg, #1a0a0e 0%, #2d1020 40%, #1e0c18 70%, #0f0608 100%);
+  --bank-hero-shine: linear-gradient(125deg, rgba(200,160,80,.22) 0%, transparent 45%, rgba(180,120,60,.12) 100%);
+  --bank-hero-border: rgba(200,160,80,.28);
+  --bank-hero-text: #f5ede0;
+  --bank-hero-sub: rgba(245,237,224,.55);
+  --bank-hero-accent: #c8a050;
+  --bank-hero-amount: #faf0dc;
+  --bank-card-bg: rgba(255,255,255,.62);
+  --bank-card-border: rgba(255,255,255,.72);
+  --bank-card-shadow: 0 6px 24px rgba(0,0,0,.07), 0 1px 0 rgba(255,255,255,.65) inset;
+  --bank-label: rgba(80,20,48,.55);
+  --bank-text: #1a0a12;
+  --bank-text-sub: rgba(58,16,40,.78);
+  --bank-divider: rgba(0,0,0,.06);
+  --bank-ico-bg: rgba(255,255,255,.55);
+  --bank-ico-shadow: 0 1px 5px rgba(0,0,0,.1);
+  --bank-pos: #0d8a3e;
+  --bank-neg: #d42020;
+  --bank-tag-bg: rgba(180,130,60,.1);
+  --bank-tag-text: #8a5a10;
+  --bank-loading-color: #c03060;
+  --bank-empty-color: rgba(60,16,40,.3);
+  --bank-chip-bg: rgba(255,255,255,.55);
+  --bank-chip-border: rgba(200,160,80,.25);
+}
+
+/* ─── 🌸 CANDY TOKEN (default, no class needed) ─── */
+/* defaults above cover candy */
+
+/* ─── ✨ STAR TOKEN ─── */
+#rp-phone.rp-theme-star {
+  --bank-bg-overlay: rgba(6,3,20,.15);
+  --bank-hero-grad: linear-gradient(145deg, #0c0630 0%, #1a0858 40%, #120440 70%, #060220 100%);
+  --bank-hero-shine: linear-gradient(125deg, rgba(160,120,255,.25) 0%, transparent 45%, rgba(100,60,200,.15) 100%);
+  --bank-hero-border: rgba(160,120,255,.35);
+  --bank-hero-text: #f0eaff;
+  --bank-hero-sub: rgba(220,210,255,.5);
+  --bank-hero-accent: #a87cfa;
+  --bank-hero-amount: #ede4ff;
+  --bank-card-bg: rgba(20,10,52,.72);
+  --bank-card-border: rgba(140,100,255,.28);
+  --bank-card-shadow: 0 6px 28px rgba(0,0,0,.45), 0 1px 0 rgba(160,130,255,.14) inset;
+  --bank-label: rgba(210,195,255,.65);
+  --bank-text: #e4d8ff;
+  --bank-text-sub: rgba(200,185,255,.82);
+  --bank-divider: rgba(140,100,255,.12);
+  --bank-ico-bg: rgba(60,30,120,.55);
+  --bank-ico-shadow: 0 1px 6px rgba(80,40,180,.22);
+  --bank-pos: #86efac;
+  --bank-neg: #fca5a5;
+  --bank-tag-bg: rgba(140,100,255,.15);
+  --bank-tag-text: #c8b0ff;
+  --bank-loading-color: #a87cfa;
+  --bank-empty-color: rgba(180,165,255,.35);
+  --bank-chip-bg: rgba(40,20,90,.55);
+  --bank-chip-border: rgba(160,120,255,.3);
+}
+
+/* ─── 🌿 MISTY TOKEN ─── */
+#rp-phone.rp-theme-misty {
+  --bank-bg-overlay: rgba(200,228,248,.12);
+  --bank-hero-grad: linear-gradient(145deg, #062040 0%, #0e3060 40%, #0a2448 70%, #040e22 100%);
+  --bank-hero-shine: linear-gradient(125deg, rgba(120,180,240,.28) 0%, transparent 45%, rgba(60,130,200,.15) 100%);
+  --bank-hero-border: rgba(120,180,240,.32);
+  --bank-hero-text: #e8f4ff;
+  --bank-hero-sub: rgba(200,232,255,.52);
+  --bank-hero-accent: #6ab4e8;
+  --bank-hero-amount: #dff0ff;
+  --bank-card-bg: rgba(228,243,255,.65);
+  --bank-card-border: rgba(100,168,218,.3);
+  --bank-card-shadow: 0 6px 24px rgba(0,60,120,.09), 0 1px 0 rgba(180,220,255,.62) inset;
+  --bank-label: rgba(22,60,100,.62);
+  --bank-text: #0c1e30;
+  --bank-text-sub: rgba(20,50,88,.82);
+  --bank-divider: rgba(80,150,210,.14);
+  --bank-ico-bg: rgba(190,225,250,.55);
+  --bank-ico-shadow: 0 1px 5px rgba(40,100,160,.12);
+  --bank-pos: #0e7a36;
+  --bank-neg: #c41c1c;
+  --bank-tag-bg: rgba(60,130,200,.1);
+  --bank-tag-text: #1a5a90;
+  --bank-loading-color: #3d8fbf;
+  --bank-empty-color: rgba(44,74,106,.4);
+  --bank-chip-bg: rgba(200,228,250,.55);
+  --bank-chip-border: rgba(80,150,210,.28);
+}
+
+/* ────────────────────────────────────────────
+   VIEW CONTAINER
+──────────────────────────────────────────── */
+#rp-view-bank {
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#rp-phone.rp-theme-candy #rp-view-bank,
+#rp-phone.rp-theme-star  #rp-view-bank,
+#rp-phone.rp-theme-misty #rp-view-bank {
+  background: var(--rp-home-wall) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+/* 资产概览标题与 loading/empty 颜色统一 */
+#rp-view-bank .rp-nav-title {
+  color: var(--bank-loading-color, #c03060) !important;
+  text-shadow: none !important;
+}
+#rp-view-bank .rp-back,
+#rp-view-bank .rp-nav-add,
+#rp-view-bank #rp-bank-refresh {
+  color: var(--bank-loading-color, #c03060) !important;
+  text-shadow: none !important;
+}
+
+/* ────────────────────────────────────────────
+   SCROLL BODY
+──────────────────────────────────────────── */
+#rp-bank-body {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 12px 11px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#rp-bank-body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+#rp-view-bank { scrollbar-width: none !important; }
+#rp-view-bank::-webkit-scrollbar { display: none !important; }
+
+/* ────────────────────────────────────────────
+   HERO CARD (总资产 / 净资产)
+   效果: 深色磨砂金属质感 + 金色/紫色/蓝色光晕
+──────────────────────────────────────────── */
+.rp-bank-hero {
+  position: relative;
+  border-radius: 22px;
+  padding: 18px 18px 16px;
+  overflow: visible;
+  background: var(--bank-hero-grad);
+  border: 1px solid var(--bank-hero-border);
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.35),
+    0 2px 0 rgba(255,255,255,.06) inset,
+    0 -1px 0 rgba(0,0,0,.25) inset;
+  /* clip 内容但不裁子元素伪元素 */
+  isolation: isolate;
+}
+/* 金属反光层 */
+.rp-bank-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--bank-hero-shine);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 0;
+}
+/* 底部柔和光晕 — 放到 box-shadow 代替伪元素避免裁切问题 */
+.rp-bank-hero::after {
+  content: '';
+  position: absolute; bottom: -18px; left: 15%; right: 15%;
+  height: 36px;
+  background: var(--bank-hero-border);
+  filter: blur(18px);
+  opacity: .38;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 50%;
+}
+.rp-bank-hero > * { position: relative; z-index: 1; }
+.rp-bank-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bank-chip-bg);
+  border: 1px solid var(--bank-chip-border);
+  border-radius: 20px;
+  padding: 3px 10px 3px 7px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(8px);
+}
+.rp-bank-hero-chip-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--bank-hero-accent);
+  box-shadow: 0 0 6px var(--bank-hero-accent);
+  flex-shrink: 0;
+}
+.rp-bank-hero-chip-text {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--bank-hero-sub);
+}
+.rp-bank-hero-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--bank-hero-sub);
+  margin-bottom: 6px;
+}
+.rp-bank-hero-amount {
+  font-size: 34px;
+  font-weight: 200;
+  letter-spacing: -2px;
+  color: var(--bank-hero-amount);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.rp-bank-hero-unit {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  vertical-align: super;
+  margin-right: 3px;
+  opacity: .75;
+}
+.rp-bank-hero-sub {
+  font-size: 10px;
+  color: var(--bank-hero-sub);
+  letter-spacing: .2px;
+  margin-top: 2px;
+}
+/* 底部分隔线 */
+.rp-bank-hero-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bank-hero-border), transparent);
+  margin: 12px 0 10px;
+  opacity: .6;
+}
+/* 底部快速指标行 */
+.rp-bank-hero-stats {
+  display: flex;
+  gap: 0;
+}
+.rp-bank-hero-stat {
+  flex: 1;
+  text-align: center;
+  padding: 0 4px;
+  border-right: 1px solid rgba(255,255,255,.08);
+}
+.rp-bank-hero-stat:last-child { border-right: none; }
+.rp-bank-hero-stat-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bank-hero-text);
+  letter-spacing: -.3px;
+}
+.rp-bank-hero-stat-lbl {
+  font-size: 9px;
+  color: var(--bank-hero-sub);
+  margin-top: 2px;
+  letter-spacing: .3px;
+}
+
+/* ────────────────────────────────────────────
+   SECTION CARD (资产分项 / 交易记录 等)
+──────────────────────────────────────────── */
+.rp-bank-card {
+  background: var(--bank-card-bg);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid var(--bank-card-border);
+  border-radius: 20px;
+  padding: 14px 14px 10px;
+  box-shadow: var(--bank-card-shadow);
+}
+
+/* ── 旧 .rp-bank-card 兼容:如果 hero 和 card 共用则 hero 覆盖 ── */
+.rp-bank-card.rp-bank-hero {
+  background: var(--bank-hero-grad) !important;
+  border-color: var(--bank-hero-border) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.35) !important;
+}
+
+/* ────────────────────────────────────────────
+   SECTION TITLE
+──────────────────────────────────────────── */
+.rp-bank-section-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .55px;
+  text-transform: uppercase;
+  color: var(--bank-label);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* 左侧装饰线 */
+.rp-bank-section-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--bank-hero-accent);
+  opacity: .75;
+  flex-shrink: 0;
+}
+
+/* ────────────────────────────────────────────
+   总资产数字 (兼容旧 HTML 结构)
+──────────────────────────────────────────── */
+.rp-bank-total {
+  font-size: 32px;
+  font-weight: 200;
+  letter-spacing: -2px;
+  color: var(--bank-hero-amount);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.rp-bank-total-label {
+  font-size: 10px;
+  color: var(--bank-hero-sub);
+  margin-bottom: 14px;
+  letter-spacing: .3px;
+}
+
+/* ────────────────────────────────────────────
+   资产构成 — 全新卡片列表布局（v4 完全重写）
+   每个资产项 = 独立小卡片，上下分区，无截断
+──────────────────────────────────────────── */
+
+/* 资产列表容器：垂直堆叠，间距分明 */
+.rp-asset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* 每个资产项：独立小卡片 */
+.rp-asset-item {
+  background: var(--bank-ico-bg);
+  border-radius: 14px;
+  border: 1px solid var(--bank-divider);
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+/* 顶行：图标 + 资产名称（名称完整显示，允许换行） */
+.rp-asset-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rp-asset-ico {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: var(--bank-ico-bg);
+  box-shadow: var(--bank-ico-shadow);
+  border: 1px solid rgba(255,255,255,.3);
+  margin-top: 1px;
+}
+
+.rp-asset-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bank-text);
+  line-height: 1.4;
+  /* 关键：允许换行，绝不截断 */
+  white-space: normal;
+  word-break: break-word;
+  flex: 1 1 0;
+}
+
+/* 底行：金额独占一行，desc 另起一行截断显示 */
+.rp-asset-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 36px; /* 与名称对齐 */
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.rp-asset-amount {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bank-text);
+  letter-spacing: -.3px;
+  white-space: nowrap;
+}
+.rp-asset-amount.rp-bank-neg { color: var(--bank-neg) !important; }
+
+.rp-asset-desc-wrap {
+  position: relative;
+  max-width: 100%;
+}
+.rp-asset-desc {
+  font-size: 10px;
+  color: var(--bank-text-sub);
+  line-height: 1.5;
+  word-break: break-all;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  max-width: 100%;
+}
+.rp-asset-desc.rp-desc-expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+.rp-asset-desc-more {
+  color: var(--bank-hero-accent, #c8a050);
+  cursor: pointer;
+  font-size: 10px;
+  user-select: none;
+  white-space: nowrap;
+}
+.rp-asset-desc-more:active { opacity: 0.7; }
+
+.rp-asset-change { display: none; }
+
+/* 涨跌色 */
+.rp-bank-pos { color: var(--bank-pos) !important; }
+.rp-bank-neg-text { color: var(--bank-neg) !important; }
+
+/* ────────────────────────────────────────────
+   交易记录行
+──────────────────────────────────────────── */
+.rp-bank-txn {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--bank-divider);
+}
+.rp-bank-txn:last-child { border-bottom: none; }
+.rp-bank-txn-ico {
+  width: 34px; height: 34px;
+  min-width: 34px;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+  background: var(--bank-ico-bg);
+  box-shadow: var(--bank-ico-shadow);
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.3);
+  margin-top: 1px;
+}
+.rp-bank-txn-info { min-width: 0; overflow: hidden; width: 100%; }
+.rp-bank-txn-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bank-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+  width: 100%;
+}
+.rp-bank-txn-date {
+  font-size: 10px;
+  color: var(--bank-text-sub);
+  margin-top: 1px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.rp-bank-txn-amt {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bank-text);
+  flex-shrink: 0;
+  letter-spacing: -.2px;
+  white-space: nowrap;
+}
+.rp-bank-txn-amt.rp-bank-out { color: var(--bank-neg) !important; }
+.rp-bank-txn-amt.rp-bank-in  { color: var(--bank-pos) !important; }
+
+/* ────────────────────────────────────────────
+   进度条 (借款/信用额度)
+──────────────────────────────────────────── */
+.rp-bank-bar-wrap {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bank-divider);
+  margin-top: 8px;
+  overflow: hidden;
+}
+.rp-bank-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--bank-hero-accent), var(--bank-hero-border));
+  transition: width .9s cubic-bezier(.25,.46,.45,.94);
+}
+
+/* ────────────────────────────────────────────
+   REFRESH 按钮
+──────────────────────────────────────────── */
+#rp-bank-refresh {
+  background: none !important; border: none !important;
+  color: var(--rp-nav-btn) !important;
+  cursor: pointer !important; padding: 2px 4px !important;
+  display: inline-flex !important; align-items: center !important;
+  justify-content: center !important; border-radius: 6px !important;
+  transition: transform .25s, opacity .2s !important;
+  visibility: visible !important; opacity: 1 !important;
+  pointer-events: auto !important;
+}
+#rp-bank-refresh:hover { transform: rotate(180deg) !important; }
+#rp-bank-refresh:disabled { opacity: .35 !important; cursor: default !important; transform: none !important; }
+#rp-bank-refresh.rp-spinning { animation: rpSpin .7s linear infinite !important; }
+
+/* ────────────────────────────────────────────
+   LOADING 占位
+──────────────────────────────────────────── */
+#rp-bank-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 24px 12px;
+  padding: 24px 20px;
+  border-radius: 18px;
+  background: var(--bank-card-bg, rgba(255,255,255,.62));
+  border: 1px solid var(--bank-card-border, rgba(255,255,255,.72));
+  box-shadow: var(--bank-card-shadow, 0 6px 24px rgba(0,0,0,.07));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--bank-loading-color, #c03060);
+  font-size: 13px;
+  font-weight: 600;
+}
+.rp-bank-loading-dots { display: flex; gap: 4px; }
+.rp-bank-loading-dots span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--bank-loading-color, #c03060);
+  animation: rp-ts-dot 1.2s ease-in-out infinite;
+  display: inline-block;
+}
+.rp-bank-loading-dots span:nth-child(2) { animation-delay: .2s; }
+.rp-bank-loading-dots span:nth-child(3) { animation-delay: .4s; }
+
+/* ────────────────────────────────────────────
+   EMPTY 空状态
+──────────────────────────────────────────── */
+.rp-bank-empty {
+  text-align: center;
+  color: var(--bank-loading-color, #c03060);
+  opacity: .88;
+  margin: 24px 12px;
+  padding: 28px 20px;
+  border-radius: 18px;
+  background: var(--bank-card-bg, rgba(255,255,255,.62));
+  border: 1px solid var(--bank-card-border, rgba(255,255,255,.72));
+  box-shadow: var(--bank-card-shadow, 0 6px 24px rgba(0,0,0,.07));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* ── GLOBAL SCROLLBAR HIDE ── */
+/* PC端隐藏所有滚动条，移动端靠原生手势滚动，不展示滚动条 */
+#rp-phone * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#rp-phone *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
 
 `;
 
@@ -3748,6 +4597,7 @@ const STATE = {
   xhsCurrentPost: null,
   xhsSelectedTag: '日常',
   xhsReplyToCidx: null,
+  bankData: null,          // 银行卡资产数据，按 chatId 独立
   wallpaper: null,
   darkMode: false,
   avatars: {},
@@ -3842,6 +4692,7 @@ function syncToCurrentChat() {
       moments:       JSON.parse(JSON.stringify(STATE.moments || [])),
       diary:         JSON.parse(JSON.stringify(STATE.diary || [])),
       avatars:       Object.assign({}, STATE.avatars || {}),
+      bankData:      STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
     };
     saveState();
   }
@@ -3859,6 +4710,7 @@ function syncToCurrentChat() {
     STATE.diary         = JSON.parse(JSON.stringify(s.diary   || []));
     STATE.avatars       = Object.assign({}, s.avatars || {});
     STATE.currentThread = s.currentThread || null;
+    STATE.bankData      = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
   } else {
     const persisted = loadState(newChatId);
     if (persisted) {
@@ -3868,6 +4720,7 @@ function syncToCurrentChat() {
       STATE.moments       = persisted.moments || [];
       STATE.diary         = persisted.diary   || [];
       STATE.avatars       = persisted.avatars || {};
+      STATE.bankData      = persisted.bankData || null;
     } else {
       STATE.threads       = {};
       STATE.notifications = [];
@@ -3875,6 +4728,7 @@ function syncToCurrentChat() {
       STATE.moments       = [];
       STATE.diary         = [];
       STATE.avatars       = {};
+      STATE.bankData      = null;
     }
     STATE.currentThread = null;
   }
@@ -4030,6 +4884,7 @@ function saveState() {
       avatars: Object.assign({}, _AV),
       currentView: STATE.currentView || 'home',
       currentThread: STATE.currentThread || null,
+      bankData: STATE.bankData || null,
     };
     const jsonStr = JSON.stringify(payload);
     // 如果写入失败,先清理同 key 旧数据再重试
@@ -4131,52 +4986,104 @@ const HTML = `
         <!-- 主屏 -->
         <div id="rp-view-home" class="rp-view" style="display:none">
           <div class="rp-home-bg"></div>
-          <div class="rp-home-body">
-            <div id="rp-home-clock"></div>
-            <div id="rp-home-date"></div>
-            <div id="rp-app-grid">
-              <!-- row 1: 信息 朋友圈 夜间 -->
-              <div class="rp-app" data-app="messages">
-                <div class="rp-app-ico">
-                  <div class="rp-badge" id="rp-main-badge" style="display:none">0</div>
+          <!-- 双页横滑容器 -->
+          <div id="rp-home-pages">
+            <!-- 第一屏：主屏幕 -->
+            <div class="rp-home-page" id="rp-home-page-0">
+              <div class="rp-home-body">
+                <div id="rp-home-clock"></div>
+                <div id="rp-home-date"></div>
+                <div id="rp-app-grid">
+                  <!-- row 1: 信息 朋友圈 夜间 -->
+                  <div class="rp-app" data-app="messages">
+                    <div class="rp-app-ico">
+                      <div class="rp-badge" id="rp-main-badge" style="display:none">0</div>
+                    </div>
+                    <div class="rp-app-lbl">信息</div>
+                  </div>
+                  <div class="rp-app" data-app="moments">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">朋友圈</div>
+                  </div>
+
+                  <!-- row 2: 设置 飞行棋 占位 -->
+                  <div class="rp-app" data-app="settings">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">设置</div>
+                  </div>
+                  <div class="rp-app" id="rp-folder-games-btn" data-app="folder-games">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">游戏</div>
+                  </div>
+                  <div class="rp-app" data-app="api-settings">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">API</div>
+                  </div>
+                  <!-- row 3: 美化 日记 -->
+                  <div class="rp-app" data-app="themes">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">主题</div>
+                  </div>
+                  <div class="rp-app" data-app="diary">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">日记</div>
+                  </div>
+                  <div class="rp-app" data-app="xhs" title="小红书">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">小红书</div>
+                  </div>
+                  <div class="rp-app" data-app="bank" title="银行卡">
+                    <div class="rp-app-ico"></div>
+                    <div class="rp-app-lbl">银行卡</div>
+                  </div>
                 </div>
-                <div class="rp-app-lbl">信息</div>
               </div>
-              <div class="rp-app" data-app="moments">
-                <div class="rp-app-ico"></div>
-                <div class="rp-app-lbl">朋友圈</div>
-              </div>
-
-              <!-- row 2: 设置 飞行棋 占位 -->
-              <div class="rp-app" data-app="settings">
-                <div class="rp-app-ico"></div>
-                <div class="rp-app-lbl">设置</div>
-              </div>
-              <div class="rp-app" id="rp-folder-games-btn" data-app="folder-games">
-                <div class="rp-app-ico"></div>
-                <div class="rp-app-lbl">游戏</div>
-              </div>
-              <div class="rp-app" data-app="api-settings">
-                <div class="rp-app-ico"></div>
-                <div class="rp-app-lbl">API</div>
-              </div>
-              <!-- row 3: 美化 日记 -->
-              <div class="rp-app" data-app="themes">
-                <div class="rp-app-ico"></div>
-                <div class="rp-app-lbl">主题</div>
-              </div>
-              <div class="rp-app" data-app="diary">
-                <div class="rp-app-ico"></div>
-                <div class="rp-app-lbl">日记</div>
-              </div>
-              <div class="rp-app" data-app="xhs" title="小红书">
-                <div class="rp-app-ico"></div>
-                <div class="rp-app-lbl">小红书</div>
-              </div>
-
             </div>
-
-
+            <!-- 第二屏：关于 -->
+            <div class="rp-home-page" id="rp-home-page-1">
+              <div id="rp-about-page">
+                <svg id="rp-about-deco" viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <circle cx="130" cy="72" r="44" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".18"/>
+                  <circle cx="130" cy="72" r="32" fill="none" stroke="currentColor" stroke-width="1" opacity=".22"/>
+                  <circle cx="130" cy="72" r="20" fill="currentColor" opacity=".10"/>
+                  <!-- 花瓣装饰 -->
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(0 130 72)"/>
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(45 130 72)"/>
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(90 130 72)"/>
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(135 130 72)"/>
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(180 130 72)"/>
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(225 130 72)"/>
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(270 130 72)"/>
+                  <ellipse cx="130" cy="36" rx="5" ry="11" fill="currentColor" opacity=".18" transform="rotate(315 130 72)"/>
+                  <!-- 中心图标：手机 -->
+                  <rect x="122" y="60" width="16" height="24" rx="3" fill="currentColor" opacity=".55"/>
+                  <rect x="124" y="62" width="12" height="16" rx="1.5" fill="none" stroke="var(--rp-about-bg,#fff)" stroke-width="1.2" opacity=".7"/>
+                  <circle cx="130" cy="81" r="1.2" fill="var(--rp-about-bg,#fff)" opacity=".8"/>
+                  <!-- 散点 -->
+                  <circle cx="52"  cy="48"  r="2.5" fill="currentColor" opacity=".13"/>
+                  <circle cx="208" cy="55"  r="2"   fill="currentColor" opacity=".11"/>
+                  <circle cx="38"  cy="150" r="3"   fill="currentColor" opacity=".10"/>
+                  <circle cx="222" cy="145" r="2.5" fill="currentColor" opacity=".12"/>
+                  <circle cx="78"  cy="170" r="2"   fill="currentColor" opacity=".09"/>
+                  <circle cx="185" cy="175" r="2"   fill="currentColor" opacity=".09"/>
+                </svg>
+                <div class="rp-about-card">
+                  <div id="rp-about-title">🍡 mochi-phone</div>
+                  <div id="rp-about-author">by 棠栀 Talia</div>
+                  <div id="rp-about-divider"></div>
+                  <div id="rp-about-notice">
+                    本扩展由作者免费发布于<br>
+                    <span class="rp-about-hl">DC社区：旅程 / 类脑 / 多林国</span><br>
+                    其他渠道获取均视为盗版。
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 页面指示点 -->
+          <div id="rp-home-dots">
+            <span class="rp-home-dot rp-home-dot-active"></span>
+            <span class="rp-home-dot"></span>
           </div>
           <div class="rp-home-indicator"></div>
         </div>
@@ -4315,6 +5222,21 @@ const HTML = `
         </div>
 
         <!-- 小红书 -->
+        <!-- 银行卡资产模块 -->
+        <div id="rp-view-bank" class="rp-view" style="display:none">
+          <div class="rp-nav-bar">
+            <button class="rp-back" data-to="home">‹</button>
+            <span class="rp-nav-title">资产概览</span>
+            <button id="rp-bank-refresh" title="刷新资产">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            </button>
+          </div>
+          <div id="rp-bank-body">
+            <div class="rp-bank-empty">✦ 点击右上角刷新，读取 TA 的资产信息</div>
+          </div>
+        </div>
+
+        <!-- 小红书 -->
         <div id="rp-view-xhs" class="rp-view" style="display:none;flex-direction:column">
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
@@ -4426,6 +5348,8 @@ const HTML = `
                 <input id="rp-wall-file" type="file" accept="image/*" style="display:none"/>
               </div>
             </div>
+
+
           </div>
         </div>
 
@@ -4479,6 +5403,45 @@ const HTML = `
           </div>
         </div>
 
+        <!-- 黄金矿工 -->
+        <div id="rp-view-ggold" class="rp-view" style="display:none">
+          <div class="rp-nav-bar">
+            <button class="rp-back" data-to="home">‹</button>
+            <span class="rp-nav-title">⛏️ 黄金矿工</span>
+            <button id="ggold-newbtn" style="font-size:12px;font-weight:600">新局</button>
+          </div>
+          <div id="ggold-header">
+            <div class="ggold-score-box"><div class="ggold-score-lbl" id="ggold-u-lbl">你</div><div class="ggold-score-val" id="ggold-u-score">0</div></div>
+            <div id="ggold-round-info">第1轮 / 共3轮</div>
+            <div class="ggold-score-box"><div class="ggold-score-lbl" id="ggold-c-lbl">对方</div><div class="ggold-score-val" id="ggold-c-score">0</div></div>
+          </div>
+          <div id="ggold-timer-wrap"><div id="ggold-timer-bg"><div id="ggold-timer-bar"></div></div></div>
+          <div id="ggold-coop-bar"><div id="ggold-coop-label">合作目标：0 / 1000</div><div id="ggold-coop-progress-bg"><div id="ggold-coop-progress-fill" style="width:0%"></div></div></div>
+          <div id="ggold-canvas-wrap"><canvas id="ggold-canvas" width="270" height="190"></canvas></div>
+          <div id="ggold-action-row">
+            <div id="ggold-turn-badge">你的回合</div>
+            <button id="ggold-launch-btn" type="button">🪝 放钩！</button>
+          </div>
+          <div id="ggold-chat-hint">点击展开 ↗</div>
+          <div id="ggold-chat"></div>
+          <div id="ggold-input-row">
+            <input id="ggold-input" type="text" placeholder="游戏中聊天..." autocomplete="off"/>
+            <button id="ggold-send" type="button">↑</button>
+          </div>
+          <div id="ggold-over" style="display:none">
+            <div class="ggold-over-emoji" id="ggold-over-emoji">🏆</div>
+            <div class="ggold-over-title" id="ggold-over-title">游戏结束</div>
+            <div class="ggold-over-sub" id="ggold-over-sub"></div>
+            <button class="ggold-over-btn" id="ggold-replay-btn" type="button">再来一局</button>
+            <button class="ggold-over-btn" id="ggold-reset-tower-btn" type="button" style="display:none;background:linear-gradient(135deg,#6366f1,#4338ca)">重置爬塔</button>
+          </div>
+          <div id="ggold-mode-select">
+            <div class="ggold-mode-title">⛏️ 黄金矿工</div>
+            <div class="ggold-mode-sub">选择游戏模式<br>3轮×2人，轮流挖矿</div>
+            <button class="ggold-mode-btn" id="ggold-mode-vs" type="button">⚔️ 竞技模式<br><span style="font-size:10px;font-weight:400;opacity:.85">比拼总分，一决高下</span></button>
+            <button class="ggold-mode-btn" id="ggold-mode-co" type="button">🤝 合作模式<br><span style="font-size:10px;font-weight:400;opacity:.85">共同达标，爬塔挑战</span></button>
+          </div>
+        </div>
         <!-- 飞行棋 -->
         <div id="rp-view-game" class="rp-view" style="display:none">
           <div class="rp-nav-bar">
@@ -4603,6 +5566,19 @@ const HTML = `
               </div>
               <div class="rp-folder-item-lbl">2048</div>
             </div>
+            <div class="rp-folder-item" data-folder-app="ggold">
+              <div class="rp-folder-item-ico rp-folder-game-gold">
+                <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="20" y1="4" x2="20" y2="13" stroke-width="2"/>
+                  <path d="M8 13 Q20 22 32 13" stroke-width="2" fill="none"/>
+                  <line x1="20" y1="13" x2="20" y2="28" stroke-width="1.8" stroke-dasharray="2 1"/>
+                  <circle cx="20" cy="31" r="4" fill="currentColor" stroke="none" opacity=".85"/>
+                  <circle cx="13" cy="26" r="2.5" fill="currentColor" stroke="none" opacity=".55"/>
+                  <circle cx="28" cy="24" r="3" fill="currentColor" stroke="none" opacity=".65"/>
+                </svg>
+              </div>
+              <div class="rp-folder-item-lbl">黄金矿工</div>
+            </div>
           </div>
         </div>
         <!-- 添加好友弹窗(位于 #rp-screen 内部) -->
@@ -4628,6 +5604,9 @@ const HTML = `
 //  INIT
 // ================================================================
 async function init() {
+  // ── 版权水印（仅开发者控制台可见）──
+  console.log('%c🍡 mochi-phone | 免费发布于 DC社区·旅程 / 类脑 / 多林国 | 其他渠道获取均视为盗版', 'color:#e06080;font-size:12px;font-weight:600;');
+
   // Hot-reload safety: remove stale phone element & force CSS re-inject
   const stale = document.getElementById('rp-wrapper');
   if (stale) stale.remove();
@@ -4719,6 +5698,32 @@ async function init() {
   // 立即同步清理无效联系人(不等延迟,防止用户看到 SillyTavern)
   cleanInvalidContacts();
 
+  // ── 历史消息迁移：把 text 为 image###...### 的旧消息转为 pending_image ──
+  (function migrateOldPendingImgs() {
+    // 匹配整条消息是 image###prompt### 的情况（允许首尾空格）
+    const chatu8Re = /^\s*image###([\s\S]*?)###\s*$/i;
+    let changed = false;
+    for (const th of Object.values(STATE.threads || {})) {
+      if (!Array.isArray(th.messages)) continue;
+      th.messages.forEach((msg, idx) => {
+        // 只处理普通文字消息（没有 type 或 type 缺失）
+        if (msg.type && msg.type !== 'default') return;
+        const raw = (msg.text || '').trim();
+        const m = chatu8Re.exec(raw);
+        if (m) {
+          const prompt = (m[1] || '').trim();
+          th.messages[idx] = {
+            id: msg.id || `mig_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+            from: msg.from, type: 'pending_image', prompt, time: msg.time || ''
+          };
+          changed = true;
+          console.log('[Phone:migrate] 旧消息迁移为 pending_image', { prompt: prompt.slice(0,50) });
+        }
+      });
+    }
+    if (changed) saveState();
+  })();
+
   if (STATE.darkMode) { $('#rp-phone').addClass('rp-dark'); $('.rp-dm-ico').text('☀️'); $('#rp-dm-lbl').text('日间'); }
   lgInitTheme();
 
@@ -4747,9 +5752,334 @@ async function init() {
     if (userMsgKey) {
       try { eventSource.on(userMsgKey, () => { try { hideOocInUserBubbles(); } catch(e) {} }); } catch(e) {}
     }
+    // ── 生图插件异步替换监听 ──
+    // 智绘姬等生图插件完成生图后通过 MESSAGE_UPDATED 把 <img src="..."> 写入消息
+    // 此时 onAIMessage 已经跑完（那时还没有 src），需要在这里单独扫描
+    if (event_types['MESSAGE_UPDATED']) {
+      try {
+        eventSource.on(event_types['MESSAGE_UPDATED'], onMessageUpdatedForImages);
+      } catch(e) {}
+    }
   }
   // FIX2: 监听聊天窗口切换
   if (eventSource && event_types) eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+
+
+
+  // ── 智绘姬 MutationObserver 兜底 ──
+  // 核心策略：显式等待队列（rpImgWaitQueue）
+  // 只有用户点击"点击生图"后才往队列加条目，Observer 只消费队列里的请求。
+  // 这样页面加载时已有的图、角色头像、历史图片等不会被误路由。
+  //
+  // 队列条目格式：{ threadId, pendingMsgId, prompt, addedAt }
+  // addedAt 是点击时的时间戳，Observer 只接受 addedAt 之后插入的 img
+  window.rpImgWaitQueue = window.rpImgWaitQueue || [];
+  // Observer 内去重 Set：防止同一张图被不同 DOM 节点触发两次（如主楼+预览区）
+  window.rpObserverSeenSrcs = window.rpObserverSeenSrcs || new Set();
+
+  try {
+    const chatContainer = document.querySelector('#chat');
+    if (chatContainer) {
+      const chatu8Observer = new MutationObserver(function(mutations) {
+        const now = Date.now();
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (!node || node.nodeType !== 1) continue;
+            const imgs = node.tagName === 'IMG' ? [node] : Array.from(node.querySelectorAll('img'));
+            for (const img of imgs) {
+              const src = img.src || img.getAttribute('src') || '';
+              if (!src || src.length < 10) continue;
+              if (src.includes('__img_expired__')) continue; // 跳过已过期的历史图片
+
+              // ── 过滤掉头像/UI 图片 ──
+              if (src.includes('thumbnail?type=avatar') || src.includes('thumbnail?type=persona')) continue;
+              if (img.closest('.avatar, .mes_avatar, .ch_avatar, .user_avatar, .persona_avatar')) continue;
+              if (src.startsWith('data:image') && img.closest('.avatar, .mes_avatar')) continue;
+              if (img.closest('#extensions_settings, .drawer-content, #rightSendForm')) continue;
+
+              // ── 只处理聊天正文气泡内的图片 ──
+              const isInMesText = !!img.closest('.mes_text');
+              const isChatu8 = !!img.closest('[class*="chatu8"], [class*="image-tag"]');
+              const isInChat = !!img.closest('.mes_block, .mes');
+              if (!isInMesText && !isChatu8 && !isInChat) continue;
+
+              const ts = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
+
+              // ── 朋友圈生图优先：仅当 waitQueue 里有朋友圈条目（threadId=null）时才截图给朋友圈 ──
+              // 若 waitQueue 只有线程条目（SMS生图）或为空（ComfyUI自动生图），不走此路径
+              const _hasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => !e.threadId);
+              if (STATE._pendingMomentImgs && STATE._pendingMomentImgs.size > 0 && _hasMomentInQueue) {
+                console.log('[Phone:moment:obs:diag] 触发朋友圈路径检查', {
+                  pendingSize: STATE._pendingMomentImgs.size,
+                  pendingKeys: Array.from(STATE._pendingMomentImgs.keys()).map(k => k.slice(0, 40)),
+                  src: src.slice(0, 60),
+                  waitQueueLen: (window.rpImgWaitQueue || []).length,
+                });
+                // 优先检查 img 的 prompt 属性做精确匹配
+                const imgPromptAttr = (img.getAttribute('prompt') || img.getAttribute('data-prompt') || '').trim();
+                let matchedMomentId = null;
+                if (imgPromptAttr) {
+                  if (STATE._pendingMomentImgs.has(imgPromptAttr)) {
+                    matchedMomentId = STATE._pendingMomentImgs.get(imgPromptAttr);
+                    STATE._pendingMomentImgs.delete(imgPromptAttr);
+                    console.log('[Phone:moment:obs:diag] prompt 精确匹配成功', { matchedMomentId, prompt: imgPromptAttr.slice(0, 40) });
+                  } else {
+                    const short = imgPromptAttr.slice(0, 50);
+                    for (const [k, v] of STATE._pendingMomentImgs) {
+                      if (k.slice(0, 50) === short) { matchedMomentId = v; STATE._pendingMomentImgs.delete(k); break; }
+                    }
+                    if (matchedMomentId) console.log('[Phone:moment:obs:diag] prompt 模糊匹配成功', { matchedMomentId });
+                    else console.log('[Phone:moment:obs:diag] prompt 属性匹配失败，走兜底', { imgPromptAttr: imgPromptAttr.slice(0, 40) });
+                  }
+                } else {
+                  console.log('[Phone:moment:obs:diag] img 无 prompt 属性，走兜底');
+                }
+                // 若无 prompt 属性，兜底：遍历 waitQueue 朋友圈条目，优先通过其 prompt
+                // 在 _pendingMomentImgs 里精确反查 momentId（防止多 moment 并发时顺序错配）
+                if (!matchedMomentId) {
+                  const wqMomentEntries = window.rpImgWaitQueue
+                    ? window.rpImgWaitQueue.filter(e => !e.threadId)
+                    : [];
+                  let bestEntry = null;
+                  for (const entry of wqMomentEntries) {
+                    if (!entry.prompt) continue;
+                    // 精确匹配
+                    if (STATE._pendingMomentImgs.has(entry.prompt)) {
+                      bestEntry = entry;
+                      matchedMomentId = STATE._pendingMomentImgs.get(entry.prompt);
+                      STATE._pendingMomentImgs.delete(entry.prompt);
+                      console.log('[Phone:moment:obs:diag] 兜底从 waitQueue.prompt 精确反查 momentId', { matchedMomentId, prompt: entry.prompt.slice(0, 40) });
+                      break;
+                    }
+                    // 模糊匹配（前50字符）
+                    const shortEntryPrompt = entry.prompt.slice(0, 50);
+                    for (const [k, v] of STATE._pendingMomentImgs) {
+                      if (k.slice(0, 50) === shortEntryPrompt) {
+                        bestEntry = entry;
+                        matchedMomentId = v;
+                        STATE._pendingMomentImgs.delete(k);
+                        console.log('[Phone:moment:obs:diag] 兜底从 waitQueue.prompt 模糊反查 momentId', { matchedMomentId, prompt: entry.prompt.slice(0, 40) });
+                        break;
+                      }
+                    }
+                    if (matchedMomentId) break;
+                  }
+                  if (!matchedMomentId) {
+                    // 最后退路：取 waitQueue 最早加入的朋友圈条目
+                    const wqMomentEntry = wqMomentEntries[0];
+                    if (wqMomentEntry) {
+                      matchedMomentId = wqMomentEntry.pendingMsgId;
+                      // 同时从 _pendingMomentImgs 里清除对应条目（prompt→momentId 的映射）
+                      for (const [k, v] of STATE._pendingMomentImgs) {
+                        if (v === matchedMomentId) { STATE._pendingMomentImgs.delete(k); break; }
+                      }
+                      console.log('[Phone:moment:obs:diag] 兜底从 waitQueue 顺序取 momentId（无 prompt 反查）', { matchedMomentId });
+                    } else {
+                      // 降级：waitQueue 里没有朋友圈条目，取 _pendingMomentImgs 第一条（最后手段）
+                      const firstKey = STATE._pendingMomentImgs.keys().next().value;
+                      matchedMomentId = STATE._pendingMomentImgs.get(firstKey);
+                      STATE._pendingMomentImgs.delete(firstKey);
+                      console.log('[Phone:moment:obs:diag] 兜底取 _pendingMomentImgs 第一条（waitQueue 无朋友圈条目）', { firstKey: (firstKey||'').slice(0, 40), matchedMomentId });
+                    }
+                  }
+                }
+                if (matchedMomentId) {
+                  const moment = STATE.moments && STATE.moments.find(mo => mo.id === matchedMomentId);
+                  console.log('[Phone:moment:obs:diag] moment 查找结果', { matchedMomentId, found: !!moment, hasImg: !!moment?.img, imgVal: (moment?.img||'').slice(0,40) });
+                  if (moment && !moment.img) {
+                    moment.img = src;
+                    moment.pendingImg = null;
+                    moment.pendingImgType = null;
+                    // 成功回填后，同步清理 waitQueue 里该 moment 的残留条目，避免下一张图误消费
+                    if (window.rpImgWaitQueue && window.rpImgWaitQueue.length) {
+                      const wIdx = window.rpImgWaitQueue.findIndex(e => !e.threadId && e.pendingMsgId === matchedMomentId);
+                      if (wIdx >= 0) { window.rpImgWaitQueue.splice(wIdx, 1); console.log('[Phone:moment:obs:diag] 同步清理 waitQueue 条目', { matchedMomentId }); }
+                    }
+                    // 双保险：直接 DOM 手术精准替换图片区域（不依赖 currentView 判断）
+                    const $momentEl = $(`#rp-moments-list .rp-moment[data-mid="${matchedMomentId}"]`);
+                    if ($momentEl.length) {
+                      $momentEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
+                      console.log('[Phone:moment:obs] 直接 DOM 手术更新图片 ✅', { momentId: matchedMomentId });
+                    }
+                    if (STATE.currentView === 'moments') renderMoments();
+                    saveState();
+                    console.log('[Phone:moment:obs] 朋友圈配图回填（Observer）✅', { momentId: matchedMomentId, src: src.slice(0, 80) });
+                    continue; // 成功回填，跳过线程路由
+                  } else if (moment && moment.img) {
+                    console.log('[Phone:moment:obs] 朋友圈图已存在，跳过', { momentId: matchedMomentId });
+                    continue; // 图已存在，不再路由
+                  } else {
+                    // moment 不存在（兜底取错了 key），不 continue，降级走 waitQueue 路径
+                    console.log('[Phone:moment:obs] moment 不存在（兜底 key 不匹配），降级走 waitQueue', { matchedMomentId });
+                  }
+                }
+              }
+
+              if (window.rpImgWaitQueue && window.rpImgWaitQueue.length) {
+                // ── 模式A：队列有条目（智绘姬模式）── SeenSrcs 不干预此路径
+                const waitEntry = window.rpImgWaitQueue[0];
+                if (!waitEntry) continue;
+                if (now - waitEntry.addedAt < -2000) continue;
+                console.log('[Phone:obs:diag] 进入 waitQueue 线程路由', { threadId: waitEntry.threadId, pendingMsgId: waitEntry.pendingMsgId, src: src.slice(0,60) });
+
+                const { threadId: targetThread, pendingMsgId: targetPendingId } = waitEntry;
+
+                // ── 朋友圈生图：threadId 为 null，pendingMsgId 是 momentId ──
+                if (!targetThread) {
+                  // 优先通过 waitEntry.prompt 在 _pendingMomentImgs 里精确反查 momentId
+                  // 防止多 moment 并发时按顺序错配
+                  let resolvedMomentId = targetPendingId;
+                  if (waitEntry.prompt && STATE._pendingMomentImgs && STATE._pendingMomentImgs.size > 0) {
+                    if (STATE._pendingMomentImgs.has(waitEntry.prompt)) {
+                      resolvedMomentId = STATE._pendingMomentImgs.get(waitEntry.prompt);
+                      STATE._pendingMomentImgs.delete(waitEntry.prompt);
+                      console.log('[Phone:chatu8:moment] waitEntry.prompt 精确反查 momentId', { resolvedMomentId });
+                    } else {
+                      const shortP = waitEntry.prompt.slice(0, 50);
+                      for (const [k, v] of STATE._pendingMomentImgs) {
+                        if (k.slice(0, 50) === shortP) {
+                          resolvedMomentId = v;
+                          STATE._pendingMomentImgs.delete(k);
+                          console.log('[Phone:chatu8:moment] waitEntry.prompt 模糊反查 momentId', { resolvedMomentId });
+                          break;
+                        }
+                      }
+                    }
+                  }
+                  const moment = STATE.moments && STATE.moments.find(function(mo) { return mo.id === resolvedMomentId; });
+                  if (moment && !moment.img) {
+                    window.rpImgWaitQueue.shift();
+                    moment.img = src;
+                    moment.pendingImg = null;
+                    moment.pendingImgType = null;
+                    // 直接 DOM 手术精准替换图片区域
+                    const $momentEl = $(`#rp-moments-list .rp-moment[data-mid="${resolvedMomentId}"]`);
+                    if ($momentEl.length) {
+                      $momentEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
+                      console.log('[Phone:chatu8:moment] 直接 DOM 手术更新图片 ✅', { momentId: resolvedMomentId });
+                    }
+                    if (STATE.currentView === 'moments') renderMoments();
+                    saveState();
+                    console.log('[Phone:chatu8:moment] 朋友圈生图自动回填', { momentId: resolvedMomentId, src: src.slice(0, 80) });
+                  } else {
+                    window.rpImgWaitQueue.shift();
+                  }
+                  continue;
+                }
+
+                const th = STATE.threads && STATE.threads[targetThread];
+                if (!th) { console.warn('[Phone:obs:diag] 线程不存在，跳过', { targetThread }); window.rpImgWaitQueue.shift(); continue; }
+
+                const alreadyHas = th.messages.some(m => m.type === 'image' && m.src === src);
+                if (alreadyHas) { console.log('[Phone:obs:diag] 图已存在，跳过'); continue; }
+
+                window.rpImgWaitQueue.shift();
+                const pidx = th.messages.findIndex(m => m.id === targetPendingId);
+                console.log('[Phone:obs:diag] 替换 pending_image', { targetThread, targetPendingId, pidx, currentView: STATE.currentView, currentThread: STATE.currentThread });
+                const newImgMsg = { id: `chatu8_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: targetThread, type: 'image', time: ts, src };
+                if (pidx >= 0) {
+                  newImgMsg.time = th.messages[pidx].time || ts;
+                  th.messages.splice(pidx, 1, newImgMsg);
+                } else {
+                  th.messages.push(newImgMsg);
+                }
+                if (STATE.currentView !== 'thread' || STATE.currentThread !== targetThread) th.unread++;
+                refreshBadges(); updatePreviews();
+                if (STATE.currentView === 'thread' && STATE.currentThread === targetThread) renderBubbles(targetThread);
+                showBanner(th.name, '[图片]', ts);
+                saveState();
+                console.log('[Phone:chatu8] pending_image 已替换为真实图片', { threadId: targetThread, src: src.slice(0, 80) });
+
+              } else {
+                // ── 模式B：队列空（ComfyUI/自动生图模式）──
+                // 跨节点去重：同一 src 只处理一次（仅在模式B生效，不影响智绘姬模式A）
+                if (window.rpObserverSeenSrcs.has(src)) continue;
+                window.rpObserverSeenSrcs.add(src);
+                setTimeout(() => { window.rpObserverSeenSrcs && window.rpObserverSeenSrcs.delete(src); }, 3000);
+                // 优先通过 prompt 属性匹配 STATE._pendingComfyPics 定向路由（避免误抓主楼正文图）
+                const imgPrompt = (img.getAttribute('prompt') || img.getAttribute('data-prompt') || '').trim();
+                let targetThread = null;
+                let comfyTime = ts;
+                let comfyEntry = null;
+
+                if (imgPrompt && STATE._pendingComfyPics && STATE._pendingComfyPics.size > 0) {
+                  // 精确 prompt 匹配
+                  if (STATE._pendingComfyPics.has(imgPrompt)) {
+                    comfyEntry = STATE._pendingComfyPics.get(imgPrompt);
+                    targetThread = comfyEntry.threadId;
+                    comfyTime = comfyEntry.time || ts;
+                    STATE._pendingComfyPics.delete(imgPrompt);
+                  } else {
+                    // 模糊匹配（取前50字符）
+                    const shortPrompt = imgPrompt.slice(0, 50);
+                    for (const [k, v] of STATE._pendingComfyPics) {
+                      if (k.slice(0, 50) === shortPrompt) {
+                        comfyEntry = v;
+                        targetThread = v.threadId;
+                        comfyTime = v.time || ts;
+                        STATE._pendingComfyPics.delete(k);
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // ── ComfyUI 朋友圈路由：threadId === '__moment__' 时回填 moment.img ──
+                if (targetThread === '__moment__' && comfyEntry && comfyEntry.momentId) {
+                  const moment = STATE.moments && STATE.moments.find(mo => mo.id === comfyEntry.momentId);
+                  if (moment && !moment.img) {
+                    moment.img = src;
+                    moment.pendingImg = null;
+                    moment.pendingImgType = null;
+                    if (STATE.currentView === 'moments') renderMoments();
+                    saveState();
+                    console.log('[Phone:moment:comfy:obs] ComfyUI 朋友圈配图回填成功', { momentId: comfyEntry.momentId, src: src.slice(0, 80) });
+                  }
+                  continue; // 已被朋友圈消费，不走线程路由
+                }
+
+                // 如果 prompt 匹配失败：只有在有已知 pending 记录时才路由，否则跳过（避免主楼正文图）
+                if (!targetThread) {
+                  if (STATE._pendingComfyPics && STATE._pendingComfyPics.size > 0) {
+                    // 还有未消费的 pending，用当前线程兜底
+                    const firstEntry = STATE._pendingComfyPics.values().next().value;
+                    targetThread = (firstEntry && firstEntry.threadId) || STATE.currentThread;
+                    comfyTime = (firstEntry && firstEntry.time) || ts;
+                    // 消费第一个
+                    const firstKey = STATE._pendingComfyPics.keys().next().value;
+                    if (firstKey) STATE._pendingComfyPics.delete(firstKey);
+                  } else {
+                    // 没有任何 pending 记录，这是主楼正文图片，跳过
+                    console.log('[Phone:chatu8] 模式B：无 pending 记录，跳过主楼正文图', { src: src.slice(0, 60) });
+                    continue;
+                  }
+                }
+
+                const th = STATE.threads && STATE.threads[targetThread];
+                if (!th) continue;
+
+                const alreadyHas = th.messages.some(m => m.type === 'image' && m.src === src);
+                if (alreadyHas) continue;
+
+                const newImgMsg = { id: `comfy_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: targetThread, type: 'image', time: comfyTime, src };
+                th.messages.push(newImgMsg);
+                if (STATE.currentView !== 'thread' || STATE.currentThread !== targetThread) th.unread++;
+                refreshBadges(); updatePreviews();
+                if (STATE.currentView === 'thread' && STATE.currentThread === targetThread) renderBubbles(targetThread);
+                showBanner(th.name, '[图片]', comfyTime);
+                saveState();
+                console.log('[Phone:chatu8] ComfyUI 图片已定向路由', { threadId: targetThread, src: src.slice(0, 80) });
+              }
+            }
+          }
+        }
+      });
+      chatu8Observer.observe(chatContainer, { childList: true, subtree: true });
+      console.log('[Phone:chatu8] MutationObserver 已启动（显式等待队列模式）');
+    }
+  } catch(e) {
+    console.warn('[Phone:chatu8] MutationObserver 启动失败', e);
+  }
 
   // 终极兜底:事件没触发时,轮询最后一条 AI 消息指纹
   try {
@@ -4791,6 +6121,94 @@ async function init() {
     go('lock'); // 刷新/重启 → 锁屏
   }
   console.log('[Raymond Phone] ✅ loaded');
+  // 首次加载也清除外圈（覆盖所有主题）
+  requestAnimationFrame(() => rpStripFrameRing());
+
+  // ── 主屏幕双页横滑 ──────────────────────────────────────────
+  (function initHomeSwipe() {
+    var pages   = document.getElementById('rp-home-pages');
+    var dots    = document.querySelectorAll('.rp-home-dot');
+    var curPage = 0;
+    var totalPages = 2;
+
+    function gotoPage(idx, animate) {
+      if (idx < 0 || idx >= totalPages) return;
+      curPage = idx;
+      pages.style.transition = animate === false
+        ? 'none'
+        : 'transform .32s cubic-bezier(.4,0,.2,1)';
+      pages.style.transform = 'translateX(' + (-idx * 50) + '%)';
+      dots.forEach(function(d, i) {
+        d.classList.toggle('rp-home-dot-active', i === idx);
+      });
+    }
+
+    // 点击圆点切换页面
+    dots.forEach(function(dot, i) {
+      dot.style.pointerEvents = 'auto';
+      dot.style.cursor = 'pointer';
+      dot.addEventListener('click', function() { gotoPage(i, true); });
+    });
+
+    // 触摸/鼠标拖拽
+    var _sx = 0, _sy = 0, _dragging = false, _dx = 0;
+    var THRESHOLD = 40;
+
+    function onStart(clientX, clientY) {
+      _sx = clientX; _sy = clientY; _dragging = true; _dx = 0;
+      pages.style.transition = 'none';
+    }
+    function onMove(clientX, clientY) {
+      if (!_dragging) return;
+      _dx = clientX - _sx;
+      var dy = clientY - _sy;
+      if (Math.abs(dy) > Math.abs(_dx) + 10) { _dragging = false; return; }
+      var base = -curPage * 50;
+      var pct  = _dx / pages.parentElement.offsetWidth * 100;
+      var pctClamped = Math.max(-50 * (totalPages - 1) - 8, Math.min(8, base + pct));
+      pages.style.transform = 'translateX(' + pctClamped + '%)';
+    }
+    function onEnd() {
+      if (!_dragging) return;
+      _dragging = false;
+      if (_dx < -THRESHOLD && curPage < totalPages - 1) gotoPage(curPage + 1, true);
+      else if (_dx > THRESHOLD && curPage > 0)          gotoPage(curPage - 1, true);
+      else                                               gotoPage(curPage, true);
+    }
+
+    // Touch
+    pages.addEventListener('touchstart', function(e) {
+      // 不拦截 app 点击
+      if (e.target.closest('.rp-app, button, input, select')) return;
+      var t = e.touches[0];
+      onStart(t.clientX, t.clientY);
+    }, { passive: true });
+    pages.addEventListener('touchmove', function(e) {
+      if (!_dragging) return;
+      var t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, { passive: true });
+    pages.addEventListener('touchend', onEnd, { passive: true });
+
+    // Mouse (PC端)
+    pages.addEventListener('mousedown', function(e) {
+      if (e.target.closest('.rp-app, button, input, select')) return;
+      onStart(e.clientX, e.clientY);
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!_dragging) return;
+      onMove(e.clientX, e.clientY);
+    });
+    document.addEventListener('mouseup', function(e) {
+      if (_dragging) onEnd();
+    });
+
+    // 切换到 home 页时重置到第0屏
+    var _origGo = window.go;
+    // 监听 go('home') 时重置页码
+    var _goOrig = go;
+    window._rpHomeSwipeGoto = gotoPage;
+  })();
 
   // 延迟:等 ctx 稳定后添加当前 char 联系人 + 清理 DOM
   setTimeout(function() {
@@ -4801,6 +6219,8 @@ async function init() {
       hideOocInUserBubbles();
     } catch(e) {}
   }, 800);
+
+
 }
 
 // ================================================================
@@ -4822,6 +6242,7 @@ function onChatChanged() {
       moments: JSON.parse(JSON.stringify(STATE.moments || [])),
       diary:   JSON.parse(JSON.stringify(STATE.diary   || [])),
       avatars: Object.assign({}, STATE.avatars || {}),
+      bankData: STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
     };
     saveState();
   }
@@ -4840,6 +6261,7 @@ function onChatChanged() {
     STATE.diary   = JSON.parse(JSON.stringify(s.diary   || []));
     STATE.avatars = Object.assign({}, s.avatars || {});
     STATE.currentThread = s.currentThread;
+    STATE.bankData = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
   } else {
     const persisted = loadState(newChatId);
     if (persisted) {
@@ -4847,8 +6269,9 @@ function onChatChanged() {
       STATE.notifications = persisted.notifications || [];
       STATE.sync = persisted.sync || { stage: 1, progress: 0, status: '乖巧' };
       STATE.moments = persisted.moments || [];
-  STATE.diary = persisted.diary || [];
+      STATE.diary = persisted.diary || [];
       STATE.avatars = persisted.avatars || {};
+      STATE.bankData = persisted.bankData || null;
       STATE.currentThread = null;
     } else {
       STATE.threads = DEFAULT_THREADS();
@@ -4857,12 +6280,21 @@ function onChatChanged() {
       STATE.moments = [];
       STATE.diary   = [];
       STATE.avatars = {};
+      STATE.bankData = null;
       STATE.currentThread = null;
     }
   }
   mergeGlobalAvatars();
 
   // 重置 UI(加载新状态后立即同步清理无效联系人)
+  // 切换对话时重置运行时缓存，防止跨对话污染
+  STATE._lastAiFingerprint = null;
+  STATE._imgExtractedFps = new Set();
+  STATE._pendingComfyPics = new Map();
+  STATE._friendsInteractDone = new Set();
+  STATE._charRespondDone = new Set();
+  if (window.rpObserverSeenSrcs) window.rpObserverSeenSrcs.clear();
+  if (window.rpImgWaitQueue) window.rpImgWaitQueue = [];
   cleanInvalidContacts();
   go('lock');
   renderThreadList();
@@ -4883,6 +6315,10 @@ function onChatChanged() {
       hidePhoneTagsInChat();
       hideOocInUserBubbles();
       rebuildContactsFromHistory(_expectedChatId);
+      // 历史消息折叠重建：确保刷新/切换对话后所有含 PHONE 的历史消息也显示折叠块
+      setTimeout(function() {
+        try { rewriteAllHistoryPhoneBlocks(); } catch(e) {}
+      }, 300);
     } catch(e) { console.warn('[Phone] onChatChanged delayed error', e); }
   }, 600);
 }
@@ -4912,11 +6348,27 @@ function bindUI() {
     const btn = $(this);
     const msgIdx = parseInt(btn.data('msgidx'), 10);
     const threadId = btn.data('threadid');
-    const bbl = btn.siblings('.rp-bubble.rp-recv')[0];
+    // 找到气泡：按钮现在在 .rp-btn-row 里，需向上找 .rp-bwrap 再找气泡
+    const bbl = btn.closest('.rp-bwrap').find('.rp-bubble')[0];
     if (!bbl || !threadId || isNaN(msgIdx)) return;
     const th = STATE.threads[threadId];
     if (!th || !th.messages[msgIdx]) return;
     rpInlineEdit(bbl, threadId, th.messages[msgIdx], msgIdx);
+  });
+
+  // 垃圾桶删除按钮:事件委托
+  $(document).on('click touchend', '#rp-bubbles .rp-del-btn', function(e) {
+    e.stopPropagation(); e.preventDefault();
+    const btn = $(this);
+    const msgIdx = parseInt(btn.data('msgidx'), 10);
+    const threadId = btn.data('threadid');
+    if (!threadId || isNaN(msgIdx)) return;
+    const th = STATE.threads[threadId];
+    if (!th || !th.messages[msgIdx]) return;
+    th.messages.splice(msgIdx, 1);
+    saveState();
+    updatePreviews();
+    renderBubbles(threadId);
   });
 
   // 来电:接听 / 拒绝(事件委托)
@@ -4932,6 +6384,8 @@ function bindUI() {
       phone.hide();
       return;
     }
+    // 记录打开时间戳,防止 document click 在同一事件循环内把手机关掉（部分 Android 合成 click 问题）
+    STATE._phoneOpenedAt = Date.now();
     // 防御性同步:若 CHAT_CHANGED 未触发(用户直接切换了对话),此处补偿
     syncToCurrentChat();
     // 从聊天历史重建联系人(服务端数据,PC/手机共享同一份聊天记录)
@@ -4979,6 +6433,10 @@ function bindUI() {
   $(document).on('click', (e) => {
     const phone = $('#rp-phone');
     if (!phone.is(':visible')) return;
+    // 防止 FAB 打开手机后同一帧/合成 click 立即关闭（部分 Android 问题）
+    if (STATE._phoneOpenedAt && Date.now() - STATE._phoneOpenedAt < 300) return;
+    // 防止 pending_image 触发主楼生图按钮时，合成 click 误关手机
+    if (STATE._suppressClose && Date.now() - STATE._suppressClose < 500) return;
     // 若有任何模态/浮层打开,跳过关闭判断(防止 grp-cancel/confirm 误触)
     if ($('#rp-add-choice, #rp-grp-create, #rp-del-picker, #rp-add-modal:visible, #rp-compose-modal:visible').length) return;
     // 若 e.target 已被从 DOM 移除(事件传播期间被删),跳过
@@ -5064,6 +6522,9 @@ function bindUI() {
     } else if (app === 'g2048') {
       go('g2048');
       try { if (!LG2048 || !LG2048.active) g2048Init(); } catch(ex) { console.warn('[Folder]', ex); }
+    } else if (app === 'ggold') {
+      go('ggold');
+      try { ggoldOpen(); } catch(ex) { console.warn('[Folder/ggold]', ex); }
     }
   });
   // ── Ludo game ────────────────────────────────────────────────
@@ -5093,7 +6554,11 @@ function bindUI() {
     renderXHSFeed(true);
   });
 
-  // 小红书 - 点击卡片进详情
+  // 银行卡 - 刷新按钮
+  $(document).on('click', '#rp-bank-refresh', function() {
+    generateBankData(true);
+  });
+
   $(document).on('click', '.rp-xhs-card', function() {
     const postId = $(this).data('xhsid');
     if (postId) openXHSDetail(postId);
@@ -5687,6 +7152,54 @@ function bindUI() {
     toggleLike($(this).data('moment'));
   });
 
+  // Moments: 朋友圈"点击生图"按钮 —— 复用 rpTriggerPendingImg 触发智绘姬
+  $(document).on('click', '.rp-moment-pending-img', function(e) {
+    e.stopPropagation();
+    const momentId = $(this).data('mid');
+    const prompt = $(this).data('prompt') || '';
+    const self = this;
+    console.log('[Phone:moment:click:diag] 点击生图按钮', { momentId, prompt: prompt.slice(0, 60), promptLen: prompt.length });
+
+    // ── 优先：检查主楼是否已有对应图片，有则直接回填，无需重新生图 ──
+    const moment = STATE.moments && STATE.moments.find(function(m) { return m.id === momentId; });
+    if (moment) {
+      // 找包含该 prompt 的智绘姬按钮（含隐藏保留区），看它内部是否已有 img（已生成完毕）
+      let alreadySrc = null;
+      if (prompt) {
+        const allBtns = document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button');
+        for (const btn of allBtns) {
+          const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
+          if (btnPrompt && (btnPrompt.includes(prompt.slice(0, 30)) || prompt.includes(btnPrompt.slice(0, 30)))) {
+            const imgEl = btn.querySelector('img');
+            if (imgEl && imgEl.src && imgEl.src.length > 10) {
+              alreadySrc = imgEl.src;
+            }
+            break;
+          }
+        }
+      }
+      if (alreadySrc) {
+        moment.img = alreadySrc;
+        moment.pendingImg = null;
+        moment.pendingImgType = null;
+        renderMoments();
+        saveState();
+        console.log('[Phone:moment:direct] 主楼图片已存在，直接回填朋友圈', { momentId, src: alreadySrc.slice(0, 80) });
+        return;
+      }
+    }
+
+    // ── 图片尚未生成：走原有触发流程 ──
+    // Observer 回填时通过 _pendingMomentImgs 路由到 moment，不依赖 msgId
+    if (!STATE._pendingMomentImgs) STATE._pendingMomentImgs = new Map();
+    if (prompt) STATE._pendingMomentImgs.set(prompt, momentId);
+    // 复用 SMS 的触发函数：找主楼对应按钮并 click
+    rpTriggerPendingImg(null, momentId, prompt, self);
+    // 更新按钮外观为"生成中…"
+    $(self).html('<span style="font-size:16px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>')
+           .css({ cursor: 'default', pointerEvents: 'none' });
+  });
+
   // Moments: comment toggle
   $(document).on('click', '.rp-comment-toggle', function(e) {
     e.stopPropagation();
@@ -5696,6 +7209,15 @@ function bindUI() {
     if (row.is(':visible')) {
       row.find('.rp-moment-cinput').removeData('reply-to').attr('placeholder','发表评论...').focus();
     }
+  });
+
+  // Moments: delete moment
+  $(document).on('click', '.rp-moment-del-btn', function(e) {
+    e.stopPropagation();
+    const momentId = $(this).data('moment');
+    STATE.moments = (STATE.moments || []).filter(function(m) { return m.id !== momentId; });
+    renderMoments();
+    saveState();
   });
 
   // Moments: reply
@@ -5770,13 +7292,52 @@ function bindUI() {
   $(document).on('click', '#rp-del-confirm', function(e) {
     e.stopPropagation();
     const toDelete = [];
+    const toDeleteNames = [];
     $('#rp-del-list .rp-del-pick-item.rp-del-selected').each(function() {
-      toDelete.push($(this).data('tid'));
+      const tid = $(this).data('tid');
+      toDelete.push(tid);
+      // 收集好友名称（用于朋友圈清理）
+      if (STATE.threads[tid]) toDeleteNames.push(STATE.threads[tid].name);
     });
     toDelete.forEach(function(tid) { delete STATE.threads[tid]; });
     if (STATE.currentThread && toDelete.includes(STATE.currentThread)) STATE.currentThread = null;
+
+    // ── 清理朋友圈中与被删好友相关的所有内容 ──
+    if (toDeleteNames.length > 0 && STATE.moments) {
+      STATE.moments = STATE.moments.filter(function(m) {
+        // 移除该好友发的朋友圈
+        if (m.from !== 'user' && toDeleteNames.includes(m.name)) return false;
+        return true;
+      }).map(function(m) {
+        // 移除该好友在别人朋友圈下的点赞
+        if (m.likes) {
+          m.likes = m.likes.filter(function(l) { return !toDeleteNames.includes(l); });
+        }
+        // 移除该好友在别人朋友圈下的评论，并重建 replyTo 索引
+        if (m.comments) {
+          // 建立旧索引 → 新索引的映射
+          const oldToNew = {};
+          let newIdx = 0;
+          m.comments.forEach(function(c, i) {
+            if (!toDeleteNames.includes(c.name)) {
+              oldToNew[i] = newIdx++;
+            }
+          });
+          m.comments = m.comments.filter(function(c) { return !toDeleteNames.includes(c.name); });
+          // 重建 replyTo：旧索引 → 新索引，找不到则置 null
+          m.comments.forEach(function(c) {
+            if (c.replyTo !== null && c.replyTo !== undefined) {
+              c.replyTo = (oldToNew[c.replyTo] !== undefined) ? oldToNew[c.replyTo] : null;
+            }
+          });
+        }
+        return m;
+      });
+    }
+
     $('#rp-del-picker').remove();
     renderThreadList();
+    if (STATE.currentView === 'moments') renderMoments();
     saveState();
   });
   $(document).on('click', '#rp-del-cancel', function(e) {
@@ -5929,6 +7490,7 @@ function go(view) {
   if (view === 'darkmode') { toggleDarkMode(); return; }
   if (view === 'ludo') { try { if (!LG.active) lgInit(); else lgRender(); } catch(e) { console.warn('[Ludo]', e); } view = 'game'; }
   if (view === 'g2048') { try { if (!LG2048.active) g2048Init(); } catch(e) { console.warn('[2048]', e); } }
+  if (view === 'ggold') { try { ggoldOpen(); } catch(e) { console.warn('[ggold]', e); } }
   if (view === 'api-settings') { lgFillAPIView(); }
   if (view === 'themes') { lgRenderThemePicker(); }
   $('.rp-view').hide();
@@ -5941,6 +7503,8 @@ function go(view) {
   }
   $('#rp-home-ind').toggle(view !== 'lock');
   STATE.currentView = view;
+  // 切换到 home 时重置到第0屏
+  if (view === 'home' && window._rpHomeSwipeGoto) { window._rpHomeSwipeGoto(0, false); }
 
   if (view === 'settings') { _bindAvatarUpload(); }
 
@@ -5954,6 +7518,9 @@ function go(view) {
   if (view === 'xhs') {
     mergeGlobalAvatars();
     renderXHSFeed(false);
+  }
+  if (view === 'bank') {
+    renderBankView();
   }
   if (view === 'xhs-detail') {
     // xhsCurrentPost 已在 openXHSDetail 中设置,这里只确保输入框重置
@@ -6018,6 +7585,9 @@ function renderBubbles(threadId) {
   const thread = STATE.threads[threadId];
   if (!thread) return;
 
+  // DEL_SVG 提前定义，供 pending_image / image 等早期气泡使用
+  const DEL_SVG_EARLY = `<svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><path d="M3 3.5L3.7 11.5C3.75 12.05 4.2 12.5 4.75 12.5H9.25C9.8 12.5 10.25 12.05 10.3 11.5L11 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 3.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5.5 3.5V2.5C5.5 2.22 5.72 2 6 2H8C8.28 2 8.5 2.22 8.5 2.5V3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="7" y1="6" x2="7" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="5.5" y1="6.2" x2="5.8" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8.5" y1="6.2" x2="8.2" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
+
   thread.messages.forEach((msg, msgIdx) => {
     // ── 通话记录 ──
     if (msg.type === 'call_rec') {
@@ -6068,23 +7638,85 @@ function renderBubbles(threadId) {
         </div>
         <div class="rp-bts">${msg.time}</div>
       `);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      wrap.append(delBtn);
       area.append(wrap); return;
     }
-    // ── 群聊消息 ──
+    // ── 群聊消息 (NPC/char 发送，带编辑/删除按钮) ──
     if (msg.type === 'group_msg') {
       const customImg = STATE.avatars && STATE.avatars[msg.name];
-      const avHtml = customImg
-        ? `<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`
-        : `<div class="rp-grp-av" style="background:${msg.avatarBg}">${msg.initials}</div>`;
-      const wrap = $(`<div class="rp-bwrap rp-in rp-grp"></div>`);
-      wrap.html(`
-        ${avHtml}
-        <div>
-          <div class="rp-grp-sender">${escHtml(msg.name)}</div>
-          <div class="rp-bubble rp-recv">${escHtml(msg.text)}</div>
-          <div class="rp-bts">${msg.time}</div>
+      const avEl = customImg
+        ? $(`<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`)
+        : $(`<div class="rp-grp-av" style="background:${msg.avatarBg}">${msg.initials}</div>`);
+      const wrap = $('<div class="rp-bwrap rp-in rp-grp"></div>');
+      const inner = $('<div>');
+      inner.append($('<div>').addClass('rp-grp-sender').text(msg.name));
+      inner.append($('<div>').addClass('rp-bubble rp-recv').text(msg.text));
+      // 横排按钮组（编辑 + 删除）
+      const DEL_SVG_GM = `<svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><path d="M3 3.5L3.7 11.5C3.75 12.05 4.2 12.5 4.75 12.5H9.25C9.8 12.5 10.25 12.05 10.3 11.5L11 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 3.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5.5 3.5V2.5C5.5 2.22 5.72 2 6 2H8C8.28 2 8.5 2.22 8.5 2.5V3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="7" y1="6" x2="7" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="5.5" y1="6.2" x2="5.8" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8.5" y1="6.2" x2="8.2" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
+      const editBtnGM = $(`<button class="rp-edit-btn" title="编辑" data-msgidx="${msgIdx}" data-threadid="${threadId}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>`);
+      const delBtnGM = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_GM}</button>`);
+      const btnRowGM = $('<div>').addClass('rp-btn-row');
+      btnRowGM.append(editBtnGM, delBtnGM);
+      inner.append(btnRowGM);
+      inner.append($('<div>').addClass('rp-bts').text(msg.time));
+      wrap.append(avEl, inner);
+      area.append(wrap); return;
+    }
+    // ── 群聊语音消息 (group_voice) ──
+    if (msg.type === 'group_voice') {
+      const customImg = STATE.avatars && STATE.avatars[msg.name];
+      const avEl = customImg
+        ? $(`<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`)
+        : $(`<div class="rp-grp-av" style="background:${msg.avatarBg}">${msg.initials}</div>`);
+      const wrap = $('<div class="rp-bwrap rp-in rp-grp"></div>');
+      const inner = $('<div>');
+      inner.append($('<div>').addClass('rp-grp-sender').text(msg.name));
+      const heights = [35,70,55,90,45,65,30];
+      const bars = heights.map(h => `<div class="rp-wb" style="height:${h}%"></div>`).join('');
+      // 群聊语音默认已"播放"（直接展示文字，不需要点击）
+      inner.append($(`
+        <div class="rp-voice-wrap">
+          <div class="rp-voice-bbl played">
+            <div class="rp-voice-play">✓</div>
+            <div class="rp-wave">${bars}</div>
+            <div class="rp-voice-dur">${escHtml(msg.duration)}</div>
+          </div>
+          <div class="rp-voice-txt" style="display:block">${escHtml(msg.voiceText)}</div>
         </div>
-      `);
+      `));
+      inner.append($('<div>').addClass('rp-bts').text(msg.time));
+      wrap.append(avEl, inner);
+      area.append(wrap); return;
+    }
+    // ── 群聊红包 (group_hongbao) ──
+    if (msg.type === 'group_hongbao') {
+      const customImg = STATE.avatars && STATE.avatars[msg.name];
+      const avEl = customImg
+        ? $(`<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`)
+        : $(`<div class="rp-grp-av" style="background:${msg.avatarBg}">${msg.initials}</div>`);
+      const wrap = $('<div class="rp-bwrap rp-in rp-grp"></div>');
+      const inner = $('<div>');
+      inner.append($('<div>').addClass('rp-grp-sender').text(msg.name));
+      const openedHtml = msg.opened ? `<div class="rp-hb-amount"><small>¥</small>${escHtml(msg.amount)}</div>` : '';
+      inner.append($(`
+        <div class="rp-hongbao ${msg.opened?'opened':''}">
+          <div class="rp-hb-top">
+            <div class="rp-hb-ico">🧧</div>
+            <div class="rp-hb-info">
+              <div class="rp-hb-from">${escHtml(msg.name)}</div>
+              <div class="rp-hb-note">${escHtml(msg.note||'恭喜发财')}</div>
+            </div>
+          </div>
+          <div class="rp-hb-bot">
+            <div class="rp-hb-action">${msg.opened?'已领取':'点击领取'}</div>
+            ${openedHtml}
+            <div class="rp-hb-tag">群红包</div>
+          </div>
+        </div>
+      `));
+      inner.append($('<div>').addClass('rp-bts').text(msg.time));
+      wrap.append(avEl, inner);
       area.append(wrap); return;
     }
     // ── user 发的红包 ──
@@ -6109,14 +7741,39 @@ function renderBubbles(threadId) {
       `);
       area.append(wrap); return;
     }
+    // ── 图片生成占位（pending_image）──
+    if (msg.type === 'pending_image') {
+      const wrap = $(`<div class="rp-bwrap rp-in" data-pending-id="${escHtml(msg.id||'')}"></div>`);
+      // 用 data 属性存参数，避免 prompt 含特殊字符导致 inline onclick JS 语法错误
+      const pendingBtn = $(`
+        <div class="rp-img-bbl rp-pending-img" style="min-width:90px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:12px 18px;gap:7px;" title="点击触发生图">
+          <span style="font-size:17px;">📷</span>
+          <span class="rp-pending-label" style="font-size:12px;opacity:0.75;">点击生图</span>
+        </div>
+      `);
+      pendingBtn.data('threadid', threadId);
+      pendingBtn.data('msgid', msg.id || '');
+      pendingBtn.data('prompt', msg.prompt || '');
+      pendingBtn.on('click', function(e) {
+        e.stopPropagation();
+        rpTriggerPendingImg($(this).data('threadid'), $(this).data('msgid'), $(this).data('prompt'), this);
+      });
+      const timeEl = $(`<div class="rp-bts">${msg.time}</div>`);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      wrap.append(pendingBtn, timeEl, delBtn);
+      area.append(wrap); return;
+    }
     // ── 图片 ──
     if (msg.type === 'image') {
       const isUser = msg.from === 'user';
       const wrap = $(`<div class="rp-bwrap ${isUser?'rp-out':'rp-in'}"></div>`);
-      wrap.html(`
-        <div class="rp-img-bbl"><img src="${msg.src}" alt="图片"/></div>
-        <div class="rp-bts">${msg.time}</div>
-      `);
+      const imgEl = $(`<div class="rp-img-bbl"><img src="${msg.src}" alt="图片"/></div>`);
+      imgEl.find('img').on('load', function() {
+        const a = this.closest('#rp-bubbles'); if (a) a.scrollTop = a.scrollHeight;
+      });
+      const timeEl = $(`<div class="rp-bts">${msg.time}</div>`);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      wrap.append(imgEl, timeEl, delBtn);
       area.append(wrap); return;
     }
     // ── 位置 ──
@@ -6149,29 +7806,6 @@ function renderBubbles(threadId) {
             <div class="rp-hb-amount"><small>¥</small>${escHtml(msg.amount)}</div>
             <div class="rp-hb-tag">微信红包</div>
           </div>
-        </div>
-        <div class="rp-bts">${msg.time}</div>
-      `);
-      area.append(wrap); return;
-    }
-    // ── 图片 ──
-    if (msg.type === 'image') {
-      const _iu = msg.from === 'user';
-      const wrap = $(`<div class="rp-bwrap ${_iu?'rp-out':'rp-in'}"></div>`);
-      wrap.html(`
-        <div class="rp-img-bbl"><img src="${msg.src}" alt="图片"/></div>
-        <div class="rp-bts">${msg.time}</div>
-      `);
-      area.append(wrap); return;
-    }
-    // ── 位置 ──
-    if (msg.type === 'location') {
-      const _lu = msg.from === 'user';
-      const wrap = $(`<div class="rp-bwrap ${_lu?'rp-out':'rp-in'}"></div>`);
-      wrap.html(`
-        <div class="rp-loc-card">
-          <div class="rp-loc-ico">📍</div>
-          <div class="rp-loc-txt">${escHtml(msg.place)}</div>
         </div>
         <div class="rp-bts">${msg.time}</div>
       `);
@@ -6181,6 +7815,14 @@ function renderBubbles(threadId) {
     const isUser = msg.from === 'user';
     const isGrpThread = thread.type === 'group' || (threadId && threadId.startsWith('grp_'));
     const wrap = $('<div>').addClass('rp-bwrap ' + (isUser ? 'rp-out' : 'rp-in') + (isGrpThread ? ' rp-grp' : ''));
+
+    // 通用删除按钮 SVG
+    const DEL_SVG = `<svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><path d="M3 3.5L3.7 11.5C3.75 12.05 4.2 12.5 4.75 12.5H9.25C9.8 12.5 10.25 12.05 10.3 11.5L11 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 3.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5.5 3.5V2.5C5.5 2.22 5.72 2 6 2H8C8.28 2 8.5 2.22 8.5 2.5V3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="7" y1="6" x2="7" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="5.5" y1="6.2" x2="5.8" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8.5" y1="6.2" x2="8.2" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
+
+    // 通用编辑/删除按钮 SVG（铅笔）
+    const EDIT_SVG_BTN = (idx, tid) => $(`<button class="rp-edit-btn" title="编辑" data-msgidx="${idx}" data-threadid="${tid}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>`);
+    const DEL_BTN = (idx, tid) => $(`<button class="rp-del-btn" title="删除" data-msgidx="${idx}" data-threadid="${tid}">${DEL_SVG}</button>`);
+
     if (isGrpThread && isUser) {
       const uImg = getAvatar('user');
       const uAvHtml = uImg
@@ -6188,23 +7830,110 @@ function renderBubbles(threadId) {
         : `<div class="rp-grp-av" style="background:linear-gradient(145deg,#64748b,#475569)">我</div>`;
       const inner = $('<div>');
       inner.append($('<div>').addClass('rp-bubble rp-sent').text(msg.text));
+      // 横排按钮组
+      const btnRow = $('<div>').addClass('rp-btn-row');
+      btnRow.append(EDIT_SVG_BTN(msgIdx, threadId), DEL_BTN(msgIdx, threadId));
+      inner.append(btnRow);
       inner.append($('<div>').addClass('rp-bts').text(msg.time));
       // 头像放前面，内容放后面；配合 row-reverse CSS 头像会显示在右侧
       wrap.append($(uAvHtml), inner);
+    } else if (isGrpThread && !isUser) {
+      // 群聊中 NPC/char 消息：同样支持编辑和删除
+      const charImg = STATE.avatars && STATE.avatars[msg.name] ? STATE.avatars[msg.name] : null;
+      const charAvHtml = charImg
+        ? `<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${charImg}" alt=""/></div>`
+        : `<div class="rp-grp-av" style="background:${msg.avatarBg || '#7c3aed'}">${msg.initials || (msg.name ? msg.name[0] : 'C')}</div>`;
+      const inner = $('<div>');
+      inner.append($('<div>').addClass('rp-grp-sender').text(msg.name || ''));
+      inner.append($('<div>').addClass('rp-bubble rp-recv').text(msg.text));
+      // 横排按钮组
+      const btnRow = $('<div>').addClass('rp-btn-row');
+      btnRow.append(EDIT_SVG_BTN(msgIdx, threadId), DEL_BTN(msgIdx, threadId));
+      inner.append(btnRow);
+      inner.append($('<div>').addClass('rp-bts').text(msg.time));
+      wrap.append($(charAvHtml), inner);
     } else {
-      const bbl = $('<div>').addClass('rp-bubble ' + (isUser ? 'rp-sent' : 'rp-recv')).text(msg.text);
+      // 渲染时清除生图触发词（image###...###、<pic> 等），避免显示为乱文
+      const displayText = (msg.text || '')
+        .replace(/image###[\s\S]*?###/gi, '')
+        .replace(/<pic\b[^>]*>[\s\S]*?<\/pic>/gi, '')
+        .replace(/<pic\b[\s\S]*?\/>/gi, '')
+        .replace(/<img\b(?![^>]*\bsrc=)[^>]*>/gi, '')
+        .trim();
+      const bbl = $('<div>').addClass('rp-bubble ' + (isUser ? 'rp-sent' : 'rp-recv')).text(displayText);
       const ts  = $('<div>').addClass('rp-bts').text(msg.time);
-      if (!isUser) {
-        const editBtn = $(`<button class="rp-edit-btn" title="编辑" data-msgidx="${msgIdx}" data-threadid="${threadId}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/><circle cx="5.5" cy="5.5" r="0" fill="none"/></svg></button>`);
-        wrap.append(bbl, editBtn, ts);
-      } else {
-        wrap.append(bbl, ts);
-      }
+      // 横排按钮组
+      const btnRow = $('<div>').addClass('rp-btn-row');
+      btnRow.append(EDIT_SVG_BTN(msgIdx, threadId), DEL_BTN(msgIdx, threadId));
+      wrap.append(bbl, btnRow, ts);
     }
     area.append(wrap);
   });
 
+  // 先同步滚一次，再 setTimeout 等 DOM & 图片布局稳定后再滚一次
   area.scrollTop(area[0].scrollHeight);
+  setTimeout(function() {
+    var el = area[0];
+    if (el) el.scrollTop = el.scrollHeight;
+  }, 80);
+}
+
+// ================================================================
+//  PENDING IMAGE TRIGGER（点击"📷 点击生图"触发智绘姬）
+// ================================================================
+function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
+  // triggerEl: 被点击的 .rp-pending-img DOM 元素（由 jQuery .on('click') 传入）
+  try {
+  // 1) 在主楼聊天里找包含这个 prompt 的智绘姬按钮，点击它触发生图
+  //    智绘姬按钮是 <button class="image-tag-button st-chatu8-image-button" data-link="prompt">
+  let triggered = false;
+  const btns = document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button');
+  for (const btn of btns) {
+    const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
+    if (btnPrompt && prompt && (
+      btnPrompt.includes(prompt.slice(0, 30)) ||
+      prompt.includes(btnPrompt.slice(0, 30))
+    )) {
+      STATE._suppressClose = Date.now();
+      btn.click();
+      triggered = true;
+      console.log('[Phone:pendingImg] 已触发智绘姬按钮点击', { prompt: prompt.slice(0, 50) });
+      break;
+    }
+  }
+
+  if (!triggered) {
+    // 2) 没找到对应按钮：点最后一条 AI 消息里的第一个未生成的智绘姬按钮
+    const allBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button'));
+    const pending = allBtns.filter(b => b.getAttribute('data-loading') !== 'false' && !b.querySelector('img'));
+    if (pending.length > 0) {
+      STATE._suppressClose = Date.now();
+      pending[0].click();
+      triggered = true;
+      console.log('[Phone:pendingImg] 兜底：点击第一个未完成的智绘姬按钮');
+    }
+  }
+
+  if (!triggered) {
+    console.warn('[Phone:pendingImg] 未找到可触发的智绘姬按钮，prompt=', prompt);
+    if (triggerEl) triggerEl.innerHTML = '<span style="font-size:12px;opacity:0.6;">⚠️ 请在主楼手动点击生图按钮</span>';
+    return;
+  }
+
+  // 3) 触发成功：把这个请求加入等待队列，MutationObserver 收到图片后来消费
+  window.rpImgWaitQueue = window.rpImgWaitQueue || [];
+  window.rpImgWaitQueue.push({ threadId, pendingMsgId: msgId, prompt, addedAt: Date.now() });
+  console.log('[Phone:pendingImg] 已加入等待队列', { threadId, msgId, queueLen: window.rpImgWaitQueue.length });
+
+  // 更新气泡显示为"生成中..."
+  if (triggerEl) {
+    triggerEl.innerHTML = '<span style="font-size:17px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>';
+    triggerEl.style.cursor = 'default';
+    triggerEl.style.pointerEvents = 'none';
+  }
+  } catch(err) {
+    console.error('[Phone:pendingImg] 触发生图时出错', err);
+  }
 }
 
 // ================================================================
@@ -6256,33 +7985,49 @@ function sendSMS() {
   const mainCharName = ctx?.name2 || '';
   const isGroupThread = th.type === 'group' || th.id.startsWith('grp_');
 
+  // 收集当前对话中存在的 NPC 名称(排除主角和 user、排除群组),用于朋友圈提示
+  const allContactNames = Object.values(STATE.threads || {})
+    .filter(t => t.type !== 'group' && t.id !== 'user')
+    .map(t => t.name)
+    .filter(Boolean);
+  // 随机选最多2个角色发朋友圈(每次发SMS都可能触发,概率50%)
+  const shouldTriggerMoment = Math.random() < 0.5;
+  const momentNPCs = allContactNames
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 2);
+
   let oocText;
 
   if (isGroupThread) {
-    // ── 群聊线程:要求 AI 用 GMSG 格式回复 ──
     const groupName = th.name;
     const memberNames = (th.members || [])
       .map(id => STATE.threads[id]?.name || id)
       .filter(Boolean);
-    const memberDesc = memberNames.length ? `群成员包括:${memberNames.join('、')}。` : '';
-    // 强约束:手机内容仅允许在 <PHONE> 块中输出,禁止正文污染
-    oocText = `[手机群聊提示:{{user}}在群聊「${groupName}」发了消息,当前时间${ts}。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<GMSG FROM="角色名" GROUP="${groupName}" TIME="${ts}">内容</GMSG>。]`;
+    const momentHint = (shouldTriggerMoment && momentNPCs.length > 0)
+      ? `同时,在PHONE块里为角色「${momentNPCs.join('、')}」各追加1条朋友圈动态,格式:<MOMENTS FROM="角色名" TIME="${ts}">内容</MOMENTS>;`
+      : '';
+    oocText = `[手机群聊提示:{{user}}在群聊「${groupName}」发了消息,当前时间${ts}。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<GMSG FROM="角色名" GROUP="${groupName}" TIME="${ts}">内容</GMSG>。${momentHint}]`;
   } else {
     let isMainChar;
     if (mainCharName) {
       isMainChar = th.name.toLowerCase().includes(mainCharName.toLowerCase()) ||
         mainCharName.toLowerCase().includes(th.name.toLowerCase());
     } else {
-      isMainChar = false; // mainCharName未知时保守处理,一律走NPC路径
+      isMainChar = false;
     }
 
+    const momentCharList = shouldTriggerMoment
+      ? (momentNPCs.length > 0 ? momentNPCs.join('、') : th.name)
+      : null;
+    const momentHint = momentCharList
+      ? `另外,在同一个PHONE块里,为角色「${momentCharList}」追加1条朋友圈动态,格式:<MOMENTS FROM="角色名" TIME="${ts}">内容</MOMENTS>;`
+      : '';
+
     if (isMainChar) {
-      // 对话对象是主角:根据场景决定口头还是短信回复
-      oocText = `[手机短信提示:${th.name}收到{{user}}的短信,当前时间${ts}。按世界书手机UI协议输出,且必须满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。]`;
+      oocText = `[手机短信提示:${th.name}收到{{user}}的短信,当前时间${ts}。按世界书手机UI协议输出,且必须满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。${momentHint}]`;
     } else {
-      // FIX1(加强版): NPC联系人--明确告知 AI 此 NPC 真实存在,主角完全不知情
       const charName = mainCharName || '主角';
-      oocText = `[叙事指令:{{user}}私下给NPC"${th.name}"发了手机短信(时间${ts})。${charName}完全不知情,本轮不得提及此短信。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。]`;
+      oocText = `[叙事指令:{{user}}私下给NPC"${th.name}"发了手机短信(时间${ts})。${charName}完全不知情,本轮不得提及此短信。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。${momentHint}]`;
     }
   }
 
@@ -6365,6 +8110,237 @@ function normalizePhoneMarkup(raw) {
   return s;
 }
 
+// ================================================================
+//  MESSAGE_UPDATED 生图插件专用监听
+//  智绘姬等插件异步完成后，把 <img src="..."> 写入 message.mes
+//  并触发 MESSAGE_UPDATED，这里专门捕捞这些图片路由到手机
+// ================================================================
+function onMessageUpdatedForImages(messageIndex) {
+  try {
+    const ctx = getContext();
+    if (!ctx?.chat) return;
+    // messageIndex 可能是数字索引，也可能没传
+    const idx = typeof messageIndex === 'number' ? messageIndex : ctx.chat.length - 1;
+    const msg = ctx.chat[idx];
+    console.log('[Phone:img:diag] MESSAGE_UPDATED fired', { idx, is_user: msg?.is_user, hasMes: !!msg?.mes, msgName: msg?.name });
+    if (!msg || msg.is_user || !msg.mes) return;
+
+    // 只处理含有 <img src="..."> 的消息（已被生图插件替换完的）
+    const imgRe = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*\/?>/gi;
+    const hasImgSrc = imgRe.test(msg.mes);
+    console.log('[Phone:img:diag] hasImgSrc=', hasImgSrc, '| mes前100字:', msg.mes.slice(0, 100));
+    if (!hasImgSrc) return;
+    imgRe.lastIndex = 0;
+
+    // 用消息的指纹+已提取图片集合做去重，避免同一条消息被重复处理
+    const msgFp = `${ctx.chatId || ''}|${idx}`;
+    if (!STATE._imgExtractedFps) STATE._imgExtractedFps = new Set();
+    // 防内存泄漏：超过500条记录时清空（对话期间不会有这么多图片）
+    if (STATE._imgExtractedFps.size > 500) STATE._imgExtractedFps = new Set();
+
+    // 提取所有 img src
+    const srcs = [];
+    let im;
+    while ((im = imgRe.exec(msg.mes)) !== null) {
+      srcs.push(im[1]);
+    }
+    if (srcs.length === 0) return;
+
+    // 检查这批图片是否已全部处理过
+    const newSrcs = srcs.filter(src => !STATE._imgExtractedFps.has(`${msgFp}|${src}`));
+    console.log('[Phone:img:diag] MESSAGE_UPDATED 图片提取', { msgFp, totalSrcs: srcs.length, newSrcs: newSrcs.length, pendingMomentSize: STATE._pendingMomentImgs?.size || 0, waitQueueLen: (window.rpImgWaitQueue||[]).length });
+    if (newSrcs.length === 0) return;
+
+    // ── 朋友圈生图回填：仅当 waitQueue 里有朋友圈条目（threadId=null）时才优先处理 ──
+    const _msgHasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => !e.threadId);
+    if (STATE._pendingMomentImgs && STATE._pendingMomentImgs.size > 0 && _msgHasMomentInQueue) {
+      console.log('[Phone:moment:msg:diag] MESSAGE_UPDATED 进入朋友圈检查', { pendingKeys: Array.from(STATE._pendingMomentImgs.keys()).map(k=>k.slice(0,40)), newSrcs: newSrcs.map(s=>s.slice(0,40)) });
+      // 尝试从消息文本里找 image###prompt### 来精确匹配
+      const chatu8Re2 = /image###([\s\S]*?)###/gi;
+      let cu;
+      let momentFilled = false;
+      const usedSrcs = new Set();
+      while ((cu = chatu8Re2.exec(msg.mes)) !== null) {
+        const prompt = (cu[1] || '').trim();
+        if (!prompt) continue;
+        let momentId = STATE._pendingMomentImgs.get(prompt);
+        if (!momentId) {
+          // 模糊匹配（前50字符）
+          const short = prompt.slice(0, 50);
+          for (const [k, v] of STATE._pendingMomentImgs) {
+            if (k.slice(0, 50) === short) { momentId = v; STATE._pendingMomentImgs.delete(k); break; }
+          }
+        } else {
+          STATE._pendingMomentImgs.delete(prompt);
+        }
+        if (!momentId) continue;
+        const moment = STATE.moments && STATE.moments.find(mo => mo.id === momentId);
+        if (!moment) continue;
+        // 取第一张还没用过的新图
+        const src = newSrcs.find(s => !usedSrcs.has(s));
+        if (!src) continue;
+        usedSrcs.add(src);
+        STATE._imgExtractedFps.add(`${msgFp}|${src}`);
+        moment.img = src;
+        moment.pendingImg = null;
+        moment.pendingImgType = null;
+        // 直接 DOM 手术精准替换图片区域
+        const $mEl = $(`#rp-moments-list .rp-moment[data-mid="${momentId}"]`);
+        if ($mEl.length) $mEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
+        momentFilled = true;
+        console.log('[Phone:moment:img] 朋友圈配图回填成功', { momentId, src: src.slice(0, 80) });
+      }
+      if (momentFilled) {
+        if (STATE.currentView === 'moments') renderMoments();
+        saveState();
+        // 已被朋友圈消费的 src 从 newSrcs 剔除，剩余仍走正常线程路由
+        const remainSrcs = newSrcs.filter(s => !usedSrcs.has(s));
+        if (remainSrcs.length === 0) return;
+        // 替换 newSrcs 为剩余部分，继续走线程路由
+        newSrcs.length = 0;
+        remainSrcs.forEach(s => newSrcs.push(s));
+      }
+      // 没有命中 image### 的情况：若 _pendingMomentImgs 有条目，也做一次兜底回填
+      else if (STATE._pendingMomentImgs.size > 0 && newSrcs.length > 0) {
+        // 优先遍历 waitQueue 朋友圈条目，通过 prompt 精确反查 momentId（防多 moment 并发错配）
+        const wqMomentEntries2 = window.rpImgWaitQueue
+          ? window.rpImgWaitQueue.filter(e => !e.threadId)
+          : [];
+        let firstMomentId;
+        let foundByPrompt = false;
+        for (const entry of wqMomentEntries2) {
+          if (!entry.prompt) continue;
+          if (STATE._pendingMomentImgs.has(entry.prompt)) {
+            firstMomentId = STATE._pendingMomentImgs.get(entry.prompt);
+            STATE._pendingMomentImgs.delete(entry.prompt);
+            foundByPrompt = true;
+            console.log('[Phone:moment:img] 兜底从 waitQueue.prompt 精确反查 momentId', { firstMomentId, prompt: entry.prompt.slice(0, 40) });
+            break;
+          }
+          const shortP = entry.prompt.slice(0, 50);
+          for (const [k, v] of STATE._pendingMomentImgs) {
+            if (k.slice(0, 50) === shortP) {
+              firstMomentId = v;
+              STATE._pendingMomentImgs.delete(k);
+              foundByPrompt = true;
+              console.log('[Phone:moment:img] 兜底从 waitQueue.prompt 模糊反查 momentId', { firstMomentId, prompt: entry.prompt.slice(0, 40) });
+              break;
+            }
+          }
+          if (foundByPrompt) break;
+        }
+        if (!firstMomentId) {
+          const wqMomentEntry = wqMomentEntries2[0];
+          if (wqMomentEntry) {
+            firstMomentId = wqMomentEntry.pendingMsgId;
+            // 清除 _pendingMomentImgs 里对应的 prompt→momentId 映射
+            for (const [k, v] of STATE._pendingMomentImgs) {
+              if (v === firstMomentId) { STATE._pendingMomentImgs.delete(k); break; }
+            }
+            console.log('[Phone:moment:img] 兜底从 waitQueue 顺序取 momentId（无 prompt 反查）', { firstMomentId });
+          } else {
+            const firstKey = STATE._pendingMomentImgs.keys().next().value;
+            firstMomentId = STATE._pendingMomentImgs.get(firstKey);
+            STATE._pendingMomentImgs.delete(firstKey);
+            console.log('[Phone:moment:img] 兜底取 _pendingMomentImgs 第一条（waitQueue 无条目）', { firstMomentId });
+          }
+        }
+        const moment = STATE.moments && STATE.moments.find(mo => mo.id === firstMomentId);
+        const src = newSrcs[0];
+        if (moment && !moment.img) {
+          // 成功找到 moment，标记消费并回填
+          STATE._imgExtractedFps.add(`${msgFp}|${src}`);
+          moment.img = src;
+          moment.pendingImg = null;
+          moment.pendingImgType = null;
+          // 成功回填后，清理 waitQueue 里该 moment 的残留条目
+          if (window.rpImgWaitQueue && window.rpImgWaitQueue.length) {
+            const wIdx = window.rpImgWaitQueue.findIndex(e => !e.threadId && e.pendingMsgId === firstMomentId);
+            if (wIdx >= 0) window.rpImgWaitQueue.splice(wIdx, 1);
+          }
+          // 直接 DOM 手术精准替换图片区域
+          const $mEl2 = $(`#rp-moments-list .rp-moment[data-mid="${firstMomentId}"]`);
+          if ($mEl2.length) $mEl2.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
+          if (STATE.currentView === 'moments') renderMoments();
+          saveState();
+          console.log('[Phone:moment:img] 朋友圈配图兜底回填', { momentId: firstMomentId, src: src.slice(0, 80) });
+          // 剔除已消费的 src
+          newSrcs.splice(0, 1);
+          if (newSrcs.length === 0) return;
+        } else if (moment && moment.img) {
+          // 图已存在，标记消费跳过
+          STATE._imgExtractedFps.add(`${msgFp}|${src}`);
+          console.log('[Phone:moment:img] 朋友圈兜底：图已存在，标记消费跳过', { momentId: firstMomentId });
+          newSrcs.splice(0, 1);
+          if (newSrcs.length === 0) return;
+        } else {
+          // moment 不存在（兜底 key 不匹配），不标记消费，让图片继续走线程路由
+          console.log('[Phone:moment:img] 朋友圈兜底：moment 不存在（key 不匹配），不消费，继续线程路由', { firstMomentId });
+        }
+      }
+    }
+
+    // 路由到当前线程（生图的图片属于正在聊天的 char）
+    // 优先级：1) 当前打开的线程  2) 最近发送短信的线程  3) 从消息的角色名反向匹配
+    let targetThread = (STATE.currentThread && STATE.threads?.[STATE.currentThread])
+      ? STATE.currentThread
+      : (STATE._pendingPhoneReply?.threadId || null);
+
+    if (!targetThread) {
+      // 兜底：用消息的 name 字段（角色名）反向匹配已有线程
+      const msgCharName = (msg.name || '').trim();
+      if (msgCharName) {
+        targetThread = matchThread(msgCharName);
+        if (targetThread) {
+          console.log('[Phone:img] MESSAGE_UPDATED: 通过角色名匹配线程', { name: msgCharName, threadId: targetThread });
+        }
+      }
+    }
+
+    if (!targetThread) {
+      // 最后兜底：只有一个线程时直接用
+      const threadIds = Object.keys(STATE.threads || {});
+      if (threadIds.length === 1) {
+        targetThread = threadIds[0];
+        console.log('[Phone:img] MESSAGE_UPDATED: 单线程兜底', { threadId: targetThread });
+      }
+    }
+
+    if (!targetThread) {
+      console.log('[Phone:img] MESSAGE_UPDATED: no targetThread, skipping', { msgName: msg.name });
+      return;
+    }
+    const th = STATE.threads[targetThread];
+    if (!th) return;
+
+    const now = new Date();
+    const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    newSrcs.forEach(src => {
+      // 二次去重：消息列表里已存在则跳过
+      const isDup = th.messages.some(m => m.type === 'image' && m.src === src);
+      if (isDup) { STATE._imgExtractedFps.add(`${msgFp}|${src}`); return; }
+
+      th.messages.push({
+        id: `aimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+        from: targetThread, type: 'image', time: ts, src
+      });
+      STATE._imgExtractedFps.add(`${msgFp}|${src}`);
+      console.log('[Phone:img] 生图路由成功', { threadId: targetThread, src: src.slice(0, 60) });
+    });
+
+    if (newSrcs.length > 0) {
+      if (STATE.currentView !== 'thread' || STATE.currentThread !== targetThread) th.unread++;
+      refreshBadges(); updatePreviews();
+      if (STATE.currentView === 'thread' && STATE.currentThread === targetThread) renderBubbles(targetThread);
+      showBanner(th.name, `[图片 ×${newSrcs.length}]`, ts);
+      saveState();
+    }
+  } catch (e) {
+    console.warn('[Phone:img] onMessageUpdatedForImages error', e);
+  }
+}
+
 function onAIMessage() {
   try {
     const ctx  = getContext();
@@ -6381,7 +8357,10 @@ function onAIMessage() {
       console.log('[Phone:diag] onAIMessage skipped: same fingerprint');
       return;
     }
-    const normalizedRaw = normalizePhoneMarkup(raw);
+    // 修复思维链冲突: 先剥离 <think>...</think> 块，避免思维链内的 <PHONE> 格式
+    // 与正文末尾的 <PHONE> 标签发生正则误合并
+    const rawStripped = raw.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    const normalizedRaw = normalizePhoneMarkup(rawStripped);
     const hasPhoneOpen  = /<PHONE\b/i.test(normalizedRaw);
     const hasPhoneClose = /<\/PHONE>/i.test(normalizedRaw);
     const hasSmsOpen    = /<SMS\b/i.test(normalizedRaw);
@@ -6405,7 +8384,7 @@ function onAIMessage() {
     STATE._lastAiFingerprint = fp;
     const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
     // 兼容:有些模型会漏掉 <PHONE> 包裹,但仍输出 <SMS>/<GMSG>
-    const hasBarePhoneTags = /<(SMS|GMSG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(normalizedRaw);
+    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(normalizedRaw);
 
     if (phoneMatch) {
       const parsedCount = parsePhone(phoneMatch[1]);
@@ -6442,6 +8421,43 @@ function onAIMessage() {
     // 关闭正文兜底入手机:避免把正文第一句(如日期碎片)误写入手机消息
     if (STATE._pendingPhoneReply && Date.now() - STATE._pendingPhoneReply.sentAt < 120000) {
       STATE._pendingPhoneReply = null;
+    }
+
+    // ── 全局兜底: 扫描 <PHONE> 块之外的 <img src> (生图插件替换后残留在正文里的图片) ──
+    // 把 <PHONE>...</PHONE> 和 <think>...</think> 扣掉，剩余部分如有 img 则路由到当前线程
+    const outsidePhone = normalizedRaw
+      .replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '')
+      .replace(/<think>[\s\S]*?<\/think>/gi, '');
+    const globalImgRe = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*\/?>/gi;
+    let gi;
+    while ((gi = globalImgRe.exec(outsidePhone)) !== null) {
+      const src = gi[1];
+      // 优先当前线程，兜底用角色名匹配，再兜底单线程
+      let targetThread = (STATE.currentThread && STATE.threads?.[STATE.currentThread])
+        ? STATE.currentThread : null;
+      if (!targetThread) {
+        const ctx2 = getContext();
+        const lastMsg = ctx2?.chat?.[ctx2.chat.length - 1];
+        const charName = (lastMsg?.name || '').trim();
+        if (charName) targetThread = matchThread(charName);
+      }
+      if (!targetThread) {
+        const ids = Object.keys(STATE.threads || {});
+        if (ids.length === 1) targetThread = ids[0];
+      }
+      if (!targetThread) continue;
+      const th = STATE.threads[targetThread];
+      if (!th) continue;
+      const isDup = th.messages.some(msg => msg.type === 'image' && msg.src === src);
+      if (isDup) continue;
+      const now = new Date();
+      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      th.messages.push({ id: `aimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: targetThread, type: 'image', time: ts, src });
+      if (STATE.currentView !== 'thread' || STATE.currentThread !== targetThread) th.unread++;
+      refreshBadges(); updatePreviews();
+      if (STATE.currentView === 'thread' && STATE.currentThread === targetThread) renderBubbles(targetThread);
+      showBanner(th.name, '[图片]', ts);
+      saveState();
     }
   } catch (e) {
     console.warn('[Raymond Phone]', e);
@@ -6516,53 +8532,72 @@ function extractSmsSummaries(block) {
   return out;
 }
 
-function rewritePhoneEchoInChat(block, fp) {
+// ── 核心：对指定 textEl 执行 PHONE 块折叠处理 ──
+// block: 原始消息文本（含或不含 <PHONE> 外壳均可）
+// fp: 指纹（传入则防重复，历史重建时传 null 跳过指纹检查）
+function applyPhoneCollapseToEl(textEl, block, fp) {
   try {
-    const allMsgs = document.querySelectorAll('.mes:not([is_user="true"])');
-    if (!allMsgs.length) return;
-    const lastMsg = allMsgs[allMsgs.length - 1];
-    const textEl  = lastMsg?.querySelector('.mes_text');
     if (!textEl) return;
-
     if (fp && textEl.dataset.rpPhoneRewriteFp === fp) return;
 
-    // 先解析出所有 SMS 内容,后面用来从正文里精确删除
+    // 先解析出所有 SMS 内容，后面用来从正文里精确删除
     const smsList = extractSmsSummaries(block);
 
-    // 步骤1:从 DOM 里整体清除 <phone> 元素(含所有子孙节点)
+    // ── 步骤1:DOM 清理 <phone> 及残余裸标签 ──
+    // 先把 <phone> 内已渲染的智绘姬按钮（image-tag-button）提取出来，清理后贴回 mes_text
+    // 这样 rpTriggerPendingImg 仍能找到对应按钮来触发/检测图片
+    const savedImageBtns = [];
     textEl.querySelectorAll('phone').forEach(phoneEl => {
+      phoneEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button').forEach(btn => {
+        savedImageBtns.push(btn.cloneNode(true));
+      });
       while (phoneEl.firstChild) phoneEl.removeChild(phoneEl.firstChild);
       phoneEl.remove();
     });
-    // 残余裸 sms/sync 等元素也清掉
-    textEl.querySelectorAll('sms, sync, gmsg, notify, call, voice, hongbao').forEach(tag => {
+    textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment').forEach(tag => {
+      tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button').forEach(btn => {
+        savedImageBtns.push(btn.cloneNode(true));
+      });
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
     });
 
-    // 步骤2:用 innerHTML 正则删掉残余的 <phone>...</phone> 纯文本形式
+    // ── 步骤2:innerHTML 正则替换（处理未被 DOM 解析的纯文本/实体形式）──
     let html = textEl.innerHTML || '';
-    html = html
-      .replace(/<phone>[\s\S]*?<\/phone>/gi, '')
-      .replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '');
 
-    // 步骤3:把 SMS 文字从正文里精确删除
-    // 浏览器容错解析会把 <sms> 内文字提升为独立 <p> 节点或文本节点
-    // 策略:遍历 textEl 子节点,把 textContent 与 SMS 文字精确匹配的节点 remove
+    // 清除旧的分割线、旧折叠块、旧 saved-img-btns、旧 sms-echo（防重复，只删简单无嵌套的）
+    html = html.replace(/<hr[^>]*class="rp-phone-divider"[^>]*>/gi, '');
+    html = html.replace(/<details[^>]*\brp-phone-collapse\b[^>]*>[\s\S]*?<\/details>/gi, '');
+    html = html.replace(/<span[^>]*class="rp-sms-echo"[^>]*>[\s\S]*?<\/span>/gi, '');
+    html = html.replace(/<span[^>]*class="rp-phone-chatu8[^"]*"[^>]*>[\s\S]*?<\/span>/gi, '');
+
+    // 情况B：纯文本 <phone>...</phone>
+    const hadPhoneText = /<phone>[\s\S]*?<\/phone>/i.test(html);
+    if (hadPhoneText) {
+      html = html.replace(/<phone>[\s\S]*?<\/phone>/gi, '');
+    }
+
+    // 情况C：实体转义 &lt;phone&gt;...&lt;/phone&gt;
+    const hadPhoneEntity = !hadPhoneText && /&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/i.test(html);
+    if (hadPhoneEntity) {
+      html = html.replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '');
+    }
+
+    textEl.innerHTML = html;
+    // 用 DOM API 删除有嵌套子元素的旧摘要块和旧按钮容器（正则处理嵌套不可靠）
+    textEl.querySelectorAll('.rp-phone-echo-block, .rp-phone-saved-img-btns').forEach(function(el) { el.remove(); });
+
+    // ── 步骤3：情况D — 散落的 SMS 文字行 ──
     if (smsList.length > 0) {
       const smsTexts = new Set(smsList.map(s => s.text.trim()).filter(Boolean));
-      // DOM 精确删除:把 textContent 与 SMS 文字完全匹配的子节点 remove
       Array.from(textEl.childNodes).forEach(child => {
         const ct = (child.textContent || '').trim();
-        if (ct && smsTexts.has(ct)) {
-          child.remove();
-        }
+        if (ct && smsTexts.has(ct)) child.remove();
       });
-      // innerHTML 正则兜底
       let html2 = textEl.innerHTML || '';
       let changed = false;
-      smsTexts.forEach(text => {
-        const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      smsTexts.forEach(smsText => {
+        const escaped = smsText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const before = html2;
         html2 = html2.replace(new RegExp(`<p[^>]*>\\s*${escaped}\\s*</p>`, 'g'), '');
         html2 = html2.replace(new RegExp(escaped, 'g'), '');
@@ -6571,39 +8606,141 @@ function rewritePhoneEchoInChat(block, fp) {
       if (changed) textEl.innerHTML = html2;
     }
 
-    // 步骤3完成后重新取 innerHTML,保持 html 变量与 DOM 同步
-    html = textEl.innerHTML || '';
+    // ── 步骤3b：情况E — 散落的 MOMENTS 文字行 ──
+    const momentsList = [];
+    const momentsExtRe = /<MOMENTS\s+FROM="([^"]+)"\s+TIME="([^"]+)"(?:\s+IMG="[^"]*")?\s*>([\s\S]*?)<\/MOMENTS>/gi;
+    let mm;
+    while ((mm = momentsExtRe.exec(block)) !== null) {
+      const mFrom = mm[1].trim();
+      const mTime = mm[2].trim();
+      const mText = mm[3].trim()
+        .replace(/<pic\b[\s\S]*?\/>/gi, '')
+        .replace(/<img\b[^>]*>/gi, '')
+        .replace(/image###[\s\S]*?###/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .trim();
+      if (mText) momentsList.push({ from: mFrom, time: mTime, text: mText });
+    }
+    if (momentsList.length > 0) {
+      const momentTexts = new Set(momentsList.map(m => m.text));
+      Array.from(textEl.childNodes).forEach(child => {
+        const ct = (child.textContent || '').trim();
+        if (ct && momentTexts.has(ct)) child.remove();
+      });
+      let html3 = textEl.innerHTML || '';
+      let changed3 = false;
+      momentTexts.forEach(mText => {
+        const escaped = mText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const before = html3;
+        html3 = html3.replace(new RegExp(`<p[^>]*>\\s*${escaped}\\s*</p>`, 'g'), '');
+        html3 = html3.replace(new RegExp(escaped, 'g'), '');
+        if (html3 !== before) changed3 = true;
+      });
+      if (changed3) textEl.innerHTML = html3;
+    }
 
-    // 步骤4:清理多余换行
+    // ── 步骤4:清理多余换行 ──
+    html = textEl.innerHTML || '';
     html = html
       .replace(/(?:<br\s*\/?>[\s]*){2,}/gi, '<br>')
       .replace(/^\s*(?:<br\s*\/?>\s*)+/i, '')
       .replace(/(?:<br\s*\/?>\s*)+$/i, '')
       .trim();
 
-    // 步骤5:追加短信摘要行「角色名：短信内容」
-    if (smsList.length > 0) {
-      // 移除旧的摘要行(防止重复追加)
-      html = html.replace(/<span class="rp-sms-echo"[\s\S]*?<\/span>/g, '');
-      // 兜底角色名:优先用 SMS 标签的 FROM 属性,其次取当前线程名,最后取 ST 的 name2
+    // ── 步骤5：追加分割线 + SMS/MOMENTS 摘要（所有情况均执行）──
+    const hasSms = smsList.length > 0;
+    const hasMoments = momentsList.length > 0;
+
+    if (hasSms || hasMoments) {
       const fallbackName = (STATE.threads?.[STATE.currentThread]?.name)
         || (getContext?.()?.name2)
         || '';
+
+      // 分割线
+      const dividerLabel = (hasSms && hasMoments) ? '📱 手机 · 朋友圈'
+                         : hasMoments ? '📸 朋友圈'
+                         : '📱 手机消息';
+      html += `<hr class="rp-phone-divider" data-label="${dividerLabel}">`;
+
+      // SMS 摘要行
       smsList.forEach(({ from, text }) => {
         const displayName = from || fallbackName;
-        const nameHtml = displayName ? `<span class="rp-sms-echo-name">${escHtml(displayName)}：</span>` : '';
-        html += `<span class="rp-sms-echo">${nameHtml}${escHtml(text)}</span>`;
+        const nameHtml = displayName ? `<span class="rp-phone-echo-name">${escHtml(displayName)}：</span>` : '';
+        html += `<span class="rp-phone-echo-block">${nameHtml}${escHtml(text)}</span><br>`;
+      });
+
+      // MOMENTS 摘要行
+      momentsList.forEach(({ from, text }) => {
+        html += `<span class="rp-phone-echo-block"><span class="rp-phone-echo-moment-tag">朋友圈</span><span class="rp-phone-echo-name">${escHtml(from)}：</span>${escHtml(text)}</span><br>`;
       });
     }
 
     if (html !== (textEl.innerHTML || '').trim()) {
       textEl.innerHTML = html;
     }
+    // ── 把提取的智绘姬按钮（隐藏）贴回 mes_text，供 rpTriggerPendingImg 查找 ──
+    if (savedImageBtns.length > 0) {
+      const btnWrap = document.createElement('span');
+      btnWrap.className = 'rp-phone-saved-img-btns';
+      btnWrap.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;';
+      savedImageBtns.forEach(btn => btnWrap.appendChild(btn));
+      textEl.appendChild(btnWrap);
+    }
     if (fp) textEl.dataset.rpPhoneRewriteFp = fp;
-    // 标记已处理,阻止 beautifySMSInChat 再次操作同一条消息覆盖掉 rp-sms-echo
     textEl.dataset.rpDone = '1';
   } catch(e) {
+    console.warn('[Raymond Phone] applyPhoneCollapseToEl:', e);
+  }
+}
+
+function rewritePhoneEchoInChat(block, fp) {
+  try {
+    const allMsgs = document.querySelectorAll('.mes:not([is_user="true"])');
+    if (!allMsgs.length) return;
+    const lastMsg = allMsgs[allMsgs.length - 1];
+    const textEl  = lastMsg?.querySelector('.mes_text');
+    if (!textEl) return;
+    applyPhoneCollapseToEl(textEl, block, fp);
+  } catch(e) {
     console.warn('[Raymond Phone] rewritePhoneEchoInChat:', e);
+  }
+}
+
+// ── 历史消息全量折叠重建 ──
+// 在 onChatChanged 延迟执行里调用，确保页面刷新/切换对话后历史消息也能正确折叠
+function rewriteAllHistoryPhoneBlocks() {
+  try {
+    const ctx = getContext();
+    const chat = ctx?.chat || [];
+    const domMsgs = Array.from(document.querySelectorAll('.mes:not([is_user="true"])'));
+    if (!domMsgs.length) return;
+
+    // 找所有非用户 AI 消息（排除已处理过的）
+    let domIdx = 0;
+    chat.forEach(function(msg) {
+      if (msg.is_user || !msg.mes) return;
+      const domEl = domMsgs[domIdx++];
+      if (!domEl) return;
+      const textEl = domEl.querySelector('.mes_text');
+      if (!textEl) return;
+      // 已处理且没有散落标签残留的跳过（但如果还有 rp-phone-collapse 说明已经处理好了，也跳过）
+      if (textEl.dataset.rpHistDone === '1') return;
+
+      const rawStripped = msg.mes.replace(/<think>[\s\S]*?<\/think>/gi, '');
+      const normalizedRaw = normalizePhoneMarkup(rawStripped);
+      const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
+      const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(normalizedRaw);
+
+      if (phoneMatch) {
+        applyPhoneCollapseToEl(textEl, phoneMatch[1], null);
+        textEl.dataset.rpHistDone = '1';
+      } else if (hasBarePhoneTags) {
+        applyPhoneCollapseToEl(textEl, normalizedRaw, null);
+        textEl.dataset.rpHistDone = '1';
+      }
+    });
+  } catch(e) {
+    console.warn('[Raymond Phone] rewriteAllHistoryPhoneBlocks:', e);
   }
 }
 
@@ -6623,14 +8760,81 @@ function parsePhone(block) {
   let parsedCount = 0;
   let m;
 
+  // ── 辅助：从文本内容中提取 <img src="..."> 并返回 {imgs, cleanText, pendingPrompts}
+  // 生图插件会把 <pic>/<image> 等替换成标准 <img src="...">, 这里统一处理
+  function extractImgsFromText(raw) {
+    const imgs = [];
+    const pendingPrompts = [];
+
+    // 1) 标准 <img src="..."> —— 生图插件替换后的最终形态
+    //    注意：ComfyUI 完成后的图片格式为 <img src="..." prompt="..." light_intensity="..." />
+    //    必须先提取 src，后续不再把这类标签当 pending 处理
+    const imgRe = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*\/?>/gi;
+    let im;
+    while ((im = imgRe.exec(raw)) !== null) imgs.push(im[1]);
+
+    // 2) 智绘姬格式 image###prompt### —— 提取 prompt，存为 pending_image 占位
+    //    不提取 src（此时尚无图），清洗出文字；生图完成后由 MutationObserver 替换 pending_image
+    const chatu8Re = /image###([\s\S]*?)###/gi;
+    let cm;
+    while ((cm = chatu8Re.exec(raw)) !== null) {
+      const prompt = (cm[1] || '').trim();
+      if (prompt) pendingPrompts.push(prompt);
+    }
+
+    // 3) <pic light_intensity="..." prompt="..." /> —— ComfyUI 世界书触发格式
+    //    ComfyUI 插件全自动生图，无需用户点击，不生成 pending_image 占位。
+    //    cleanText 里会被清除（见下方 replace），MutationObserver 模式B在图片生成后自动路由。
+    //    （此处仅注释说明，无需额外代码处理）
+
+    // 4) 旧格式兼容：<img prompt="..." light_intensity="..."/> 且没有 src 属性
+    //    （仅当确实无 src 时才当 pending；ComfyUI 完成图含 src，不会命中此规则）
+    const imgPromptRe = /<img\b(?![^>]*\bsrc=)[^>]*\bprompt=["']([^"']+)["'][^>]*\/?>/gi;
+    let pm;
+    while ((pm = imgPromptRe.exec(raw)) !== null) {
+      const prompt = (pm[1] || '').trim();
+      if (prompt) pendingPrompts.push(prompt);
+    }
+
+    let cleanText = raw
+      .replace(/<img\b[^>]*>>*/gi, '')               // 吃掉img标签及ComfyUI插件可能残留的多余>
+      .replace(/image###[\s\S]*?###/gi, '')          // 智绘姬 image###...###
+      .replace(/<pic\b[^>]*>[\s\S]*?<\/pic>/gi, '')  // <pic>...</pic> 格式
+      .replace(/<pic\b[\s\S]*?\/>/gi, '')               // <pic .../> 自闭合（含prompt内有>的情况）
+      .replace(/<imageTag>[\s\S]*?<\/imageTag>/gi, '') // 主楼生图世界书外壳
+      .replace(/<image>[\s\S]*?<\/image>/gi, '')     // <image>...</image> 包裹块
+      .replace(/<imgthink>[\s\S]*?<\/imgthink>/gi, '') // <imgthink> 思考过程
+      .trim();
+
+    return { imgs, cleanText, pendingPrompts };
+  }
+
+  // ── 辅助：把图片 src 路由到指定线程
+  function routeImgToThread(threadId, src, time) {
+    const th = STATE.threads[threadId];
+    if (!th) return;
+    const fallbackTime = time || `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
+    const isDup = th.messages.some(msg => msg.type === 'image' && msg.src === src);
+    if (isDup) return;
+    th.messages.push({ id: `aimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: threadId, type: 'image', time: fallbackTime, src });
+    if (STATE.currentView !== 'thread' || STATE.currentThread !== threadId) th.unread++;
+    refreshBadges(); updatePreviews();
+    if (STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
+    showBanner(th.name, '[图片]', fallbackTime);
+    saveState();
+  }
+
   // 更鲁棒:支持属性顺序变化、单引号/双引号
   const smsTagRe = /<SMS\b([^>]*)>([\s\S]*?)<\/SMS>/gi;
   while ((m = smsTagRe.exec(block)) !== null) {
     const attrs    = getTagAttrs(m[1]);
-    const text     = sanitizeSmsText(m[2] || '');
     const fromRaw0 = (attrs.FROM || '').trim();
     const time     = (attrs.TIME || '').trim();
-    if (!text) continue;
+    const rawContent = m[2] || '';
+
+    // 先从 SMS 内容里提取图片（生图插件替换后的 <img src>）和智绘姬 pending prompts
+    const { imgs: smsImgs, cleanText: smsCleanText, pendingPrompts: smsPendingPrompts } = extractImgsFromText(rawContent);
+    const text = sanitizeSmsText(smsCleanText);
 
     // 线程路由策略:
     // 1) 若存在 pending(刚由本端发起短信),优先落到 pending 线程
@@ -6672,9 +8876,51 @@ function parsePhone(block) {
       continue;
     }
     const fallbackTime = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
-    console.log('[Phone:diag] incomingMsg called', { threadId, text: text.slice(0,40), time: time || fallbackTime });
-    incomingMsg(threadId, text, time || fallbackTime);
-    parsedCount++;
+    const msgTime = time || fallbackTime;
+    console.log('[Phone:diag] incomingMsg called', { threadId, text: text.slice(0,40), time: msgTime });
+
+    // 先发已有图片（生图插件已替换完的 <img src>）
+    smsImgs.forEach(src => routeImgToThread(threadId, src, msgTime));
+
+    // ComfyUI <pic> 触发词：把 prompt → threadId 记录到 STATE._pendingComfyPics
+    // Observer 模式B通过 prompt 匹配来定向路由，避免主楼正文图片误入手机
+    STATE._pendingComfyPics = STATE._pendingComfyPics || new Map();
+    const picTagRe2 = /<pic\b([\s\S]*?)\/>/gi;
+    let picM2;
+    while ((picM2 = picTagRe2.exec(rawContent)) !== null) {
+      const pa = getTagAttrs(picM2[1]);
+      const pp = (pa.prompt || '').trim();
+      if (pp) {
+        STATE._pendingComfyPics.set(pp, { threadId, time: msgTime });
+        console.log('[Phone:comfy] 注册 ComfyUI pending pic', { threadId, prompt: pp.slice(0, 50) });
+      }
+    }
+
+    // pending_image 占位：image###prompt### 表示 AI 要求生图但图片尚未就绪（智绘姬模式）
+    // 存入线程作为占位，MutationObserver 捕捉到新图片时会来替换它
+    const pendingPrompts = smsPendingPrompts;
+    pendingPrompts.forEach(prompt => {
+      const th = STATE.threads[threadId];
+      if (!th) return;
+      // 避免重复添加同一 prompt 的 pending_image
+      const alreadyPending = th.messages.some(m => m.type === 'pending_image' && m.prompt === prompt);
+      if (alreadyPending) return;
+      const pid = `pimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+      th.messages.push({ id: pid, from: threadId, type: 'pending_image', prompt, time: msgTime });
+      if (STATE.currentView !== 'thread' || STATE.currentThread !== threadId) th.unread++;
+      refreshBadges(); updatePreviews();
+      if (STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
+      showBanner(th.name, '📷 图片生成中...', msgTime);
+      saveState();
+      console.log('[Phone:pendingImg] 添加 pending_image 占位', { threadId, prompt: prompt.slice(0, 50) });
+    });
+
+    if (text) {
+      incomingMsg(threadId, text, msgTime);
+      parsedCount++;
+    } else if (smsImgs.length > 0 || pendingPrompts.length > 0) {
+      parsedCount++; // 纯图片/pending_image SMS，无文字也计数
+    }
   }
 
   const notifRe = /<NOTIFY\s+TYPE="([^"]+)"\s+TEXT="([^"]+)"\/>/gi;
@@ -6692,7 +8938,71 @@ function parsePhone(block) {
 
   const momentsRe = /<MOMENTS\s+FROM="([^"]+)"\s+TIME="([^"]+)"(?:\s+IMG="([^"]*)")?\s*>([\s\S]*?)<\/MOMENTS>/gi;
   while ((m = momentsRe.exec(block)) !== null) {
-    incomingMoment(m[1].trim(), m[2].trim(), m[4].trim(), m[3] ? m[3].trim() : null);
+    const rawMomentContent = m[4] || '';
+    // 支持 MOMENTS 内容里有 <img src> (生图插件替换后)，优先作为配图
+    const { imgs: momentImgs, cleanText: momentCleanText, pendingPrompts: momentPendingPrompts } = extractImgsFromText(rawMomentContent);
+    const momentImg = m[3] ? m[3].trim() : (momentImgs[0] || null); // IMG属性优先，否则取内嵌第一张
+    const fromName = m[1].trim(), momentTime = m[2].trim();
+    const momentId = fromName.toLowerCase().replace(/\s+/g,'_') + '_' + momentTime.replace(':','');
+
+    // ── 朋友圈生图适配 A：智绘姬 image###prompt### → 需要用户点击触发 ──
+    const pendingPrompt = (!momentImg && momentPendingPrompts && momentPendingPrompts.length > 0)
+      ? momentPendingPrompts[0] : null;
+
+    // ── 朋友圈生图适配 B：ComfyUI <pic prompt="..."/> → 全自动，注册到 _pendingMomentImgs 等 Observer 回填 ──
+    let comfyPendingPrompt = null;
+    if (!momentImg && !pendingPrompt) {
+      const picTagReMoment = /<pic\b([\s\S]*?)\/>/gi;
+      let picMomentM;
+      while ((picMomentM = picTagReMoment.exec(rawMomentContent)) !== null) {
+        const pa = getTagAttrs(picMomentM[1]);
+        const pp = (pa.PROMPT || pa.prompt || '').trim();
+        if (pp) { comfyPendingPrompt = pp; break; }
+      }
+    }
+
+    const effectivePendingPrompt = pendingPrompt || comfyPendingPrompt;
+    incomingMoment(fromName, momentTime, momentCleanText.trim(), momentImg, effectivePendingPrompt, comfyPendingPrompt ? 'comfy' : 'chatu8');
+
+    // 同步写 _pendingMomentImgs，供 Observer/MESSAGE_UPDATED 回填
+    if (effectivePendingPrompt) {
+      if (!STATE._pendingMomentImgs) STATE._pendingMomentImgs = new Map();
+      STATE._pendingMomentImgs.set(effectivePendingPrompt, momentId);
+      // ComfyUI 同时注册到 _pendingComfyPics，Observer 模式B 用 img.prompt 属性精确匹配
+      if (comfyPendingPrompt) {
+        STATE._pendingComfyPics = STATE._pendingComfyPics || new Map();
+        STATE._pendingComfyPics.set(comfyPendingPrompt, { threadId: '__moment__', momentId, time: momentTime });
+        console.log('[Phone:moment:comfy] 朋友圈 ComfyUI 等待生图', { momentId, prompt: comfyPendingPrompt.slice(0, 50) });
+      } else {
+        console.log('[Phone:moment:pending] 朋友圈智绘姬等待生图', { momentId, prompt: pendingPrompt.slice(0, 50) });
+      }
+
+      // ── 立即检查主楼是否已有对应图片（图片先于 parsePhone 生成的情况）──
+      // 智绘姬模式：找 image-tag-button 内部已渲染的 <img>
+      if (!comfyPendingPrompt && pendingPrompt) {
+        const allBtns = document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button');
+        for (const btn of allBtns) {
+          const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
+          if (btnPrompt && (btnPrompt.includes(pendingPrompt.slice(0, 30)) || pendingPrompt.includes(btnPrompt.slice(0, 30)))) {
+            const imgEl = btn.querySelector('img');
+            if (imgEl && imgEl.src && imgEl.src.length > 10) {
+              // 图片已经生成好了，直接回填
+              const mo = STATE.moments && STATE.moments.find(function(x) { return x.id === momentId; });
+              if (mo && !mo.img) {
+                mo.img = imgEl.src;
+                mo.pendingImg = null;
+                mo.pendingImgType = null;
+                STATE._pendingMomentImgs.delete(effectivePendingPrompt);
+                if (STATE.currentView === 'moments') renderMoments();
+                saveState();
+                console.log('[Phone:moment:earlyFill] 主楼图片早于 parsePhone，直接回填', { momentId, src: imgEl.src.slice(0, 80) });
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
     parsedCount++;
   }
 
@@ -6736,6 +9046,123 @@ function parsePhone(block) {
   const gmsgRe = /<GMSG\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+TIME="([^"]+)">([\s\S]*?)<\/GMSG>/gi;
   while ((m = gmsgRe.exec(block)) !== null) {
     incomingGroupMsg(m[1].trim(), m[2].trim(), m[3].trim(), m[4].trim());
+    parsedCount++;
+  }
+
+  // ── GROUP VOICE (群聊语音) ──
+  // 格式: <GVOICE FROM="角色" GROUP="群名" TIME="HH:MM" DURATION="0:08">语音文字</GVOICE>
+  const gvoiceRe = /<GVOICE\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+TIME="([^"]+)"\s+DURATION="([^"]+)">([\s\S]*?)<\/GVOICE>/gi;
+  while ((m = gvoiceRe.exec(block)) !== null) {
+    const fromRaw = m[1].trim(), groupName = m[2].trim(), time = m[3].trim();
+    const duration = m[4].trim(), voiceText = m[5].trim();
+    const groupId = `grp_${groupName}`;
+    if (!STATE.threads[groupId]) {
+      const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
+      STATE.threads[groupId] = {
+        id: groupId, name: groupName,
+        initials: groupName.slice(0, 2),
+        avatarBg: `linear-gradient(145deg,${GROUP_COLORS[colorIdx]},${GROUP_COLORS[(colorIdx+1)%GROUP_COLORS.length]})`,
+        type: 'group', messages: [], unread: 0
+      };
+    }
+    const grpThread = STATE.threads[groupId];
+    const isDupGV = grpThread.messages.some(msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === voiceText);
+    if (!isDupGV) {
+      const senderTh = findOrCreateThread(fromRaw);
+      grpThread.messages.push({
+        id: `ggv_${Date.now()}`, from: 'incoming',
+        type: 'group_voice', name: fromRaw, time, duration, voiceText,
+        initials: senderTh.initials, avatarBg: senderTh.avatarBg
+      });
+      grpThread.unread = (grpThread.unread || 0) + 1;
+      refreshBadges(); renderThreadList();
+      if (STATE.currentThread === groupId) renderBubbles(groupId);
+      showBanner(groupName, `${fromRaw}: 🎤 [${duration}]`);
+    }
+    saveState();
+    parsedCount++;
+  }
+
+  // ── GROUP HONGBAO (群聊红包) ──
+  // 格式: <GHONGBAO FROM="角色" GROUP="群名" AMOUNT="金额" NOTE="备注"/>
+  const ghongbaoRe = /<GHONGBAO\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+AMOUNT="([^"]+)"(?:\s+NOTE="([^"]*)")?\s*\/?>/gi;
+  while ((m = ghongbaoRe.exec(block)) !== null) {
+    const fromRaw = m[1].trim(), groupName = m[2].trim();
+    const amount = m[3].trim(), note = m[4] ? m[4].trim() : '恭喜发财';
+    const groupId = `grp_${groupName}`;
+    if (!STATE.threads[groupId]) {
+      const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
+      STATE.threads[groupId] = {
+        id: groupId, name: groupName,
+        initials: groupName.slice(0, 2),
+        avatarBg: `linear-gradient(145deg,${GROUP_COLORS[colorIdx]},${GROUP_COLORS[(colorIdx+1)%GROUP_COLORS.length]})`,
+        type: 'group', messages: [], unread: 0
+      };
+    }
+    const grpThread = STATE.threads[groupId];
+    const isDupGH = grpThread.messages.some(msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount);
+    if (!isDupGH) {
+      const senderTh = findOrCreateThread(fromRaw);
+      grpThread.messages.push({
+        id: `ggh_${Date.now()}`, from: 'incoming',
+        type: 'group_hongbao', name: fromRaw, time: (() => {
+          const now = new Date();
+          return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        })(),
+        amount, note, opened: false,
+        initials: senderTh.initials, avatarBg: senderTh.avatarBg
+      });
+      grpThread.unread = (grpThread.unread || 0) + 1;
+      refreshBadges(); renderThreadList();
+      if (STATE.currentThread === groupId) renderBubbles(groupId);
+      showBanner(groupName, `${fromRaw} 发了一个红包`);
+    }
+    saveState();
+    parsedCount++;
+  }
+
+  // ── SIMG (生图专用标签) ──
+  // 格式: <SIMG FROM="角色名" TIME="HH:MM">图片描述</SIMG>
+  // 内容里的 <img src="..."> 由生图插件替换，小手机在这里提取
+  // 也支持纯 src 属性形式: <SIMG FROM="角色名" SRC="url" TIME="HH:MM"/>
+  const simgRe = /<SIMG\b([^>]*)>([\s\S]*?)<\/SIMG>/gi;
+  while ((m = simgRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const fromRaw = (attrs.FROM || '').trim();
+    const time = (attrs.TIME || '').trim();
+    const innerContent = m[2] || '';
+    const { imgs: simgImgs } = extractImgsFromText(innerContent);
+    // 也接受 SRC 属性直接指定（给 AI 更简单的写法兜底）
+    if (attrs.SRC) simgImgs.unshift(attrs.SRC.trim());
+    if (simgImgs.length === 0) continue;
+    // 路由线程
+    let simgThreadId = null;
+    if (fromRaw) {
+      simgThreadId = matchThread(fromRaw);
+      if (!simgThreadId) {
+        const curTh = STATE.currentThread && STATE.threads?.[STATE.currentThread];
+        simgThreadId = curTh ? STATE.currentThread : findOrCreateThread(fromRaw).id;
+      }
+    } else {
+      simgThreadId = STATE.currentThread || null;
+    }
+    if (!simgThreadId) continue;
+    simgImgs.forEach(src => routeImgToThread(simgThreadId, src, time));
+    parsedCount++;
+  }
+
+  // ── SIMG 自闭合形式: <SIMG FROM="角色" SRC="url" TIME="HH:MM"/> ──
+  const simgSelfRe = /<SIMG\b([^>]*)\/>/gi;
+  while ((m = simgSelfRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const fromRaw = (attrs.FROM || '').trim();
+    const time = (attrs.TIME || '').trim();
+    const src = (attrs.SRC || '').trim();
+    if (!src) continue;
+    let simgThreadId2 = fromRaw ? matchThread(fromRaw) : null;
+    if (!simgThreadId2) simgThreadId2 = STATE.currentThread || null;
+    if (!simgThreadId2) continue;
+    routeImgToThread(simgThreadId2, src, time);
     parsedCount++;
   }
 
@@ -6819,17 +9246,112 @@ function addLockNotif(type, text) {
   const isDupe = STATE.notifications.some(n => n.type === type && n.text === text);
   if (isDupe) return;
   STATE.notifications.push({ type, text });
+  // 最多保留最近 5 条
+  if (STATE.notifications.length > 5) STATE.notifications = STATE.notifications.slice(-5);
   refreshLockNotifs();
 }
 
 // FIX2: 抽出 DOM 刷新,方便聊天切换时重建锁屏通知
 function refreshLockNotifs() {
   const c = $('#rp-lock-notifs').empty();
-  STATE.notifications.slice(-3).forEach(n => {
-    c.append(`<div class="rp-ln">
-      <span class="rp-ln-type">${n.type}</span>
-      <span class="rp-ln-text">${n.text}</span>
-    </div>`);
+  // 显示全部通知（最多保留最近3条由 addLockNotif 控制）
+  STATE.notifications.forEach((n, idx) => {
+    const wrap = $('<div>').addClass('rp-ln-wrap');
+    // 删除按钮层
+    const delBtn = $('<div>').addClass('rp-ln-del-btn').text('删除');
+    // 通知卡片
+    const card = $('<div>').addClass('rp-ln').append(
+      $('<span>').addClass('rp-ln-type').text(n.type),
+      $('<span>').addClass('rp-ln-text').text(n.text)
+    );
+
+    wrap.append(delBtn, card);
+    c.append(wrap);
+
+    // ── 删除按钮点击 ──
+    delBtn.on('click', function(e) {
+      e.stopPropagation();
+      STATE.notifications.splice(idx, 1);
+      saveState();
+      refreshLockNotifs();
+    });
+
+    // ── PC端：点击卡片切换滑开/收回 ──
+    // ── 手机端：触摸左滑露出删除按钮，右滑收回 ──
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isSwiping = false;
+    let touchHandled = false; // 防止 touch 完成后 click 重复触发
+
+    card.on('touchstart', function(e) {
+      const t = e.originalEvent.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      isSwiping = false;
+      touchHandled = false;
+    });
+
+    card.on('touchmove', function(e) {
+      const t = e.originalEvent.touches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = Math.abs(t.clientY - touchStartY);
+      // 优先横滑判断
+      if (!isSwiping && Math.abs(dx) > 6 && dy < 12) {
+        isSwiping = true;
+      }
+      if (isSwiping) {
+        e.preventDefault();
+        // 实时跟手时激活 wrap 显示删除按钮
+        wrap.addClass('rp-ln-wrap-active');
+        // 实时跟手（钳位：0 ~ -72px）
+        const clamp = Math.max(-72, Math.min(0, dx - (card.hasClass('rp-ln-swiped') ? 72 : 0)));
+        card.css({ transition: 'none', transform: `translateX(${clamp}px)` });
+      }
+    }, { passive: false });
+
+    card.on('touchend', function(e) {
+      touchHandled = true;
+      if (!isSwiping) return;
+      const t = e.originalEvent.changedTouches[0];
+      const dx = t.clientX - touchStartX;
+      // 滑动超过阈值 20px → 左滑完全展开；否则弹回
+      card.css({ transition: '', transform: '' });
+      if (dx < -20) {
+        // 关闭其他已展开项
+        $('#rp-lock-notifs .rp-ln').not(card[0]).removeClass('rp-ln-swiped');
+        $('#rp-lock-notifs .rp-ln-wrap').not(wrap[0]).removeClass('rp-ln-wrap-active');
+        card.addClass('rp-ln-swiped');
+        wrap.addClass('rp-ln-wrap-active');
+      } else {
+        card.removeClass('rp-ln-swiped');
+        wrap.removeClass('rp-ln-wrap-active');
+      }
+      isSwiping = false;
+    });
+
+    // PC端：点击卡片 toggle 展开（触摸端跳过）
+    card.on('click', function(e) {
+      if (touchHandled) { touchHandled = false; return; }
+      const alreadySwiped = card.hasClass('rp-ln-swiped');
+      // 关闭其他
+      $('#rp-lock-notifs .rp-ln').not(card[0]).removeClass('rp-ln-swiped');
+      $('#rp-lock-notifs .rp-ln-wrap').not(wrap[0]).removeClass('rp-ln-wrap-active');
+      if (alreadySwiped) {
+        card.removeClass('rp-ln-swiped');
+        wrap.removeClass('rp-ln-wrap-active');
+      } else {
+        card.addClass('rp-ln-swiped');
+        wrap.addClass('rp-ln-wrap-active');
+      }
+    });
+
+    // 点击其他区域收回
+    $(document).off('click.rpln-' + idx).on('click.rpln-' + idx, function(e) {
+      if (!$(e.target).closest('.rp-ln-wrap').length) {
+        card.removeClass('rp-ln-swiped');
+        wrap.removeClass('rp-ln-wrap-active');
+      }
+    });
   });
 }
 
@@ -6881,6 +9403,14 @@ function makeDraggable() {
   phone.addEventListener('mousedown', e => {
     if (IS_TOUCH_DEVICE) return;
     if (e.target.closest('input,textarea,select,button,a,[contenteditable]')) return;
+    // 从 #rp-phone 外边缘算起，热区宽度 BORDER_HIT px 内视为边框（含 box-shadow 外圈）
+    const pr = phone.getBoundingClientRect();
+    const BORDER_HIT = 22;
+    const inLeft   = e.clientX - pr.left   < BORDER_HIT;
+    const inRight  = pr.right  - e.clientX < BORDER_HIT;
+    const inTop    = e.clientY - pr.top    < BORDER_HIT;
+    const inBottom = pr.bottom - e.clientY < BORDER_HIT;
+    if (!inLeft && !inRight && !inTop && !inBottom) return;
     dragging = true;
     const r = phone.getBoundingClientRect();
     phone.style.right = 'auto';
@@ -6892,6 +9422,8 @@ function makeDraggable() {
   });
   phone._rpMoveHandler = e => {
     if (!dragging) return;
+    // 若滑屏手势已接管此次拖拽，停止手机移动
+    if (window._rpSwipeLocked) { dragging = false; return; }
     phone.style.left = (ox + e.clientX - ex) + 'px';
     phone.style.top  = (oy + e.clientY - ey) + 'px';
   };
@@ -7625,7 +10157,7 @@ function hidePhoneTagsInChat() {
       phoneEl.remove();
     });
     // 残余的裸 sms/gmsg 等标签(不在 phone 内)也一并清除
-    el.querySelectorAll('sms, moments, comment, notify, sync, call, voice, gmsg, hongbao').forEach(tag => {
+    el.querySelectorAll('sms, moments, comment, notify, sync, call, voice, gmsg, gvoice, ghongbao, simg, hongbao').forEach(tag => {
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
     });
@@ -7634,7 +10166,8 @@ function hidePhoneTagsInChat() {
       el.innerHTML = el.innerHTML.replace(/<phone>[\s\S]*?<\/phone>/gi, '').trim();
     }
     // 方法3:处理被转义成 &lt;PHONE&gt;...&lt;/PHONE&gt; 的文本
-    if (/&lt;phone&gt;/i.test(el.innerHTML)) {
+    // 注意:跳过已有折叠块的消息，避免破坏 <pre> 里存放的原始内容
+    if (/&lt;phone&gt;/i.test(el.innerHTML) && !el.querySelector('details.rp-phone-collapse')) {
       el.innerHTML = el.innerHTML.replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '').trim();
     }
   });
@@ -7796,41 +10329,35 @@ const THEMES = {
 
 // ══ Per-theme icon sets ══
 const RP_THEME_ICONS = {
-  messages:      '<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h5" stroke="__C__" opacity=".7"/></svg>',
-  moments:       '<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><ellipse cx="12" cy="5"  rx="2" ry="3" opacity=".8"/><ellipse cx="12" cy="19" rx="2" ry="3" opacity=".8"/><ellipse cx="5"  cy="12" rx="3" ry="2" opacity=".8"/><ellipse cx="19" cy="12" rx="3" ry="2" opacity=".8"/><ellipse cx="7"  cy="7"  rx="2" ry="3" transform="rotate(-45 7 7)"   opacity=".6"/><ellipse cx="17" cy="7"  rx="2" ry="3" transform="rotate(45 17 7)"   opacity=".6"/><ellipse cx="7"  cy="17" rx="2" ry="3" transform="rotate(45 7 17)"   opacity=".6"/><ellipse cx="17" cy="17" rx="2" ry="3" transform="rotate(-45 17 17)" opacity=".6"/></svg>',
-  settings:      '<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18 18l1.78 1.78M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18 6l1.78-1.78"/></svg>',
-  'folder-games':'<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="5"/><line x1="8"  y1="12" x2="12" y2="12" stroke-width="1.7"/><line x1="10" y1="10" x2="10" y2="14" stroke-width="1.7"/><circle cx="16" cy="10.5" r="1.3" fill="__C__" stroke="none"/><circle cx="18.6" cy="13.5" r="1.3" fill="__C__" stroke="none"/></svg>',
-  'api-settings':'<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 13h7l-1 9 9-11h-7z"/></svg>',
-  themes:        '<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><circle cx="9"  cy="9.5"  r="1.4" fill="__C__" stroke="none"/><circle cx="15" cy="9.5"  r="1.4" fill="__C__" stroke="none" opacity=".8"/><circle cx="9"  cy="14.5" r="1.4" fill="__C__" stroke="none" opacity=".7"/><circle cx="15" cy="14.5" r="1.4" fill="__C__" stroke="none" opacity=".6"/><circle cx="12" cy="12"   r="1.2" fill="__C__" stroke="none" opacity=".5"/></svg>',
-  diary:         '<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="13" height="20" rx="2.5"/><circle cx="6"  cy="7"  r="1.6" stroke-width="1.5"/><circle cx="6"  cy="12" r="1.6" stroke-width="1.5"/><circle cx="6"  cy="17" r="1.6" stroke-width="1.5"/><line x1="10" y1="8.5"  x2="17" y2="8.5"  stroke-width="1.5"/><line x1="10" y1="12.5" x2="17" y2="12.5" stroke-width="1.5" opacity=".7"/><line x1="10" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" opacity=".5"/></svg>',
-  xhs:           '<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8.5 9.5L12 7l-.7 4 4-3.5" stroke-width="1.8"/><line x1="8" y1="15" x2="16" y2="15" stroke-width="1.6" opacity=".9"/><line x1="10" y1="18" x2="14" y2="18" stroke-width="1.6" opacity=".65"/></svg>',
-  g2048:         '<svg viewBox="0 0 24 24" fill="none" stroke="__C__" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2"  y="2"  width="9" height="9" rx="2"/><rect x="13" y="2"  width="9" height="9" rx="2"/><rect x="2"  y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>'
+  messages:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h5" stroke="currentColor" opacity=".7"/></svg>',
+  moments:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><ellipse cx="12" cy="5"  rx="2" ry="3" opacity=".8"/><ellipse cx="12" cy="19" rx="2" ry="3" opacity=".8"/><ellipse cx="5"  cy="12" rx="3" ry="2" opacity=".8"/><ellipse cx="19" cy="12" rx="3" ry="2" opacity=".8"/><ellipse cx="7"  cy="7"  rx="2" ry="3" transform="rotate(-45 7 7)"   opacity=".6"/><ellipse cx="17" cy="7"  rx="2" ry="3" transform="rotate(45 17 7)"   opacity=".6"/><ellipse cx="7"  cy="17" rx="2" ry="3" transform="rotate(45 7 17)"   opacity=".6"/><ellipse cx="17" cy="17" rx="2" ry="3" transform="rotate(-45 17 17)" opacity=".6"/></svg>',
+  settings:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18 18l1.78 1.78M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18 6l1.78-1.78"/></svg>',
+  'folder-games':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="5"/><line x1="8"  y1="12" x2="12" y2="12" stroke-width="1.7"/><line x1="10" y1="10" x2="10" y2="14" stroke-width="1.7"/><circle cx="16" cy="10.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="18.6" cy="13.5" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  'api-settings':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 13h7l-1 9 9-11h-7z"/></svg>',
+  themes:        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><circle cx="9"  cy="9.5"  r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5"  r="1.4" fill="currentColor" stroke="none" opacity=".8"/><circle cx="9"  cy="14.5" r="1.4" fill="currentColor" stroke="none" opacity=".7"/><circle cx="15" cy="14.5" r="1.4" fill="currentColor" stroke="none" opacity=".6"/><circle cx="12" cy="12"   r="1.2" fill="currentColor" stroke="none" opacity=".5"/></svg>',
+  diary:         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="13" height="20" rx="2.5"/><circle cx="6"  cy="7"  r="1.6" stroke-width="1.5"/><circle cx="6"  cy="12" r="1.6" stroke-width="1.5"/><circle cx="6"  cy="17" r="1.6" stroke-width="1.5"/><line x1="10" y1="8.5"  x2="17" y2="8.5"  stroke-width="1.5"/><line x1="10" y1="12.5" x2="17" y2="12.5" stroke-width="1.5" opacity=".7"/><line x1="10" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" opacity=".5"/></svg>',
+  xhs:           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8.5 9.5L12 7l-.7 4 4-3.5" stroke-width="1.8"/><line x1="8" y1="15" x2="16" y2="15" stroke-width="1.6" opacity=".9"/><line x1="10" y1="18" x2="14" y2="18" stroke-width="1.6" opacity=".65"/></svg>',
+  g2048:         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2"  y="2"  width="9" height="9" rx="2"/><rect x="13" y="2"  width="9" height="9" rx="2"/><rect x="2"  y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>',
+  bank:          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><line x1="2" y1="10" x2="22" y2="10" stroke-width="2"/><line x1="6" y1="15" x2="9" y2="15" stroke-width="1.5"/><line x1="12" y1="15" x2="16" y2="15" stroke-width="1.5" opacity=".65"/></svg>'
 };
 
-/* 内置主题图标颜色 */
+/* 内置主题图标颜色（保留备用，lgRenderHomeIcons 现在依赖 CSS currentColor 机制） */
 const RP_ICON_COLORS = {
   candy:  '#d4607a',
   star:   '#e8e0ff',
   misty:  'rgba(222,240,253,.91)',
-  custom: null   // 由 lgRenderHomeIcons 从 --rp-nav-btn 动态读取
+  custom: null
 };
 
 function lgRenderHomeIcons() {
-  const theme = localStorage.getItem('rp_theme') || 'candy';
-
-  // 取主题色：内置主题用预设值，自定义主题从 CSS 变量读
-  let color = RP_ICON_COLORS[theme] || RP_ICON_COLORS.candy;
-  if (theme === 'custom') {
-    const phone = document.getElementById('rp-phone');
-    color = (phone && getComputedStyle(phone).getPropertyValue('--rp-nav-btn').trim()) || RP_ICON_COLORS.candy;
-  }
-
+  // SVG 图标已全部使用 currentColor，颜色由 CSS 的 color: var(--rp-clock-color) 控制。
+  // 此函数仅负责将 SVG HTML 写入 DOM，不再需要读取/传递颜色值。
   document.querySelectorAll('#rp-app-grid [data-app]').forEach(el => {
     const appId = el.dataset.app;
     const ico = el.querySelector('.rp-app-ico');
     if (!ico || !RP_THEME_ICONS[appId]) return;
     const badge = ico.querySelector('.rp-badge');
-    ico.innerHTML = RP_THEME_ICONS[appId].replace(/__C__/g, color);
+    ico.innerHTML = RP_THEME_ICONS[appId];
     if (badge) ico.prepend(badge);
   });
 }
@@ -7843,15 +10370,45 @@ function lgApplyTheme(id) {
   // 切换到内置主题时禁用自定义 CSS，切回 custom 时恢复
   const styleEl = document.getElementById('rp-custom-theme-style');
   if (styleEl) styleEl.disabled = (id !== 'custom');
+  // 切换到内置主题时，彻底清除自定义 CSS 注入的 style 内容（防止 disabled 在部分浏览器失效导致变量残留）
+  if (id !== 'custom' && styleEl) {
+    styleEl.textContent = '';
+  }
+  // 切回 custom 时，从 localStorage 重新载入保存的 CSS（因为切走时已清空 textContent）
+  if (id === 'custom' && styleEl) {
+    const saved = localStorage.getItem('rp_custom_css') || '';
+    styleEl.textContent = saved;
+    styleEl.disabled = false;
+  }
   localStorage.setItem('rp_theme', id || 'candy');
-  lgRenderHomeIcons();
+  // 自定义主题 CSS 注入后需浏览器至少一帧才能计算变量，用双帧确保 --rp-clock-color 已生效
+  if (id === 'custom') {
+    requestAnimationFrame(() => requestAnimationFrame(() => { lgRenderHomeIcons(); rpStripFrameRing(); }));
+  } else {
+    requestAnimationFrame(() => { lgRenderHomeIcons(); rpStripFrameRing(); });
+  }
+}
+
+// ── 强制去除手机边框外圈 box-shadow（无论主题如何设置）──────────
+function rpStripFrameRing() {
+  const frame = document.getElementById('rp-frame');
+  if (!frame) return;
+  const computed = getComputedStyle(frame).boxShadow;
+  if (!computed || computed === 'none') return;
+  // 将 box-shadow 按逗号分割，过滤掉 spread 为 7px~11px 且颜色为不透明色的那一层（外圈特征）
+  // 匹配形如 "0px 0px 0px 9px ..." 或 "0 0 0 9px ..." 的层
+  const cleaned = computed
+    .split(/,(?![^(]*\))/)  // 按逗号分割（不切 rgba 括号内的逗号）
+    .filter(layer => !/\b0\s*px\s+0\s*px\s+0\s*px\s+(7|8|9|10|11)px\b|\b0\s+0\s+0\s+(7|8|9|10|11)px\b/.test(layer))
+    .join(',');
+  frame.style.setProperty('box-shadow', cleaned, 'important');
 }
 
 function lgInitTheme() {
   // 先确保 custom style 标签存在（恢复已保存的 CSS）
   lgEnsureCustomStyleTag();
+  // lgApplyTheme 内部已经用 rAF 延迟调用 lgRenderHomeIcons，无需再次调用
   lgApplyTheme(localStorage.getItem('rp_theme') || 'candy');
-  lgRenderHomeIcons();
 }
 
 /** 确保 custom theme <style> 标签存在，并载入 localStorage 里保存的 CSS */
@@ -7881,7 +10438,7 @@ function lgInjectCustomCSS(css) {
   // 更新操作栏（新版）
   lgTsUpdateActionBar();
   // 自定义主题注入后重新渲染图标（使图标颜色跟随主题色），延至下一帧确保样式已生效
-  requestAnimationFrame(() => lgRenderHomeIcons());
+  requestAnimationFrame(() => { lgRenderHomeIcons(); rpStripFrameRing(); });
   // 兼容旧版撤销按钮（如果还存在）
   const undoBtn = document.getElementById('rp-ts-undo');
   if (undoBtn) undoBtn.disabled = (history.length === 0);
@@ -8344,9 +10901,13 @@ async function _doGetMomentsCtx() {
   const userName = ctx?.name1 || '用户';
 
   // 只用当前 chatId 的 threads(不跨片场),避免串入其他角色卡的 NPC
+  // 排除群聊:群聊不是真实 NPC 个体,不应出现在朋友圈互动中
   const knownNPCs = new Set();
   Object.values(STATE.threads || {}).forEach(th => {
-    if (th.name && th.name !== charName) knownNPCs.add(th.name);
+    if (!th.name || th.name === charName) return;
+    // 跳过群聊 thread
+    if (th.type === 'group' || th.id.startsWith('grp_') || (th.members && th.members.length > 1)) return;
+    knownNPCs.add(th.name);
   });
   (STATE.moments || []).filter(m => m.from !== 'user' && m.name !== charName).forEach(m => knownNPCs.add(m.name));
 
@@ -8663,6 +11224,11 @@ async function generateAIMoments() {
 }
 
 async function charRespondToUserMoment(momentId) {
+  // 执行锁：同一 momentId 只执行一次
+  if (!STATE._charRespondDone) STATE._charRespondDone = new Set();
+  if (STATE._charRespondDone.has(momentId)) return;
+  STATE._charRespondDone.add(momentId);
+
   const moment = (STATE.moments || []).find(function(m) { return m.id === momentId; });
   if (!moment) return;
   const ctx = await getMomentsCtx();
@@ -8677,7 +11243,7 @@ async function charRespondToUserMoment(momentId) {
     + '请以你们真实的关系视角来评论,体现出你了解对方、关心对方。\n'
     + '近期对话参考(帮助判断关系和语境):\n' + (_rc ? _rc.slice(-300) : '无') + '\n'
     + '字数15-40字,符合角色性格,用中文,只返回评论正文,不加引号或任何前缀。';
-  const prompt = '用户发了一条朋友圈:「' + moment.text + '」\n'
+  const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
     + charName + '的评论(必须写,不允许只点赞):';
   const resp = await lgCallAPI(prompt, 150, sysMsg);
   if (resp) {
@@ -8707,7 +11273,7 @@ async function charRespondToUserMoment(momentId) {
         + (npcPersona ? '\n人设:' + npcPersona.slice(0, 250) + '\n' : '\n')
         + '你在朋友圈看到了这条动态,用符合你性格的语气写一条评论。'
         + '字数10-25字,口语化,不要和其他角色的评论重复,只返回评论正文。';
-      const promptNpc = '朋友圈内容:「' + moment.text + '」\n'
+      const promptNpc = '朋友圈内容:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
         + '你的用户名是"' + npc + '",你的评论(必须和其他人不同):';
       const resp = await lgCallAPI(promptNpc, 80, sysNpc);
       if (resp) {
@@ -8792,6 +11358,11 @@ async function momentAISocial(targetMomentId) {
 // 好友列表里的人自动给动态点赞(随机)+ 最多3人评论(随机)
 // ================================================================
 async function friendsInteractOnMoment(momentId) {
+  // 执行锁：同一 momentId 只执行一次，防止多次调用堆叠
+  if (!STATE._friendsInteractDone) STATE._friendsInteractDone = new Set();
+  if (STATE._friendsInteractDone.has(momentId)) return;
+  STATE._friendsInteractDone.add(momentId);
+
   const moment = (STATE.moments || []).find(m => m.id === momentId);
   if (!moment) return;
 
@@ -8841,7 +11412,7 @@ async function friendsInteractOnMoment(momentId) {
   }).join('\n');
 
   const sysMsg = '你是角色扮演社交媒体互动模拟器。\n规则:每个角色评论风格符合其人设;所有评论用中文;不超过20字;不加引号。';
-  const prompt = '朋友圈动态作者:' + authorName + '\n内容:「' + moment.text.slice(0, 80) + '」\n\n'
+  const prompt = '朋友圈动态作者:' + authorName + '\n内容:「' + (moment.text.slice(0, 80) || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n\n'
     + '以下角色各写一条评论(语气符合各自性格,互相不重复):\n' + npcPersonaText
     + '\n\n只返回JSON数组,格式:[{"from":"角色名","text":"评论内容"}, ...]';
 
@@ -8882,7 +11453,7 @@ async function generateAIReply(momentId, userCommentText, fromName) {
     const npcPersona = resolveNpcPersonaByName(authorName, npcPersonaMap) || '';
     sysMsg3 = '你正在扮演 ' + authorName + ',' + (npcPersona ? ('其人设如下:\n' + npcPersona.slice(0, 300) + '\n') : '根据其在故事中的言行推断语气,') + '用中文回复,不超过20字,只返回回复内容本身。';
   }
-  const prompt3 = authorName + '的朋友圈:「' + moment.text + '」\n用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
+  const prompt3 = authorName + '的朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
   const resp = await lgCallAPI(prompt3, 100, sysMsg3);
   if (!resp) return;
   const now = new Date();
@@ -8895,6 +11466,9 @@ async function generateAIReply(momentId, userCommentText, fromName) {
 // ================================================================
 function renderMoments() {
   console.log('[Phone:diag] renderMoments STATE.avatars=', JSON.stringify(STATE.avatars));
+  console.log('[Phone:diag] renderMoments called from:', new Error().stack.split('\n').slice(1,4).join(' | '));
+  const momentImgSnap = (STATE.moments||[]).map(m=>({id:m.id,hasImg:!!m.img,pendingImg:m.pendingImg?.slice(0,20)}));
+  console.log('[Phone:diag] renderMoments moments snapshot:', JSON.stringify(momentImgSnap));
   const container = $('#rp-moments-list').empty();
   if (!STATE.moments || STATE.moments.length === 0) {
     container.append('<div class="rp-moments-empty"><span>📭</span><span>暂无动态</span></div>');
@@ -8929,10 +11503,18 @@ function renderMoments() {
           </div>
         </div>
         <div class="rp-moment-text">${escHtml(moment.text)}</div>
-        ${moment.img ? `<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${escHtml(moment.img)}" alt=""/></div>` : ''}
+        ${moment.img
+          ? `<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${escHtml(moment.img)}" alt=""/></div>`
+          : moment.pendingImg
+            ? moment.pendingImgType === 'comfy'
+              ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;"><span style="font-size:16px;">⏳</span><span style="font-size:12px;opacity:0.7;">生成中…</span></div>`
+              : `<div class="rp-moment-img-wrap rp-moment-pending-img" data-mid="${moment.id}" data-prompt="${escHtml(moment.pendingImg)}" style="min-width:90px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;" title="点击触发生图"><span style="font-size:16px;">📷</span><span style="font-size:12px;opacity:0.75;">点击生图</span></div>`
+            : ''
+        }
         <div class="rp-moment-bar">
           <button class="rp-moment-act rp-like-btn${liked ? ' rp-liked' : ''}" data-moment="${moment.id}">${liked ? '❤️' : '🤍'} ${likeCount > 0 ? likeCount : '点赞'}</button>
           <button class="rp-moment-act rp-comment-toggle" data-moment="${moment.id}">💬 评论</button>
+          <button class="rp-moment-act rp-moment-del-btn" data-moment="${moment.id}" style="color:rgba(200,60,60,.6);margin-left:auto">🗑️ 删除</button>
         </div>
         ${likeCount > 0 ? `<div class="rp-moment-likes-row">❤️ ${likeNames.slice(0,4).join('、')}${likeCount > 4 ? ` 等${likeCount}人` : ''}</div>` : ''}
         ${commentsHtml}
@@ -8989,7 +11571,9 @@ function renderXHSFeed(forceRefresh) {
   if (!hasStranger) {
     // 首次加载:清空后显示 loading,调 API
     box.empty();
-    box.append('<div id="rp-xhs-loading" style="text-align:center;color:#ff2442;padding:30px;font-size:13px">正在加载最新动态...</div>');
+    const xhsEst1 = _xhsGetEstSeconds();
+    box.append(`<div id="rp-xhs-loading" style="text-align:center;color:#ff2442;padding:30px;font-size:13px">正在加载最新动态...${xhsEst1 ? `<div id="rp-xhs-eta" style="font-size:11px;opacity:.72;margin-top:4px">预计还有 <span id="rp-xhs-eta-num">${xhsEst1}</span> 秒</div>` : ''}</div>`);
+    _xhsStartEtaTimer(xhsEst1);
     buildXHSFeedWithAI(false);
     return;
   }
@@ -8997,7 +11581,9 @@ function renderXHSFeed(forceRefresh) {
   if (forceRefresh) {
     // 刷新:保留现有帖子,顶部插入 loading,后台生成追加
     if ($('#rp-xhs-loading').length) return; // 防止重复触发
-    box.prepend('<div id="rp-xhs-loading" style="text-align:center;color:#ff2442;padding:16px;font-size:13px">正在加载更多...</div>');
+    const xhsEst2 = _xhsGetEstSeconds();
+    box.prepend(`<div id="rp-xhs-loading" style="text-align:center;color:#ff2442;padding:16px;font-size:13px">正在加载更多...${xhsEst2 ? `<div id="rp-xhs-eta" style="font-size:11px;opacity:.72;margin-top:4px">预计还有 <span id="rp-xhs-eta-num">${xhsEst2}</span> 秒</div>` : ''}</div>`);
+    _xhsStartEtaTimer(xhsEst2);
     buildXHSFeedWithAI(true);
     return;
   }
@@ -9026,12 +11612,388 @@ function _renderXHSList(box) {
   [...[...oldStranger].reverse(), ...userPosts, ...newStranger].forEach(p => box.append(renderXHSCard(p)));
 }
 
+// ════════════════════════════════════════════════════════════
+//  🏦 BANK CARD MODULE - 银行卡资产模块
+// ════════════════════════════════════════════════════════════
+
+/** 渲染银行卡视图（用已缓存数据，或显示空状态） */
+function renderBankView() {
+  const body = document.getElementById('rp-bank-body');
+  if (!body) return;
+
+  // 校验缓存数据是否属于当前角色，防止切换窗口后显示旧角色资产
+  // 仅在 chatId 发生变化时才做跨角色清空，同一会话内始终保留缓存
+  let data = STATE.bankData;
+  if (data && data._cacheForChatId && data._cacheForChatId !== STATE.chatId) {
+    try {
+      const rawCtx = (typeof getContext === 'function') ? getContext() : {};
+      const curCharName = (rawCtx?.name2 || (rawCtx?.characters && rawCtx?.characterId !== undefined
+        ? rawCtx.characters[rawCtx.characterId]?.name : null) || '').trim().toLowerCase();
+      const cachedName = (data.charName || '').trim().toLowerCase();
+      // 只有两个名字都非空，且没有任何包含关系，才判定为不同角色并清空
+      const clearlyDifferent = curCharName && cachedName
+        && !curCharName.includes(cachedName) && !cachedName.includes(curCharName);
+      if (clearlyDifferent) {
+        STATE.bankData = null;
+        data = null;
+      }
+    } catch(e) {}
+  }
+
+  if (!data) {
+    body.innerHTML = '<div class="rp-bank-empty">✦ 点击右上角刷新，读取 TA 的资产信息</div>';
+    return;
+  }
+  _paintBankBody(data);
+}
+
+/** 格式化金额：自动加单位（万/亿） */
+function _fmtMoney(raw) {
+  if (raw == null || raw === '') return '—';
+  const s = String(raw).trim();
+  // 已带文字则直接返回
+  if (/[万亿元千百]/.test(s)) return s;
+  const n = parseFloat(s.replace(/[,，\s]/g, ''));
+  if (isNaN(n)) return s;
+  if (Math.abs(n) >= 1e8) return (n / 1e8).toFixed(2).replace(/\.?0+$/, '') + '亿';
+  if (Math.abs(n) >= 1e4) return (n / 1e4).toFixed(2).replace(/\.?0+$/, '') + '万';
+  return n.toLocaleString('zh-CN');
+}
+
+/** 判断数值正负 */
+function _isNeg(val) {
+  if (val == null) return false;
+  const s = String(val);
+  if (s.startsWith('-') || s.startsWith('−')) return true;
+  // 贷款/欠款默认为负
+  return false;
+}
+
+/** 将 AI 返回的数据渲染到 #rp-bank-body (v2 重构) */
+function _paintBankBody(data) {
+  const body = document.getElementById('rp-bank-body');
+  if (!body) return;
+
+  const assets   = data.assets       || [];
+  const txns     = data.transactions || [];
+  const total    = data.totalAssets  || '—';
+  const liquid   = data.liquidAssets || null;  // 流动资金
+  const debt     = data.totalDebt    || null;  // 总负债
+  const charName = data.charName     || 'TA';
+  const currency = data.currency     || '¥';
+
+  // ── Hero 总资产卡 ──
+  const statsHtml = (liquid || debt) ? `
+    <div class="rp-bank-hero-divider"></div>
+    <div class="rp-bank-hero-stats">
+      ${liquid ? `<div class="rp-bank-hero-stat">
+        <div class="rp-bank-hero-stat-val">${currency}${_fmtMoney(liquid)}</div>
+        <div class="rp-bank-hero-stat-lbl">流动资金</div>
+      </div>` : ''}
+      ${debt ? `<div class="rp-bank-hero-stat">
+        <div class="rp-bank-hero-stat-val" style="color:var(--bank-neg)">${currency}${_fmtMoney(debt)}</div>
+        <div class="rp-bank-hero-stat-lbl">负债</div>
+      </div>` : ''}
+      ${assets.length ? `<div class="rp-bank-hero-stat">
+        <div class="rp-bank-hero-stat-val">${assets.length}</div>
+        <div class="rp-bank-hero-stat-lbl">资产项</div>
+      </div>` : ''}
+    </div>` : '';
+
+  let html = `
+    <div class="rp-bank-hero">
+      <div class="rp-bank-hero-chip">
+        <span class="rp-bank-hero-chip-dot"></span>
+        <span class="rp-bank-hero-chip-text">${charName} · 资产</span>
+      </div>
+      <div class="rp-bank-hero-label">净资产估算</div>
+      <div class="rp-bank-hero-amount"><span class="rp-bank-hero-unit">${currency}</span>${_fmtMoney(total)}</div>
+      <div class="rp-bank-hero-sub">含负债综合估算</div>
+      ${statsHtml}
+    </div>`;
+
+  // ── 资产构成卡（v4 完全重写 - 卡片列表布局） ──
+  if (assets.length > 0) {
+    html += `<div class="rp-bank-card"><div class="rp-bank-section-title">资产构成</div><div class="rp-asset-list">`;
+    assets.forEach(item => {
+      const neg = _isNeg(item.amount) || item.type === 'loan' || item.type === 'debt'
+                  || (item.label || '').includes('贷') || (item.label || '').includes('债');
+      const amtStr = `${currency}${_fmtMoney(item.amount)}`;
+      html += `
+        <div class="rp-asset-item">
+          <div class="rp-asset-header">
+            <div class="rp-asset-ico">${item.icon || '💰'}</div>
+            <div class="rp-asset-name">${item.label || '资产'}</div>
+          </div>
+          <div class="rp-asset-footer">
+            <div class="rp-asset-amount${neg ? ' rp-bank-neg' : ''}">${amtStr}</div>
+            ${(item.desc || item.change) ? (function(){
+              var combined = [item.desc, item.change].filter(Boolean).join(' ');
+              var esc = combined.replace(/"/g,'&quot;');
+              return `<div class="rp-asset-desc-wrap"><div class="rp-asset-desc" data-full="${esc}">${combined}</div></div>`;
+            })() : ''}
+          </div>
+        </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // ── 消费记录卡 ──
+  if (txns.length > 0) {
+    html += `<div class="rp-bank-card"><div class="rp-bank-section-title">近期收支</div>`;
+    txns.forEach(txn => {
+      const isOut = String(txn.amount || '').startsWith('-') || txn.dir === 'out';
+      const isIn  = txn.dir === 'in' || String(txn.amount || '').startsWith('+');
+      const amtClass = isOut ? 'rp-bank-out' : isIn ? 'rp-bank-in' : '';
+      const amtDisplay = isOut
+        ? `-${currency}${_fmtMoney(String(txn.amount || '').replace(/^[-−]/, ''))}`
+        : isIn
+          ? `+${currency}${_fmtMoney(String(txn.amount || '').replace(/^[+]/, ''))}`
+          : `${currency}${_fmtMoney(txn.amount)}`;
+      html += `
+        <div class="rp-bank-txn">
+          <div class="rp-bank-txn-ico">${txn.icon || (isOut ? '💸' : isIn ? '💵' : '🔄')}</div>
+          <div class="rp-bank-txn-info">
+            <div class="rp-bank-txn-name">${txn.label || '交易'}</div>
+            <div class="rp-bank-txn-date">${txn.date || ''}</div>
+          </div>
+          <div class="rp-bank-txn-amt ${amtClass}">${amtDisplay}</div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── 备注卡（可选） ──
+  if (data.note) {
+    html += `
+      <div class="rp-bank-card">
+        <div class="rp-bank-section-title">财务备注</div>
+        <div style="font-size:12px;line-height:1.75;color:var(--bank-text);opacity:.72">${data.note}</div>
+      </div>`;
+  }
+
+  body.innerHTML = html;
+
+  // 等浏览器完成 layout 后再检测截断，否则 scrollHeight/clientHeight 可能为 0
+  requestAnimationFrame(function() {
+    body.querySelectorAll('.rp-asset-desc').forEach(function(descEl) {
+      if (descEl.scrollHeight > descEl.clientHeight + 2) {
+        var moreBtn = document.createElement('span');
+        moreBtn.className = 'rp-asset-desc-more';
+        moreBtn.textContent = '【更多】';
+        descEl.parentNode.appendChild(moreBtn);
+        moreBtn.addEventListener('click', function() {
+          var full = descEl.dataset.full || descEl.textContent;
+          descEl.classList.add('rp-desc-expanded');
+          descEl.textContent = full;
+          moreBtn.remove();
+        });
+      }
+    });
+  });
+}
+
+/** 生成/刷新银行卡数据（force=true 强制重新 AI 生成） */
+async function generateBankData(force) {
+  const btn = document.getElementById('rp-bank-refresh');
+  const body = document.getElementById('rp-bank-body');
+  if (!body) return;
+
+  // 如有缓存且非强制，直接渲染
+  if (!force && STATE.bankData) {
+    _paintBankBody(STATE.bankData);
+    return;
+  }
+
+  // ── 预估倒计时：读取历史耗时均值 ──
+  const BANK_TIMER_KEY = 'rp_bank_gen_times';
+  let estSeconds = null;
+  try {
+    const hist = JSON.parse(localStorage.getItem(BANK_TIMER_KEY) || '[]');
+    if (hist.length >= 1) {
+      estSeconds = Math.round(hist.reduce((a, b) => a + b, 0) / hist.length / 1000);
+      if (estSeconds < 2) estSeconds = 2;
+    }
+  } catch(e) {}
+
+  // 显示加载动画
+  body.innerHTML = `
+    <div id="rp-bank-loading">
+      <div id="rp-bank-loading-text">正在读取资产信息…</div>
+      ${estSeconds ? `<div id="rp-bank-loading-eta" style="font-size:11px;opacity:.72;margin-top:2px">预计还有 <span id="rp-bank-eta-num">${estSeconds}</span> 秒</div>` : ''}
+      <div class="rp-bank-loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>`;
+  if (btn) { btn.disabled = true; btn.classList.add('rp-spinning'); }
+
+  // 启动倒计时
+  let etaTimer = null;
+  if (estSeconds) {
+    let remaining = estSeconds;
+    etaTimer = setInterval(() => {
+      remaining--;
+      const numEl = document.getElementById('rp-bank-eta-num');
+      const etaEl = document.getElementById('rp-bank-loading-eta');
+      if (remaining > 0) {
+        if (numEl) numEl.textContent = remaining;
+      } else {
+        if (etaEl) etaEl.textContent = '即将完成…';
+        clearInterval(etaTimer);
+        etaTimer = null;
+      }
+    }, 1000);
+  }
+
+  const genStart = Date.now();
+
+  try {
+    // ── 读取上下文 ──
+    const rawCtx = (typeof getContext === 'function') ? getContext() : {};
+    const charName = rawCtx?.name2 || rawCtx?.characters?.[rawCtx?.characterId]?.name || 'TA';
+    const userName = rawCtx?.name1 || '用户';
+
+    // 人设（大幅提升截取长度，避免财富规模描述被截断）
+    let charPersona = '';
+    try {
+      const charObj = (rawCtx?.characters && rawCtx?.characterId !== undefined)
+        ? rawCtx.characters[rawCtx.characterId]
+        : (rawCtx?.char || null);
+      if (charObj) {
+        const parts = [];
+        if (charObj.description) parts.push(charObj.description.replace(/\s+/g, ' ').trim().slice(0, 1200));
+        if (charObj.personality) parts.push('性格:' + charObj.personality.trim().slice(0, 400));
+        if (charObj.scenario)    parts.push('背景:' + charObj.scenario.trim().slice(0, 600));
+        if (charObj.mes_example) parts.push('对话示例:' + charObj.mes_example.trim().slice(0, 300));
+        charPersona = parts.filter(Boolean).join('\n');
+      }
+    } catch(e) {}
+
+    // 世界书（提升上限，优先提取含财富/资产/公司关键词的段落）
+    const wiTextRaw = _collectWorldInfoText(charName);
+    // 额外补充：从世界书原始数据里搜索财富相关词条（不限角色名匹配）
+    let wiText = wiTextRaw;
+    try {
+      const wealthKeywords = ['资产','财富','身家','净资产','亿','集团','公司','CEO','董事长','总裁','enterprise','billion','million','worth','wealth','corporation'];
+      const wi = window.world_info || {};
+      const extraSegs = [];
+      Object.values(wi).forEach(function(book) {
+        const entries = book.entries || book.content || {};
+        Object.values(entries).forEach(function(e) {
+          const content = (e.content || e.text || '').trim();
+          if (content.length > 10) {
+            const cl = content.toLowerCase();
+            if (wealthKeywords.some(kw => cl.includes(kw.toLowerCase()))) {
+              extraSegs.push(content);
+            }
+          }
+        });
+      });
+      if (extraSegs.length) {
+        const extra = extraSegs.join('\n').slice(0, 800);
+        wiText = wiText ? wiText + '\n' + extra : extra;
+      }
+    } catch(e) {}
+
+    // 近期对话（扩展到30条，每条保留更多内容）
+    const chatMsgs = (rawCtx?.chat || []).slice(-30).map(m => {
+      const spk = m.is_user ? userName : (m.name || charName);
+      return spk + ': ' + ((m.mes || '').replace(/<[^>]+>/g, '').trim().slice(0, 300));
+    }).join('\n') || '（暂无对话记录）';
+
+    // ── 构造 prompt ──
+    const sysMsg = `你是专业的角色财务顾问，擅长根据小说/剧本人设推断角色的真实资产状况。
+请严格按照角色设定还原资产规模，生成一份可信、细节丰富的财务报告。
+【核心原则】
+- 资产规模必须严格匹配人设身份，双向约束：
+  · 企业家/总裁/CEO/财阀/大亨：至少数十亿起步，顶级可达千亿以上，切勿缩水
+  · 普通打工人/学生/平民/底层角色：资产应在合理范围内（数千至数十万），切勿虚高
+  · 若人设中明确提到公司规模、净资产、身家等数字，必须以此为基准，不得偏离
+- 若无法判断角色身份，默认按普通人处理，切勿凭空捏造巨额财富
+- 货币单位根据角色世界观决定（现代中国¥，欧美£/$，古代两/铜钱，奇幻金币等）
+- 资产项目必须包含：现金/流动资金、房产/土地、金融资产（基金/股票/信托）、贷款/债务（如有）
+- 消费记录至少6条，需结合最近剧情（花了什么钱、赚了什么钱），如无剧情则根据人设自由发挥
+- totalAssets、liquidAssets、totalDebt 均为纯数字（不含单位，由前端格式化），currency 是货币符号
+- 只返回 JSON，不要任何解释文字
+JSON 格式：
+{
+  "charName": "角色名",
+  "currency": "¥",
+  "totalAssets": "净资产纯数字",
+  "liquidAssets": "流动资金纯数字（现金+活期存款等可随时动用的资金）",
+  "totalDebt": "总负债纯数字（贷款+债务合计，无负债则省略此字段）",
+  "assets": [
+    {"icon":"emoji","label":"资产名","desc":"补充说明","amount":"数字","change":"近期变动（可选）","type":"cash|realestate|fund|trust|bond|loan|other"},
+    ...
+  ],
+  "transactions": [
+    {"icon":"emoji","label":"事项名称","date":"日期","amount":"数字","dir":"out/in"},
+    ...
+  ],
+  "note": "财务简评（1-2句话，可选）"
+}`;
+
+    const prompt = `角色名：${charName}
+用户名：${userName}
+
+【角色人设】
+${charPersona ? charPersona.slice(0, 1500) : '（无具体人设，请按普通人标准处理）'}
+
+${wiText ? `【世界书相关词条】\n${wiText.slice(0, 1200)}\n` : ''}
+【近期对话（最近30楼）】
+${chatMsgs}
+
+请根据以上信息，生成 ${charName} 的完整资产JSON：`;
+
+    const resp = await lgCallAPI(prompt, 2400, sysMsg);
+    if (!resp) throw new Error('API 返回为空');
+
+    // 解析 JSON
+    let parsed = null;
+    try {
+      let jsonStr = resp.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+      const m = jsonStr.match(/\{[\s\S]*\}/);
+      if (m) jsonStr = m[0];
+      parsed = JSON.parse(jsonStr);
+    } catch(e) {
+      console.warn('[Bank] JSON parse failed:', e.message, resp.slice(0, 200));
+      throw new Error('JSON 解析失败');
+    }
+
+    if (!parsed || !parsed.assets) throw new Error('数据结构不完整');
+
+    // 存入 STATE 并持久化（记录 chatId，防止切换角色后误用缓存）
+    parsed._cacheForChatId = STATE.chatId;
+    STATE.bankData = parsed;
+    saveState();
+
+    // 记录本次耗时到历史（保留最近 6 次）
+    try {
+      const elapsed = Date.now() - genStart;
+      const hist = JSON.parse(localStorage.getItem(BANK_TIMER_KEY) || '[]');
+      hist.push(elapsed);
+      if (hist.length > 6) hist.shift();
+      localStorage.setItem(BANK_TIMER_KEY, JSON.stringify(hist));
+    } catch(e) {}
+
+    _paintBankBody(parsed);
+
+  } catch(err) {
+    console.warn('[Bank] generateBankData error:', err);
+    body.innerHTML = `<div class="rp-bank-empty">⚠️ 生成失败：${err.message || '未知错误'}<br><span style="font-size:11px;opacity:.6">请确认 API 已配置，或重试</span></div>`;
+  } finally {
+    if (etaTimer) { clearInterval(etaTimer); etaTimer = null; }
+    if (btn) { btn.disabled = false; btn.classList.remove('rp-spinning'); }
+  }
+}
+
 // XHS API 调用:直接复用 lgCallAPI,和其他功能保持一致
 async function xhsCallAPI(prompt, sysMsg) {
   return await lgCallAPI(prompt, 3500, sysMsg);
 }
 
 async function buildXHSFeedWithAI(appendMode) {
+  const xhsGenStart = Date.now();
   const now = new Date();
   const todayStr = `${now.getMonth()+1}-${now.getDate()}`;
   const rndInt = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
@@ -9055,6 +12017,15 @@ async function buildXHSFeedWithAI(appendMode) {
 
   // 合并新帖子到列表(追加模式:新帖插到陌生人帖子最前面,超10条删最旧的)
   function mergeNewPosts(newPosts) {
+    // 记录本次耗时（成功路径）
+    try {
+      const elapsed = Date.now() - xhsGenStart;
+      const hist = JSON.parse(localStorage.getItem(XHS_TIMER_KEY) || '[]');
+      hist.push(elapsed);
+      if (hist.length > 6) hist.shift();
+      localStorage.setItem(XHS_TIMER_KEY, JSON.stringify(hist));
+    } catch(e) {}
+    _xhsClearEtaTimer();
     const MAX_STRANGER = 10;
     let merged = [...newPosts, ...existingStranger]; // 新的在前
     if (merged.length > MAX_STRANGER) merged = merged.slice(0, MAX_STRANGER); // 删最旧
@@ -9150,6 +12121,7 @@ async function buildXHSFeedWithAI(appendMode) {
   } catch(e) { console.error('[XHS] AI feed build EXCEPTION:', e); }
 
   // AI 失败 → 显示错误提示,让用户刷新重试(不用 fallback 池避免重复)
+  _xhsClearEtaTimer();
   $('#rp-xhs-loading').remove();
   const box = $('#rp-xhs-list');
   if (box.length && !box.find('.rp-xhs-card').length) {
@@ -9157,6 +12129,42 @@ async function buildXHSFeedWithAI(appendMode) {
   }
 }
 
+
+// ── XHS 预估倒计时辅助 ──
+const XHS_TIMER_KEY = 'rp_xhs_gen_times';
+let _xhsEtaTimer = null;
+
+function _xhsGetEstSeconds() {
+  try {
+    const hist = JSON.parse(localStorage.getItem(XHS_TIMER_KEY) || '[]');
+    if (hist.length >= 1) {
+      const est = Math.round(hist.reduce((a, b) => a + b, 0) / hist.length / 1000);
+      return est < 2 ? 2 : est;
+    }
+  } catch(e) {}
+  return null;
+}
+
+function _xhsStartEtaTimer(estSeconds) {
+  _xhsClearEtaTimer();
+  if (!estSeconds) return;
+  let remaining = estSeconds;
+  _xhsEtaTimer = setInterval(() => {
+    remaining--;
+    const numEl = document.getElementById('rp-xhs-eta-num');
+    const etaEl = document.getElementById('rp-xhs-eta');
+    if (remaining > 0) {
+      if (numEl) numEl.textContent = remaining;
+    } else {
+      if (etaEl) etaEl.textContent = '即将完成…';
+      _xhsClearEtaTimer();
+    }
+  }, 1000);
+}
+
+function _xhsClearEtaTimer() {
+  if (_xhsEtaTimer) { clearInterval(_xhsEtaTimer); _xhsEtaTimer = null; }
+}
 
 // Fallback 通用模板(不假设任何角色关系)
 // 打开详情页
@@ -9268,16 +12276,42 @@ async function generateXHSStrangerComments(postId) {
   const ctx = getContext() || {};
   const charName = ctx?.name2 || ctx?.name || 'TA';
   const charLast = charName.split(/\s+/).pop() || charName;
-
   const userName = ctx?.name1 || '楼主';
+
+  // 从角色卡提取关系背景
+  let charPersonaSnippet = '';
+  try {
+    const charObj = (ctx?.characters && ctx?.characterId !== undefined)
+      ? ctx.characters[ctx.characterId] : (ctx?.char || null);
+    if (charObj) {
+      const parts = [];
+      if (charObj.description) parts.push(charObj.description.replace(/\s+/g,' ').trim().slice(0,300));
+      if (charObj.scenario)    parts.push(charObj.scenario.replace(/\s+/g,' ').trim().slice(0,200));
+      charPersonaSnippet = parts.filter(Boolean).join(' ');
+    }
+  } catch(e) {}
+
+  // 从聊天记录提取最近 15 条(足够推断称谓关系,token 消耗小)
+  const recentChat = (ctx?.chat || []).slice(-15).map(m => {
+    const spk = m.is_user ? userName : (m.name || charName);
+    return spk + ': ' + (m.mes || '').replace(/<[^>]+>/g,'').trim().slice(0,120);
+  }).join('\n');
+
+  // 拼接关系上下文(角色卡 + 聊天记录),让模型自行判断称谓对应关系
+  const relationCtx = [
+    charPersonaSnippet ? `【角色背景】${charPersonaSnippet}` : '',
+    recentChat         ? `【近期对话片段】\n${recentChat}`  : '',
+  ].filter(Boolean).join('\n');
 
   const sysMsg = `你是一个小红书评论模拟器。以下帖子是由用户${userName}本人发的,模拟5位性格各异的陌生网友评论。
 
 人物关系说明(严格遵守,不能混淆):
-- 帖子里的"我"="我的"="我爸/我妈/我家人" = 发帖人${userName}自己的视角
+- 帖子里的"我"表示发帖人${userName}自己
 - ${charName}(姓${charLast})是帖子中涉及到的另一个人物,不是发帖人
+- 请根据下方【角色背景】和【近期对话片段】判断帖子中出现的亲属/关系称谓(如"我爸""我父亲""我男友"等)究竟对应谁;如果背景已明确说明${charName}与${userName}的关系,则以该关系为准,不得臆造第三人
 - 评论者是不认识${userName}的陌生网友,他们通过帖子内容来理解人物关系
 
+${relationCtx ? relationCtx + '\n' : ''}
 评论要求:
 - 每条评论必须紧扣帖子实际内容,不能搞错人物关系
 - 评论有实质内容,不只是"坐等后续"空话
@@ -9351,12 +12385,37 @@ async function generateXHSReplyToComment(postId, userComment, userName) {
   const charLast = charName.split(/\s+/).pop() || charName;
   const recentComments = (post.comments||[]).slice(-5).map(c=>`${c.user}:${c.text}`).join('\n');
 
+  // 读取角色卡关系背景(与 generateXHSStrangerComments 相同逻辑)
+  let charPersonaSnippet = '';
+  try {
+    const charObj = (ctx?.characters && ctx?.characterId !== undefined)
+      ? ctx.characters[ctx.characterId] : (ctx?.char || null);
+    if (charObj) {
+      const parts = [];
+      if (charObj.description) parts.push(charObj.description.replace(/\s+/g,' ').trim().slice(0,300));
+      if (charObj.scenario)    parts.push(charObj.scenario.replace(/\s+/g,' ').trim().slice(0,200));
+      charPersonaSnippet = parts.filter(Boolean).join(' ');
+    }
+  } catch(e) {}
+
+  // 近期聊天记录(最近 10 条,用于推断称谓关系)
+  const recentChatSnippet = (ctx?.chat || []).slice(-10).map(m => {
+    const spk = m.is_user ? userName : (m.name || charName);
+    return spk + ': ' + (m.mes || '').replace(/<[^>]+>/g,'').trim().slice(0,100);
+  }).join('\n');
+
+  const relationCtx = [
+    charPersonaSnippet ? `【角色背景】${charPersonaSnippet}` : '',
+    recentChatSnippet  ? `【近期对话】\n${recentChatSnippet}` : '',
+  ].filter(Boolean).join('\n');
+
   const sysMsg = `你是小红书评论区生成器。根据帖子内容和用户评论,生成3个自然贴切的陌生网友回复。
 要求:
 - 3条回复必须紧扣帖子主题和用户说的话,不能答非所问
 - 3条风格各异(如追问细节、调侃起哄、加料补充、共情、质疑等),根据帖子和评论内容自然选择
 - 每条15-25字,口语化小红书风格,昵称带emoji有创意
-帖子背景:涉及用户与 ${charName}(姓${charLast})的相关话题。
+帖子背景:涉及用户与 ${charName}(姓${charLast})的相关话题。请根据下方背景资料判断帖子中出现的亲属/关系称谓实际对应谁,以背景为准,不得臆造第三人。
+${relationCtx ? '\n' + relationCtx + '\n' : ''}
 只返回JSON数组:[{"user":"昵称emoji","text":"回复内容"},{"user":"昵称emoji","text":"回复内容"},{"user":"昵称emoji","text":"回复内容"}]`;
 
   const prompt = `帖子标题:${post.title}\n近期评论:\n${recentComments}\n用户${userName}刚说:「${userComment}」\n生成3条回复JSON:`;
@@ -9418,9 +12477,28 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function incomingMoment(fromRaw, time, text, img) {
+function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType) {
   const momentId = fromRaw.toLowerCase().replace(/\s+/g,'_') + '_' + time.replace(':','');
-  if (STATE.moments.find(m => m.id === momentId)) return;
+  // ── 去重：已存在同 ID 的 moment 时，仅在图片从无到有时更新（ComfyUI 完成后消息更新场景）──
+  const existingMoment = STATE.moments && STATE.moments.find(m => m.id === momentId);
+  if (existingMoment) {
+    // 若已存在 moment 没有图片，但本次解析拿到了图片 → 回填（ComfyUI 完成态覆盖 pending 态）
+    if (!existingMoment.img && img) {
+      existingMoment.img = img;
+      existingMoment.pendingImg = null;
+      existingMoment.pendingImgType = null;
+      // 同时清理 _pendingMomentImgs 里对应条目，避免 Observer 重复回填
+      if (STATE._pendingMomentImgs) {
+        for (const [k, v] of STATE._pendingMomentImgs) {
+          if (v === momentId) { STATE._pendingMomentImgs.delete(k); break; }
+        }
+      }
+      if (STATE.currentView === 'moments') renderMoments();
+      saveState();
+      console.log('[Phone:moment:update] ComfyUI 完成，回填已存在 moment 的图片', { momentId, src: img.slice(0, 80) });
+    }
+    return;
+  }
   const threadId = matchThread(fromRaw);
   const th = STATE.threads[threadId];
   STATE.moments = STATE.moments || [];
@@ -9432,22 +12510,31 @@ function incomingMoment(fromRaw, time, text, img) {
     avatarBg: th ? th.avatarBg : 'linear-gradient(145deg,#555,#333)',
     time, text,
     img: img || null,
+    // ── 朋友圈生图占位：等待生图完成后回填 ──
+    // pendingImgType: 'chatu8'(智绘姬,需点击) | 'comfy'(ComfyUI,全自动)
+    pendingImg: (!img && pendingImgPrompt) ? pendingImgPrompt : null,
+    pendingImgType: (!img && pendingImgPrompt) ? (pendingImgType || 'chatu8') : null,
     likes: [],
     comments: [],
   });
   if (STATE.currentView === 'moments') renderMoments();
-  showBanner((th ? th.name : fromRaw), '发了朋友圈:' + text.slice(0,25) + (text.length>25?'...':''), time);
+  showBanner((th ? th.name : fromRaw), '发了朋友圈:' + (text ? text.slice(0,25) + (text.length>25?'...':'') : '📷 图片'), time);
   saveState();
   // 好友自动点赞+评论
   setTimeout(() => friendsInteractOnMoment(momentId), 1500);
 }
 
 function incomingComment(momentId, fromRaw, time, text, replyTo) {
-  let moment = STATE.moments && STATE.moments.find(m => m.id === momentId || m.id.includes(momentId));
+  // 优先精确匹配，其次做 includes 模糊匹配
+  let moment = STATE.moments && (
+    STATE.moments.find(m => m.id === momentId) ||
+    STATE.moments.find(m => m.id.includes(momentId) || momentId.includes(m.id))
+  );
   if (!moment) {
-    // Fallback: apply to most recent user moment if any exist
-    const userMoments = (STATE.moments || []).filter(m => m.from === 'user');
-    moment = userMoments.length > 0 ? userMoments[userMoments.length - 1] : null;
+    // Fallback: 找最近一条动态（不局限于 user，避免评论打到错误动态）
+    moment = (STATE.moments && STATE.moments.length > 0)
+      ? STATE.moments[STATE.moments.length - 1]
+      : null;
   }
   if (!moment) return;
   const threadId = matchThread(fromRaw);
@@ -9459,6 +12546,9 @@ function incomingComment(momentId, fromRaw, time, text, replyTo) {
     if (replyToIdx < 0) replyToIdx = null;
   }
   moment.comments = moment.comments || [];
+  // 去重：同名同文的评论不重复插入
+  const isDup = moment.comments.some(c => c.name === name && c.text === text);
+  if (isDup) return;
   moment.comments.push({ from: threadId || fromRaw, name, text, time, replyTo: replyToIdx });
   if (STATE.currentView === 'moments') renderMoments();
   saveState();
@@ -9677,8 +12767,8 @@ function _collectWorldInfoText(charName) {
   });
 
   const result = relevant.join('\n').trim();
-  // 总长限制 600 字
-  return result.length > 600 ? result.slice(0, 600) : result;
+  // 总长限制 1200 字
+  return result.length > 1200 ? result.slice(0, 1200) : result;
 }
 
 // ── Clean persona for 2048 (strip system directives) ──────────────
@@ -9814,6 +12904,946 @@ function g2048Msg(type, text) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// ⛏️  黄金矿工 (Gold Miner) — 双人轮流，竞技 / 合作爬塔
+// ══════════════════════════════════════════════════════════════
+const GM = {
+  active: false,
+  mode: null,
+  turn: 'user',
+  round: 1,
+  userScore: 0,
+  charScore: 0,
+  charName: '对方',
+  towerLevel: 0,
+  towerTargets: [],
+  timeLeft: 30,
+  timerInterval: null,
+  hookAngle: 0,
+  hookDir: 1,
+  hookState: 'idle',
+  hookLen: 25,
+  hookedItem: null,
+  items: [],
+  chatLog: [],
+  rafId: null,
+  lastTime: 0,
+  lastFrameTime: 0,
+  colors: {},
+};
+
+const GM_MAX_HOOK_LEN = 195;
+const GM_ANCHOR_X = 135;
+const GM_ANCHOR_Y = 18;
+// Time-based speeds (per second at 60 fps reference):
+// GM_SWING_SPEED was Math.PI/124 per frame → * 60 fps = ~1.52 rad/s
+const GM_SWING_SPEED_PS = (Math.PI / 124) * 60;  // radians per second
+// hookLen growth: 2.2 px/frame → * 60 = 132 px/s
+const GM_HOOK_GO_SPEED_PS = 132;                  // px per second
+// cached gradient objects (rebuilt on first draw / canvas resize)
+let _gmBgGrad = null, _gmBgGradW = 0, _gmBgGradH = 0;
+let _gmPulleyGrad = null;
+
+const GM_ITEMS_DEF = [
+  { type:'gold_s',  emoji:'🟡', label:'小金块', score:50,  weight:1.0, r:9  },
+  { type:'gold_m',  emoji:'🟠', label:'中金块', score:100, weight:1.6, r:13 },
+  { type:'gold_l',  emoji:'🔶', label:'大金块', score:200, weight:2.5, r:17 },
+  { type:'diamond', emoji:'💎', label:'钻石',   score:300, weight:0.8, r:11 },
+  { type:'stone',   emoji:'🪨', label:'石头',   score:10,  weight:3.0, r:12 },
+  { type:'bomb',    emoji:'💣', label:'炸弹',   score:-50, weight:1.2, r:10 },
+];
+
+function gmBuildTower() {
+  const t = [];
+  // 第1关起始分调整为1000，后续每关+300
+  for (let v = 1000; v <= 4300; v += 300) t.push(v);
+  return t;
+}
+
+function gmReadColors() {
+  const phone = document.getElementById('rp-phone');
+  if (!phone) return;
+  const s = getComputedStyle(phone);
+  GM.colors.accent = s.getPropertyValue('--rp-nav-btn').trim() || '#e05888';
+  GM.colors.wdFill = s.getPropertyValue('--rp-wd-fill').trim() || 'linear-gradient(90deg,#f59e0b,#ef4444)';
+}
+
+function gmSpawnItems() {
+  GM.items = [];
+  const pool = [
+    'gold_s','gold_s','gold_s','gold_s',
+    'gold_m','gold_m','gold_m',
+    'gold_l','gold_l',
+    'diamond','diamond',
+    'stone','stone','stone',
+    'bomb','bomb',
+  ];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const chosen = pool.slice(0, 14);
+  const placed = [];
+  for (const type of chosen) {
+    const def = GM_ITEMS_DEF.find(d => d.type === type);
+    if (!def) continue;
+    let tries = 0, ok = false, x, y;
+    while (tries < 30 && !ok) {
+      x = def.r + 6 + Math.random() * (258 - def.r * 2);
+      y = 58 + def.r + Math.random() * (185 - 58 - def.r * 2);
+      ok = placed.every(p => Math.hypot(p.x - x, p.y - y) > p.r + def.r + 5);
+      tries++;
+    }
+    if (ok) placed.push({ ...def, x, y, grabbed: false });
+  }
+  GM.items = placed;
+}
+
+function gmDrawItem(ctx, type, x, y, r) {
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  if (type === 'gold_s' || type === 'gold_m' || type === 'gold_l') {
+    // ── 黄金矿工风格金块：不规则有机形状 + 径向高光 ──
+    // 每个尺寸用固定凸包锚点，bezier 拟合成有机块状
+    ctx.save();
+    ctx.translate(x, y);
+    // 小/中/大金块分别用不同形状比例
+    const sx = type === 'gold_s' ? 1.0 : type === 'gold_m' ? 1.15 : 1.3;
+    const sy = type === 'gold_s' ? 0.88 : type === 'gold_m' ? 1.0  : 1.1;
+    ctx.scale(sx, sy);
+    const rr = r;
+    // 不规则凸包路径（8点 bezier，模仿图片中不规则金块轮廓）
+    ctx.beginPath();
+    ctx.moveTo(rr*0.0,  -rr*0.95);
+    ctx.bezierCurveTo( rr*0.55, -rr*1.05,  rr*1.10, -rr*0.55,  rr*1.05,  rr*0.05);
+    ctx.bezierCurveTo( rr*1.15,  rr*0.55,  rr*0.65,  rr*1.05,  rr*0.10,  rr*1.00);
+    ctx.bezierCurveTo(-rr*0.40,  rr*1.15, -rr*1.05,  rr*0.70, -rr*1.05,  rr*0.10);
+    ctx.bezierCurveTo(-rr*1.10, -rr*0.40, -rr*0.55, -rr*1.05,  rr*0.0,  -rr*0.95);
+    ctx.closePath();
+    // 基底填充：深金到亮金渐变
+    const gBase = ctx.createRadialGradient(-rr*0.2, -rr*0.3, rr*0.05, 0, 0, rr*1.3);
+    gBase.addColorStop(0,   '#fff176');
+    gBase.addColorStop(0.25,'#fdd835');
+    gBase.addColorStop(0.6, '#f9a825');
+    gBase.addColorStop(1,   '#e65100');
+    ctx.fillStyle = gBase;
+    ctx.fill();
+    // 描边：深棕轮廓
+    ctx.strokeStyle = '#7a4800';
+    ctx.lineWidth = 1.2 / Math.max(sx, sy);
+    ctx.stroke();
+    // 高光：左上方椭圆高光（模仿球形光泽）
+    ctx.save();
+    ctx.clip();
+    const gHL = ctx.createRadialGradient(-rr*0.28, -rr*0.38, 0, -rr*0.18, -rr*0.28, rr*0.72);
+    gHL.addColorStop(0,   'rgba(255,255,200,0.82)');
+    gHL.addColorStop(0.45,'rgba(255,255,180,0.28)');
+    gHL.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx.fillStyle = gHL;
+    ctx.fillRect(-rr*1.3, -rr*1.3, rr*2.6, rr*2.6);
+    ctx.restore();
+    // 暗部：右下阴影
+    ctx.save();
+    ctx.clip();
+    const gSh = ctx.createRadialGradient(rr*0.4, rr*0.5, 0, rr*0.3, rr*0.4, rr*1.1);
+    gSh.addColorStop(0,   'rgba(100,40,0,0.38)');
+    gSh.addColorStop(1,   'rgba(100,40,0,0)');
+    ctx.fillStyle = gSh;
+    ctx.fillRect(-rr*1.3, -rr*1.3, rr*2.6, rr*2.6);
+    ctx.restore();
+    ctx.restore();
+
+  } else if (type === 'diamond') {
+    // ── 宝石切割钻石：上冠 + 下锥 + 多切面高光 ──
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1, 0.70);   // 上下压扁
+    const rr = r;
+    // 外轮廓：六边形切割宝石
+    // 上冠（宽扁梯形）
+    ctx.beginPath();
+    ctx.moveTo(-rr*0.72, -rr*0.15);   // 左肩
+    ctx.lineTo(-rr*0.38, -rr*0.95);   // 左顶
+    ctx.lineTo( rr*0.38, -rr*0.95);   // 右顶
+    ctx.lineTo( rr*0.72, -rr*0.15);   // 右肩
+    ctx.lineTo( rr*0.52,  rr*0.15);   // 右腰
+    ctx.lineTo( 0,        rr*1.05);   // 底尖
+    ctx.lineTo(-rr*0.52,  rr*0.15);   // 左腰
+    ctx.closePath();
+    // 基底蓝紫渐变
+    const gD = ctx.createLinearGradient(-rr*0.7, -rr*0.9, rr*0.5, rr*1.0);
+    gD.addColorStop(0,   '#e0f7ff');
+    gD.addColorStop(0.2, '#7dd3fc');
+    gD.addColorStop(0.5, '#38bdf8');
+    gD.addColorStop(0.75,'#0ea5e9');
+    gD.addColorStop(1,   '#075985');
+    ctx.fillStyle = gD;
+    ctx.fill();
+    ctx.strokeStyle = '#0369a1';
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+    // 切面高光 1：左上三角
+    ctx.beginPath();
+    ctx.moveTo(-rr*0.38, -rr*0.95);
+    ctx.lineTo( rr*0.12, -rr*0.15);
+    ctx.lineTo(-rr*0.72, -rr*0.15);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    ctx.fill();
+    // 切面高光 2：顶部窄条
+    ctx.beginPath();
+    ctx.moveTo(-rr*0.38, -rr*0.95);
+    ctx.lineTo( rr*0.38, -rr*0.95);
+    ctx.lineTo( rr*0.12, -rr*0.45);
+    ctx.lineTo(-rr*0.12, -rr*0.45);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fill();
+    // 切面暗部：右下
+    ctx.beginPath();
+    ctx.moveTo( rr*0.52,  rr*0.15);
+    ctx.lineTo( rr*0.72, -rr*0.15);
+    ctx.lineTo( rr*0.12, -rr*0.15);
+    ctx.lineTo( 0,        rr*1.05);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,60,120,0.25)';
+    ctx.fill();
+    // 顶部小白点高光
+    ctx.beginPath();
+    ctx.arc(-rr*0.10, -rr*0.62, rr*0.14, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.80)';
+    ctx.fill();
+    ctx.restore();
+
+  } else if (type === 'stone') {
+    // 石头：灰色不规则圆 + 简单高光
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.moveTo( 0,      -r*0.92);
+    ctx.bezierCurveTo( r*0.60, -r*1.0,   r*1.0,  -r*0.45,  r*0.95,  r*0.15);
+    ctx.bezierCurveTo( r*0.90,  r*0.75,  r*0.40,  r*1.0,  -r*0.10,  r*0.95);
+    ctx.bezierCurveTo(-r*0.65,  r*1.0,  -r*1.0,   r*0.55, -r*0.95, -r*0.15);
+    ctx.bezierCurveTo(-r*1.0,  -r*0.65, -r*0.55, -r*1.0,   0,      -r*0.92);
+    ctx.closePath();
+    const gS = ctx.createRadialGradient(-r*0.2, -r*0.3, 0, 0, 0, r*1.2);
+    gS.addColorStop(0,  '#d1d5db');
+    gS.addColorStop(0.6,'#9ca3af');
+    gS.addColorStop(1,  '#4b5563');
+    ctx.fillStyle = gS;
+    ctx.fill();
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+    // 小高光
+    ctx.beginPath();
+    ctx.ellipse(-r*0.25, -r*0.32, r*0.28, r*0.16, -0.5, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.fill();
+    ctx.restore();
+
+  } else if (type === 'bomb') {
+    // 炸弹：黑色圆+高光+导火索+火星
+    ctx.save();
+    ctx.translate(x, y);
+    // 弹体
+    const gB = ctx.createRadialGradient(-r*0.25, -r*0.3, 0, 0, 0, r*1.1);
+    gB.addColorStop(0,  '#6b7280');
+    gB.addColorStop(0.5,'#1f2937');
+    gB.addColorStop(1,  '#030712');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2);
+    ctx.fillStyle = gB; ctx.fill();
+    ctx.strokeStyle = '#4b5563'; ctx.lineWidth = 1;
+    ctx.stroke();
+    // 高光
+    ctx.beginPath();
+    ctx.ellipse(-r*0.28, -r*0.32, r*0.22, r*0.14, -0.4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fill();
+    // 导火索
+    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.4;
+    ctx.setLineDash([2, 1.5]);
+    ctx.beginPath();
+    ctx.moveTo(r*0.45, -r*0.60);
+    ctx.quadraticCurveTo(r*0.15, -r*1.10, -r*0.05, -r*1.30);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 火星
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath(); ctx.arc(-r*0.05, -r*1.32, r*0.14, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath(); ctx.arc(-r*0.10, -r*1.46, r*0.09, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function gmDraw() {
+  const canvas = document.getElementById('ggold-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // 背景（缓存 gradient，避免每帧重新分配）
+  if (!_gmBgGrad || _gmBgGradW !== W || _gmBgGradH !== H) {
+    _gmBgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    _gmBgGrad.addColorStop(0, 'rgba(18,9,4,.9)');
+    _gmBgGrad.addColorStop(0.3, 'rgba(55,30,8,.85)');
+    _gmBgGrad.addColorStop(1, 'rgba(85,50,12,.92)');
+    _gmBgGradW = W; _gmBgGradH = H;
+  }
+  ctx.fillStyle = _gmBgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 地面线
+  ctx.strokeStyle = 'rgba(200,150,60,.45)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(0, 52); ctx.lineTo(W, 52); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 物品（用canvas绘制替代emoji）
+  ctx.save();
+  for (const item of GM.items) {
+    if (item.grabbed) continue;
+    gmDrawItem(ctx, item.type, item.x, item.y, item.r);
+  }
+  ctx.restore();
+
+  // 绳子（链条样式，分段绘制）
+  const hx = GM_ANCHOR_X + Math.sin(GM.hookAngle) * GM.hookLen;
+  const hy = GM_ANCHOR_Y + Math.cos(GM.hookAngle) * GM.hookLen;
+
+  // 绳子 + 箭头一体：从锚点画虚线到箭头尖，方向完全一致
+  ctx.save();
+  const angle = GM.hookAngle; // 绳子方向角
+  const arrowLen = 8; // 箭头部分占的长度
+  // 虚线段终点（箭头根部）
+  const lineEndX = GM_ANCHOR_X + Math.sin(angle) * (GM.hookLen - arrowLen);
+  const lineEndY = GM_ANCHOR_Y + Math.cos(angle) * (GM.hookLen - arrowLen);
+
+  // 虚线绳
+  ctx.strokeStyle = '#e8c840';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.moveTo(GM_ANCHOR_X, GM_ANCHOR_Y);
+  ctx.lineTo(lineEndX, lineEndY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 箭头（在绳子末端，朝同一方向）
+  ctx.fillStyle = '#e8c840';
+  ctx.strokeStyle = '#e8c840';
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  // 箭头尖
+  const tipX = hx, tipY = hy;
+  // 箭头两翼（垂直于绳子方向）
+  const wingLen = 5;
+  const perpX = Math.cos(angle), perpY = -Math.sin(angle);
+  ctx.beginPath();
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(lineEndX + perpX * wingLen, lineEndY + perpY * wingLen);
+  ctx.lineTo(lineEndX - perpX * wingLen, lineEndY - perpY * wingLen);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // 滑轮（缓存 radial gradient）
+  ctx.save();
+  if (!_gmPulleyGrad) {
+    _gmPulleyGrad = ctx.createRadialGradient(GM_ANCHOR_X - 1, GM_ANCHOR_Y - 1, 1, GM_ANCHOR_X, GM_ANCHOR_Y, 6);
+    _gmPulleyGrad.addColorStop(0, '#fff8d0');
+    _gmPulleyGrad.addColorStop(0.5, '#e8b820');
+    _gmPulleyGrad.addColorStop(1, '#a07010');
+  }
+  ctx.fillStyle = _gmPulleyGrad;
+  ctx.beginPath(); ctx.arc(GM_ANCHOR_X, GM_ANCHOR_Y, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#806010'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(GM_ANCHOR_X, GM_ANCHOR_Y, 6, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#3a2000';
+  ctx.beginPath(); ctx.arc(GM_ANCHOR_X, GM_ANCHOR_Y, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // 抓到物品时显示在钩尖上
+  if (GM.hookedItem && GM.hookState === 'return') {
+    gmDrawItem(ctx, GM.hookedItem.type, hx, hy + GM.hookedItem.r + 4, GM.hookedItem.r * 0.9);
+  }
+}
+
+function gmLoop(ts) {
+  if (!GM.active || GM.hookState === 'idle') return;
+  // Delta time (seconds), capped at 100ms to avoid huge jumps after tab sleep
+  const dt = GM.lastFrameTime ? Math.min((ts - GM.lastFrameTime) / 1000, 0.1) : 1 / 60;
+  GM.lastFrameTime = ts;
+
+  if (GM.hookState === 'swing') {
+    GM.hookAngle += GM_SWING_SPEED_PS * dt * GM.hookDir;
+    if (GM.hookAngle > 1.15 || GM.hookAngle < -1.15) GM.hookDir *= -1;
+    GM.hookLen = 25;
+
+  } else if (GM.hookState === 'go') {
+    GM.hookLen += GM_HOOK_GO_SPEED_PS * dt;
+    const hx = GM_ANCHOR_X + Math.sin(GM.hookAngle) * GM.hookLen;
+    const hy = GM_ANCHOR_Y + Math.cos(GM.hookAngle) * GM.hookLen;
+    let hit = null;
+    for (const item of GM.items) {
+      if (!item.grabbed && Math.hypot(item.x - hx, item.y - hy) < item.r + 8) { hit = item; break; }
+    }
+    if (hit) {
+      hit.grabbed = true;
+      GM.hookedItem = hit;
+      GM.hookState = 'return';
+      gmAddMsg('sys', `钩到了 ${hit.emoji} ${hit.label}！`);
+    }
+    if (GM.hookLen >= GM_MAX_HOOK_LEN || hx < 0 || hx > 270 || hy > 192) {
+      GM.hookState = 'return';
+    }
+
+  } else if (GM.hookState === 'return') {
+    const item = GM.hookedItem;
+    // return speed: 空钩 174px/s；带物品时按重量减速，分子越小越慢
+    // weight 对应速度示例：stone(3.0)≈44, gold_l(2.5)≈38, gold_m(1.6)≈59, gold_s(1.0)≈96, diamond(0.8)≈120
+    const speedPS = item ? Math.max(0.5, 1.9 / item.weight) * 60 : 174;
+    GM.hookLen -= speedPS * dt;
+    if (GM.hookLen <= 25) {
+      GM.hookLen = 25;
+      if (item) {
+        const pts = item.score;
+        if (GM.turn === 'user') GM.userScore = Math.max(0, GM.userScore + pts);
+        else GM.charScore = Math.max(0, GM.charScore + pts);
+        gmUpdateScoreUI();
+        if (item.type === 'diamond' || item.type === 'bomb') {
+          const suffix = GM.turn === 'user' ? '_user' : '_char';
+          gmTriggerChat('item_' + item.type + suffix);
+        }
+        GM.hookedItem = null;
+      }
+      GM.hookState = 'swing';
+      const btn = document.getElementById('ggold-launch-btn');
+      if (btn && GM.turn === 'user') btn.disabled = false;
+    }
+  }
+
+  gmDraw();
+  GM.rafId = requestAnimationFrame(gmLoop);
+}
+
+function gmStartTimer() {
+  GM.timeLeft = 30;
+  gmUpdateTimerUI();
+  if (GM.timerInterval) clearInterval(GM.timerInterval);
+  GM.timerInterval = setInterval(() => {
+    GM.timeLeft--;
+    gmUpdateTimerUI();
+    if (GM.timeLeft <= 0) {
+      clearInterval(GM.timerInterval);
+      GM.timerInterval = null;
+      gmEndTurn();
+    }
+  }, 1000);
+}
+
+function gmUpdateTimerUI() {
+  const bar = document.getElementById('ggold-timer-bar');
+  if (bar) bar.style.width = (GM.timeLeft / 30 * 100) + '%';
+}
+
+function gmUpdateScoreUI() {
+  const qs = id => document.getElementById(id);
+  if (qs('ggold-u-score')) qs('ggold-u-score').textContent = GM.userScore;
+  if (qs('ggold-c-score')) qs('ggold-c-score').textContent = GM.charScore;
+  if (GM.mode === 'coop') {
+    const target = GM.towerTargets[GM.towerLevel] || 1000;
+    const total = GM.userScore + GM.charScore;
+    const pct = Math.min(100, total / target * 100);
+    const fill = qs('ggold-coop-progress-fill');
+    const lbl = qs('ggold-coop-label');
+    if (fill) fill.style.width = pct + '%';
+    if (lbl) lbl.textContent = `合作目标：${total} / ${target}`;
+  }
+}
+
+function gmUpdateRoundUI() {
+  const ri = document.getElementById('ggold-round-info');
+  if (ri) ri.textContent = `第${GM.round}轮 / 共3轮`;
+  const badge = document.getElementById('ggold-turn-badge');
+  if (badge) badge.textContent = GM.turn === 'user' ? '你的回合' : `${GM.charName}的回合`;
+}
+
+function gmAddMsg(type, text) {
+  GM.chatLog.push({ type, text });
+  const chat = document.getElementById('ggold-chat');
+  if (!chat) return;
+  const div = document.createElement('div');
+  div.className = 'game-msg-' + type;
+  div.style.cssText = 'font-size:11.5px;padding:2px 0;line-height:1.45;word-break:break-word';
+  if (type === 'user') {
+    div.style.color = '#f0e0ff'; div.style.textAlign = 'right';
+    div.textContent = '你：' + text;
+  } else if (type === 'char') {
+    div.style.color = '#c8d8ff';
+    div.textContent = GM.charName + '：' + text;
+  } else {
+    div.style.color = 'rgba(255,255,255,.5)'; div.style.fontSize = '10.5px';
+    div.textContent = text;
+  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function gmTriggerChat(event) {
+  try {
+    const rawCtx = typeof getContext === 'function' ? getContext() : {};
+    const charName = GM.charName;
+    const userName = (rawCtx && rawCtx.name1) || '你';
+
+    // 复用 g2048GetPersona()：完整人设 + 世界书 + 近期主楼对话，和 2048/飞行棋 对齐
+    const persona = g2048GetPersona();
+
+    // ── 收集最近5条主楼剧情对话（recentPlot 单独保留，用于场景设定注入）
+    let recentPlot = '';
+    try {
+      const plotLines = [];
+      const recentMsgs = (rawCtx.chat || []).slice(-10);
+      recentMsgs.forEach(function(m) {
+        const mes = (m.mes || '').trim();
+        if (!mes) return;
+        if (mes.startsWith(':::') || /<(PHONE|SMS|NEWSPAPER|STATUS)[^>]*>/i.test(mes)) return;
+        if (/^\[.*\]$/.test(mes)) return;
+        const speaker = m.is_user ? userName : charName;
+        const quoteMatch = mes.match(/[「"](.*?)[」"]/);
+        const cleaned2 = quoteMatch ? quoteMatch[1] : mes.replace(/\*[^*]+\*/g, '').replace(/\s+/g, ' ').trim();
+        if (cleaned2.length < 2) return;
+        plotLines.push(speaker + ': ' + cleaned2.slice(0, 70));
+      });
+      const last5 = plotLines.slice(-5);
+      if (last5.length > 0) recentPlot = '\n[最近剧情对话(5层),仅供语境参考,勿直接复述]:\n' + last5.join('\n');
+    } catch(e) {}
+
+    // ── 去重：收集近期游戏内 char 发言，提取关键词片段 ───────────
+    if (!GM.chatLog) GM.chatLog = [];
+    const recentCharReplies = GM.chatLog.filter(function(m){ return m.type === 'char'; }).slice(-12).map(function(m){ return (m.text || '').trim(); });
+    let avoidNote = '';
+    if (recentCharReplies.length > 0) {
+      const forbidSegsGM = new Set();
+      recentCharReplies.forEach(function(t) {
+        for (var _i = 0; _i < t.length - 1; _i++) {
+          for (var _j = _i + 2; _j <= Math.min(_i + 6, t.length); _j++) {
+            forbidSegsGM.add(t.slice(_i, _j));
+          }
+        }
+      });
+      avoidNote = '\n[你最近说过，严格禁止任何形式的重复或近似，包括换词说同一意思]: ' + recentCharReplies.join(' / ') + '\n[绝对禁用的词语片段(含2字以上，一个都不许出现)]: ' + Array.from(forbidSegsGM).slice(0, 60).join('、') + '\n[额外要求：不得使用与上面句子语义相近的表达，必须切换完全不同的话题或感受]';
+    }
+
+    // ── 话题轮换 ────────────────────────────────────────────────
+    if (!GM.commentCount) GM.commentCount = 0;
+    GM.commentCount++;
+    const commentIdx = GM.commentCount;
+    const modeStr = GM.mode === 'vs' ? '竞技模式（比拼总分）' : '合作模式（共同达标）';
+    const scoreStr = `${userName}${GM.userScore}分，${charName}${GM.charScore}分`;
+    const roundStr = `第${GM.round}轮/共3轮`;
+
+    // 事件描述（更自然的剧情化表述）
+    let eventDesc = '';
+    if (event === 'turn_end_user') eventDesc = userName + '刚结束本轮挖矿，现在轮到' + charName;
+    else if (event === 'turn_end_char') eventDesc = charName + '刚结束本轮挖矿，现在轮到' + userName;
+    else if (event === 'item_diamond_user') eventDesc = userName + '刚挖到了💎钻石，获得300分！';
+    else if (event === 'item_diamond_char') eventDesc = charName + '刚挖到了💎钻石，获得300分！';
+    else if (event === 'item_bomb_user') eventDesc = userName + '不幸钩到了💣炸弹，扣50分';
+    else if (event === 'item_bomb_char') eventDesc = charName + '不幸钩到了💣炸弹，扣50分';
+    else if (event === 'game_end') eventDesc = '游戏结束，' + scoreStr;
+
+    const topicHints = [
+      '自然评论一下刚才发生的事，语气贴合角色性格',
+      '说一句与你们关系或当前剧情相关的话，自然带入游戏背景',
+      '聊聊目前分数走势，或者感慨一句游戏局势',
+      '随口一句符合你性格的感慨，话题可以延伸到剧情',
+      '鼓励一下' + userName + '，或者表达自己对这局游戏的心情',
+      '说一句符合你性格的话，游戏只是背景，重点在你们之间的互动',
+    ];
+    const topicHint = topicHints[(commentIdx - 1) % topicHints.length];
+
+    const sysMsg = persona
+      ? '【严格扮演以下角色本人，不得OOC】\n' + persona
+      : '你是一个角色扮演助手。';
+    // persona 同时嵌入 prompt 正文，确保不支持 system role 的接入方式也能读到人设
+    const personaInline = persona ? '【角色人设】\n' + persona + '\n' : '';
+    const prompt = personaInline + recentPlot + avoidNote + '\n[场景设定]你正在剧情场景中陪' + userName + '一起玩黄金矿工游戏（' + modeStr + '）。当前：' + roundStr + '，' + scoreStr + '。\n刚刚发生：' + eventDesc + '。\n请以' + charName + '的身份，用中文口语说一句话(不超过25字)，方向参考：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何禁用关键词片段。';
+
+    const reply = await lgCallAPI(prompt, 80, sysMsg);
+    if (reply && reply.trim()) {
+      const cleaned = cleanGameReply(reply, charName);
+      if (!cleaned || cleaned.length < 2) return;
+      // 去重检测：完全相同 + 前4字 + 关键词重叠(>=3字片段)
+      const isEcho = recentCharReplies.some(function(prev){
+        if (!prev) return false;
+        if (prev === cleaned.trim()) return true;
+        if (prev.length >= 4 && cleaned.includes(prev.slice(0, 4))) return true;
+        for (var _i = 0; _i < cleaned.length - 2; _i++) {
+          for (var _j = _i + 3; _j <= Math.min(_i + 6, cleaned.length); _j++) {
+            if (prev.includes(cleaned.slice(_i, _j))) return true;
+          }
+        }
+        return false;
+      });
+      if (!isEcho) {
+        gmAddMsg('char', g2048StripActions(cleaned));
+        GM.chatLog.push({ type: 'char', text: cleaned });
+        if (GM.chatLog.length > 30) GM.chatLog.shift();
+      } else {
+        // 自我重复时重试（人设同样内联进 prompt）
+        const retryPrompt = personaInline + recentPlot + '\n[场景设定]你在陪' + userName + '玩黄金矿工游戏。' + eventDesc + '。\n你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请说一句完全不同的话，可以聊聊游戏局势、你们的关系、或者随口一句符合你性格的感慨。20字以内，纯对话台词。';
+        const reply2 = await lgCallAPI(retryPrompt, 80, sysMsg);
+        if (reply2 && reply2.trim()) {
+          const cleaned2 = cleanGameReply(reply2, charName);
+          if (cleaned2 && cleaned2.length > 1) {
+            gmAddMsg('char', g2048StripActions(cleaned2));
+            GM.chatLog.push({ type: 'char', text: cleaned2 });
+            if (GM.chatLog.length > 30) GM.chatLog.shift();
+          }
+        }
+      }
+    }
+  } catch(e) { console.warn('[ggold] chat error:', e); }
+}
+
+async function gmEndTurn() {
+  if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
+  if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
+  GM.hookState = 'idle';
+  const btn = document.getElementById('ggold-launch-btn');
+  if (btn) btn.disabled = true;
+
+  if (GM.turn === 'user') {
+    GM.turn = 'char';
+    gmUpdateRoundUI();
+    await gmTriggerChat('turn_end_user');
+    // 合作模式：换边前也检查是否达标（用户回合结束后）
+    if (GM.mode === 'coop') {
+      const target = GM.towerTargets[GM.towerLevel] || 1000;
+      if (GM.userScore + GM.charScore >= target) {
+        await gmEndGame();
+        return;
+      }
+    }
+    gmStartCharTurn();
+  } else {
+    GM.turn = 'user';
+    GM.round++;
+    gmUpdateRoundUI();
+    await gmTriggerChat('turn_end_char');
+    // 合作模式：每轮双方都完成后，检查是否达目标分
+    if (GM.mode === 'coop') {
+      const target = GM.towerTargets[GM.towerLevel] || 1000;
+      if (GM.userScore + GM.charScore >= target) {
+        await gmEndGame();
+        return;
+      }
+    }
+    if (GM.round > 3) {
+      await gmEndGame();
+    } else {
+      gmSpawnItems();
+      gmStartUserTurn();
+    }
+  }
+}
+
+function gmStartCharTurn() {
+  gmAddMsg('sys', `--- ${GM.charName}的回合 ---`);
+  gmSpawnItems();
+  gmStartTimer();
+  GM.hookState = 'swing';
+  GM.hookAngle = 0;
+  GM.hookLen = 25;
+  GM.lastTime = 0;
+  GM.lastFrameTime = 0;
+  GM.rafId = requestAnimationFrame(gmLoop);
+
+  function gmCharShoot() {
+    if (!GM.active || GM.turn !== 'char') return;
+    // 时间耗尽则停止（计时器会调用 gmEndTurn）
+    if (GM.timeLeft <= 0) return;
+
+    // 钩子还没回来，稍等后重试
+    if (GM.hookState !== 'swing') {
+      setTimeout(gmCharShoot, 200);
+      return;
+    }
+
+    // 上次发射后至少等 1500ms 才能再发
+    const sinceLastShot = Date.now() - (GM._charLastShot || 0);
+    if (sinceLastShot < 1500) {
+      setTimeout(gmCharShoot, 1500 - sinceLastShot + 50);
+      return;
+    }
+
+    // 智能选目标：按性价比（分数/重量）排序，优先高分低重，避免炸弹和石头
+    const candidates = GM.items.filter(it => !it.grabbed && it.score > 0);
+    candidates.sort((a, b) => (b.score / b.weight) - (a.score / a.weight));
+    const best = candidates[0];
+
+    // 场上只剩石头/炸弹（无正分目标），char 放弃，等倒计时结束
+    if (!best) return;
+
+    // ── 公平等待：char 必须像 user 一样等钟摆真正摆到目标角度附近才能发射 ──
+    // 计算目标角度
+    const targetAngle = Math.atan2(best.x - GM_ANCHOR_X, best.y - GM_ANCHOR_Y);
+    // 容差：±0.18 rad（约10度），模拟人类反应
+    const tolerance = 0.18;
+
+    // 判断当前钟摆是否已经进入目标角度附近
+    if (Math.abs(GM.hookAngle - targetAngle) > tolerance) {
+      // 还没摆到，50ms 后再检查
+      setTimeout(gmCharShoot, 50);
+      return;
+    }
+
+    // 钟摆已摆到目标区域，发射！（角度直接使用当前真实钟摆角度，不强制设值）
+    GM.hookState = 'go';
+    GM._charLastShot = Date.now();
+
+    // 钩子回来后继续轮询
+    setTimeout(gmCharShoot, 200);
+  }
+
+  // 第一炮延迟 0.8-1.2s 开始，之后一直打到时间结束
+  setTimeout(gmCharShoot, 800 + Math.random() * 400);
+}
+
+function gmStartUserTurn() {
+  gmAddMsg('sys', '--- 你的回合 ---');
+  GM.hookState = 'swing';
+  GM.hookAngle = 0;
+  GM.hookLen = 25;
+  GM.lastTime = 0;
+  GM.lastFrameTime = 0;
+  const btn = document.getElementById('ggold-launch-btn');
+  if (btn) btn.disabled = false;
+  gmStartTimer();
+  GM.rafId = requestAnimationFrame(gmLoop);
+}
+
+async function gmEndGame() {
+  GM.active = false;
+  if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
+  if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
+  await gmTriggerChat('game_end');
+
+  const total = GM.userScore + GM.charScore;
+  const qs = id => document.getElementById(id);
+  const over = qs('ggold-over');
+  const resetBtn = qs('ggold-reset-tower-btn');
+
+  if (GM.mode === 'vs') {
+    GM.coopWon = false;
+    const replayBtnVs = qs('ggold-replay-btn');
+    if (replayBtnVs) replayBtnVs.textContent = '再来一局';
+    if (GM.userScore > GM.charScore) {
+      qs('ggold-over-emoji').textContent = '🏆';
+      qs('ggold-over-title').textContent = '你赢了！';
+      qs('ggold-over-sub').textContent = `你：${GM.userScore}分  vs  ${GM.charName}：${GM.charScore}分\n真是个优秀的矿工！`;
+    } else if (GM.charScore > GM.userScore) {
+      qs('ggold-over-emoji').textContent = '😅';
+      qs('ggold-over-title').textContent = `${GM.charName}赢了！`;
+      qs('ggold-over-sub').textContent = `${GM.charName}：${GM.charScore}分  vs  你：${GM.userScore}分\n下次再来挑战吧！`;
+    } else {
+      qs('ggold-over-emoji').textContent = '🤝';
+      qs('ggold-over-title').textContent = '平局！';
+      qs('ggold-over-sub').textContent = `双方各${GM.userScore}分，势均力敌！`;
+    }
+    if (resetBtn) resetBtn.style.display = 'none';
+  } else {
+    const target = GM.towerTargets[GM.towerLevel] || 1000;
+    if (total >= target) {
+      GM.towerLevel++;
+      localStorage.setItem(GM._towerKey || 'ggold_tower_default', GM.towerLevel);
+      const isTop = GM.towerLevel >= GM.towerTargets.length;
+      if (isTop) {
+        qs('ggold-over-emoji').textContent = '👑';
+        qs('ggold-over-title').textContent = '登顶！爬塔完成！';
+        qs('ggold-over-sub').textContent = `合计 ${total} 分，突破最高层！\n两人配合天衣无缝！`;
+        if (resetBtn) resetBtn.style.display = 'block';
+        // 登顶：回到模式选择
+        GM.coopWon = false;
+        const replayBtn = qs('ggold-replay-btn');
+        if (replayBtn) replayBtn.textContent = '再来一局';
+      } else {
+        const nextTarget = GM.towerTargets[GM.towerLevel];
+        qs('ggold-over-emoji').textContent = '🎉';
+        qs('ggold-over-title').textContent = `第${GM.towerLevel}层通关！`;
+        qs('ggold-over-sub').textContent = `合计 ${total} 分，达成目标 ${target} 分！\n下一层目标：${nextTarget} 分`;
+        if (resetBtn) resetBtn.style.display = 'none';
+        // 普通通关：标记直接进下一关
+        GM.coopWon = true;
+        const replayBtn = qs('ggold-replay-btn');
+        if (replayBtn) replayBtn.textContent = '下一关 →';
+      }
+    } else {
+      qs('ggold-over-emoji').textContent = '💪';
+      qs('ggold-over-title').textContent = '差一点！';
+      qs('ggold-over-sub').textContent = `合计 ${total} 分，目标 ${target} 分\n再努力一把就成功了！`;
+      if (resetBtn) resetBtn.style.display = 'none';
+      // 未达标：重试本关，仍走合作模式
+      GM.coopWon = false;
+      const replayBtn = qs('ggold-replay-btn');
+      if (replayBtn) replayBtn.textContent = '再试一次';
+    }
+  }
+  if (over) over.style.display = 'flex';
+}
+
+let _ggoldBound = false;
+function ggoldOpen() {
+  if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = true; }
+  const ctx = typeof getContext === 'function' ? getContext() : {};
+  GM.charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
+  const clbl = document.getElementById('ggold-c-lbl');
+  if (clbl) clbl.textContent = GM.charName;
+  GM.towerTargets = gmBuildTower();
+  // 用 charName 作为 key，让不同角色的爬塔进度互相独立
+  const _towerKey = 'ggold_tower_' + (GM.charName || 'default');
+  GM._towerKey = _towerKey;
+  GM.towerLevel = parseInt(localStorage.getItem(_towerKey) || '0');
+  if (GM.towerLevel >= GM.towerTargets.length) GM.towerLevel = GM.towerTargets.length - 1;
+  gmReadColors();
+  if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
+  if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
+  GM.active = false;
+  GM.hookState = 'idle';
+  const modeEl = document.getElementById('ggold-mode-select');
+  const overEl = document.getElementById('ggold-over');
+  if (modeEl) modeEl.style.display = 'flex';
+  if (overEl) overEl.style.display = 'none';
+}
+
+function ggoldStartGame(mode) {
+  GM.mode = mode;
+  GM.turn = 'user';
+  GM.round = 1;
+  GM.userScore = 0;
+  GM.charScore = 0;
+  GM.chatLog = [];
+  GM.hookedItem = null;
+  GM.active = true;
+  const modeEl = document.getElementById('ggold-mode-select');
+  const overEl = document.getElementById('ggold-over');
+  const chatEl = document.getElementById('ggold-chat');
+  const coopBar = document.getElementById('ggold-coop-bar');
+  if (modeEl) modeEl.style.display = 'none';
+  if (overEl) overEl.style.display = 'none';
+  if (chatEl) chatEl.innerHTML = '';
+  if (coopBar) coopBar.style.display = mode === 'coop' ? 'block' : 'none';
+  gmUpdateScoreUI();
+  gmUpdateRoundUI();
+  gmSpawnItems();
+  const target = GM.towerTargets[GM.towerLevel] || 1000;
+  gmAddMsg('sys', mode === 'vs'
+    ? '⚔️ 竞技模式开始！3轮比拼，最后比总分'
+    : `🤝 合作模式！第${GM.towerLevel + 1}层，目标：${target}分`
+  );
+  gmStartUserTurn();
+}
+
+function ggoldBindEvents() {
+  $(document).on('click', '#ggold-mode-vs', function() { ggoldStartGame('vs'); });
+  $(document).on('click', '#ggold-mode-co', function() { ggoldStartGame('coop'); });
+  $(document).on('click', '#ggold-launch-btn', function() {
+    if (!GM.active || GM.turn !== 'user' || GM.hookState !== 'swing') return;
+    GM.hookState = 'go';
+    $(this).prop('disabled', true);
+  });
+  $(document).on('click', '#ggold-newbtn', function() {
+    if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
+    if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
+    GM.active = false; GM.hookState = 'idle';
+    // 合作模式下，新局重置爬塔进度回第1层（目标分数 1000）
+    if (GM.mode === 'coop') {
+      GM.towerLevel = 0;
+      const _tk = GM._towerKey || 'ggold_tower_default';
+      localStorage.setItem(_tk, '0');
+    }
+    ggoldOpen();
+  });
+  $(document).on('click', '#ggold-reset-tower-btn', function() {
+    GM.towerLevel = 0;
+    localStorage.removeItem(GM._towerKey || 'ggold_tower_default');
+    ggoldOpen();
+  });
+  $(document).on('click', '#ggold-replay-btn', function() {
+    if (GM.coopWon) {
+      // 合作模式通关：直接进下一关，跳过模式选择
+      GM.coopWon = false;
+      ggoldStartGame('coop');
+    } else {
+      // 其他情况（竞技/失败/登顶）：回到模式选择
+      ggoldOpen();
+    }
+  });
+  function ggoldSendChat() {
+    const input = document.getElementById('ggold-input');
+    const text = (input && input.value.trim()) || '';
+    if (!text) return;
+    input.value = '';
+    gmAddMsg('user', text);
+    (async () => {
+      const rawCtx = typeof getContext === 'function' ? getContext() : {};
+      const charName = GM.charName;
+      const userName = (rawCtx && rawCtx.name1) || '你';
+
+      // 复用 g2048GetPersona()：完整人设 + 世界书 + 近期主楼对话，和 2048/飞行棋 对齐
+      const persona = g2048GetPersona();
+
+      // 游戏内完整对话上下文（user+char 交替，GM.chatLog 用 type 字段）
+      const recentLog = (GM.chatLog || []).slice(-10);
+      const historyLines = recentLog
+        .filter(m => m.type === 'user' || m.type === 'char')
+        .slice(0, -1)
+        .map(m => (m.type === 'user' ? userName : charName) + ': ' + (m.text || '').slice(0, 60));
+      const historyNote = historyLines.length > 0
+        ? '\n[游戏内近期对话记录，必须基于此上下文回复]:\n' + historyLines.join('\n') + '\n'
+        : '';
+
+      // 去重：char 最近说过的话
+      const recentCharReplies = (GM.chatLog || []).filter(m => m.type === 'char').slice(-4).map(m => (m.text || '').trim());
+      const avoidNote = recentCharReplies.length > 0
+        ? '\n[你最近说过，不得重复或近似]: ' + recentCharReplies.join(' / ')
+        : '';
+
+      const p = (persona ? persona + '\n' : '')
+        + historyNote + avoidNote
+        + '\n[黄金矿工游戏聊天场景]' + userName + '对你说:「' + text + '」\n请以' + charName + '的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
+
+      const reply = await lgCallAPI(p, 100);
+      const cleaned = reply && reply.trim() ? cleanGameReply(reply, charName) : '';
+      const isEcho = cleaned && recentCharReplies.some(r => r === cleaned.trim());
+      if (cleaned && cleaned.length > 1 && !isEcho) {
+        gmAddMsg('char', cleaned);
+      } else if (isEcho) {
+        const retryP = (persona ? persona + '\n' : '')
+          + historyNote
+          + '[黄金矿工游戏聊天场景]' + userName + '说:「' + text + '」\n你刚才已经说过「' + recentCharReplies[recentCharReplies.length-1] + '」了，必须给出完全不同的回应，15字以内，纯对话台词。';
+        const r2 = await lgCallAPI(retryP, 80);
+        const c2 = r2 && r2.trim() ? cleanGameReply(r2, charName) : '';
+        if (c2 && c2.length > 1) gmAddMsg('char', c2);
+      }
+    })();
+  }
+  $(document).on('click', '#ggold-send', ggoldSendChat);
+  $(document).on('keydown', '#ggold-input', function(e) { if (e.key === 'Enter') ggoldSendChat(); });
+}
+
+function ggoldInit() {
+  if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = true; }
+  ggoldOpen();
+}
+
 // ── Init new game ─────────────────────────────────────────────
 function g2048Init() {
   var ctx = getContext ? getContext() : {};
@@ -9904,14 +13934,104 @@ function g2048CharTurn() {
   // Non-blocking AI comment
   var persona = g2048GetPersona();
   var scoreNote = res.score > 0 ? ',合并得分' + res.score : '';
-  // instruction 格式,避免续写单字
-  var p = (persona ? persona + '\n' : '') + '[2048游戏场景]我们正在一起玩2048数字拼盘游戏。我刚刚选择向' + dirCN + '滑动' + scoreNote + '。当前最高格' + Math.max.apply(null, LG2048.board.reduce(function(a,r){return a.concat(r);},[])) + '。\n请以' + LG2048.charName + '的身份用中文口语说一句话，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
+  // ── 每6次操作(user+char各3次)发言一次 ────────────────────────
   LG2048.commentCount = (LG2048.commentCount || 0) + 1;
-  if (LG2048.commentCount % 2 === 0) {
-    lgCallAPI(p, 70).then(function(r) {
+  if (LG2048.commentCount % 3 === 0) {
+    var maxTile = Math.max.apply(null, LG2048.board.reduce(function(a,r){return a.concat(r);},[]));
+    // 收集最近5条主楼对话作剧情语境
+    var ctx2048 = (typeof getContext === 'function') ? getContext() : {};
+    var userName2048 = (ctx2048 && ctx2048.name1) || '你';
+    var recentPlot = '';
+    if (ctx2048 && ctx2048.chat && ctx2048.chat.length > 0) {
+      var plotLines = [];
+      var recentMsgs = ctx2048.chat.slice(-10);
+      recentMsgs.forEach(function(m) {
+        var mes = (m.mes || '').trim();
+        if (!mes) return;
+        if (mes.startsWith(':::') || /<(PHONE|SMS|NEWSPAPER|STATUS)[^>]*>/i.test(mes)) return;
+        if (/^\[.*\]$/.test(mes)) return;
+        var speaker = m.is_user ? userName2048 : LG2048.charName;
+        var quoteMatch = mes.match(/[「"](.*?)[」"]/);
+        var cleaned2 = quoteMatch ? quoteMatch[1] : mes.replace(/\*[^*]+\*/g, '').replace(/\s+/g, ' ').trim();
+        if (cleaned2.length < 2) return;
+        plotLines.push(speaker + ': ' + cleaned2.slice(0, 70));
+      });
+      var last5 = plotLines.slice(-5);
+      if (last5.length > 0) recentPlot = '\n[最近剧情对话(5层),仅供语境参考,勿直接复述]:\n' + last5.join('\n');
+    }
+    // 收集近期游戏内聊天(避免自我重复)，提取关键词片段
+    // 窗口扩大到12条，片段粒度降至2字，禁用片段上限60
+    var recentCharReplies = (LG2048.chatLog || []).filter(function(m){ return m.role === 'char'; }).slice(-12).map(function(m){ return m.text.trim(); });
+    var avoidNote = '';
+    if (recentCharReplies.length > 0) {
+      var forbidSegs2048 = {};
+      recentCharReplies.forEach(function(t) {
+        for (var _i = 0; _i < t.length - 1; _i++) {
+          for (var _j = _i + 2; _j <= Math.min(_i + 6, t.length); _j++) {
+            forbidSegs2048[t.slice(_i, _j)] = 1;
+          }
+        }
+      });
+      avoidNote = '\n[你最近说过，严格禁止任何形式的重复或近似，包括换词说同一意思]: ' + recentCharReplies.join(' / ') + '\n[绝对禁用的词语片段(含2字以上，一个都不许出现)]: ' + Object.keys(forbidSegs2048).slice(0, 60).join('、') + '\n[额外要求：不得使用与上面句子语义相近的表达，必须切换完全不同的话题或感受]';
+    }
+    // 构建多样化话题引导 — 每次随机抽取，以闲聊/家常为主(约70%)
+    var topicPool2048 = [
+      // ── 闲聊/家常 (~70%) ──
+      '完全跳出游戏，随口聊一句最近发生的事或心情，像朋友间闲聊那样自然',
+      '聊聊今天的状态，比如心情好不好、有没有什么让你开心或烦心的事',
+      '说一句对' + userName2048 + '的关心或者随口的撒娇，和游戏没有关系',
+      '随口聊一句喜欢的东西——食物、地方、天气、某个感受都行',
+      '说一句对你们关系或相处的感慨，温柔的、调皮的都行，不要提游戏',
+      '突然想到什么有趣的小事，随口说出来，话题和游戏完全无关',
+      '说一句有点撒娇或者耍宝的话，向' + userName2048 + '撒个小娇',
+      '提一个你对' + userName2048 + '的小小期待或者想一起做的事，不用提游戏',
+      '随口问一句' + userName2048 + '的生活——吃了什么、最近怎么样之类的',
+      '说一句感慨，关于你们在一起时的某种感觉，语气可以甜、可以逗趣',
+      '发一句无厘头的感叹或者自言自语，符合你的性格就行',
+      '调侃一下' + userName2048 + '，像朋友间互相取笑那种语气，轻松有趣',
+      '说一句关于今天的碎碎念，比如"好困"、"好饿"、"突然想吃某个东西"',
+      '分享一下你现在的一个小心情或小感受，哪怕只是"今天心情不错"',
+      '问问' + userName2048 + '有没有什么最近想做的事，聊聊未来计划',
+      // ── 游戏结合闲聊 (~30%) ──
+      '提一句游戏但马上延伸到你们的关系，比如"陪你玩这个挺开心的"',
+      '对当前分数' + LG2048.score + '感叹一句，但重点放在和' + userName2048 + '一起的感觉',
+      '说一句符合你性格的话，游戏只是背景，重心在你们互动本身',
+    ];
+    var topicHint = topicPool2048[Math.floor(Math.random() * topicPool2048.length)];
+    // prompt 弱化游戏信息权重，突出"陪伴聊天"而非"游戏解说"
+    var p = (persona ? persona + '\n' : '') + recentPlot + avoidNote + '\n[当前场景]你和' + userName2048 + '正在一边玩2048一边聊天，游戏只是背景，重点是你们之间的对话。\n请以' + LG2048.charName + '的身份，用中文口语说一句话(20字以内)，说话方向：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何禁用关键词片段。';
+    lgCallAPI(p, 80).then(function(r) {
       var cleaned = r && r.trim() ? cleanGameReply(r, LG2048.charName) : '';
-      if (cleaned && cleaned.length > 1 && LG2048.active) g2048Msg('char', g2048StripActions(cleaned));
-      else if (!r) console.warn('[2048] charTurn: API returned empty');
+      // 常见无意义虚词/短语，排除在相似度判断之外
+      var stopWords2048 = new Set(['的','了','吗','呢','啊','哦','哈','嗯','嘛','吧','呀','啦','哇','噢','哎','哟','喔','诶','对','好','是','不','我','你','他','她','它','们','这','那','也','都','在','有','和','与','或','但','就','才','还','又','很','真','太','最','更','已','要','会','能','可','去','来','说','做','想','看','给','让','把','被','从','到','为','以','于','同','跟','用','只','没','没有']);
+      var isSelfEcho = cleaned && recentCharReplies.some(function(prev){
+        if (!prev) return false;
+        if (prev === cleaned.trim()) return true;
+        // 前3字前缀匹配（更严格）
+        if (prev.length >= 3 && cleaned.length >= 3 && cleaned.slice(0,3) === prev.slice(0,3)) return true;
+        // 3字以上实义片段重叠检测（跳过纯虚词组合）
+        for (var _i = 0; _i < cleaned.length - 2; _i++) {
+          for (var _j = _i + 3; _j <= Math.min(_i + 6, cleaned.length); _j++) {
+            var seg = cleaned.slice(_i, _j);
+            // 跳过全部由虚词构成的片段
+            var isStop = seg.split('').every(function(c){ return stopWords2048.has(c); });
+            if (!isStop && prev.includes(seg)) return true;
+          }
+        }
+        return false;
+      });
+      if (cleaned && cleaned.length > 1 && LG2048.active && !isSelfEcho) {
+        g2048Msg('char', g2048StripActions(cleaned));
+      } else if (isSelfEcho && LG2048.active) {
+        // 自我重复时用更严格的去重 prompt 重试一次，引导说闲聊
+        var retryTopics = ['随口撒个娇或聊聊心情', '说一句关心' + userName2048 + '的话', '聊一句和游戏完全无关的事', '说句符合性格的俏皮话或感慨'];
+        var retryTopic = retryTopics[Math.floor(Math.random() * retryTopics.length)];
+        var retryP = (persona ? persona + '\n' : '') + '[你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请换一句完全不同的话。]\n以' + LG2048.charName + '的身份：' + retryTopic + '。15字以内，纯对话台词，不带*号括号动作描写。';
+        lgCallAPI(retryP, 80).then(function(r2) {
+          var c2 = r2 && r2.trim() ? cleanGameReply(r2, LG2048.charName) : '';
+          if (c2 && c2.length > 1 && LG2048.active) g2048Msg('char', g2048StripActions(c2));
+        }).catch(function(){});
+      } else if (!r) console.warn('[2048] charTurn: API returned empty');
     });
   }
   LG2048.turn = 'user';
@@ -9942,17 +14062,32 @@ function g2048Chat(text) {
   var userName = (ctx && ctx.name1) || '你';
   var cName = LG2048.charName;
 
-  // 只带 user 说的话作上下文，不带 char 历史回复（避免风格锚定）
-  var recentUserLines = (LG2048.chatLog || []).slice(-10, -1)
-    .filter(function(m){ return m.role === 'user'; })
-    .slice(-3)
-    .map(function(m){ return userName + ': ' + m.text.slice(0, 50); });
-  var historyNote = recentUserLines.length > 0
-    ? '\n[游戏内用户最近说的话]:\n' + recentUserLines.join('\n') + '\n'
+  // 把游戏内聊天记录完整交替排列（user+char都要），让 AI 看到真实对话上下文
+  // 取最近10条（user+char混合），不能只取 user 一侧
+  var recentLog = (LG2048.chatLog || []).slice(-10);
+  // 排除最后一条（就是刚才加进去的 user 当前发言，避免重复）
+  var historyLines = recentLog
+    .filter(function(m){ return m.role === 'user' || m.role === 'char'; })
+    .slice(0, -1)  // 去掉最后一条（当前发言）
+    .map(function(m){
+      var speaker = m.role === 'user' ? userName : cName;
+      return speaker + ': ' + m.text.slice(0, 60);
+    });
+  var historyNote = historyLines.length > 0
+    ? '\n[游戏内近期对话记录，必须基于此上下文回复]:\n' + historyLines.join('\n') + '\n'
     : '';
 
-  var p = (persona ? persona + '\n' : '') + historyNote + '[2048游戏聊天场景]' + userName + '对你说:「' + text + '」\n请以' + cName + '的身份用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
-  var recentCharReplies2048 = (LG2048.chatLog || []).filter(function(m){ return m.role === 'char'; }).slice(-3).map(function(m){ return m.text.trim(); });
+  // 去重：char 最近说过的话
+  var recentCharReplies2048 = (LG2048.chatLog || []).filter(function(m){ return m.role === 'char'; }).slice(-4).map(function(m){ return m.text.trim(); });
+  var avoidCharNote = recentCharReplies2048.length > 0
+    ? '\n[你最近说过，不得重复或近似]: ' + recentCharReplies2048.join(' / ')
+    : '';
+
+  var p = (persona ? persona + '\n' : '')
+    + historyNote
+    + avoidCharNote
+    + '\n[2048游戏聊天场景]' + userName + '对你说:「' + text + '」\n请以' + cName + '的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
+
   lgCallAPI(p, 100).then(function(r) {
     var cleaned = r && r.trim() ? cleanGameReply(r, cName) : '';
     var isSelfEcho = cleaned && recentCharReplies2048.some(function(prev){ return prev === cleaned.trim(); });
@@ -9960,7 +14095,9 @@ function g2048Chat(text) {
       g2048Msg('char', g2048StripActions(cleaned));
     } else if (isSelfEcho) {
       console.warn('[2048] g2048Chat: self-echo, retrying');
-      var retryP = (persona ? persona + '\n' : '') + '[2048游戏聊天场景]' + userName + '说:「' + text + '」\n你刚才已经说过「' + recentCharReplies2048[recentCharReplies2048.length-1] + '」了,请给出完全不同的回应,15字以内,纯对话台词。';
+      var retryP = (persona ? persona + '\n' : '')
+        + historyNote
+        + '[2048游戏聊天场景]' + userName + '说:「' + text + '」\n你刚才已经说过「' + recentCharReplies2048[recentCharReplies2048.length-1] + '」了，必须给出完全不同的回应，15字以内，纯对话台词。';
       lgCallAPI(retryP, 80).then(function(r2) {
         var c2 = r2 && r2.trim() ? cleanGameReply(r2, cName) : '';
         var isRetryEcho = c2 && recentCharReplies2048.some(function(prev){ return prev === c2.trim(); });
@@ -10121,6 +14258,8 @@ function lgInitFabDrag() {
       const posKey = IS_TOUCH_DEVICE ? 'rp_fab_pos_mobile' : 'rp_fab_pos';
       localStorage.setItem(posKey, JSON.stringify({ left: fab.style.left, top: fab.style.top }));
     }
+    // 必须在这里清零，否则下次点击时 moved=true 导致 click 被 stopImmediatePropagation 吃掉
+    moved = false;
   }
 
   // Mouse
@@ -10949,15 +15088,65 @@ function lgCharComment(event) {
   const n      = LG.lastDice;
   const cPos   = LG.charPos;
   const uPos   = LG.userPos;
-  const persona = lgGetPersona();
+  const persona = g2048GetPersona();
 
-  // ── game_start:游戏开场白,单独处理 ──────────────────────────
+  // ── 公共：收集最近5条主楼剧情对话作语境 ──────────────────────
+  function _ludoRecentPlot(charName) {
+    try {
+      const rawCtx = typeof getContext === 'function' ? getContext() : {};
+      const userName = (rawCtx && rawCtx.name1) || '你';
+      const plotLines = [];
+      const recentMsgs = (rawCtx.chat || []).slice(-10);
+      recentMsgs.forEach(function(m) {
+        const mes = (m.mes || '').trim();
+        if (!mes) return;
+        if (mes.startsWith(':::') || /<(PHONE|SMS|NEWSPAPER|STATUS)[^>]*>/i.test(mes)) return;
+        if (/^\[.*\]$/.test(mes)) return;
+        const speaker = m.is_user ? userName : charName;
+        const quoteMatch = mes.match(/[「"](.*?)[」"]/);
+        const cleaned2 = quoteMatch ? quoteMatch[1] : mes.replace(/\*[^*]+\*/g, '').replace(/\s+/g, ' ').trim();
+        if (cleaned2.length < 2) return;
+        plotLines.push(speaker + ': ' + cleaned2.slice(0, 70));
+      });
+      const last5 = plotLines.slice(-5);
+      return last5.length > 0 ? '\n[最近剧情对话(5层),仅供语境参考,勿直接复述]:\n' + last5.join('\n') : '';
+    } catch(e) { return ''; }
+  }
+
+  // ── 公共：去重检测(前4字前缀 + 关键词重叠双重检测) ──────────
+  function _ludoIsEcho(text, log) {
+    if (!text || !log) return false;
+    const recentChars = log.filter(function(m){ return m.role === 'char'; }).slice(-6);
+    return recentChars.some(function(m){
+      const prev = (m.text || '').trim();
+      if (!prev) return false;
+      // 完全相同
+      if (prev === text.trim()) return true;
+      // 前4字相同
+      if (prev.length >= 4 && text.includes(prev.slice(0, 4))) return true;
+      // 关键词重叠：提取所有2字以上片段，检查是否有>=3字的片段出现在历史中
+      const segments = [];
+      for (var i = 0; i < text.length - 1; i++) {
+        for (var j = i + 2; j <= Math.min(i + 6, text.length); j++) {
+          segments.push(text.slice(i, j));
+        }
+      }
+      const longSegments = segments.filter(function(s){ return s.length >= 3; });
+      if (longSegments.some(function(seg){ return prev.includes(seg); })) return true;
+      return false;
+    });
+  }
+
+  // ── game_start:游戏开场白 ──────────────────────────────────
   if (event === 'game_start') {
     (async () => {
       try {
-        // 使用 lgCallAPI(隔离上下文),避免把正文ST对话内容带入游戏回复
         const sysMsg = persona || '你是一个角色扮演助手。';
-        const userMsg = `[飞行棋对局刚刚开始]\n请以${LG.charName}的身份用中文口语说一句开场白，15字以内，纯对话台词，不带括号、*号、动作描写、引号。`;
+        const personaInlineStart = persona ? '【角色人设】\n' + persona + '\n' : '';
+        const recentPlot = _ludoRecentPlot(LG.charName);
+        const rawCtx = typeof getContext === 'function' ? getContext() : {};
+        const userName = (rawCtx && rawCtx.name1) || '你';
+        const userMsg = personaInlineStart + recentPlot + '\n[场景设定]你正在剧情场景中陪' + userName + '一起玩飞行棋。游戏刚刚开始。\n请以' + LG.charName + '的身份用中文口语说一句开场白，15字以内，纯对话台词，语气贴合角色人设，不带括号、*号、动作描写、引号。';
         const resp = await lgCallAPI(userMsg, 80, sysMsg);
         const cleaned = resp && resp.trim() ? cleanGameReply(resp, LG.charName) : '';
         if (cleaned && cleaned.length > 1) lgMsg('char', g2048StripActions(cleaned));
@@ -10967,20 +15156,60 @@ function lgCharComment(event) {
   }
 
   const isCharTurn = event.endsWith('_char');
-  const lead   = cPos > uPos + 5 ? ',我目前领先' : cPos < uPos - 5 ? ',我目前落后' : '';
+  const lead   = cPos > uPos + 5 ? '，我目前领先' : cPos < uPos - 5 ? '，我目前落后' : '';
   const subject = isCharTurn
     ? `我掷出了${n}点${lead}`
-    : `对方掷出了${n}点${lead}`;
+    : `你掷出了${n}点${lead}`;
 
-  // 异步 AI 生成,不阻塞游戏流程;API 失败直接静默,不用 fallback
-  // 使用 lgCallAPI(隔离上下文),避免把正文ST对话内容带入游戏回复
+  // ── 话题轮换：避免每次都说掷骰相关的话 ──────────────────────
+  if (!LG.commentCount) LG.commentCount = 0;
+  LG.commentCount++;
+  const commentIdx = LG.commentCount;
+  const topicHints = [
+    '自然评论一下刚才的骰子点数，语气符合角色性格',
+    '说一句与你们关系或当前剧情相关的话，自然带入游戏背景',
+    '聊聊棋局走势，比如领先、落后，或者感慨一句',
+    '随口一句符合你性格的感慨，话题可以延伸到剧情',
+    '对' + (isCharTurn ? '自己' : '对方') + '的这步棋发表看法，轻松自然',
+    '说一句符合你性格的话，游戏只是背景，重点在你们之间的互动',
+  ];
+  const topicHint = topicHints[(commentIdx - 1) % topicHints.length];
+
+  // 异步 AI 生成，不阻塞游戏流程
   (async () => {
     try {
       const sysMsg  = persona || '你是一个角色扮演助手。';
-      const userMsg = `[飞行棋游戏场景]${subject}。\n请以${LG.charName}的身份用中文口语说一句话，15字以内，纯对话台词，不带括号、*号、动作描写、引号。`;
+      // persona 同时内联进 prompt，确保不支持 system role 的接入方式也能读到人设
+      const personaInlineLudo = persona ? '【角色人设】\n' + persona + '\n' : '';
+      const recentPlot = _ludoRecentPlot(LG.charName);
+      const rawCtx = typeof getContext === 'function' ? getContext() : {};
+      const userName = (rawCtx && rawCtx.name1) || '你';
+      // 收集近期游戏内 char 发言用于去重（窗口/粒度/上限与 2048 对齐）
+      const recentCharReplies = (LG.chatLog || []).filter(function(m){ return m.role === 'char'; }).slice(-12).map(function(m){ return m.text.trim(); });
+      let avoidNote = '';
+      if (recentCharReplies.length > 0) {
+        const forbidSegs = new Set();
+        recentCharReplies.forEach(function(t) {
+          for (var _i = 0; _i < t.length - 1; _i++) {
+            for (var _j = _i + 2; _j <= Math.min(_i + 6, t.length); _j++) {
+              forbidSegs.add(t.slice(_i, _j));
+            }
+          }
+        });
+        avoidNote = '\n[你最近说过，严格禁止任何形式的重复或近似，包括换词说同一意思]: ' + recentCharReplies.join(' / ') + '\n[绝对禁用的词语片段(含2字以上，一个都不许出现)]: ' + Array.from(forbidSegs).slice(0, 60).join('、') + '\n[额外要求：不得使用与上面句子语义相近的表达，必须切换完全不同的话题或感受]';
+      }
+      const userMsg = personaInlineLudo + recentPlot + avoidNote + '\n[场景设定]你正在剧情场景中陪' + userName + '一起玩飞行棋。' + subject + '。\n请以' + LG.charName + '的身份，用中文口语说一句话(15字以内)，方向参考：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何关键词片段。';
       const resp = await lgCallAPI(userMsg, 80, sysMsg);
       const cleaned = resp && resp.trim() ? cleanGameReply(resp, LG.charName) : '';
-      if (cleaned && cleaned.length > 1) lgMsg('char', g2048StripActions(cleaned));
+      if (cleaned && cleaned.length > 1 && !_ludoIsEcho(cleaned, LG.chatLog)) {
+        lgMsg('char', g2048StripActions(cleaned));
+      } else if (cleaned && _ludoIsEcho(cleaned, LG.chatLog)) {
+        // 自我重复时用更严格去重 prompt 重试
+        const retryMsg = personaInlineLudo + recentPlot + '\n[场景设定]你在陪' + userName + '玩飞行棋，' + subject + '。\n你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请说一句完全不同的话，可以聊聊棋局、你们的关系、或者随口一句符合你性格的感慨。15字以内，纯对话台词。不许再出现"' + recentCharReplies.map(function(t){ return t.slice(0,4); }).join('、') + '"这类内容。';
+        const resp2 = await lgCallAPI(retryMsg, 80, sysMsg);
+        const cleaned2 = resp2 && resp2.trim() ? cleanGameReply(resp2, LG.charName) : '';
+        if (cleaned2 && cleaned2.length > 1) lgMsg('char', g2048StripActions(cleaned2));
+      }
     } catch(e) { console.warn('[Ludo] lgCharComment error:', e); }
   })();
 }
@@ -10991,41 +15220,44 @@ async function lgGameChat(text) {
 
   const ctx    = getContext();
   const cName  = LG.charName;
-  const persona = lgGetPersona();
+  const userName = (ctx && ctx.name1) || '你';
+  const persona = g2048GetPersona();
   const taskNote = LG.taskActive ? `\n[当前待完成任务:「${LG.taskActive}」--必须直接完成,不许回避]` : '';
 
-  // 游戏内对话上下文：只取 user 说的话（char的历史回复不带入，避免风格锚定污染）
-  // persona 里已有正文近期对话，这里只补充游戏内 user 最近说了什么
-  const recentUserLines = (LG.chatLog || []).slice(-10, -1)
-    .filter(m => m.role === 'user')
-    .slice(-3)
-    .map(m => `${ctx.name1 || '用户'}: ${m.text.slice(0, 50)}`);
-  const historyNote = recentUserLines.length > 0
-    ? `\n[游戏内用户最近说的话(仅供上下文参考)]:\n${recentUserLines.join('\n')}\n`
+  // 游戏内完整对话上下文（user+char 交替，和 2048 对齐）
+  const recentLog = (LG.chatLog || []).slice(-10);
+  const historyLines = recentLog
+    .filter(m => m.role === 'user' || m.role === 'char')
+    .slice(0, -1)
+    .map(m => (m.role === 'user' ? userName : cName) + ': ' + m.text.slice(0, 60));
+  const historyNote = historyLines.length > 0
+    ? `\n[游戏内近期对话记录，必须基于此上下文回复]:\n${historyLines.join('\n')}\n`
     : '';
 
-  const prompt = `${persona}${taskNote}${historyNote}\n[游戏聊天场景]用户对你说:「${text}」\n请以${cName}的身份用中文口语直接回复,20字以内,不带括号、*号、动作描写和引号,输出纯对话台词。\n【严禁重复或复述用户刚才说的话,必须给出有实质内容的角色回应】`;
-  console.log('[lgGameChat] prompt(300):', prompt.slice(0, 300));
+  // 去重：char 最近说过的话
+  const recentCharReplies = (LG.chatLog || []).filter(m => m.role === 'char').slice(-4).map(m => m.text.trim());
+  const avoidNote = recentCharReplies.length > 0
+    ? `\n[你最近说过，不得重复或近似]: ${recentCharReplies.join(' / ')}`
+    : '';
+
+  const prompt = `${persona}${taskNote}${historyNote}${avoidNote}\n[游戏聊天场景]${userName}对你说:「${text}」\n请以${cName}的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。`;
 
   const resp = await lgCallAPI(prompt, 150);
   const cleaned = resp && resp.trim() ? cleanGameReply(resp, cName) : '';
-  console.log('[lgGameChat] cleaned result:', JSON.stringify(cleaned));
 
   // 检测复读1：和用户输入相同
   const userTextNorm = text.trim().toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
   const cleanedNorm  = (cleaned || '').toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
   const isEchoUser = cleaned && (cleanedNorm === userTextNorm || cleaned.trim() === text.trim());
 
-  // 检测复读2：和 chatLog 最近3条 char 回复相同
-  const recentCharReplies = (LG.chatLog || []).filter(m => m.role === 'char').slice(-3).map(m => m.text.trim());
+  // 检测复读2：和 chatLog 最近 char 回复相同
   const isEchoSelf = cleaned && recentCharReplies.some(r => r === cleaned.trim());
 
   if (cleaned && cleaned.length > 1 && !isEchoUser && !isEchoSelf) {
     lgMsg('char', g2048StripActions(cleaned));
   } else if (isEchoUser || isEchoSelf) {
-    const echoReason = isEchoSelf ? `你刚才已经说过「${recentCharReplies[recentCharReplies.length-1]}」了,请给出完全不同的回应` : '请换一个角度回应用户';
-    console.warn('[Ludo] lgGameChat: echo, retrying:', echoReason);
-    const retryPrompt = `${persona}\n[游戏聊天场景]${echoReason}。用户说:「${text}」\n请以${cName}的身份给出一句新鲜的回应,15字以内,纯对话台词。`;
+    const echoReason = isEchoSelf ? `你刚才已经说过「${recentCharReplies[recentCharReplies.length-1]}」了，请给出完全不同的回应` : '请换一个角度回应用户';
+    const retryPrompt = `${persona}\n${historyNote}[游戏聊天场景]${echoReason}。${userName}说:「${text}」\n请以${cName}的身份给出一句新鲜的回应，15字以内，纯对话台词。`;
     const retryResp = await lgCallAPI(retryPrompt, 120);
     const retryCleaned = retryResp && retryResp.trim() ? cleanGameReply(retryResp, cName) : '';
     const isRetryEcho = retryCleaned && recentCharReplies.some(r => r === retryCleaned.trim());
@@ -11035,7 +15267,7 @@ async function lgGameChat(text) {
       console.warn('[Ludo] lgGameChat: retry also echoed or empty, suppressing');
     }
   } else {
-    console.warn('[Ludo] lgGameChat: API returned empty or too short, suppressing fallback');
+    console.warn('[Ludo] lgGameChat: API returned empty or too short, suppressing');
   }
 }
 
@@ -11111,10 +15343,10 @@ function rpInlineEdit(bubbleEl, threadId, msg, msgIdx) {
     if (newText && newText !== origText) {
       const th = STATE.threads[threadId];
       if (th) {
-        // 优先用 msgIdx 精确定位,兜底用文本匹配
-        const target = (typeof msgIdx === 'number' && th.messages[msgIdx] && th.messages[msgIdx].from !== 'user')
+        // 优先用 msgIdx 精确定位（user 和 char 消息都支持）
+        const target = (typeof msgIdx === 'number' && th.messages[msgIdx])
           ? th.messages[msgIdx]
-          : th.messages.find(function(m) { return m.from !== 'user' && m.text === origText; });
+          : th.messages.find(function(m) { return m.text === origText; });
         if (target) target.text = newText;
         saveState();
       }
