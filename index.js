@@ -4683,18 +4683,34 @@ function syncToCurrentChat() {
   console.log('[Phone] syncToCurrentChat:', STATE.chatId, '->', newChatId);
 
   // 保存旧窗口状态
+  // FIX: CHAT_CHANGED 可能未及时触发，导致 STATE.chatId 滞后，此时内存里的 moments/diary
+  // 实际上属于新窗口（newChatId），不能用来覆盖旧 chatId 的持久化数据。
+  // 策略：moments/diary 以 localStorage 里旧 chatId 已有的数据为权威（条数更多时保留持久化）；
+  // threads/notifications 等实时字段仍用内存值（它们不跨窗口污染）。
   if (STATE.chatId) {
+    const _oldPersisted = (() => { try { return JSON.parse(localStorage.getItem(`rp-phone-v1-${STATE.chatId}`) || 'null'); } catch(e) { return null; } })();
+    // 取条数更多的版本（如果 localStorage 里的更多，说明内存数据是被污染的旧窗口残留，不应覆盖）
+    const _safeArr = (memArr, persArr) => {
+      const m = memArr  || [];
+      const p = persArr || [];
+      return p.length > m.length ? p : m;
+    };
+    const _safeMoments = _safeArr(STATE.moments, _oldPersisted && _oldPersisted.moments);
+    const _safeDiary   = _safeArr(STATE.diary,   _oldPersisted && _oldPersisted.diary);
     CHAT_STORE[STATE.chatId] = {
       threads:       JSON.parse(JSON.stringify(STATE.threads)),
       notifications: [...STATE.notifications],
       sync:          { ...STATE.sync },
       currentThread: STATE.currentThread,
-      moments:       JSON.parse(JSON.stringify(STATE.moments || [])),
-      diary:         JSON.parse(JSON.stringify(STATE.diary || [])),
+      moments:       JSON.parse(JSON.stringify(_safeMoments)),
+      diary:         JSON.parse(JSON.stringify(_safeDiary)),
       avatars:       Object.assign({}, STATE.avatars || {}),
       bankData:      STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
     };
+    const _tmpM = STATE.moments, _tmpD = STATE.diary;
+    STATE.moments = _safeMoments; STATE.diary = _safeDiary;
     saveState();
+    STATE.moments = _tmpM; STATE.diary = _tmpD;
   }
 
   // 切到新窗口
@@ -6233,18 +6249,30 @@ function onChatChanged() {
   if (newChatId === STATE.chatId) return;
 
   // 保存当前窗口状态(内存 + localStorage)
+  // FIX: 与 syncToCurrentChat 同步——合并内存与持久化数据再写回，防止数据踩踏
   if (STATE.chatId) {
+    const _oldPersisted2 = (() => { try { return JSON.parse(localStorage.getItem(`rp-phone-v1-${STATE.chatId}`) || 'null'); } catch(e) { return null; } })();
+    const _safeArr2 = (memArr, persArr) => {
+      const m = memArr  || [];
+      const p = persArr || [];
+      return p.length > m.length ? p : m;
+    };
+    const _safeMoments2 = _safeArr2(STATE.moments, _oldPersisted2 && _oldPersisted2.moments);
+    const _safeDiary2   = _safeArr2(STATE.diary,   _oldPersisted2 && _oldPersisted2.diary);
     CHAT_STORE[STATE.chatId] = {
       threads: JSON.parse(JSON.stringify(STATE.threads)),
       notifications: [...STATE.notifications],
       sync: { ...STATE.sync },
       currentThread: STATE.currentThread,
-      moments: JSON.parse(JSON.stringify(STATE.moments || [])),
-      diary:   JSON.parse(JSON.stringify(STATE.diary   || [])),
+      moments: JSON.parse(JSON.stringify(_safeMoments2)),
+      diary:   JSON.parse(JSON.stringify(_safeDiary2)),
       avatars: Object.assign({}, STATE.avatars || {}),
       bankData: STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
     };
+    const _tmpM2 = STATE.moments, _tmpD2 = STATE.diary;
+    STATE.moments = _safeMoments2; STATE.diary = _safeDiary2;
     saveState();
+    STATE.moments = _tmpM2; STATE.diary = _tmpD2;
   }
 
   // 切换到新窗口
@@ -8760,6 +8788,13 @@ function parsePhone(block) {
   let parsedCount = 0;
   let m;
 
+  // ── 严禁 AI 替 user 发言：获取 user 名字，所有 FROM 解析处都会跳过 user 名 ──
+  const _parseUserName = (typeof getContext === 'function' ? getContext()?.name1 : null) || '';
+  function _isUserFrom(fromStr) {
+    if (!_parseUserName || !fromStr) return false;
+    return fromStr.trim().toLowerCase() === _parseUserName.toLowerCase();
+  }
+
   // ── 辅助：从文本内容中提取 <img src="..."> 并返回 {imgs, cleanText, pendingPrompts}
   // 生图插件会把 <pic>/<image> 等替换成标准 <img src="...">, 这里统一处理
   function extractImgsFromText(raw) {
@@ -8800,7 +8835,8 @@ function parsePhone(block) {
       .replace(/<img\b[^>]*>>*/gi, '')               // 吃掉img标签及ComfyUI插件可能残留的多余>
       .replace(/image###[\s\S]*?###/gi, '')          // 智绘姬 image###...###
       .replace(/<pic\b[^>]*>[\s\S]*?<\/pic>/gi, '')  // <pic>...</pic> 格式
-      .replace(/<pic\b[\s\S]*?\/>/gi, '')               // <pic .../> 自闭合（含prompt内有>的情况）
+      .replace(/<pic\b[\s\S]*?\/>/gi, '')            // <pic .../> 自闭合（含prompt内有>的情况）
+      .replace(/<pic\b[^>]*>/gi, '')                 // 兜底：非自闭合 <pic ...> 无 </pic> 的残留开标签
       .replace(/<imageTag>[\s\S]*?<\/imageTag>/gi, '') // 主楼生图世界书外壳
       .replace(/<image>[\s\S]*?<\/image>/gi, '')     // <image>...</image> 包裹块
       .replace(/<imgthink>[\s\S]*?<\/imgthink>/gi, '') // <imgthink> 思考过程
@@ -8829,6 +8865,8 @@ function parsePhone(block) {
   while ((m = smsTagRe.exec(block)) !== null) {
     const attrs    = getTagAttrs(m[1]);
     const fromRaw0 = (attrs.FROM || '').trim();
+    // 严禁 AI 替 user 发言：FROM 是 user 名字时直接跳过
+    if (_isUserFrom(fromRaw0)) { console.log('[Phone:guard] SMS FROM=user blocked:', fromRaw0); continue; }
     const time     = (attrs.TIME || '').trim();
     const rawContent = m[2] || '';
 
@@ -8856,15 +8894,10 @@ function parsePhone(block) {
     } else if (fromRaw) {
       threadId = matchThread(fromRaw);
       if (!threadId) {
-        // FROM 名字匹配失败(如角色有中英文别名)→ 先用当前打开的线程,而不是新建孤岛
-        const curTh = STATE.currentThread && STATE.threads?.[STATE.currentThread];
-        if (curTh) {
-          threadId = STATE.currentThread;
-        } else {
-          // 真的找不到,才新建
-          const newTh = findOrCreateThread(fromRaw);
-          threadId = newTh.id;
-        }
+        // FROM 名字匹配失败 → 自动新建该 NPC 的线程，不要把消息误投到当前打开的线程
+        const newTh = findOrCreateThread(fromRaw);
+        threadId = newTh.id;
+        console.log('[Phone:diag] parsePhone: FROM "' + fromRaw + '" not in contacts, auto-created thread', threadId);
       }
     } else if (STATE.currentThread && STATE.threads?.[STATE.currentThread]) {
       threadId = STATE.currentThread;
@@ -8943,7 +8976,7 @@ function parsePhone(block) {
     const { imgs: momentImgs, cleanText: momentCleanText, pendingPrompts: momentPendingPrompts } = extractImgsFromText(rawMomentContent);
     const momentImg = m[3] ? m[3].trim() : (momentImgs[0] || null); // IMG属性优先，否则取内嵌第一张
     const fromName = m[1].trim(), momentTime = m[2].trim();
-    const momentId = fromName.toLowerCase().replace(/\s+/g,'_') + '_' + momentTime.replace(':','');
+    // momentId 由 incomingMoment 生成并返回，parsePhone 不再独立计算
 
     // ── 朋友圈生图适配 A：智绘姬 image###prompt### → 需要用户点击触发 ──
     const pendingPrompt = (!momentImg && momentPendingPrompts && momentPendingPrompts.length > 0)
@@ -8962,7 +8995,7 @@ function parsePhone(block) {
     }
 
     const effectivePendingPrompt = pendingPrompt || comfyPendingPrompt;
-    incomingMoment(fromName, momentTime, momentCleanText.trim(), momentImg, effectivePendingPrompt, comfyPendingPrompt ? 'comfy' : 'chatu8');
+    const momentId = incomingMoment(fromName, momentTime, momentCleanText.trim(), momentImg, effectivePendingPrompt, comfyPendingPrompt ? 'comfy' : 'chatu8');
 
     // 同步写 _pendingMomentImgs，供 Observer/MESSAGE_UPDATED 回填
     if (effectivePendingPrompt) {
@@ -9023,7 +9056,9 @@ function parsePhone(block) {
   // ── CALL ──
   const callRe = /<CALL\s+FROM="([^"]+)"\s+TIME="([^"]+)"\s*\/?>/gi;
   while ((m = callRe.exec(block)) !== null) {
-    incomingCall(m[1].trim(), m[2].trim());
+    const callFrom = m[1].trim();
+    if (_isUserFrom(callFrom)) { console.log('[Phone:guard] CALL FROM=user blocked:', callFrom); continue; }
+    incomingCall(callFrom, m[2].trim());
     parsedCount++;
   }
   // ── HONGBAO ──
@@ -9039,13 +9074,17 @@ function parsePhone(block) {
   // ── VOICE ──
   const voiceRe = /<VOICE\s+FROM="([^"]+)"\s+TIME="([^"]+)"\s+DURATION="([^"]+)">([\s\S]*?)<\/VOICE>/gi;
   while ((m = voiceRe.exec(block)) !== null) {
-    incomingVoice(m[1].trim(), m[2].trim(), m[3].trim(), m[4].trim());
+    const voiceFrom = m[1].trim();
+    if (_isUserFrom(voiceFrom)) { console.log('[Phone:guard] VOICE FROM=user blocked:', voiceFrom); continue; }
+    incomingVoice(voiceFrom, m[2].trim(), m[3].trim(), m[4].trim());
     parsedCount++;
   }
   // ── GROUP MSG ──
   const gmsgRe = /<GMSG\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+TIME="([^"]+)">([\s\S]*?)<\/GMSG>/gi;
   while ((m = gmsgRe.exec(block)) !== null) {
-    incomingGroupMsg(m[1].trim(), m[2].trim(), m[3].trim(), m[4].trim());
+    const gmsgFrom = m[1].trim();
+    if (_isUserFrom(gmsgFrom)) { console.log('[Phone:guard] GMSG FROM=user blocked:', gmsgFrom); continue; }
+    incomingGroupMsg(gmsgFrom, m[2].trim(), m[3].trim(), m[4].trim());
     parsedCount++;
   }
 
@@ -9054,6 +9093,8 @@ function parsePhone(block) {
   const gvoiceRe = /<GVOICE\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+TIME="([^"]+)"\s+DURATION="([^"]+)">([\s\S]*?)<\/GVOICE>/gi;
   while ((m = gvoiceRe.exec(block)) !== null) {
     const fromRaw = m[1].trim(), groupName = m[2].trim(), time = m[3].trim();
+    // 严禁 AI 替 user 发言
+    if (_isUserFrom(fromRaw)) { console.log('[Phone:guard] GVOICE FROM=user blocked:', fromRaw); continue; }
     const duration = m[4].trim(), voiceText = m[5].trim();
     const groupId = `grp_${groupName}`;
     if (!STATE.threads[groupId]) {
@@ -11464,6 +11505,17 @@ async function generateAIReply(momentId, userCommentText, fromName) {
 
 //  MOMENTS
 // ================================================================
+// 渲染前防御性清洗：剔除可能因 ComfyUI 时序 bug 残留在 text 里的生图标签
+function cleanMomentText(text) {
+  if (!text) return '';
+  return text
+    .replace(/<img\b[^>]*>/gi, '')
+    .replace(/image###[\s\S]*?###/gi, '')
+    .replace(/<pic\b[^>]*>[\s\S]*?<\/pic>/gi, '')
+    .replace(/<pic\b[\s\S]*?\/>/gi, '')
+    .replace(/<pic\b[^>]*>/gi, '')
+    .trim();
+}
 function renderMoments() {
   console.log('[Phone:diag] renderMoments STATE.avatars=', JSON.stringify(STATE.avatars));
   console.log('[Phone:diag] renderMoments called from:', new Error().stack.split('\n').slice(1,4).join(' | '));
@@ -11502,7 +11554,7 @@ function renderMoments() {
             <div class="rp-moment-time">${moment.time}</div>
           </div>
         </div>
-        <div class="rp-moment-text">${escHtml(moment.text)}</div>
+        <div class="rp-moment-text">${escHtml(cleanMomentText(moment.text))}</div>
         ${moment.img
           ? `<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${escHtml(moment.img)}" alt=""/></div>`
           : moment.pendingImg
@@ -12478,9 +12530,57 @@ function escHtml(str) {
 }
 
 function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType) {
-  const momentId = fromRaw.toLowerCase().replace(/\s+/g,'_') + '_' + time.replace(':','');
-  // ── 去重：已存在同 ID 的 moment 时，仅在图片从无到有时更新（ComfyUI 完成后消息更新场景）──
-  const existingMoment = STATE.moments && STATE.moments.find(m => m.id === momentId);
+  // ── momentId：from + time + 毫秒戳，每条唯一，彻底避免同时刻不同角色/纯图片碰撞 ──
+  const _idBase = fromRaw.toLowerCase().replace(/\s+/g,'_') + '_' + time.replace(':','');
+  const momentId = _idBase + '_' + Date.now();
+
+  // ── FIX: chatId 一致性守卫 ──
+  // CHAT_CHANGED 事件有时滞后，导致 STATE.chatId 还是旧窗口的 id，
+  // 此时 ctx.chatId 才是真正"正在聊天的窗口"。
+  // 如果两者不一致，说明这条 moment 属于当前真实窗口（ctx.chatId），
+  // 不能写进 STATE.moments（那是旧窗口的），要直接写到正确 chatId 的 localStorage slot，
+  // 等 onChatChanged/syncToCurrentChat 后续触发时自然加载回来。
+  const _ctx = getContext();
+  const _realChatId = _ctx?.chatId || ((_ctx?.characterId != null) ? 'char_' + _ctx.characterId : null);
+  if (_realChatId && _realChatId !== STATE.chatId) {
+    console.warn('[Phone:moment] chatId 不一致，STATE:', STATE.chatId, '→ ctx:', _realChatId, '，写入正确 slot 而非内存');
+    try {
+      const _slotRaw = localStorage.getItem(`rp-phone-v1-${_realChatId}`);
+      const _slot = _slotRaw ? JSON.parse(_slotRaw) : null;
+      if (_slot) {
+        _slot.moments = _slot.moments || [];
+        const _threadId0 = matchThread(fromRaw) || fromRaw;
+        const _dup = _slot.moments.find(m =>
+          m.from === _threadId0 && m.time === time && m.text === (text || '')
+        );
+        if (!_dup) {
+          _slot.moments.push({
+            id: momentId,
+            from: _threadId0,
+            name: fromRaw,
+            initials: fromRaw.slice(0,2).toUpperCase(),
+            avatarBg: 'linear-gradient(145deg,#555,#333)',
+            time, text,
+            img: img || null,
+            pendingImg: (!img && pendingImgPrompt) ? pendingImgPrompt : null,
+            pendingImgType: (!img && pendingImgPrompt) ? (pendingImgType || 'chatu8') : null,
+            likes: [], comments: [],
+          });
+          localStorage.setItem(`rp-phone-v1-${_realChatId}`, JSON.stringify(_slot));
+          console.log('[Phone:moment] 已写入正确 slot:', _realChatId, momentId);
+        }
+      }
+    } catch(e) { console.warn('[Phone:moment] 写入正确 slot 失败', e); }
+    return momentId; // 不污染当前 STATE.moments
+  }
+
+  // ── 去重：from+time+text 三字段去重（不含 img）──
+  // 原因：ComfyUI 完成生图后 media-auto-generation 会修改 mes，触发 1.2s 轮询再次 parsePhone，
+  // 此时 img 字段从 null 变为真实 src，若用 img 参与去重则命中失败，导致插入重复脏条目。
+  const _threadId = matchThread(fromRaw) || fromRaw;
+  const existingMoment = STATE.moments && STATE.moments.find(m =>
+    m.from === _threadId && m.time === time && m.text === (text || '')
+  );
   if (existingMoment) {
     // 若已存在 moment 没有图片，但本次解析拿到了图片 → 回填（ComfyUI 完成态覆盖 pending 态）
     if (!existingMoment.img && img) {
@@ -12497,7 +12597,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
       saveState();
       console.log('[Phone:moment:update] ComfyUI 完成，回填已存在 moment 的图片', { momentId, src: img.slice(0, 80) });
     }
-    return;
+    return existingMoment.id;  // 必须返回 id，否则 parsePhone 的 _pendingMomentImgs.set 会写入 undefined
   }
   const threadId = matchThread(fromRaw);
   const th = STATE.threads[threadId];
@@ -12522,6 +12622,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
   saveState();
   // 好友自动点赞+评论
   setTimeout(() => friendsInteractOnMoment(momentId), 1500);
+  return momentId; // 供调用方（parsePhone）获取真实 ID 用于 _pendingMomentImgs 映射
 }
 
 function incomingComment(momentId, fromRaw, time, text, replyTo) {
