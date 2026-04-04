@@ -8567,6 +8567,26 @@ function extractSmsSummaries(block) {
   return out;
 }
 
+function extractCommentSummaries(block) {
+  const out = [];
+  if (!block) return out;
+  const commentTagRe = /<COMMENT\b([^>]*)>([\s\S]*?)<\/COMMENT>/gi;
+  let m;
+  while ((m = commentTagRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const text = String(m[2] || '')
+      .replace(/<pic\b[\s\S]*?\/>/gi, '')
+      .replace(/<img\b[^>]*>/gi, '')
+      .replace(/image###[\s\S]*?###/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    if (!text) continue;
+    out.push({ from, text });
+  }
+  return out;
+}
+
 function removePhoneEchoFragments(textEl, fragments) {
   if (!textEl || !Array.isArray(fragments) || fragments.length === 0) return;
 
@@ -8626,8 +8646,9 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     if (!textEl) return;
     if (fp && textEl.dataset.rpPhoneRewriteFp === fp) return;
 
-    // 先解析出所有 SMS 内容，后面用来从正文里精确删除
+    // 先解析出所有 SMS / COMMENT 内容，后面用来从正文里精确删除
     const smsList = extractSmsSummaries(block);
+    const commentList = extractCommentSummaries(block);
 
     // ── 步骤1:DOM 清理 <phone> 及残余裸标签 ──
     // 先把 <phone> 内已渲染的智绘姬按钮（image-tag-button）提取出来，清理后贴回 mes_text
@@ -8679,7 +8700,13 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       removePhoneEchoFragments(textEl, smsTexts);
     }
 
-    // ── 步骤3b：情况E — 散落的 MOMENTS 文字行 ──
+    // ── 步骤3b：清理散落的 COMMENT 正文 ──
+    if (commentList.length > 0) {
+      const commentTexts = commentList.map(function(c) { return c.text; }).filter(Boolean);
+      removePhoneEchoFragments(textEl, commentTexts);
+    }
+
+    // ── 步骤3c：情况E — 散落的 MOMENTS 文字行 ──
     const momentsList = [];
     const momentsExtRe = /<MOMENTS\s+FROM="([^"]+)"\s+TIME="([^"]+)"(?:\s+IMG="[^"]*")?\s*>([\s\S]*?)<\/MOMENTS>/gi;
     let mm;
@@ -12793,11 +12820,22 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
   // ── 去重：from+time+text 三字段去重（不含 img）──
   // 原因：ComfyUI 完成生图后 media-auto-generation 会修改 mes，触发 1.2s 轮询再次 parsePhone，
   // 此时 img 字段从 null 变为真实 src，若用 img 参与去重则命中失败，导致插入重复脏条目。
-  const _threadId = matchThread(fromRaw) || fromRaw;
+  const matchedThreadId = matchThread(fromRaw);
+  const dedupeKey = matchedThreadId || fromRaw;
   const existingMoment = STATE.moments && STATE.moments.find(m =>
-    m.from === _threadId && m.time === time && m.text === (text || '')
+    m.from === dedupeKey && m.time === time && m.text === (text || '')
   );
   if (existingMoment) {
+    // 若这条动态最初写入时联系人线程尚未建立，后续一旦能匹配到/建出 thread，就顺手补齐作者元数据
+    const ensureTh = matchedThreadId
+      ? STATE.threads?.[matchedThreadId]
+      : (fromRaw ? findOrCreateThread(fromRaw) : null);
+    if (ensureTh) {
+      existingMoment.from = ensureTh.id;
+      existingMoment.name = ensureTh.name || fromRaw;
+      existingMoment.initials = ensureTh.initials || fromRaw.slice(0,2).toUpperCase();
+      existingMoment.avatarBg = ensureTh.avatarBg || existingMoment.avatarBg;
+    }
     // 若已存在 moment 没有图片，但本次解析拿到了图片 → 回填（ComfyUI 完成态覆盖 pending 态）
     if (!existingMoment.img && img) {
       existingMoment.img = img;
@@ -12815,7 +12853,13 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
     }
     return existingMoment.id;  // 必须返回 id，否则 parsePhone 的 _pendingMomentImgs.set 会写入 undefined
   }
-  const threadId = matchThread(fromRaw);
+  let threadId = matchedThreadId;
+  if (!threadId && fromRaw) {
+    // 和 SMS 保持一致：新好友第一次发朋友圈时也自动建联系人线程
+    const newTh = findOrCreateThread(fromRaw);
+    threadId = newTh?.id || null;
+    console.log('[Phone:diag] incomingMoment: FROM "' + fromRaw + '" not in contacts, auto-created thread', threadId);
+  }
   const th = STATE.threads[threadId];
   STATE.moments = STATE.moments || [];
   STATE.moments.push({
