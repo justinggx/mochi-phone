@@ -10998,6 +10998,15 @@ async function _doGetMomentsCtx(chatIdHint) {
   const charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
   const userName = ctx?.name1 || '用户';
 
+  // 当前角色卡里，主楼近期真实出现过的 NPC 名字（最可信）
+  const chatNpcKeys = new Set();
+  (ctx?.chat || []).slice(-80).forEach(msg => {
+    if (msg?.is_user) return;
+    const spk = (msg?.name || '').trim();
+    if (!spk || normNameKey(spk) === normNameKey(charName)) return;
+    chatNpcKeys.add(normNameKey(spk));
+  });
+
   // 只用当前 chatId 的 threads(不跨片场),避免串入其他角色卡的 NPC
   // 排除群聊:群聊不是真实 NPC 个体,不应出现在朋友圈互动中
   const knownNPCs = new Set();
@@ -11218,9 +11227,44 @@ async function _doGetMomentsCtx(chatIdHint) {
     });
   } catch(e) { /* ignore */ }
 
-  // 只保留 knownNPCs 里有的人物人设,过滤掉其他角色卡的数据
+  // 只保留当前卡“主楼近期真实出现过”的 NPC，宁可误杀，不可串卡
+  const strictNPCs = [...knownNPCs].filter(npcName => chatNpcKeys.has(normNameKey(npcName)));
+
+  // 同步清理当前槽位里混入的跨卡人物（thread / moments / likes / comments）
+  const strictNpcKeySet = new Set(strictNPCs.map(n => normNameKey(n)));
+  Object.keys(STATE.threads || {}).forEach(function(tid) {
+    const th = STATE.threads[tid];
+    if (!th || !th.name) return;
+    if (th.type === 'group' || tid.startsWith('grp_') || (th.members && th.members.length > 1)) return;
+    const nk = normNameKey(th.name);
+    if (nk === normNameKey(charName) || strictNpcKeySet.has(nk)) return;
+    console.warn('[Phone:isolation] 移除跨卡 thread:', th.name, tid);
+    delete STATE.threads[tid];
+    if (STATE.currentThread === tid) STATE.currentThread = null;
+  });
+  (STATE.moments || []).forEach(function(m) {
+    if (!m) return;
+    if (m.from !== 'user') {
+      const mk = normNameKey(m.name || m.from || '');
+      if (mk && mk !== normNameKey(charName) && !strictNpcKeySet.has(mk)) {
+        console.warn('[Phone:isolation] 将跨卡朋友圈作者改为当前主角，原作者:', m.name || m.from);
+        m.from = charName;
+        m.name = charName;
+      }
+    }
+    m.likes = (m.likes || []).filter(function(name) {
+      const k = normNameKey(name);
+      return k === 'user' || k === normNameKey(charName) || strictNpcKeySet.has(k);
+    });
+    m.comments = (m.comments || []).filter(function(c) {
+      const k = normNameKey(c?.name || c?.from || '');
+      return k === 'user' || k === normNameKey(charName) || strictNpcKeySet.has(k);
+    });
+  });
+
+  // 只保留 strictNPCs 里有的人物人设,过滤掉其他角色卡的数据
   const filteredPersonaMap = {};
-  [...knownNPCs].forEach(npcName => {
+  strictNPCs.forEach(npcName => {
     const k = normNameKey(npcName);
     if (npcPersonaMap[k]) {
       filteredPersonaMap[k] = npcPersonaMap[k];
@@ -11240,11 +11284,12 @@ async function _doGetMomentsCtx(chatIdHint) {
   const result = {
     charName,
     userName,
-    npcs: [...knownNPCs].slice(0, 8),
+    npcs: strictNPCs.slice(0, 8),
     recentChat,
     charPersona,
     npcPersonaMap: filteredPersonaMap,
   };
+  saveState();
   _getMomentsCtxCache = result;
   _getMomentsCtxCacheTime = Date.now();
   _getMomentsCtxCacheChatId = chatIdHint || (getContext()?.chatId || (getContext()?.characterId != null ? `char_${getContext().characterId}` : 'default'));
