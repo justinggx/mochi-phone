@@ -11227,8 +11227,35 @@ async function _doGetMomentsCtx(chatIdHint) {
     });
   } catch(e) { /* ignore */ }
 
-  // 只保留当前卡“主楼近期真实出现过”的 NPC，宁可误杀，不可串卡
-  const strictNPCs = [...knownNPCs].filter(npcName => chatNpcKeys.has(normNameKey(npcName)));
+  // 只保留当前卡里可信的 NPC。
+  // 旧逻辑只认“主楼最近真实出现过”的 NPC，过于严格：
+  // 如果某个 NPC 已经在当前卡槽的小手机联系人/聊天记录里，但最近没在主楼发言，
+  // 会被整个排除，导致 char 发朋友圈时没人点赞/评论。
+  // 这里放宽为：满足以下任一条件即可保留
+  // 1) 主楼近期真实出现过；
+  // 2) 当前槽位里存在该 NPC 的单聊 thread，且 thread 有消息/未读；
+  // 3) 当前槽位里已经存在该 NPC 相关的朋友圈痕迹（发过动态/点过赞/评过论）。
+  const strictNPCs = [...knownNPCs].filter(npcName => {
+    const nk = normNameKey(npcName);
+    if (chatNpcKeys.has(nk)) return true;
+
+    const th = Object.values(STATE.threads || {}).find(t => {
+      if (!t || !t.name) return false;
+      if (t.type === 'group' || t.id?.startsWith('grp_') || (t.members && t.members.length > 1)) return false;
+      return normNameKey(t.name) === nk;
+    });
+    if (th && (((th.messages && th.messages.length > 0) || 0) || (th.unread > 0))) return true;
+
+    const hasMomentTrace = (STATE.moments || []).some(m => {
+      if (!m) return false;
+      const authorKey = normNameKey(m.name || m.from || '');
+      if (authorKey === nk) return true;
+      if ((m.likes || []).some(name => normNameKey(name) === nk)) return true;
+      if ((m.comments || []).some(c => normNameKey(c?.name || c?.from || '') === nk)) return true;
+      return false;
+    });
+    return hasMomentTrace;
+  });
 
   // 同步清理当前槽位里混入的跨卡人物（thread / moments / likes / comments）
   const strictNpcKeySet = new Set(strictNPCs.map(n => normNameKey(n)));
@@ -11539,13 +11566,23 @@ async function friendsInteractOnMoment(momentId) {
       moment.likes.push(name);
     }
   });
-  if (STATE.currentView === 'moments') renderMoments();
-  saveState();
 
-  // user 动态也要尽量补到至少 3 条评论（好友数量不足除外）
+  // 准备评论名单前，先算出至少需要几个人参与评论
+  // 对会参与评论的人，顺手强制补一个赞，避免出现“明明评论了却一个赞都没有”的违和情况。
   const minComments = Math.min(3, allFriends.length);
   const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
   const needCount = Math.max(0, minComments - alreadyCommented.size);
+  if (needCount > 0) {
+    const eligibleForComment = allFriends.filter(n => !alreadyCommented.has(n));
+    const shuffledForComment = eligibleForComment.sort(() => Math.random() - 0.5);
+    const guaranteedActors = shuffledForComment.slice(0, needCount);
+    guaranteedActors.forEach(name => {
+      if (!moment.likes.includes(name)) moment.likes.push(name);
+    });
+  }
+  if (STATE.currentView === 'moments') renderMoments();
+  saveState();
+
   if (needCount <= 0) {
     if (STATE.currentView === 'moments') renderMoments();
     saveState();
