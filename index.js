@@ -8383,7 +8383,11 @@ function onAIMessage() {
 
     const raw = last.mes;
     // 指纹:只用于成功解析后去重,流式中间态不记录
-    const fp = `${ctx?.chatId || ''}|${raw.length}|${raw.slice(0, 24)}|${raw.slice(-24)}`;
+    // 旧版只看长度 + 首尾 24 字，reroll 时如果壳子相似、只改中段内容，
+    // 会误判成“同一条消息”，导致主楼已更新但手机不重解析。
+    const midStart = Math.max(0, Math.floor(raw.length / 2) - 24);
+    const midSlice = raw.slice(midStart, midStart + 48);
+    const fp = `${ctx?.chatId || ''}|${raw.length}|${raw.slice(0, 48)}|${midSlice}|${raw.slice(-48)}`;
     if (fp === STATE._lastAiFingerprint) {
       console.log('[Phone:diag] onAIMessage skipped: same fingerprint');
       return;
