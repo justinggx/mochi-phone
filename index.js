@@ -2084,9 +2084,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark .rp-moment-time{color:rgba(160,175,255,.38)}
 .rp-moment-text{font-size:14px;color:var(--rp-moment-text);line-height:1.65;margin-bottom:10px;word-break:break-word}
 .rp-dark .rp-moment-text{color:#d5d8f0}
-.rp-moment-bar{display:flex;align-items:center;justify-content:flex-end;gap:2px;padding:6px 0 2px;border-top:1px solid var(--rp-moment-bd)}
+.rp-moment-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 0 2px;border-top:1px solid var(--rp-moment-bd);flex-wrap:nowrap}
 .rp-dark .rp-moment-bar{border-top-color:rgba(255,255,255,.06)}
-.rp-moment-act{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;color:rgba(0,0,0,.42);cursor:pointer;transition:background .12s,color .12s;border:none;background:none;font-family:inherit}
+.rp-moment-act{display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;color:rgba(0,0,0,.42);cursor:pointer;transition:background .12s,color .12s;border:none;background:none;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .rp-dark .rp-moment-act{color:rgba(160,175,255,.42)}
 .rp-moment-act:hover{background:rgba(0,0,0,.04)}
 .rp-dark .rp-moment-act:hover{background:rgba(255,255,255,.04)}
@@ -3739,10 +3739,10 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #ggold-timer-bar{height:5px;border-radius:3px;background:var(--rp-wd-fill,linear-gradient(90deg,#f59e0b,#ef4444));transition:width .5s linear;width:100%}
 #ggold-canvas-wrap{display:flex;justify-content:center;padding:2px 0;flex-shrink:0}
 #ggold-canvas{border-radius:8px;display:block}
-#ggold-action-row{display:flex;justify-content:center;align-items:center;gap:10px;padding:3px 12px;flex-shrink:0}
-#ggold-launch-btn{padding:6px 22px;border-radius:18px;border:none;background:linear-gradient(135deg,var(--rp-nav-btn,#e05888),color-mix(in srgb,var(--rp-nav-btn,#e05888) 70%,#000 30%));color:#fff;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#ggold-action-row{display:flex;justify-content:center;align-items:center;gap:10px;padding:3px 12px;flex-shrink:0;min-width:0}
+#ggold-launch-btn{padding:6px 22px;border-radius:18px;border:none;background:linear-gradient(135deg,var(--rp-nav-btn,#e05888),color-mix(in srgb,var(--rp-nav-btn,#e05888) 70%,#000 30%));color:#fff;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);flex-shrink:0}
 #ggold-launch-btn:disabled{opacity:.45;cursor:not-allowed}
-#ggold-turn-badge{font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.32);padding:2px 10px;border-radius:12px}
+#ggold-turn-badge{font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.32);padding:2px 10px;border-radius:12px;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #ggold-chat-hint{font-size:9.5px;color:rgba(224,64,122,.65);text-align:right;padding:0 14px 1px;flex-shrink:0}
 #ggold-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:blur(5px);cursor:pointer}
 #ggold-chat::-webkit-scrollbar{display:none}
@@ -4360,8 +4360,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   grid-template-columns: auto 1fr auto;
   align-items: start;
   gap: 8px;
-  padding: 9px 0;
+  padding: 11px 0;
   border-bottom: 1px solid var(--bank-divider);
+  min-height: 52px;
 }
 .rp-bank-txn:last-child { border-bottom: none; }
 .rp-bank-txn-ico {
@@ -4376,21 +4377,21 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   border: 1px solid rgba(255,255,255,.3);
   margin-top: 1px;
 }
-.rp-bank-txn-info { min-width: 0; overflow: hidden; width: 100%; }
+.rp-bank-txn-info { min-width: 0; overflow: visible; width: 100%; }
 .rp-bank-txn-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--bank-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1.3;
+  overflow: visible;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.4;
   width: 100%;
 }
 .rp-bank-txn-date {
   font-size: 10px;
   color: var(--bank-text-sub);
-  margin-top: 1px;
+  margin-top: 2px;
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
@@ -8560,6 +8561,57 @@ function extractSmsSummaries(block) {
   return out;
 }
 
+function removePhoneEchoFragments(textEl, fragments) {
+  if (!textEl || !Array.isArray(fragments) || fragments.length === 0) return;
+
+  const cleaned = Array.from(new Set(
+    fragments
+      .map(function(s) { return String(s || '').replace(/\s+/g, ' ').trim(); })
+      .filter(Boolean)
+  )).sort(function(a, b) { return b.length - a.length; });
+
+  if (!cleaned.length) return;
+
+  const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node || !node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.closest('.rp-phone-echo-block, .rp-phone-saved-img-btns, .mes_buttons')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const textNodes = [];
+  let n;
+  while ((n = walker.nextNode())) textNodes.push(n);
+
+  textNodes.forEach(function(node) {
+    let val = node.nodeValue;
+    let changed = false;
+    cleaned.forEach(function(fragment) {
+      if (!fragment) return;
+      const escaped = escapeRegExp(fragment).replace(/\s+/g, '\\s+');
+      const before = val;
+      val = val.replace(new RegExp(escaped, 'g'), '');
+      if (val !== before) changed = true;
+    });
+    if (!changed) return;
+    val = val
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/^[ \t]+|[ \t]+$/g, '');
+    node.nodeValue = val;
+  });
+
+  Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
+    if (el.closest('.rp-phone-echo-block, .rp-phone-saved-img-btns, .mes_buttons')) return;
+    const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    const hasMedia = !!el.querySelector('img, video, audio, button');
+    if (!txt && !hasMedia) el.remove();
+  });
+}
+
 // ── 核心：对指定 textEl 执行 PHONE 块折叠处理 ──
 // block: 原始消息文本（含或不含 <PHONE> 外壳均可）
 // fp: 指纹（传入则防重复，历史重建时传 null 跳过指纹检查）
@@ -8617,21 +8669,8 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
 
     // ── 步骤3：情况D — 散落的 SMS 文字行 ──
     if (smsList.length > 0) {
-      const smsTexts = new Set(smsList.map(s => s.text.trim()).filter(Boolean));
-      Array.from(textEl.childNodes).forEach(child => {
-        const ct = (child.textContent || '').trim();
-        if (ct && smsTexts.has(ct)) child.remove();
-      });
-      let html2 = textEl.innerHTML || '';
-      let changed = false;
-      smsTexts.forEach(smsText => {
-        const escaped = smsText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const before = html2;
-        html2 = html2.replace(new RegExp(`<p[^>]*>\\s*${escaped}\\s*</p>`, 'g'), '');
-        html2 = html2.replace(new RegExp(escaped, 'g'), '');
-        if (html2 !== before) changed = true;
-      });
-      if (changed) textEl.innerHTML = html2;
+      const smsTexts = smsList.map(function(s) { return s.text.trim(); }).filter(Boolean);
+      removePhoneEchoFragments(textEl, smsTexts);
     }
 
     // ── 步骤3b：情况E — 散落的 MOMENTS 文字行 ──
@@ -8650,21 +8689,8 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       if (mText) momentsList.push({ from: mFrom, time: mTime, text: mText });
     }
     if (momentsList.length > 0) {
-      const momentTexts = new Set(momentsList.map(m => m.text));
-      Array.from(textEl.childNodes).forEach(child => {
-        const ct = (child.textContent || '').trim();
-        if (ct && momentTexts.has(ct)) child.remove();
-      });
-      let html3 = textEl.innerHTML || '';
-      let changed3 = false;
-      momentTexts.forEach(mText => {
-        const escaped = mText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const before = html3;
-        html3 = html3.replace(new RegExp(`<p[^>]*>\\s*${escaped}\\s*</p>`, 'g'), '');
-        html3 = html3.replace(new RegExp(escaped, 'g'), '');
-        if (html3 !== before) changed3 = true;
-      });
-      if (changed3) textEl.innerHTML = html3;
+      const momentTexts = momentsList.map(function(m) { return m.text; }).filter(Boolean);
+      removePhoneEchoFragments(textEl, momentTexts);
     }
 
     // ── 步骤4:清理多余换行 ──
@@ -10917,6 +10943,20 @@ function resolveNpcPersonaByName(name, npcPersonaMap) {
   return '';
 }
 
+function getMomentRelationHints(nameA, nameB, recentChat, personaA, personaB) {
+  const a = String(nameA || '').trim();
+  const b = String(nameB || '').trim();
+  const text = [recentChat || '', personaA || '', personaB || ''].join('\n');
+  if (!a || !b || !text.trim()) return '';
+  const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const related = lines.filter(line => {
+    const lk = normNameKey(line);
+    return lk.includes(normNameKey(a)) || lk.includes(normNameKey(b));
+  }).slice(-8);
+  if (!related.length) return '';
+  return related.join('\n').slice(0, 700);
+}
+
 // getMomentsCtx 结果缓存(30s TTL + Promise锁,防止并发重复加载)
 let _getMomentsCtxCache = null;
 let _getMomentsCtxCacheTime = 0;
@@ -11300,7 +11340,7 @@ async function charRespondToUserMoment(momentId) {
   }
   // NPC 们强制回复(逐个单独请求,避免雷同;按人数:1好友=1条,2=2条,3+取2条NPC)
   setTimeout(async function() {
-    const { npcs, npcPersonaMap } = await getMomentsCtx();
+    const { npcs, npcPersonaMap, recentChat, userName } = await getMomentsCtx();
     const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
     const pendingNPCs = npcs.filter(n => !alreadyCommented.has(n));
     const maxNPC = Math.min(pendingNPCs.length, Math.max(0, 3 - (alreadyCommented.has(charName) ? 1 : 0)));
@@ -11309,14 +11349,23 @@ async function charRespondToUserMoment(momentId) {
     for (let i = 0; i < maxNPC; i++) {
       const npc = shuffled[i];
       const npcPersona = resolveNpcPersonaByName(npc, npcPersonaMap) || '';
-      // 每个 NPC 独立请求,人设+角色名写进 prompt,强制差异化
+      const authorPersona = moment.from === 'user' ? ('用户' + userName + '的相关语境:\n' + (recentChat || '').slice(-500)) : '';
+      const relHints = getMomentRelationHints(npc, userName, recentChat, npcPersona, authorPersona);
       const sysNpc = '你正在扮演角色"' + npc + '"。'
-        + (npcPersona ? '\n人设:' + npcPersona.slice(0, 250) + '\n' : '\n')
-        + '你在朋友圈看到了这条动态,用符合你性格的语气写一条评论。'
-        + '字数10-25字,口语化,不要和其他角色的评论重复,只返回评论正文。';
+        + (npcPersona ? '\n你的人设/世界书摘要:\n' + npcPersona.slice(0, 320) + '\n' : '\n')
+        + (authorPersona ? ('\n动态作者相关语境:\n' + authorPersona + '\n') : '')
+        + (recentChat ? ('\n主楼近期上下文:\n' + recentChat.slice(-700) + '\n') : '')
+        + (relHints ? ('\n你与动态作者的关系线索:\n' + relHints + '\n') : '')
+        + '硬规则:\n'
+        + '1. 评论必须符合你的人设、世界书、主楼上下文。\n'
+        + '2. 若语境里存在敌对、厌恶、仇恨、戒备、看不起、疏离关系，禁止写成鼓励、支持、宠溺、暧昧。\n'
+        + '3. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确如此设定。\n'
+        + '4. 不知道时就少说、冷一点，也不要乱认亲、乱套近乎。\n'
+        + '5. 只返回一条中文评论正文，10-25字，不加引号，不加前缀。';
       const promptNpc = '朋友圈内容:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
-        + '你的用户名是"' + npc + '",你的评论(必须和其他人不同):';
-      const resp = await lgCallAPI(promptNpc, 80, sysNpc);
+        + '动态作者:「' + userName + '」\n'
+        + '你的用户名是"' + npc + '",请基于人设/世界书/主楼上下文写评论，必须和其他人不同:';
+      const resp = await lgCallAPI(promptNpc, 120, sysNpc);
       if (resp) {
         const cleaned = resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
         if (cleaned && cleaned.length > 2) {
@@ -11449,12 +11498,27 @@ async function friendsInteractOnMoment(momentId) {
   // 构建 prompt 一次性生成所有评论(省 token)
   const npcPersonaText = commentors.map(n => {
     const p = npcPersonaMap?.[normNameKey(n)] || '';
-    return p ? ('- ' + n + ':' + p.replace(/\n/g, ';').slice(0, 150)) : ('- ' + n);
+    const rel = getMomentRelationHints(n, authorName, recentChat, p, authorName === charName ? charPersona : resolveNpcPersonaByName(authorName, npcPersonaMap));
+    return p
+      ? ('- ' + n + ':人设=' + p.replace(/\n/g, ';').slice(0, 150) + (rel ? ('；关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''))
+      : ('- ' + n + (rel ? ('：关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''));
   }).join('\n');
 
-  const sysMsg = '你是角色扮演社交媒体互动模拟器。\n规则:每个角色评论风格符合其人设;所有评论用中文;不超过20字;不加引号。';
+  const authorPersonaText = authorName === charName
+    ? (charPersona || '')
+    : (resolveNpcPersonaByName(authorName, npcPersonaMap) || '');
+  const recentChatSnippet2 = recentChat ? recentChat.slice(-700) : '';
+  const sysMsg = '你是角色扮演社交媒体互动模拟器。\n'
+    + (authorPersonaText ? ('动态作者人设/世界书摘要:\n' + authorPersonaText.slice(0, 320) + '\n') : '')
+    + (recentChatSnippet2 ? ('主楼近期上下文:\n' + recentChatSnippet2 + '\n') : '')
+    + '硬规则:\n'
+    + '1. 每个角色评论都必须符合自己的人设、世界书、主楼上下文。\n'
+    + '2. 若角色与动态作者存在敌对、仇恨、厌恶、戒备、瞧不起、疏离关系，禁止写成鼓励、支持、撒娇、暧昧。\n'
+    + '3. 称呼必须符合性别、身份、辈分和关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
+    + '4. 不确定关系时，宁可克制、礼貌、冷淡，也不要乱认亲。\n'
+    + '5. 所有评论用中文，不超过20字，不加引号。';
   const prompt = '朋友圈动态作者:' + authorName + '\n内容:「' + (moment.text.slice(0, 80) || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n\n'
-    + '以下角色各写一条评论(语气符合各自性格,互相不重复):\n' + npcPersonaText
+    + '以下角色各写一条评论(语气符合各自性格、人设、世界书和主楼上下文，互相不重复):\n' + npcPersonaText
     + '\n\n只返回JSON数组,格式:[{"from":"角色名","text":"评论内容"}, ...]';
 
   try {
@@ -11486,16 +11550,27 @@ async function generateAIReply(momentId, userCommentText, fromName) {
   const moment = STATE.moments?.find(m => m.id === momentId);
   if (!moment) return;
   const authorName = fromName || moment.name;
-  const { charName, charPersona, npcPersonaMap } = await getMomentsCtx();
+  const { charName, charPersona, npcPersonaMap, recentChat } = await getMomentsCtx();
   let sysMsg3 = '';
+  let authorPersona = '';
   if (authorName === charName && charPersona) {
-    sysMsg3 = '你正在扮演 ' + charName + ',人设如下:\n' + charPersona.slice(0, 300) + '\n\n回复时必须严格符合该人设的语气和性格,用中文回复,不超过20字,只返回回复内容本身。';
+    authorPersona = charPersona;
+    sysMsg3 = '你正在扮演 ' + charName + ',人设/世界书如下:\n' + charPersona.slice(0, 320) + '\n';
   } else {
     const npcPersona = resolveNpcPersonaByName(authorName, npcPersonaMap) || '';
-    sysMsg3 = '你正在扮演 ' + authorName + ',' + (npcPersona ? ('其人设如下:\n' + npcPersona.slice(0, 300) + '\n') : '根据其在故事中的言行推断语气,') + '用中文回复,不超过20字,只返回回复内容本身。';
+    authorPersona = npcPersona;
+    sysMsg3 = '你正在扮演 ' + authorName + ',' + (npcPersona ? ('其人设/世界书如下:\n' + npcPersona.slice(0, 320) + '\n') : '请根据其在故事中的言行推断语气。\n');
   }
+  const relHints = getMomentRelationHints(authorName, getContext()?.name1 || '用户', recentChat, authorPersona, '');
+  sysMsg3 += (recentChat ? ('\n主楼近期上下文:\n' + recentChat.slice(-700) + '\n') : '')
+    + (relHints ? ('\n你与评论者的关系线索:\n' + relHints + '\n') : '')
+    + '硬规则:\n'
+    + '1. 回复必须符合你的人设、世界书和主楼上下文。\n'
+    + '2. 若关系里有敌对、厌恶、戒备、疏离，不得回复成过度亲昵、鼓励、暧昧。\n'
+    + '3. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
+    + '4. 用中文回复,不超过20字,只返回回复内容本身。';
   const prompt3 = authorName + '的朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
-  const resp = await lgCallAPI(prompt3, 100, sysMsg3);
+  const resp = await lgCallAPI(prompt3, 120, sysMsg3);
   if (!resp) return;
   const now = new Date();
   const ts = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
@@ -11566,7 +11641,7 @@ function renderMoments() {
         <div class="rp-moment-bar">
           <button class="rp-moment-act rp-like-btn${liked ? ' rp-liked' : ''}" data-moment="${moment.id}">${liked ? '❤️' : '🤍'} ${likeCount > 0 ? likeCount : '点赞'}</button>
           <button class="rp-moment-act rp-comment-toggle" data-moment="${moment.id}">💬 评论</button>
-          <button class="rp-moment-act rp-moment-del-btn" data-moment="${moment.id}" style="color:rgba(200,60,60,.6);margin-left:auto">🗑️ 删除</button>
+          <button class="rp-moment-act rp-moment-del-btn" data-moment="${moment.id}" style="color:rgba(200,60,60,.6)">🗑️ 删除</button>
         </div>
         ${likeCount > 0 ? `<div class="rp-moment-likes-row">❤️ ${likeNames.slice(0,4).join('、')}${likeCount > 4 ? ` 等${likeCount}人` : ''}</div>` : ''}
         ${commentsHtml}
@@ -13031,6 +13106,8 @@ const GM = {
   lastTime: 0,
   lastFrameTime: 0,
   colors: {},
+  _loopSerial: 0,      // 当前帧序号
+  _expectedSerial: 0,  // 期望的帧序号（用于防止旧帧干扰）
 };
 
 const GM_MAX_HOOK_LEN = 195;
@@ -13378,6 +13455,9 @@ function gmDraw() {
 
 function gmLoop(ts) {
   if (!GM.active || GM.hookState === 'idle') return;
+  // 修复手机端钩子框重叠：检查帧序号，丢弃过期的旧帧
+  // 用闭包捕获当前帧的序号，下一帧验证时使用
+  const mySerial = GM._expectedSerial;
   // Delta time (seconds), capped at 100ms to avoid huge jumps after tab sleep
   const dt = GM.lastFrameTime ? Math.min((ts - GM.lastFrameTime) / 1000, 0.1) : 1 / 60;
   GM.lastFrameTime = ts;
@@ -13430,8 +13510,11 @@ function gmLoop(ts) {
     }
   }
 
-  gmDraw();
-  GM.rafId = requestAnimationFrame(gmLoop);
+  // 修复手机端钩子框重叠：绘制前也检查序号，防止旧帧在回合切换后仍绘制
+  if (mySerial === GM._expectedSerial) {
+    gmDraw();
+    GM.rafId = requestAnimationFrame(gmLoop);
+  }
 }
 
 function gmStartTimer() {
@@ -13474,6 +13557,11 @@ function gmUpdateRoundUI() {
   if (ri) ri.textContent = `第${GM.round}轮 / 共3轮`;
   const badge = document.getElementById('ggold-turn-badge');
   if (badge) badge.textContent = GM.turn === 'user' ? '你的回合' : `${GM.charName}的回合`;
+  const btn = document.getElementById('ggold-launch-btn');
+  if (btn) {
+    btn.style.display = GM.turn === 'user' ? '' : 'none';
+    btn.disabled = GM.turn !== 'user';
+  }
 }
 
 function gmAddMsg(type, text) {
@@ -13657,6 +13745,11 @@ async function gmEndTurn() {
 }
 
 function gmStartCharTurn() {
+  // 修复：先取消可能存在的旧动画循环，防止手机端回合切换时钩子框叠两层
+  if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
+  if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
+  // 递增帧序号，让旧的 gmLoop 帧自动作废
+  GM._expectedSerial++;
   gmAddMsg('sys', `--- ${GM.charName}的回合 ---`);
   gmSpawnItems();
   gmStartTimer();
@@ -13719,6 +13812,11 @@ function gmStartCharTurn() {
 }
 
 function gmStartUserTurn() {
+  // 修复：先取消可能存在的旧动画循环，防止手机端回合切换时钩子框叠两层
+  if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
+  if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
+  // 递增帧序号，让旧的 gmLoop 帧自动作废
+  GM._expectedSerial++;
   gmAddMsg('sys', '--- 你的回合 ---');
   GM.hookState = 'swing';
   GM.hookAngle = 0;
