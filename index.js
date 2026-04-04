@@ -4677,6 +4677,7 @@ function syncToCurrentChat() {
   const ctx = getContext();
   const newChatId = ctx?.chatId || (ctx?.characterId != null ? 'char_' + ctx.characterId : 'default');
   if (newChatId === STATE.chatId) return; // 已一致,跳过
+  resetMomentsCtxCache();
 
   // 切换前把当前头像备份到 _AV(防止切换后丢失)
   Object.assign(_AV, STATE.avatars || {});
@@ -4930,7 +4931,7 @@ function saveState() {
 }
 
 function loadState(chatId) {
-  _getMomentsCtxCache = null; // 切换聊天时清缓存
+  resetMomentsCtxCache(); // 切换聊天/加载新槽位时清缓存，避免跨角色卡串台
   try {
     const es = _extSettings();
     if (es && es[EXT_KEY] && es[EXT_KEY][chatId]) {
@@ -6248,6 +6249,7 @@ function onChatChanged() {
   const newChatId = ctx?.chatId || (ctx?.characterId != null ? `char_${ctx?.characterId}` : 'default');
 
   if (newChatId === STATE.chatId) return;
+  resetMomentsCtxCache();
 
   // 保存当前窗口状态(内存 + localStorage)
   // FIX: 与 syncToCurrentChat 同步——合并内存与持久化数据再写回，防止数据踩踏
@@ -10957,26 +10959,41 @@ function getMomentRelationHints(nameA, nameB, recentChat, personaA, personaB) {
   return related.join('\n').slice(0, 700);
 }
 
-// getMomentsCtx 结果缓存(30s TTL + Promise锁,防止并发重复加载)
+// getMomentsCtx 结果缓存（按 chatId 隔离，30s TTL + Promise锁，防止跨角色卡串台）
 let _getMomentsCtxCache = null;
 let _getMomentsCtxCacheTime = 0;
+let _getMomentsCtxCacheChatId = null;
 let _getMomentsCtxPromise = null;
+let _getMomentsCtxPromiseChatId = null;
+function resetMomentsCtxCache() {
+  _getMomentsCtxCache = null;
+  _getMomentsCtxCacheTime = 0;
+  _getMomentsCtxCacheChatId = null;
+  _getMomentsCtxPromise = null;
+  _getMomentsCtxPromiseChatId = null;
+}
 async function getMomentsCtx() {
   const now = Date.now();
-  if (_getMomentsCtxCache && (now - _getMomentsCtxCacheTime) < 30000) {
+  const ctx = getContext();
+  const chatId = ctx?.chatId || (ctx?.characterId != null ? `char_${ctx.characterId}` : 'default');
+  if (_getMomentsCtxCache && _getMomentsCtxCacheChatId === chatId && (now - _getMomentsCtxCacheTime) < 30000) {
     return _getMomentsCtxCache;
   }
-  // 已有进行中的加载,等待它完成而不是重复发起
-  if (_getMomentsCtxPromise) return _getMomentsCtxPromise;
-  _getMomentsCtxPromise = _doGetMomentsCtx();
+  // 已有同 chatId 的进行中加载，等待它完成而不是重复发起
+  if (_getMomentsCtxPromise && _getMomentsCtxPromiseChatId === chatId) return _getMomentsCtxPromise;
+  _getMomentsCtxPromiseChatId = chatId;
+  _getMomentsCtxPromise = _doGetMomentsCtx(chatId);
   try {
     const result = await _getMomentsCtxPromise;
     return result;
   } finally {
-    _getMomentsCtxPromise = null;
+    if (_getMomentsCtxPromiseChatId === chatId) {
+      _getMomentsCtxPromise = null;
+      _getMomentsCtxPromiseChatId = null;
+    }
   }
 }
-async function _doGetMomentsCtx() {
+async function _doGetMomentsCtx(chatIdHint) {
   const ctx = getContext();
   const charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
   const userName = ctx?.name1 || '用户';
@@ -11230,7 +11247,8 @@ async function _doGetMomentsCtx() {
   };
   _getMomentsCtxCache = result;
   _getMomentsCtxCacheTime = Date.now();
-  console.log('[getMomentsCtx] cache updated');
+  _getMomentsCtxCacheChatId = chatIdHint || (getContext()?.chatId || (getContext()?.characterId != null ? `char_${getContext().characterId}` : 'default'));
+  console.log('[getMomentsCtx] cache updated for', _getMomentsCtxCacheChatId);
   return result;
 }
 
