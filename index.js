@@ -11456,7 +11456,7 @@ async function friendsInteractOnMoment(momentId) {
   const moment = (STATE.moments || []).find(m => m.id === momentId);
   if (!moment) return;
 
-  const { charName, npcs, npcPersonaMap } = await getMomentsCtx();
+  const { charName, npcs, npcPersonaMap, recentChat, charPersona } = await getMomentsCtx();
 
   // 所有好友(主角 + NPC),排除动态作者本人
   const authorName = moment.name;
@@ -11465,7 +11465,6 @@ async function friendsInteractOnMoment(momentId) {
   const allFriends = (isUserMoment ? npcs : [charName, ...npcs]).filter(n => n && n !== authorName);
   if (allFriends.length === 0) return;
 
-  const now = new Date();
   const ts = () => {
     const d = new Date();
     return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
@@ -11480,34 +11479,35 @@ async function friendsInteractOnMoment(momentId) {
   if (STATE.currentView === 'moments') renderMoments();
   saveState();
 
-  // ── 评论:user的动态由 charRespondToUserMoment 负责,这里只做点赞 ──
-  // NPC发的动态才由这里生成评论,避免 Julian 等重复评论
-  if (isUserMoment) {
+  // user 动态也要尽量补到至少 3 条评论（好友数量不足除外）
+  const minComments = Math.min(3, allFriends.length);
+  const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
+  const needCount = Math.max(0, minComments - alreadyCommented.size);
+  if (needCount <= 0) {
     if (STATE.currentView === 'moments') renderMoments();
     saveState();
     return;
   }
 
-  // ── 评论:随机抽最多3人(从还没评论过的好友里抽) ──
-  const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
   const eligible = allFriends.filter(n => !alreadyCommented.has(n));
   const shuffled = eligible.sort(() => Math.random() - 0.5);
-  const commentors = shuffled.slice(0, 3);
+  const commentors = shuffled.slice(0, needCount);
   if (commentors.length === 0) return;
-
-  // 构建 prompt 一次性生成所有评论(省 token)
-  const npcPersonaText = commentors.map(n => {
-    const p = npcPersonaMap?.[normNameKey(n)] || '';
-    const rel = getMomentRelationHints(n, authorName, recentChat, p, authorName === charName ? charPersona : resolveNpcPersonaByName(authorName, npcPersonaMap));
-    return p
-      ? ('- ' + n + ':人设=' + p.replace(/\n/g, ';').slice(0, 150) + (rel ? ('；关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''))
-      : ('- ' + n + (rel ? ('：关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''));
-  }).join('\n');
 
   const authorPersonaText = authorName === charName
     ? (charPersona || '')
     : (resolveNpcPersonaByName(authorName, npcPersonaMap) || '');
   const recentChatSnippet2 = recentChat ? recentChat.slice(-700) : '';
+
+  // 先尝试批量生成，省 token
+  const npcPersonaText = commentors.map(n => {
+    const p = npcPersonaMap?.[normNameKey(n)] || '';
+    const rel = getMomentRelationHints(n, authorName, recentChat, p, authorPersonaText);
+    return p
+      ? ('- ' + n + ':人设=' + p.replace(/\n/g, ';').slice(0, 150) + (rel ? ('；关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''))
+      : ('- ' + n + (rel ? ('：关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''));
+  }).join('\n');
+
   const sysMsg = '你是角色扮演社交媒体互动模拟器。\n'
     + (authorPersonaText ? ('动态作者人设/世界书摘要:\n' + authorPersonaText.slice(0, 320) + '\n') : '')
     + (recentChatSnippet2 ? ('主楼近期上下文:\n' + recentChatSnippet2 + '\n') : '')
@@ -11517,27 +11517,64 @@ async function friendsInteractOnMoment(momentId) {
     + '3. 称呼必须符合性别、身份、辈分和关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
     + '4. 不确定关系时，宁可克制、礼貌、冷淡，也不要乱认亲。\n'
     + '5. 所有评论用中文，不超过20字，不加引号。';
-  const prompt = '朋友圈动态作者:' + authorName + '\n内容:「' + (moment.text.slice(0, 80) || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n\n'
+  const prompt = '朋友圈动态作者:' + authorName + '\n内容:「' + ((moment.text || '').slice(0, 80) || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n\n'
     + '以下角色各写一条评论(语气符合各自性格、人设、世界书和主楼上下文，互相不重复):\n' + npcPersonaText
     + '\n\n只返回JSON数组,格式:[{"from":"角色名","text":"评论内容"}, ...]';
 
   try {
     const resp = await lgCallAPI(prompt, 300, sysMsg);
-    if (!resp) return;
-    const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
-    if (!jsonStr) return;
-    const items = JSON.parse(jsonStr);
     const allowedSet = new Set(allFriends.map(n => normNameKey(n)));
-    items.forEach(item => {
-      if (!item.from || !item.text) return;
-      const k = normNameKey(item.from);
-      const isAllowed = allowedSet.has(k) || [...allowedSet].some(a => a.startsWith(k) || k.startsWith(a));
-      if (!isAllowed) return;
-      const cleaned = item.text.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
-      if (cleaned && cleaned.length > 1) {
-        incomingComment(momentId, item.from.trim(), ts(), cleaned, null);
+    const gotNames = new Set((moment.comments || []).map(c => c.name));
+
+    if (resp) {
+      const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
+      if (jsonStr) {
+        const items = JSON.parse(jsonStr);
+        items.forEach(item => {
+          if (!item.from || !item.text) return;
+          const k = normNameKey(item.from);
+          const isAllowed = allowedSet.has(k) || [...allowedSet].some(a => a.startsWith(k) || k.startsWith(a));
+          if (!isAllowed) return;
+          const cleaned = item.text.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
+          if (cleaned && cleaned.length > 1 && !gotNames.has(item.from.trim())) {
+            incomingComment(momentId, item.from.trim(), ts(), cleaned, null);
+            gotNames.add(item.from.trim());
+          }
+        });
       }
-    });
+    }
+
+    // 批量结果不足时，逐个补齐到至少 3 条（好友数量不足除外）
+    for (const name of commentors) {
+      const currentNames = new Set((moment.comments || []).map(c => c.name));
+      if (currentNames.size >= minComments) break;
+      if (currentNames.has(name)) continue;
+
+      const p = npcPersonaMap?.[normNameKey(name)] || '';
+      const rel = getMomentRelationHints(name, authorName, recentChat, p, authorPersonaText);
+      const singleSys = '你正在扮演角色"' + name + '"。'
+        + (p ? ('\n你的人设/世界书摘要:\n' + p.slice(0, 320) + '\n') : '\n')
+        + (authorPersonaText ? ('\n动态作者人设/世界书摘要:\n' + authorPersonaText.slice(0, 320) + '\n') : '')
+        + (recentChatSnippet2 ? ('\n主楼近期上下文:\n' + recentChatSnippet2 + '\n') : '')
+        + (rel ? ('\n你与动态作者的关系线索:\n' + rel + '\n') : '')
+        + '硬规则:\n'
+        + '1. 评论必须符合你的人设、世界书和主楼上下文。\n'
+        + '2. 若关系里有敌对、厌恶、戒备、疏离，不得评论成过度亲昵、鼓励、暧昧。\n'
+        + '3. 只返回一条中文评论正文，8-20字，不加引号，不加前缀。';
+      const singlePrompt = '朋友圈动态作者:' + authorName + '\n内容:「' + ((moment.text || '').slice(0, 80) || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
+        + '你的用户名是"' + name + '",请写一条符合你身份的评论:';
+      const one = await lgCallAPI(singlePrompt, 120, singleSys);
+      if (one) {
+        const cleaned = one.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
+        if (cleaned && cleaned.length > 1) {
+          incomingComment(momentId, name, ts(), cleaned, null);
+          if (STATE.currentView === 'moments') renderMoments();
+          saveState();
+        }
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
+
     if (STATE.currentView === 'moments') renderMoments();
     saveState();
   } catch(e) {
