@@ -3433,6 +3433,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark .rp-loc-txt{color:#c8cce8}
 .rp-img-bbl{max-width:180px;border-radius:12px;overflow:hidden}
 .rp-img-bbl img{width:100%;display:block}
+.rp-pending-img{position:relative;z-index:3;pointer-events:auto !important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.rp-bwrap[data-pending-id]{position:relative;z-index:1}
 /* ── ADD CHOICE ── */
 .rp-add-choice{position:absolute;top:0;right:0;bottom:0;left:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.35);gap:10px}
 .rp-add-choice-box{background:#fff;border-radius:16px;overflow:hidden;width:80%;max-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
@@ -4573,6 +4575,130 @@ const _saveSettings = () => {
 };
 
 const EXT_KEY = 'ray_phone_v1'; // extension_settings 的命名空间键
+const SAVE_DEBOUNCE_MS = 500;
+
+function makeLightweightPayload(payload) {
+  const p = payload || {};
+  const threads = {};
+  Object.entries(p.threads || {}).forEach(function([id, th]) {
+    const msgs = Array.isArray(th?.messages) ? th.messages : [];
+    const last = msgs.length ? msgs[msgs.length - 1] : null;
+    threads[id] = {
+      id: th?.id || id,
+      name: th?.name || '',
+      initials: th?.initials || '',
+      avatarBg: th?.avatarBg || '',
+      type: th?.type || 'contact',
+      unread: th?.unread || 0,
+      messagesCount: msgs.length,
+      lastMessage: last ? {
+        from: last.from,
+        type: last.type || 'text',
+        text: last.text || last.voiceText || last.place || '',
+        time: last.time || '',
+      } : null,
+    };
+  });
+  return {
+    __light: true,
+    __savedAt: Date.now(),
+    __version: 2,
+    meta: p.meta || null,
+    threads,
+    notifications: Array.isArray(p.notifications) ? p.notifications.slice(-5) : [],
+    sync: p.sync || { stage: 1, progress: 0, status: '乖巧' },
+    momentsCount: Array.isArray(p.moments) ? p.moments.length : 0,
+    diaryCount: Array.isArray(p.diary) ? p.diary.length : 0,
+    darkMode: !!p.darkMode,
+    avatars: p.avatars || {},
+    currentView: p.currentView || 'home',
+    currentThread: p.currentThread || null,
+    bankMeta: p.bankData ? {
+      hasData: true,
+      cardCount: Array.isArray(p.bankData?.cards) ? p.bankData.cards.length : undefined,
+    } : null,
+  };
+}
+
+function buildStatePayload() {
+  const ctx = getContext();
+  const threads = JSON.parse(JSON.stringify(STATE.threads));
+  for (const th of Object.values(threads)) {
+    if (th.messages) {
+      // 第二轮瘦身：每线程只保留最近 60 条，足够看近期记录，显著减轻序列化负担
+      if (th.messages.length > 60) th.messages = th.messages.slice(-60);
+      th.messages = th.messages.map(m => {
+        const out = Object.assign({}, m);
+        if (out.type === 'image' && out.src?.startsWith('data:')) out.src = '__img_expired__';
+        // pending_image / image / voice / location 等只保留必要字段
+        if (out.type !== 'pending_image') delete out.promptResolvedAt;
+        delete out._renderCache;
+        delete out._domRef;
+        return out;
+      });
+    }
+  }
+  const moments = (STATE.moments || []).slice(-30).map(function(m) {
+    return {
+      id: m.id,
+      from: m.from,
+      name: m.name,
+      initials: m.initials,
+      avatarBg: m.avatarBg,
+      time: m.time,
+      text: m.text,
+      img: (m.img && String(m.img).startsWith('data:')) ? '__img_expired__' : (m.img || null),
+      pendingImg: m.pendingImg || null,
+      pendingImgType: m.pendingImgType || null,
+      likes: Array.isArray(m.likes) ? m.likes.slice(-20) : [],
+      comments: Array.isArray(m.comments) ? m.comments.slice(-20) : [],
+    };
+  });
+  const diary = Array.isArray(STATE.diary) ? STATE.diary.slice(-30) : [];
+  return enrichPayloadMeta({
+    threads,
+    notifications: Array.isArray(STATE.notifications) ? STATE.notifications.slice(-5) : [],
+    sync: STATE.sync,
+    moments,
+    diary,
+    darkMode: STATE.darkMode,
+    // 头像已通过全局 avatar 存储单独持久化，这里不再按 slot 重复存整份
+    avatars: {},
+    currentView: STATE.currentView || 'home',
+    currentThread: STATE.currentThread || null,
+    bankData: STATE.bankData || null,
+  }, ctx);
+}
+
+function flushStateNow() {
+  if (!STATE.chatId) return;
+  try {
+    const payload = buildStatePayload();
+    const jsonStr = JSON.stringify(payload);
+    try {
+      localStorage.setItem(`rp-phone-v1-${STATE.chatId}`, jsonStr);
+    } catch(q) {
+      try {
+        const curKey = `rp-phone-v1-${STATE.chatId}`;
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('rp-phone-v1-') && k !== curKey) localStorage.removeItem(k);
+        });
+        localStorage.setItem(curKey, jsonStr);
+        console.log('[Phone] saveState: cleared old keys, retry ok');
+      } catch(q2) {
+        console.warn('[Raymond Phone] saveState failed even after cleanup', q2);
+      }
+    }
+    const es = _extSettings();
+    if (es) {
+      if (!es[EXT_KEY]) es[EXT_KEY] = {};
+      es[EXT_KEY][STATE.chatId] = makeLightweightPayload(payload);
+      _saveSettings();
+    }
+    STATE._pendingSaveTimer = null;
+    STATE._pendingSaveDirty = false;
+  } catch(e) { console.warn('[Raymond Phone] flushStateNow failed', e); }
+}
 
 // ================================================================
 //  DEFAULT THREADS FACTORY
@@ -4605,8 +4731,105 @@ const STATE = {
   _lastAiFingerprint: null,
 };
 
-// FIX2: 按 chatId 存储各窗口的手机状态(内存缓存)
+// FIX2: 按 chat slot key 存储各窗口的手机状态(内存缓存)
 const CHAT_STORE = {};
+
+function getPhoneRawChatId(ctx) {
+  return ctx?.chatId || (ctx?.characterId != null ? `char_${ctx.characterId}` : 'default');
+}
+
+function getPhoneChatHistorySignature(ctx) {
+  try {
+    const chat = Array.isArray(ctx?.chat) ? ctx.chat : [];
+    if (!chat.length) return 'empty';
+    const pick = [];
+    const first = chat[0];
+    const last = chat[chat.length - 1];
+    const prev = chat.length > 1 ? chat[chat.length - 2] : null;
+    [first, prev, last].filter(Boolean).forEach(function(m) {
+      const speaker = m?.is_user ? 'u' : 'a';
+      const name = String(m?.name || '').trim().slice(0, 24);
+      const mes = String(m?.mes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      pick.push(`${speaker}:${name}:${mes.slice(0, 40)}:${mes.slice(-24)}`);
+    });
+    return `${chat.length}|${pick.join('|')}`;
+  } catch(e) {
+    return 'sigerr';
+  }
+}
+
+function getPhoneChatSlotKey(ctx) {
+  const rawChatId = getPhoneRawChatId(ctx);
+  // 槽位键必须稳定，绝不能掺入会随流式生成/消息更新而变化的历史签名。
+  // 否则同一角色同一聊天在 char 一开口时就会被误判成“切到新对话”，
+  // 进而触发 onChatChanged() → go('lock')，导致小手机自动退回锁屏。
+  // historySig 仍保留给诊断/元数据使用，但不参与 slot key 判定。
+  if (ctx?.characterId != null) return `char_${ctx.characterId}::${rawChatId}`;
+  return `${rawChatId}`;
+}
+
+function getCurrentCharName(ctx) {
+  return (ctx?.name2 || (ctx?.characters && ctx?.characterId !== undefined
+    ? ctx.characters[ctx.characterId]?.name : null) || '').trim();
+}
+
+function isForbiddenPhoneContactName(nameRaw, ctx) {
+  const name = (nameRaw || '').trim();
+  if (!name) return true;
+  const invalid = /^(sillytavern|tavern|system|assistant|ai|user|me|self|myself|我|自己)$/i;
+  if (invalid.test(name)) return true;
+  const userName = (ctx?.name1 || '').trim();
+  if (userName && name.toLowerCase() === userName.toLowerCase()) return true;
+  return false;
+}
+
+function sanitizeThreadsForContext(threads, ctx) {
+  try {
+    const all = threads || {};
+    const charName = getCurrentCharName(ctx);
+    const allowed = new Set();
+    if (charName) allowed.add(charName.toLowerCase());
+
+    const msgs = ctx?.chat || [];
+    msgs.forEach(function(m) {
+      if (m?.is_user || !m?.mes) return;
+      const phoneMatch = m.mes.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
+      if (!phoneMatch) return;
+      const re = /<(?:SMS|MOMENTS|COMMENT)[^>]+FROM="([^"]+)"/gi;
+      let ma;
+      while ((ma = re.exec(phoneMatch[1])) !== null) {
+        const fromRaw = (ma[1] || '').trim();
+        if (!fromRaw) continue;
+        const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
+        if (invalid.test(fromRaw)) continue;
+        allowed.add(fromRaw.toLowerCase());
+      }
+    });
+
+    if (allowed.size === 0) return all;
+
+    const filtered = {};
+    Object.entries(all).forEach(function([k, th]) {
+      const name = (th?.name || '').trim().toLowerCase();
+      if (!name || allowed.has(name)) filtered[k] = th;
+    });
+    return filtered;
+  } catch(e) {
+    return threads || {};
+  }
+}
+
+function enrichPayloadMeta(payload, ctx) {
+  payload._slotMeta = {
+    slotVersion: 3,
+    rawChatId: getPhoneRawChatId(ctx),
+    slotKey: getPhoneChatSlotKey(ctx),
+    historySig: getPhoneChatHistorySignature(ctx),
+    characterId: ctx?.characterId ?? null,
+    charName: getCurrentCharName(ctx),
+  };
+  return payload;
+}
 
 // 头像模块级缓存--独立于 STATE.avatars,不受 chatId 切换影响
 // 所有读头像的地方统一调 getAvatar(key),写头像调 setAvatar(key, dataUrl)
@@ -4634,8 +4857,8 @@ function setAvatar(key, dataUrl) {
 function autoAddCharContact() {
   try {
     const ctx = getContext();
-    // 必须有真实 chatId(排除 ST 初始页面 / 无对话状态)
-    if (!ctx?.chatId) return;
+    // 必须有真实 chat slot(排除 ST 初始页面 / 无对话状态)
+    if (!getPhoneChatSlotKey(ctx) || getPhoneRawChatId(ctx) === 'default') return;
     const charName = ctx?.name2 || (ctx?.characters && ctx?.characterId !== undefined
       ? ctx.characters[ctx.characterId]?.name : null);
     if (!charName) return;
@@ -4644,7 +4867,7 @@ function autoAddCharContact() {
     if (invalid.test(charName.trim())) return;
     // 已存在则跳过
     const exists = Object.values(STATE.threads).some(t =>
-      t.name && t.name.toLowerCase() === charName.toLowerCase()
+      normalizePhonePersonName(t.name || '') === normalizePhonePersonName(charName)
     );
     if (exists) return;
     findOrCreateThread(charName);
@@ -4657,11 +4880,11 @@ function autoAddCharContact() {
 
 // 清理无效联系人(SillyTavern 本身、旧硬编码遗留等)
 function cleanInvalidContacts() {
-  const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
+  const ctx = getContext();
   let changed = false;
   Object.keys(STATE.threads).forEach(function(k) {
     const name = (STATE.threads[k] && STATE.threads[k].name) || '';
-    if (invalid.test(name.trim())) {
+    if (isForbiddenPhoneContactName(name, ctx)) {
       delete STATE.threads[k];
       changed = true;
       console.log('[Phone] 清理无效联系人:', name);
@@ -4670,12 +4893,58 @@ function cleanInvalidContacts() {
   if (changed) { renderThreadList(); saveState(); }
 }
 
+function mergeDuplicateThreads() {
+  const threads = Object.values(STATE.threads || {});
+  if (!threads.length) return;
+  const seen = new Map();
+  let changed = false;
+
+  threads.forEach(function(th) {
+    if (!th || !th.name) return;
+    const norm = normalizePhonePersonName(th.name);
+    if (!norm) return;
+
+    if (!seen.has(norm)) {
+      seen.set(norm, th);
+      return;
+    }
+
+    const keep = seen.get(norm);
+    const drop = th;
+    if (!keep || !drop || keep.id === drop.id) return;
+
+    keep.messages = (keep.messages || []).concat(drop.messages || []);
+    keep.unread = Math.max(keep.unread || 0, drop.unread || 0);
+    if ((!keep.avatarBg || keep.avatarBg.includes('#555')) && drop.avatarBg) keep.avatarBg = drop.avatarBg;
+    if ((!keep.initials || keep.initials.length < 1) && drop.initials) keep.initials = drop.initials;
+    if ((!STATE.avatars?.[keep.name]) && STATE.avatars?.[drop.name]) {
+      STATE.avatars[keep.name] = STATE.avatars[drop.name];
+    }
+
+    keep.messages.sort(function(a, b) {
+      const at = String(a?.time || '');
+      const bt = String(b?.time || '');
+      return at.localeCompare(bt);
+    });
+
+    delete STATE.threads[drop.id];
+    if (STATE.currentThread === drop.id) STATE.currentThread = keep.id;
+    changed = true;
+    console.log('[Phone] 合并重复联系人线程:', { keep: keep.name, drop: drop.name, keepId: keep.id, dropId: drop.id });
+  });
+
+  if (changed) {
+    renderThreadList();
+    saveState();
+  }
+}
+
 
 // 防御性同步:打开手机时确保 STATE 与当前 ST 对话一致
 // 不依赖 CHAT_CHANGED 是否触发
 function syncToCurrentChat() {
   const ctx = getContext();
-  const newChatId = ctx?.chatId || (ctx?.characterId != null ? 'char_' + ctx.characterId : 'default');
+  const newChatId = getPhoneChatSlotKey(ctx);
   if (newChatId === STATE.chatId) return; // 已一致,跳过
   resetMomentsCtxCache();
 
@@ -4711,7 +4980,7 @@ function syncToCurrentChat() {
     };
     const _tmpM = STATE.moments, _tmpD = STATE.diary;
     STATE.moments = _safeMoments; STATE.diary = _safeDiary;
-    saveState();
+    saveState({ immediate: true });
     STATE.moments = _tmpM; STATE.diary = _tmpD;
   }
 
@@ -4737,7 +5006,7 @@ function syncToCurrentChat() {
       STATE.sync          = persisted.sync || { stage: 1, progress: 0, status: '乖巧' };
       STATE.moments       = persisted.moments || [];
       STATE.diary         = persisted.diary   || [];
-      STATE.avatars       = persisted.avatars || {};
+      STATE.avatars       = (persisted.avatars && Object.keys(persisted.avatars).length) ? persisted.avatars : (STATE.avatars || {});
       STATE.bankData      = persisted.bankData || null;
     } else {
       STATE.threads       = {};
@@ -4753,6 +5022,7 @@ function syncToCurrentChat() {
   mergeGlobalAvatars();
 
   cleanInvalidContacts();
+  mergeDuplicateThreads();
   autoAddCharContact();
   go('lock');
   renderThreadList();
@@ -4804,7 +5074,7 @@ async function fetchServerSettings() {
 function rebuildContactsFromHistory(chatId) {
   try {
     const ctx = getContext();
-    const currentId = ctx?.chatId || (ctx?.characterId != null ? 'char_' + ctx.characterId : 'default');
+    const currentId = getPhoneChatSlotKey(ctx);
     if (currentId !== chatId) return; // chatId 已变,放弃
     const msgs = ctx?.chat || [];
     let changed = false;
@@ -4817,32 +5087,54 @@ function rebuildContactsFromHistory(chatId) {
       let ma;
       while ((ma = re.exec(block)) !== null) {
         const fromRaw = ma[1].trim();
-        const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
-        if (invalid.test(fromRaw)) continue;
+        if (isForbiddenPhoneContactName(fromRaw, ctx)) continue;
         // 只创建线程,不重复推送消息
         const exists = Object.values(STATE.threads).some(function(t) {
-          return t.name && t.name.toLowerCase() === fromRaw.toLowerCase();
+          return normalizePhonePersonName(t.name || '') === normalizePhonePersonName(fromRaw);
         });
-        if (!exists) { findOrCreateThread(fromRaw); changed = true; }
+        if (!exists) {
+          const created = findOrCreateThread(fromRaw);
+          if (created) changed = true;
+        }
       }
     });
     if (changed) { cleanInvalidContacts(); renderThreadList(); saveState(); }
   } catch(e) { console.warn('[Phone] rebuildContacts error', e); }
 }
 
+function normalizePhonePersonName(nameRaw) {
+  return String(nameRaw || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')   // 零宽字符 / BOM
+    .replace(/\u3000/g, ' ')                  // 全角空格
+    .replace(/[“”"'「」『』]/g, '')           // 引号包裹
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 /* ── HELPER: findOrCreateThread ── */
 function findOrCreateThread(nameRaw) {
-  const lower = nameRaw.toLowerCase();
+  const ctx = getContext();
+  const cleanedName = String(nameRaw || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u3000/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (isForbiddenPhoneContactName(cleanedName, ctx)) {
+    console.log('[Phone:guard] blocked contact creation for user/invalid name:', cleanedName);
+    return null;
+  }
+  const normalized = normalizePhonePersonName(cleanedName);
   for (const th of Object.values(STATE.threads)) {
-    if (th.name && th.name.toLowerCase() === lower) return th;
+    if (normalizePhonePersonName(th.name || '') === normalized) return th;
   }
   const _colors = ['#7c3aed','#0891b2','#0d9488','#b45309','#be185d','#1d4ed8'];
   const colorIdx = Object.keys(STATE.threads).length % _colors.length;
-  const tempId = `contact_${lower.replace(/\s+/g, '_')}`;
+  const tempId = `contact_${normalized.replace(/\s+/g, '_')}`;
   if (!STATE.threads[tempId]) {
     STATE.threads[tempId] = {
-      id: tempId, name: nameRaw,
-      initials: nameRaw.slice(0, 2),
+      id: tempId, name: cleanedName,
+      initials: cleanedName.slice(0, 2),
       avatarBg: `linear-gradient(145deg,${_colors[colorIdx]},${_colors[(colorIdx+1)%_colors.length]})`,
       type: 'contact', messages: [], unread: 0
     };
@@ -4877,76 +5169,62 @@ function saveGlobalAvatars() {
   try { localStorage.setItem('rp-phone-avatars-global', JSON.stringify(STATE.avatars || {})); } catch(e) {}
 }
 
-function saveState() {
+function saveState(opts) {
   if (!STATE.chatId) return;
+  const immediate = !!(opts && opts.immediate);
   try {
-    const threads = JSON.parse(JSON.stringify(STATE.threads));
-    for (const th of Object.values(threads)) {
-      if (th.messages) {
-        // 截断消息到最近100条,防止 localStorage 超配额
-        if (th.messages.length > 100) th.messages = th.messages.slice(-100);
-        th.messages = th.messages.map(m =>
-          (m.type === 'image' && m.src?.startsWith('data:')) ? { ...m, src: '__img_expired__' } : m
-        );
-      }
+    STATE._pendingSaveDirty = true;
+    if (STATE._pendingSaveTimer) clearTimeout(STATE._pendingSaveTimer);
+    if (immediate) {
+      flushStateNow();
+      return;
     }
-    // moments 只保留最近50条
-    const moments = (STATE.moments || []).slice(-50);
-    const payload = {
-      threads,
-      notifications: STATE.notifications,
-      sync: STATE.sync,
-      moments,
-      diary: STATE.diary || [],
-      darkMode: STATE.darkMode,
-      avatars: Object.assign({}, _AV),
-      currentView: STATE.currentView || 'home',
-      currentThread: STATE.currentThread || null,
-      bankData: STATE.bankData || null,
-    };
-    const jsonStr = JSON.stringify(payload);
-    // 如果写入失败,先清理同 key 旧数据再重试
-    try {
-      localStorage.setItem(`rp-phone-v1-${STATE.chatId}`, jsonStr);
-    } catch(q) {
-      // QuotaExceeded:清理其他旧聊天 key,只保留当前
-      try {
-        const curKey = `rp-phone-v1-${STATE.chatId}`;
-        Object.keys(localStorage).forEach(k => {
-          if (k.startsWith('rp-phone-v1-') && k !== curKey) localStorage.removeItem(k);
-        });
-        localStorage.setItem(curKey, jsonStr);
-        console.log('[Phone] saveState: cleared old keys, retry ok');
-      } catch(q2) {
-        console.warn('[Raymond Phone] saveState failed even after cleanup', q2);
-      }
-    }
-    const es = _extSettings();
-    if (es) {
-      if (!es[EXT_KEY]) es[EXT_KEY] = {};
-      es[EXT_KEY][STATE.chatId] = payload;
-      _saveSettings();
-    }
+    STATE._pendingSaveTimer = setTimeout(function() {
+      flushStateNow();
+    }, SAVE_DEBOUNCE_MS);
   } catch(e) { console.warn('[Raymond Phone] saveState failed', e); }
 }
 
 function loadState(chatId) {
   resetMomentsCtxCache(); // 切换聊天/加载新槽位时清缓存，避免跨角色卡串台
   try {
+    const ctx = getContext();
+    const rawChatId = getPhoneRawChatId(ctx);
     const es = _extSettings();
-    if (es && es[EXT_KEY] && es[EXT_KEY][chatId]) {
-      try { localStorage.setItem(`rp-phone-v1-${chatId}`, JSON.stringify(es[EXT_KEY][chatId])); } catch(e) {}
-      return es[EXT_KEY][chatId];
-    }
-    const raw = localStorage.getItem(`rp-phone-v1-${chatId}`);
-    if (raw) {
-      const parsed = JSON.parse(raw);
+
+    const _normalizeLoaded = function(parsed, sourceKey) {
+      if (!parsed) return null;
+      if (parsed.__light) return null;
+      parsed.threads = sanitizeThreadsForContext(parsed.threads || {}, ctx);
+      parsed = enrichPayloadMeta(parsed, ctx);
+      try { localStorage.setItem(`rp-phone-v1-${chatId}`, JSON.stringify(parsed)); } catch(e) {}
       if (es) {
         if (!es[EXT_KEY]) es[EXT_KEY] = {};
-        es[EXT_KEY][chatId] = parsed;
+        es[EXT_KEY][chatId] = makeLightweightPayload(parsed);
+        if (sourceKey && sourceKey !== chatId) delete es[EXT_KEY][sourceKey];
         _saveSettings();
       }
       return parsed;
+    };
+
+    if (es && es[EXT_KEY] && es[EXT_KEY][chatId] && !es[EXT_KEY][chatId].__light) {
+      return _normalizeLoaded(es[EXT_KEY][chatId], chatId);
+    }
+    const raw = localStorage.getItem(`rp-phone-v1-${chatId}`);
+    if (raw) {
+      return _normalizeLoaded(JSON.parse(raw), chatId);
+    }
+
+    // 兼容旧版本：旧 key 只有 raw chatId，容易跨角色卡串台。
+    // 迁移前按当前角色/当前历史过滤联系人，只保留安全数据。
+    if (rawChatId && rawChatId !== chatId) {
+      if (es && es[EXT_KEY] && es[EXT_KEY][rawChatId] && !es[EXT_KEY][rawChatId].__light) {
+        return _normalizeLoaded(es[EXT_KEY][rawChatId], rawChatId);
+      }
+      const legacyRaw = localStorage.getItem(`rp-phone-v1-${rawChatId}`);
+      if (legacyRaw) {
+        return _normalizeLoaded(JSON.parse(legacyRaw), rawChatId);
+      }
     }
     return null;
   } catch(e) { return null; }
@@ -5091,8 +5369,13 @@ const HTML = `
                   <div id="rp-about-divider"></div>
                   <div id="rp-about-notice">
                     本扩展由作者免费发布于<br>
-                    <span class="rp-about-hl">DC社区：旅程 / 类脑 / 多林国</span><br>
-                    其他渠道获取均视为盗版。
+                    <span class="rp-about-hl">DC社区：旅程 / 类脑 / 多林国 / 堆堆</span><br>
+                    其他渠道获取均视为盗版。<br><br>
+                    生图致谢：<br>
+                    感谢智绘姬大佬授权接入<br>
+                    @DC 从前跟你一样<br>
+                    感谢comfyui大佬提供部署支持<br>
+                    @DC zzzyyyyyy
                   </div>
                 </div>
               </div>
@@ -5692,7 +5975,7 @@ async function init() {
 
   // FIX2: 记录初始 chatId 并从 localStorage 恢复状态
   const ctx = getContext();
-  STATE.chatId = ctx?.chatId || (ctx?.characterId != null ? `char_${ctx?.characterId}` : 'default');
+  STATE.chatId = getPhoneChatSlotKey(ctx);
 
   const saved = loadState(STATE.chatId);
   if (saved) {
@@ -6246,7 +6529,7 @@ async function init() {
 // ================================================================
 function onChatChanged() {
   const ctx = getContext();
-  const newChatId = ctx?.chatId || (ctx?.characterId != null ? `char_${ctx?.characterId}` : 'default');
+  const newChatId = getPhoneChatSlotKey(ctx);
 
   if (newChatId === STATE.chatId) return;
   resetMomentsCtxCache();
@@ -6274,7 +6557,7 @@ function onChatChanged() {
     };
     const _tmpM2 = STATE.moments, _tmpD2 = STATE.diary;
     STATE.moments = _safeMoments2; STATE.diary = _safeDiary2;
-    saveState();
+    saveState({ immediate: true });
     STATE.moments = _tmpM2; STATE.diary = _tmpD2;
   }
 
@@ -6301,7 +6584,7 @@ function onChatChanged() {
       STATE.sync = persisted.sync || { stage: 1, progress: 0, status: '乖巧' };
       STATE.moments = persisted.moments || [];
       STATE.diary = persisted.diary || [];
-      STATE.avatars = persisted.avatars || {};
+      STATE.avatars = (persisted.avatars && Object.keys(persisted.avatars).length) ? persisted.avatars : (STATE.avatars || {});
       STATE.bankData = persisted.bankData || null;
       STATE.currentThread = null;
     } else {
@@ -6327,6 +6610,7 @@ function onChatChanged() {
   if (window.rpObserverSeenSrcs) window.rpObserverSeenSrcs.clear();
   if (window.rpImgWaitQueue) window.rpImgWaitQueue = [];
   cleanInvalidContacts();
+  mergeDuplicateThreads();
   go('lock');
   renderThreadList();
   refreshBadges();
@@ -6342,6 +6626,7 @@ function onChatChanged() {
       // 守卫:如果已经切到别的窗口,终止
       if (STATE.chatId !== _expectedChatId) return;
       cleanInvalidContacts();
+      mergeDuplicateThreads();
       autoAddCharContact();
       hidePhoneTagsInChat();
       hideOocInUserBubbles();
@@ -6410,7 +6695,11 @@ function bindUI() {
     e.stopPropagation();
     const phone = $('#rp-phone');
     if (phone.is(':visible')) {
-      // 关闭手机前保存当前 view,下次打开时恢复
+      // 关闭手机前记住当前界面，下次直接恢复，不再强迫用户从锁屏/桌面重新点
+      if (STATE.currentView && STATE.currentView !== 'lock') {
+        STATE._savedView = STATE.currentView;
+        if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
+      }
       saveState();
       phone.hide();
       return;
@@ -6422,9 +6711,10 @@ function bindUI() {
     // 从聊天历史重建联系人(服务端数据,PC/手机共享同一份聊天记录)
     var _fabChatId = STATE.chatId;
     setTimeout(function() { rebuildContactsFromHistory(_fabChatId); }, 300);
-    // 恢复上次关闭时的界面(同一 session 内)
-    const _rv = STATE.currentView;
-    const _rt = STATE.currentThread;
+    // 恢复上次关闭时的界面：优先用显式保存的 _savedView/_savedThread，
+    // 不再依赖可能被后台事件改动的 currentView/currentThread。
+    const _rv = STATE._savedView || STATE.currentView;
+    const _rt = STATE._savedThread || STATE.currentThread;
     const _gameViews = ['g2048', 'game', 'ludo'];
     if (_rv && _rv !== 'lock' && !_gameViews.includes(_rv)) {
       if (_rv === 'thread' && _rt && STATE.threads[_rt]) {
@@ -6473,6 +6763,10 @@ function bindUI() {
     // 若 e.target 已被从 DOM 移除(事件传播期间被删),跳过
     if (!document.contains(e.target)) return;
     if (!$(e.target).closest('#rp-phone, #rp-fab').length) {
+      if (STATE.currentView && STATE.currentView !== 'lock') {
+        STATE._savedView = STATE.currentView;
+        if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
+      }
       saveState();
       phone.hide();
     }
@@ -7178,6 +7472,9 @@ function bindUI() {
   // Dark mode is handled via data-app='darkmode' in the app grid
 
   // Moments: like
+  installChatu8ButtonBridge();
+
+  // Moments: like
   $(document).on('click', '.rp-like-btn', function(e) {
     e.stopPropagation();
     toggleLike($(this).data('moment'));
@@ -7229,6 +7526,27 @@ function bindUI() {
     // 更新按钮外观为"生成中…"
     $(self).html('<span style="font-size:16px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>')
            .css({ cursor: 'default', pointerEvents: 'none' });
+  });
+
+  // Pending image: 事件委托兜底（避免元素级 click 丢失）
+  $(document).on('click pointerup', '#rp-bubbles .rp-pending-img', function(e) {
+    e.stopPropagation();
+    const now = Date.now();
+    const lastTs = Number(this.dataset.rpTriggerTs || 0);
+    if (now - lastTs < 450) return;
+    this.dataset.rpTriggerTs = String(now);
+    const $el = $(this);
+    console.log('[Phone:pendingImg:delegate]', {
+      type: e.type,
+      msgId: $el.attr('data-msgid') || $el.data('msgid') || '',
+      prompt: String($el.attr('data-prompt') || $el.data('prompt') || '').slice(0, 50)
+    });
+    rpTriggerPendingImg(
+      $el.attr('data-threadid') || $el.data('threadid'),
+      $el.attr('data-msgid') || $el.data('msgid'),
+      $el.attr('data-prompt') || $el.data('prompt') || '',
+      this
+    );
   });
 
   // Moments: comment toggle
@@ -7459,6 +7777,10 @@ function addContact() {
   let initials = $('#rp-add-initials').val().trim().toUpperCase();
 
   if (!name) return;
+  if (isForbiddenPhoneContactName(name, getContext())) {
+    alert('不能把用户自己或系统名添加为联系人');
+    return;
+  }
 
   if (!initials) {
     initials = name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -7534,6 +7856,11 @@ function go(view) {
   }
   $('#rp-home-ind').toggle(view !== 'lock');
   STATE.currentView = view;
+  // 记录“重新打开手机时应恢复到哪里”——锁屏不覆盖上次真实使用界面
+  if (view !== 'lock') {
+    STATE._savedView = view;
+    if (view === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
+  }
   // 切换到 home 时重置到第0屏
   if (view === 'home' && window._rpHomeSwipeGoto) { window._rpHomeSwipeGoto(0, false); }
 
@@ -7785,8 +8112,12 @@ function renderBubbles(threadId) {
       pendingBtn.data('threadid', threadId);
       pendingBtn.data('msgid', msg.id || '');
       pendingBtn.data('prompt', msg.prompt || '');
+      pendingBtn.attr('data-threadid', threadId);
+      pendingBtn.attr('data-msgid', msg.id || '');
+      pendingBtn.attr('data-prompt', msg.prompt || '');
       pendingBtn.on('click', function(e) {
         e.stopPropagation();
+        console.log('[Phone:pendingImg:direct] click', { msgId: $(this).data('msgid'), prompt: String($(this).data('prompt') || '').slice(0, 50) });
         rpTriggerPendingImg($(this).data('threadid'), $(this).data('msgid'), $(this).data('prompt'), this);
       });
       const timeEl = $(`<div class="rp-bts">${msg.time}</div>`);
@@ -7909,39 +8240,131 @@ function renderBubbles(threadId) {
   }, 80);
 }
 
+function dispatchSyntheticPrimaryClick(btn, opts) {
+  if (!btn) return false;
+  try {
+    const mode = opts && opts.mode ? String(opts.mode) : 'mouse';
+    btn.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    try { btn.focus?.({ preventScroll: true }); } catch(_) {}
+    const evOpts = { bubbles: true, cancelable: true, composed: true, view: window };
+    const pointerOpts = { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: mode === 'touch' ? 'touch' : 'mouse', isPrimary: true };
+    if (mode === 'touch') {
+      try { btn.dispatchEvent(new Event('touchstart', evOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new PointerEvent('pointerdown', pointerOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new MouseEvent('mousedown', evOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new Event('touchend', evOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new PointerEvent('pointerup', pointerOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new MouseEvent('mouseup', evOpts)); } catch(_) {}
+    } else {
+      try { btn.dispatchEvent(new PointerEvent('pointerdown', pointerOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new MouseEvent('mousedown', evOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new PointerEvent('pointerup', pointerOpts)); } catch(_) {}
+      try { btn.dispatchEvent(new MouseEvent('mouseup', evOpts)); } catch(_) {}
+    }
+    try { btn.dispatchEvent(new MouseEvent('click', evOpts)); } catch(_) {}
+    try { btn.click(); } catch(_) {}
+    return true;
+  } catch(e) {
+    console.warn('[Phone:chatu8] dispatchSyntheticPrimaryClick failed', e);
+    return false;
+  }
+}
+
+function installChatu8ButtonBridge() {
+  if (window._rpChatu8ButtonBridgeInstalled) return;
+  window._rpChatu8ButtonBridgeInstalled = true;
+
+  const handler = function(e) {
+    try {
+      if (!e.isTrusted) return;
+      const t = e.target;
+      const btn = t && t.closest ? t.closest('button.st-chatu8-image-button, button.image-tag-button') : null;
+      if (!btn) return;
+      const now = Date.now();
+      const stampKey = e.type === 'click' ? 'rpBridgeClickTs' : 'rpBridgeTouchTs';
+      const last = Number(btn.dataset[stampKey] || 0);
+      if (now - last < 500) return;
+      btn.dataset[stampKey] = String(now);
+      console.log('[Phone:chatu8:bridge]', {
+        type: e.type,
+        text: String(btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim().slice(0, 60),
+        inHiddenWrap: !!btn.closest('.rp-phone-saved-img-btns')
+      });
+      const delay = e.type === 'touchend' ? 24 : 0;
+      setTimeout(function() {
+        try { dispatchSyntheticPrimaryClick(btn, { mode: e.type === 'touchend' ? 'touch' : 'mouse' }); } catch(_) {}
+      }, delay);
+    } catch(err) {
+      console.warn('[Phone:chatu8:bridge] handler error', err);
+    }
+  };
+
+  document.addEventListener('touchend', handler, true);
+  document.addEventListener('click', handler, true);
+}
+
 // ================================================================
 //  PENDING IMAGE TRIGGER（点击"📷 点击生图"触发智绘姬）
 // ================================================================
 function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
   // triggerEl: 被点击的 .rp-pending-img DOM 元素（由 jQuery .on('click') 传入）
   try {
+  function forceTriggerImageButton(btn) {
+    if (!btn) return false;
+    try {
+      STATE._suppressClose = Date.now();
+      return dispatchSyntheticPrimaryClick(btn);
+    } catch(e) {
+      console.warn('[Phone:pendingImg] forceTriggerImageButton failed', e);
+      return false;
+    }
+  }
+
   // 1) 在主楼聊天里找包含这个 prompt 的智绘姬按钮，点击它触发生图
   //    智绘姬按钮是 <button class="image-tag-button st-chatu8-image-button" data-link="prompt">
   let triggered = false;
-  const btns = document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button');
+  const btns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
+  const normalizedPrompt = String(prompt || '').replace(/\s+/g, ' ').trim();
+  const findPromptScore = function(btnPromptRaw) {
+    const btnPrompt = String(btnPromptRaw || '').replace(/\s+/g, ' ').trim();
+    if (!btnPrompt || !normalizedPrompt) return 0;
+    if (btnPrompt === normalizedPrompt) return 100;
+    if (btnPrompt.includes(normalizedPrompt) || normalizedPrompt.includes(btnPrompt)) return 80;
+    const a = btnPrompt.slice(0, 60);
+    const b = normalizedPrompt.slice(0, 60);
+    if (a && b && (a.includes(b) || b.includes(a))) return 60;
+    const a30 = btnPrompt.slice(0, 30);
+    const b30 = normalizedPrompt.slice(0, 30);
+    if (a30 && b30 && (a30.includes(b30) || b30.includes(a30))) return 40;
+    return 0;
+  };
+  let bestBtn = null;
+  let bestScore = 0;
   for (const btn of btns) {
     const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
-    if (btnPrompt && prompt && (
-      btnPrompt.includes(prompt.slice(0, 30)) ||
-      prompt.includes(btnPrompt.slice(0, 30))
-    )) {
-      STATE._suppressClose = Date.now();
-      btn.click();
-      triggered = true;
-      console.log('[Phone:pendingImg] 已触发智绘姬按钮点击', { prompt: prompt.slice(0, 50) });
-      break;
+    const score = findPromptScore(btnPrompt);
+    const hasImg = !!btn.querySelector('img');
+    const loadingDone = btn.getAttribute('data-loading') === 'false';
+    const finalScore = score + (!hasImg && !loadingDone ? 10 : 0);
+    if (finalScore > bestScore) {
+      bestScore = finalScore;
+      bestBtn = btn;
+    }
+  }
+  if (bestBtn && bestScore > 0) {
+    triggered = forceTriggerImageButton(bestBtn);
+    if (triggered) {
+      console.log('[Phone:pendingImg] 已触发智绘姬按钮点击', { prompt: normalizedPrompt.slice(0, 50), matchScore: bestScore });
     }
   }
 
   if (!triggered) {
     // 2) 没找到对应按钮：点最后一条 AI 消息里的第一个未生成的智绘姬按钮
-    const allBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button'));
+    const allBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
     const pending = allBtns.filter(b => b.getAttribute('data-loading') !== 'false' && !b.querySelector('img'));
     if (pending.length > 0) {
-      STATE._suppressClose = Date.now();
-      pending[0].click();
-      triggered = true;
-      console.log('[Phone:pendingImg] 兜底：点击第一个未完成的智绘姬按钮');
+      triggered = forceTriggerImageButton(pending[0]);
+      if (triggered) console.log('[Phone:pendingImg] 兜底：点击最新的未完成智绘姬按钮');
     }
   }
 
@@ -8149,6 +8572,11 @@ function normalizePhoneMarkup(raw) {
 function onMessageUpdatedForImages(messageIndex) {
   try {
     const ctx = getContext();
+    const realSlotKey = getPhoneChatSlotKey(ctx);
+    if (realSlotKey && STATE.chatId !== realSlotKey) {
+      console.warn('[Phone:slot] onMessageUpdatedForImages 前发现槽位不一致，先强制同步', { stateChatId: STATE.chatId, realSlotKey });
+      try { syncToCurrentChat(); } catch(e) { console.warn('[Phone:slot] syncToCurrentChat failed before image routing', e); }
+    }
     if (!ctx?.chat) return;
     // messageIndex 可能是数字索引，也可能没传
     const idx = typeof messageIndex === 'number' ? messageIndex : ctx.chat.length - 1;
@@ -8375,6 +8803,11 @@ function onMessageUpdatedForImages(messageIndex) {
 function onAIMessage() {
   try {
     const ctx  = getContext();
+    const realSlotKey = getPhoneChatSlotKey(ctx);
+    if (realSlotKey && STATE.chatId !== realSlotKey) {
+      console.warn('[Phone:slot] onAIMessage 前发现槽位不一致，先强制同步', { stateChatId: STATE.chatId, realSlotKey });
+      try { syncToCurrentChat(); } catch(e) { console.warn('[Phone:slot] syncToCurrentChat failed before parse', e); }
+    }
     const chat = ctx?.chat;
     if (!chat?.length) return;
 
@@ -8427,6 +8860,7 @@ function onAIMessage() {
         STATE._pendingPhoneReply = null;
         rewritePhoneEchoInChat(phoneMatch[1], STATE._lastAiFingerprint);
         beautifySMSInChat();
+        schedulePhonePostProcess(phoneMatch[1], STATE._lastAiFingerprint);
         return;
       }
       // 极端兜底:PHONE 存在但结构不规范时,强行抽取第一条 SMS 文本落到 pending 线程
@@ -8448,6 +8882,7 @@ function onAIMessage() {
         STATE._pendingPhoneReply = null;
         rewritePhoneEchoInChat(normalizedRaw, STATE._lastAiFingerprint);
         beautifySMSInChat();
+        schedulePhonePostProcess(normalizedRaw, STATE._lastAiFingerprint);
         return;
       }
       // 标签存在但未解析出任何消息:继续走兜底,避免"正文污染且手机无消息"
@@ -8587,6 +9022,50 @@ function extractCommentSummaries(block) {
   return out;
 }
 
+function extractGroupSummaries(block) {
+  const out = [];
+  if (!block) return out;
+
+  const gmsgRe = /<GMSG\b([^>]*)>([\s\S]*?)<\/GMSG>/gi;
+  let m;
+  while ((m = gmsgRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const group = (attrs.GROUP || '').trim();
+    const text = String(m[2] || '')
+      .replace(/<pic\b[\s\S]*?\/>/gi, '')
+      .replace(/<img\b[^>]*>/gi, '')
+      .replace(/image###[\s\S]*?###/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    if (!text) continue;
+    out.push({ kind: 'gmsg', from, group, text });
+  }
+
+  const gvoiceRe = /<GVOICE\b([^>]*)>([\s\S]*?)<\/GVOICE>/gi;
+  while ((m = gvoiceRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const group = (attrs.GROUP || '').trim();
+    const duration = (attrs.DURATION || '').trim();
+    const text = String(m[2] || '').replace(/<[^>]+>/g, '').trim();
+    out.push({ kind: 'gvoice', from, group, duration, text });
+  }
+
+  const ghongbaoRe = /<GHONGBAO\b([^>]*)\/?\s*>/gi;
+  while ((m = ghongbaoRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const group = (attrs.GROUP || '').trim();
+    const amount = (attrs.AMOUNT || '').trim();
+    const note = (attrs.NOTE || '').trim();
+    if (!from && !group && !amount) continue;
+    out.push({ kind: 'ghongbao', from, group, amount, note });
+  }
+
+  return out;
+}
+
 function removePhoneEchoFragments(textEl, fragments) {
   if (!textEl || !Array.isArray(fragments) || fragments.length === 0) return;
 
@@ -8646,24 +9125,25 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     if (!textEl) return;
     if (fp && textEl.dataset.rpPhoneRewriteFp === fp) return;
 
-    // 先解析出所有 SMS / COMMENT 内容，后面用来从正文里精确删除
+    // 先解析出所有 SMS / COMMENT / GROUP 内容，后面用来从正文里精确删除
     const smsList = extractSmsSummaries(block);
     const commentList = extractCommentSummaries(block);
+    const groupList = extractGroupSummaries(block);
 
     // ── 步骤1:DOM 清理 <phone> 及残余裸标签 ──
     // 先把 <phone> 内已渲染的智绘姬按钮（image-tag-button）提取出来，清理后贴回 mes_text
     // 这样 rpTriggerPendingImg 仍能找到对应按钮来触发/检测图片
     const savedImageBtns = [];
     textEl.querySelectorAll('phone').forEach(phoneEl => {
-      phoneEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button').forEach(btn => {
-        savedImageBtns.push(btn.cloneNode(true));
+      Array.from(phoneEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(btn => {
+        savedImageBtns.push(btn);
       });
       while (phoneEl.firstChild) phoneEl.removeChild(phoneEl.firstChild);
       phoneEl.remove();
     });
     textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment').forEach(tag => {
-      tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button').forEach(btn => {
-        savedImageBtns.push(btn.cloneNode(true));
+      Array.from(tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(btn => {
+        savedImageBtns.push(btn);
       });
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
@@ -8692,7 +9172,12 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
 
     textEl.innerHTML = html;
     // 用 DOM API 删除有嵌套子元素的旧摘要块和旧按钮容器（正则处理嵌套不可靠）
-    textEl.querySelectorAll('.rp-phone-echo-block, .rp-phone-saved-img-btns').forEach(function(el) { el.remove(); });
+    textEl.querySelectorAll('.rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns').forEach(function(el) { el.remove(); });
+    // 只有在确实提取到了“活按钮本体”时，才清理 innerHTML 重建后留下的死按钮
+    // 否则保留主楼原按钮，避免出现“###image块还在，但点击生图按钮消失”的问题
+    if (savedImageBtns.length > 0) {
+      textEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button').forEach(function(btn) { btn.remove(); });
+    }
 
     // ── 步骤3：情况D — 散落的 SMS 文字行 ──
     if (smsList.length > 0) {
@@ -8706,14 +9191,26 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       removePhoneEchoFragments(textEl, commentTexts);
     }
 
+    // ── 步骤3b.5：清理散落的 GROUP 正文 ──
+    if (groupList.length > 0) {
+      const groupTexts = groupList.map(function(g) {
+        if (g.kind === 'gmsg') return g.text;
+        if (g.kind === 'gvoice') return g.text;
+        if (g.kind === 'ghongbao') return [g.amount, g.note].filter(Boolean).join(' ');
+        return '';
+      }).filter(Boolean);
+      removePhoneEchoFragments(textEl, groupTexts);
+    }
+
     // ── 步骤3c：情况E — 散落的 MOMENTS 文字行 ──
     const momentsList = [];
-    const momentsExtRe = /<MOMENTS\s+FROM="([^"]+)"\s+TIME="([^"]+)"(?:\s+IMG="[^"]*")?\s*>([\s\S]*?)<\/MOMENTS>/gi;
+    const momentsExtRe = /<MOMENTS\b([^>]*)>([\s\S]*?)<\/MOMENTS>/gi;
     let mm;
     while ((mm = momentsExtRe.exec(block)) !== null) {
-      const mFrom = mm[1].trim();
-      const mTime = mm[2].trim();
-      const mText = mm[3].trim()
+      const mAttrs = getTagAttrs(mm[1]);
+      const mFrom = (mAttrs.FROM || '').trim();
+      const mTime = (mAttrs.TIME || '').trim();
+      const mText = (mm[2] || '').trim()
         .replace(/<pic\b[\s\S]*?\/>/gi, '')
         .replace(/<img\b[^>]*>/gi, '')
         .replace(/image###[\s\S]*?###/gi, '')
@@ -8736,15 +9233,16 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
 
     // ── 步骤5：追加分割线 + SMS/MOMENTS 摘要（所有情况均执行）──
     const hasSms = smsList.length > 0;
+    const hasGroups = groupList.length > 0;
     const hasMoments = momentsList.length > 0;
 
-    if (hasSms || hasMoments) {
+    if (hasSms || hasGroups || hasMoments) {
       const fallbackName = (STATE.threads?.[STATE.currentThread]?.name)
         || (getContext?.()?.name2)
         || '';
 
       // 分割线
-      const dividerLabel = (hasSms && hasMoments) ? '📱 手机 · 朋友圈'
+      const dividerLabel = (hasMoments && (hasSms || hasGroups)) ? '📱 手机 · 朋友圈'
                          : hasMoments ? '📸 朋友圈'
                          : '📱 手机消息';
       html += `<hr class="rp-phone-divider" data-label="${dividerLabel}">`;
@@ -8756,6 +9254,22 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
         html += `<span class="rp-phone-echo-block">${nameHtml}${escHtml(text)}</span><br>`;
       });
 
+      // GROUP 摘要行
+      groupList.forEach(function(item) {
+        const groupTag = item.group ? `<span class="rp-phone-echo-moment-tag">群聊 · ${escHtml(item.group)}</span>` : '<span class="rp-phone-echo-moment-tag">群聊</span>';
+        const nameHtml = item.from ? `<span class="rp-phone-echo-name">${escHtml(item.from)}：</span>` : '';
+        if (item.kind === 'gmsg' && item.text) {
+          html += `<span class="rp-phone-echo-block">${groupTag}${nameHtml}${escHtml(item.text)}</span><br>`;
+        } else if (item.kind === 'gvoice') {
+          const voiceText = item.text ? ` ${escHtml(item.text)}` : '';
+          const durationText = item.duration ? ` 🎤[${escHtml(item.duration)}]` : ' 🎤';
+          html += `<span class="rp-phone-echo-block">${groupTag}${nameHtml}${durationText}${voiceText}</span><br>`;
+        } else if (item.kind === 'ghongbao') {
+          const hbText = [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
+          html += `<span class="rp-phone-echo-block">${groupTag}${nameHtml}${escHtml(hbText)}</span><br>`;
+        }
+      });
+
       // MOMENTS 摘要行
       momentsList.forEach(({ from, text }) => {
         html += `<span class="rp-phone-echo-block"><span class="rp-phone-echo-moment-tag">朋友圈</span><span class="rp-phone-echo-name">${escHtml(from)}：</span>${escHtml(text)}</span><br>`;
@@ -8765,13 +9279,13 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     if (html !== (textEl.innerHTML || '').trim()) {
       textEl.innerHTML = html;
     }
-    // ── 把提取的智绘姬按钮（隐藏）贴回 mes_text，供 rpTriggerPendingImg 查找 ──
+    // ── 把提取的智绘姬按钮作为“活按钮”贴回 mes_text（保留原始事件监听），避免 innerHTML 重建后的死按钮失效 ──
     if (savedImageBtns.length > 0) {
-      const btnWrap = document.createElement('span');
-      btnWrap.className = 'rp-phone-saved-img-btns';
-      btnWrap.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;';
-      savedImageBtns.forEach(btn => btnWrap.appendChild(btn));
-      textEl.appendChild(btnWrap);
+      const liveWrap = document.createElement('div');
+      liveWrap.className = 'rp-phone-live-img-btns';
+      liveWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px;align-items:center;';
+      savedImageBtns.forEach(btn => liveWrap.appendChild(btn));
+      textEl.appendChild(liveWrap);
     }
     if (fp) textEl.dataset.rpPhoneRewriteFp = fp;
     textEl.dataset.rpDone = '1';
@@ -8782,14 +9296,97 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
 
 function rewritePhoneEchoInChat(block, fp) {
   try {
-    const allMsgs = document.querySelectorAll('.mes:not([is_user="true"])');
-    if (!allMsgs.length) return;
+    const allMsgs = Array.from(document.querySelectorAll('.mes:not([is_user="true"])'));
+    if (!allMsgs.length) return false;
+
+    // 不再盲信“最后一条 AI DOM 消息就是目标消息”。
+    // 某些 ST 渲染/扩展时序下，最后一条 DOM 可能不是刚才那条含 PHONE 的消息，
+    // 结果导致真正目标消息完全没被折叠，主楼只剩 4 条裸文本。
+    const smsList = extractSmsSummaries(block);
+    const commentList = extractCommentSummaries(block);
+    const groupList = extractGroupSummaries(block);
+    const momentsList = [];
+    const momentsExtRe = /<MOMENTS\b([^>]*)>([\s\S]*?)<\/MOMENTS>/gi;
+    let mm;
+    while ((mm = momentsExtRe.exec(block)) !== null) {
+      const mText = (mm[2] || '').trim()
+        .replace(/<pic\b[\s\S]*?\/>/gi, '')
+        .replace(/<img\b[^>]*>/gi, '')
+        .replace(/image###[\s\S]*?###/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .trim();
+      if (mText) momentsList.push(mText);
+    }
+
+    const fragments = []
+      .concat(smsList.map(x => String(x.text || '').trim()))
+      .concat(commentList.map(x => String(x.text || '').trim()))
+      .concat(groupList.map(function(g) {
+        if (g.kind === 'gmsg') return String(g.text || '').trim();
+        if (g.kind === 'gvoice') return String(g.text || '').trim();
+        if (g.kind === 'ghongbao') return [g.amount, g.note].filter(Boolean).join(' ').trim();
+        return '';
+      }))
+      .concat(momentsList)
+      .filter(Boolean);
+
+    const candidates = [];
+    for (let i = allMsgs.length - 1; i >= 0; i--) {
+      const textEl = allMsgs[i]?.querySelector('.mes_text');
+      if (!textEl) continue;
+      const html = textEl.innerHTML || '';
+      const txt  = (textEl.textContent || '').replace(/\s+/g, ' ').trim();
+
+      const hasPhoneTag = /<phone>|&lt;phone&gt;|<sms\b|<moments\b|&lt;sms\b|&lt;moments\b/i.test(html);
+      const hitFragment = fragments.some(function(f) {
+        const s = String(f || '').replace(/\s+/g, ' ').trim();
+        return s && txt.includes(s);
+      });
+
+      if (hasPhoneTag || hitFragment) candidates.push(textEl);
+    }
+
+    if (candidates.length > 0) {
+      candidates.forEach(function(textEl, idx) {
+        applyPhoneCollapseToEl(textEl, block, fp ? `${fp}::cand${idx}` : null);
+      });
+      return true;
+    }
+
     const lastMsg = allMsgs[allMsgs.length - 1];
-    const textEl  = lastMsg?.querySelector('.mes_text');
-    if (!textEl) return;
-    applyPhoneCollapseToEl(textEl, block, fp);
+    const fallbackTextEl = lastMsg?.querySelector('.mes_text') || null;
+    if (!fallbackTextEl) return false;
+    applyPhoneCollapseToEl(fallbackTextEl, block, fp);
+    return true;
   } catch(e) {
     console.warn('[Raymond Phone] rewritePhoneEchoInChat:', e);
+    return false;
+  }
+}
+
+function schedulePhonePostProcess(block, fp) {
+  try {
+    const taskKey = `${fp || 'nofp'}|${String(block || '').length}`;
+    if (STATE._lastPostProcessKey === taskKey) return;
+    STATE._lastPostProcessKey = taskKey;
+
+    const delays = [80, 260, 700, 1400];
+    delays.forEach(function(delay, idx) {
+      setTimeout(function() {
+        try {
+          const ok = rewritePhoneEchoInChat(block, fp ? `${fp}::retry${idx}` : null);
+          beautifySMSInChat();
+          if (!ok || idx >= 1) {
+            // DOM 晚到时，直接重扫整段历史，和刷新后的补救逻辑保持一致
+            rewriteAllHistoryPhoneBlocks();
+          }
+        } catch(e) {
+          console.warn('[Raymond Phone] schedulePhonePostProcess:', e);
+        }
+      }, delay);
+    });
+  } catch(e) {
+    console.warn('[Raymond Phone] schedulePhonePostProcess outer:', e);
   }
 }
 
@@ -9028,13 +9625,16 @@ function parsePhone(block) {
     parsedCount++;
   }
 
-  const momentsRe = /<MOMENTS\s+FROM="([^"]+)"\s+TIME="([^"]+)"(?:\s+IMG="([^"]*)")?\s*>([\s\S]*?)<\/MOMENTS>/gi;
+  const momentsRe = /<MOMENTS\b([^>]*)>([\s\S]*?)<\/MOMENTS>/gi;
   while ((m = momentsRe.exec(block)) !== null) {
-    const rawMomentContent = m[4] || '';
+    const mAttrs = getTagAttrs(m[1]);
+    const fromNameRaw = (mAttrs.FROM || '').trim();
+    if (_isUserFrom(fromNameRaw)) { console.log('[Phone:guard] MOMENTS FROM=user blocked:', fromNameRaw); continue; }
+    const rawMomentContent = m[2] || '';
     // 支持 MOMENTS 内容里有 <img src> (生图插件替换后)，优先作为配图
     const { imgs: momentImgs, cleanText: momentCleanText, pendingPrompts: momentPendingPrompts } = extractImgsFromText(rawMomentContent);
-    const momentImg = m[3] ? m[3].trim() : (momentImgs[0] || null); // IMG属性优先，否则取内嵌第一张
-    const fromName = m[1].trim(), momentTime = m[2].trim();
+    const momentImg = (mAttrs.IMG || '').trim() || (momentImgs[0] || null); // IMG属性优先，否则取内嵌第一张
+    const fromName = fromNameRaw, momentTime = (mAttrs.TIME || '').trim();
     // momentId 由 incomingMoment 生成并返回，parsePhone 不再独立计算
 
     // ── 朋友圈生图适配 A：智绘姬 image###prompt### → 需要用户点击触发 ──
@@ -9098,9 +9698,18 @@ function parsePhone(block) {
     parsedCount++;
   }
 
-  const commentRe = /<COMMENT\s+MOMENT_ID="([^"]+)"\s+FROM="([^"]+)"\s+TIME="([^"]+)"(?:\s+REPLY_TO="([^"]*)")?\s*>([\s\S]*?)<\/COMMENT>/gi;
+  const commentRe = /<COMMENT\b([^>]*)>([\s\S]*?)<\/COMMENT>/gi;
   while ((m = commentRe.exec(block)) !== null) {
-    incomingComment(m[1].trim(), m[2].trim(), m[3].trim(), m[5].trim(), m[4] ? m[4].trim() : null);
+    const cAttrs = getTagAttrs(m[1]);
+    const commentFrom = (cAttrs.FROM || '').trim();
+    if (_isUserFrom(commentFrom)) { console.log('[Phone:guard] COMMENT FROM=user blocked:', commentFrom); continue; }
+    incomingComment(
+      (cAttrs.MOMENT_ID || '').trim(),
+      commentFrom,
+      (cAttrs.TIME || '').trim(),
+      (m[2] || '').trim(),
+      cAttrs.REPLY_TO ? cAttrs.REPLY_TO.trim() : null
+    );
     parsedCount++;
   }
 
@@ -9139,22 +9748,26 @@ function parsePhone(block) {
     parsedCount++;
   }
   // ── GROUP MSG ──
-  const gmsgRe = /<GMSG\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+TIME="([^"]+)">([\s\S]*?)<\/GMSG>/gi;
+  const gmsgRe = /<GMSG\b([^>]*)>([\s\S]*?)<\/GMSG>/gi;
   while ((m = gmsgRe.exec(block)) !== null) {
-    const gmsgFrom = m[1].trim();
+    const gAttrs = getTagAttrs(m[1]);
+    const gmsgFrom = (gAttrs.FROM || '').trim();
     if (_isUserFrom(gmsgFrom)) { console.log('[Phone:guard] GMSG FROM=user blocked:', gmsgFrom); continue; }
-    incomingGroupMsg(gmsgFrom, m[2].trim(), m[3].trim(), m[4].trim());
+    incomingGroupMsg(gmsgFrom, (gAttrs.GROUP || '').trim(), (gAttrs.TIME || '').trim(), String(m[2] || '').trim());
     parsedCount++;
   }
 
   // ── GROUP VOICE (群聊语音) ──
   // 格式: <GVOICE FROM="角色" GROUP="群名" TIME="HH:MM" DURATION="0:08">语音文字</GVOICE>
-  const gvoiceRe = /<GVOICE\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+TIME="([^"]+)"\s+DURATION="([^"]+)">([\s\S]*?)<\/GVOICE>/gi;
+  const gvoiceRe = /<GVOICE\b([^>]*)>([\s\S]*?)<\/GVOICE>/gi;
   while ((m = gvoiceRe.exec(block)) !== null) {
-    const fromRaw = m[1].trim(), groupName = m[2].trim(), time = m[3].trim();
+    const gAttrs = getTagAttrs(m[1]);
+    const fromRaw = (gAttrs.FROM || '').trim();
+    const groupName = (gAttrs.GROUP || '').trim();
+    const time = (gAttrs.TIME || '').trim();
     // 严禁 AI 替 user 发言
     if (_isUserFrom(fromRaw)) { console.log('[Phone:guard] GVOICE FROM=user blocked:', fromRaw); continue; }
-    const duration = m[4].trim(), voiceText = m[5].trim();
+    const duration = (gAttrs.DURATION || '').trim(), voiceText = String(m[2] || '').trim();
     const groupId = `grp_${groupName}`;
     if (!STATE.threads[groupId]) {
       const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
@@ -9166,9 +9779,10 @@ function parsePhone(block) {
       };
     }
     const grpThread = STATE.threads[groupId];
-    const isDupGV = grpThread.messages.some(msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === voiceText);
+    const isDupGV = grpThread.messages.slice(-6).some(msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === voiceText && (!duration || msg.duration === duration));
     if (!isDupGV) {
       const senderTh = findOrCreateThread(fromRaw);
+      if (!senderTh) continue;
       grpThread.messages.push({
         id: `ggv_${Date.now()}`, from: 'incoming',
         type: 'group_voice', name: fromRaw, time, duration, voiceText,
@@ -9185,10 +9799,12 @@ function parsePhone(block) {
 
   // ── GROUP HONGBAO (群聊红包) ──
   // 格式: <GHONGBAO FROM="角色" GROUP="群名" AMOUNT="金额" NOTE="备注"/>
-  const ghongbaoRe = /<GHONGBAO\s+FROM="([^"]+)"\s+GROUP="([^"]+)"\s+AMOUNT="([^"]+)"(?:\s+NOTE="([^"]*)")?\s*\/?>/gi;
+  const ghongbaoRe = /<GHONGBAO\b([^>]*)\/?\s*>/gi;
   while ((m = ghongbaoRe.exec(block)) !== null) {
-    const fromRaw = m[1].trim(), groupName = m[2].trim();
-    const amount = m[3].trim(), note = m[4] ? m[4].trim() : '恭喜发财';
+    const gAttrs = getTagAttrs(m[1]);
+    const fromRaw = (gAttrs.FROM || '').trim(), groupName = (gAttrs.GROUP || '').trim();
+    if (_isUserFrom(fromRaw)) { console.log('[Phone:guard] GHONGBAO FROM=user blocked:', fromRaw); continue; }
+    const amount = (gAttrs.AMOUNT || '').trim(), note = (gAttrs.NOTE || '').trim() || '恭喜发财';
     const groupId = `grp_${groupName}`;
     if (!STATE.threads[groupId]) {
       const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
@@ -9200,9 +9816,10 @@ function parsePhone(block) {
       };
     }
     const grpThread = STATE.threads[groupId];
-    const isDupGH = grpThread.messages.some(msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount);
+    const isDupGH = grpThread.messages.slice(-6).some(msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount && msg.note === note);
     if (!isDupGH) {
       const senderTh = findOrCreateThread(fromRaw);
+      if (!senderTh) continue;
       grpThread.messages.push({
         id: `ggh_${Date.now()}`, from: 'incoming',
         type: 'group_hongbao', name: fromRaw, time: (() => {
@@ -9241,7 +9858,8 @@ function parsePhone(block) {
       simgThreadId = matchThread(fromRaw);
       if (!simgThreadId) {
         const curTh = STATE.currentThread && STATE.threads?.[STATE.currentThread];
-        simgThreadId = curTh ? STATE.currentThread : findOrCreateThread(fromRaw).id;
+        const createdTh = findOrCreateThread(fromRaw);
+        simgThreadId = curTh ? STATE.currentThread : (createdTh ? createdTh.id : null);
       }
     } else {
       simgThreadId = STATE.currentThread || null;
@@ -9273,15 +9891,16 @@ function parsePhone(block) {
 //  MATCH THREAD
 // ================================================================
 function matchThread(fromRaw) {
-  const lower = fromRaw.toLowerCase();
+  if (isForbiddenPhoneContactName(fromRaw, getContext())) return null;
+  const normalized = normalizePhonePersonName(fromRaw);
 
   for (const th of Object.values(STATE.threads)) {
-    if (th.name.toLowerCase() === lower) return th.id;
+    if (normalizePhonePersonName(th.name || '') === normalized) return th.id;
   }
 
   for (const th of Object.values(STATE.threads)) {
-    const thName = th.name.toLowerCase();
-    if (lower.includes(thName) || thName.includes(lower)) return th.id;
+    const thName = normalizePhonePersonName(th.name || '');
+    if (normalized.includes(thName) || thName.includes(normalized)) return th.id;
   }
 
   return null;
@@ -9294,8 +9913,9 @@ function incomingMsg(threadId, text, time) {
   const th = STATE.threads[threadId];
   if (!th) return;
 
-  // 去重:相同 from+text 在近期消息中不重复插入(time 可能略有不同)
-  const isDup = th.messages.some(m => m.from === threadId && m.text === text);
+  // 去重只看最近几条，避免“同一句话后来再次出现”被永久吞掉
+  const recentMsgs = (th.messages || []).slice(-6);
+  const isDup = recentMsgs.some(m => m.from === threadId && m.text === text && (!time || !m.time || m.time === time));
   if (isDup) {
     console.log('[Phone:diag] incomingMsg DEDUP blocked:', text.slice(0, 40));
     return;
@@ -9789,6 +10409,7 @@ function updateAvatarPreviewSwatch(who) {
 // ================================================================
 function incomingCall(fromRaw, time) {
   const thread = findOrCreateThread(fromRaw);
+  if (!thread) return;
   const customImg = STATE.avatars && STATE.avatars[thread.name];
   const avHtml = customImg
     ? `<div class="rp-call-av rp-av-img" style="background:transparent;overflow:hidden"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`
@@ -9855,6 +10476,7 @@ function resolveCall(result) {
 // ================================================================
 function incomingHongbao(fromRaw, amount, note) {
   const thread = findOrCreateThread(fromRaw);
+  if (!thread) return;
   // 去重:同 from+amount+note 已存在则跳过
   const isDup = thread.messages.some(m => m.type === 'hongbao' && m.name === fromRaw && m.amount === amount && m.note === note);
   if (isDup) return;
@@ -9895,6 +10517,7 @@ function openHongbao(threadId, msgId) {
 // ================================================================
 function incomingVoice(fromRaw, time, duration, text) {
   const thread = findOrCreateThread(fromRaw);
+  if (!thread) return;
   // 去重:同 from+duration+text 已存在则跳过
   const isDup = thread.messages.some(m => m.type === 'voice' && m.name === fromRaw && m.duration === duration && m.text === text);
   if (isDup) return;
@@ -9939,8 +10562,9 @@ function incomingGroupMsg(fromRaw, groupName, time, text) {
   }
   const thread = STATE.threads[groupId];
   const senderTh = findOrCreateThread(fromRaw);
-  // 去重:同 from+time+text 已存在则跳过
-  const isDup = thread.messages.some(m => m.type === 'group_msg' && m.name === fromRaw && m.text === text);
+  if (!senderTh) return;
+  // 去重只看最近几条，避免同一句群消息后续再次出现时被永久吞掉
+  const isDup = thread.messages.slice(-8).some(m => m.type === 'group_msg' && m.name === fromRaw && m.text === text && (!time || !m.time || m.time === time));
   if (isDup) return;
   thread.messages.push({
     id: `gm_${Date.now()}`, from: 'incoming',
@@ -12773,6 +13397,10 @@ function escHtml(str) {
 }
 
 function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType) {
+  if (isForbiddenPhoneContactName(fromRaw, getContext())) {
+    console.log('[Phone:guard] incomingMoment blocked for user/invalid name:', fromRaw);
+    return null;
+  }
   // ── momentId：from + time + 毫秒戳，每条唯一，彻底避免同时刻不同角色/纯图片碰撞 ──
   const _idBase = fromRaw.toLowerCase().replace(/\s+/g,'_') + '_' + time.replace(':','');
   const momentId = _idBase + '_' + Date.now();
@@ -12784,35 +13412,68 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
   // 不能写进 STATE.moments（那是旧窗口的），要直接写到正确 chatId 的 localStorage slot，
   // 等 onChatChanged/syncToCurrentChat 后续触发时自然加载回来。
   const _ctx = getContext();
-  const _realChatId = _ctx?.chatId || ((_ctx?.characterId != null) ? 'char_' + _ctx.characterId : null);
+  const _realChatId = getPhoneChatSlotKey(_ctx);
   if (_realChatId && _realChatId !== STATE.chatId) {
-    console.warn('[Phone:moment] chatId 不一致，STATE:', STATE.chatId, '→ ctx:', _realChatId, '，写入正确 slot 而非内存');
+    console.warn('[Phone:moment] chatId 不一致，STATE:', STATE.chatId, '→ ctx:', _realChatId, '，先尝试同步当前槽位');
+    try { syncToCurrentChat(); } catch(e) {}
+  }
+  if (_realChatId && _realChatId !== STATE.chatId) {
+    console.warn('[Phone:moment] 同步后仍不一致，写入正确 slot 而非内存');
     try {
-      const _slotRaw = localStorage.getItem(`rp-phone-v1-${_realChatId}`);
-      const _slot = _slotRaw ? JSON.parse(_slotRaw) : null;
-      if (_slot) {
-        _slot.moments = _slot.moments || [];
-        const _threadId0 = matchThread(fromRaw) || fromRaw;
-        const _dup = _slot.moments.find(m =>
-          m.from === _threadId0 && m.time === time && m.text === (text || '')
-        );
-        if (!_dup) {
-          _slot.moments.push({
-            id: momentId,
-            from: _threadId0,
-            name: fromRaw,
-            initials: fromRaw.slice(0,2).toUpperCase(),
-            avatarBg: 'linear-gradient(145deg,#555,#333)',
-            time, text,
-            img: img || null,
-            pendingImg: (!img && pendingImgPrompt) ? pendingImgPrompt : null,
-            pendingImgType: (!img && pendingImgPrompt) ? (pendingImgType || 'chatu8') : null,
-            likes: [], comments: [],
-          });
-          localStorage.setItem(`rp-phone-v1-${_realChatId}`, JSON.stringify(_slot));
-          console.log('[Phone:moment] 已写入正确 slot:', _realChatId, momentId);
+      const _threadId0 = matchThread(fromRaw) || fromRaw;
+      const _slotKey = `rp-phone-v1-${_realChatId}`;
+      const _slotRaw = localStorage.getItem(_slotKey);
+      const _slot = _slotRaw ? JSON.parse(_slotRaw) : (loadState(_realChatId) || {
+        threads: {},
+        notifications: [],
+        sync: { stage: 1, progress: 0, status: '乖巧' },
+        moments: [],
+        diary: [],
+        darkMode: STATE.darkMode,
+        avatars: Object.assign({}, _AV),
+        currentView: 'home',
+        currentThread: null,
+        bankData: null,
+      });
+
+      _slot.moments = _slot.moments || [];
+      const _dup = _slot.moments.find(m =>
+        m.from === _threadId0 && m.time === time && m.text === (text || '')
+      );
+
+      if (_dup) {
+        if (!_dup.img && img) {
+          _dup.img = img;
+          _dup.pendingImg = null;
+          _dup.pendingImgType = null;
+        } else if (!_dup.img && pendingImgPrompt) {
+          _dup.pendingImg = _dup.pendingImg || pendingImgPrompt;
+          _dup.pendingImgType = _dup.pendingImgType || (pendingImgType || 'chatu8');
         }
+      } else {
+        _slot.moments.push({
+          id: momentId,
+          from: _threadId0,
+          name: fromRaw,
+          initials: fromRaw.slice(0,2).toUpperCase(),
+          avatarBg: 'linear-gradient(145deg,#555,#333)',
+          time, text,
+          img: img || null,
+          pendingImg: (!img && pendingImgPrompt) ? pendingImgPrompt : null,
+          pendingImgType: (!img && pendingImgPrompt) ? (pendingImgType || 'chatu8') : null,
+          likes: [], comments: [],
+        });
       }
+
+      _slot.moments = (_slot.moments || []).slice(-50);
+      localStorage.setItem(_slotKey, JSON.stringify(_slot));
+      const _es = _extSettings();
+      if (_es) {
+        if (!_es[EXT_KEY]) _es[EXT_KEY] = {};
+        _es[EXT_KEY][_realChatId] = makeLightweightPayload(_slot);
+        _saveSettings();
+      }
+      console.log('[Phone:moment] 已写入正确 slot:', _realChatId, _dup ? _dup.id : momentId);
     } catch(e) { console.warn('[Phone:moment] 写入正确 slot 失败', e); }
     return momentId; // 不污染当前 STATE.moments
   }
@@ -12886,6 +13547,10 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
 }
 
 function incomingComment(momentId, fromRaw, time, text, replyTo) {
+  if (isForbiddenPhoneContactName(fromRaw, getContext())) {
+    console.log('[Phone:guard] incomingComment blocked for user/invalid name:', fromRaw);
+    return;
+  }
   // 优先精确匹配，其次做 includes 模糊匹配
   let moment = STATE.moments && (
     STATE.moments.find(m => m.id === momentId) ||
@@ -12907,8 +13572,8 @@ function incomingComment(momentId, fromRaw, time, text, replyTo) {
     if (replyToIdx < 0) replyToIdx = null;
   }
   moment.comments = moment.comments || [];
-  // 去重：同名同文的评论不重复插入
-  const isDup = moment.comments.some(c => c.name === name && c.text === text);
+  // 去重只看最近几条，避免同一句评论在更晚时候再次出现时被永久吞掉
+  const isDup = moment.comments.slice(-8).some(c => c.name === name && c.text === text && (!time || !c.time || c.time === time));
   if (isDup) return;
   moment.comments.push({ from: threadId || fromRaw, name, text, time, replyTo: replyToIdx });
   if (STATE.currentView === 'moments') renderMoments();
