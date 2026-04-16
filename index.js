@@ -35,10 +35,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   #rp-fab {
     width: 32px !important;
     height: 32px !important;
-    /* font-size removed: using image icon */
-    /* ST 给 html 加 transform 导致 bottom: 失效,必须用 top: calc(100vh) 绕过 */
-    top: calc(100vh - 142px) !important;
-    bottom: auto !important;
+    /* 避免用 top:calc(100vh-...) 撑高页面，直接固定到底部 */
+    top: auto !important;
+    bottom: 14px !important;
     right: 14px !important;
     left: auto !important;
     transform: none !important;
@@ -4662,6 +4661,7 @@ function buildStatePayload() {
     moments,
     diary,
     darkMode: STATE.darkMode,
+    nameAliases: Object.assign({}, STATE.nameAliases || {}),
     // 头像已通过全局 avatar 存储单独持久化，这里不再按 slot 重复存整份
     avatars: {},
     currentView: STATE.currentView || 'home',
@@ -4901,7 +4901,7 @@ function mergeDuplicateThreads() {
 
   threads.forEach(function(th) {
     if (!th || !th.name) return;
-    const norm = normalizePhonePersonName(th.name);
+    const norm = normalizePhonePersonName(resolveCanonicalPhoneName(th.name));
     if (!norm) return;
 
     if (!seen.has(norm)) {
@@ -4913,6 +4913,7 @@ function mergeDuplicateThreads() {
     const drop = th;
     if (!keep || !drop || keep.id === drop.id) return;
 
+    rememberPhoneNameAlias(drop.name, keep.name);
     keep.messages = (keep.messages || []).concat(drop.messages || []);
     keep.unread = Math.max(keep.unread || 0, drop.unread || 0);
     if ((!keep.avatarBg || keep.avatarBg.includes('#555')) && drop.avatarBg) keep.avatarBg = drop.avatarBg;
@@ -5112,6 +5113,45 @@ function normalizePhonePersonName(nameRaw) {
     .toLowerCase();
 }
 
+function getPhoneNameAliases() {
+  if (!STATE.nameAliases || typeof STATE.nameAliases !== 'object') STATE.nameAliases = {};
+  return STATE.nameAliases;
+}
+
+function resolveCanonicalPhoneName(nameRaw) {
+  const cleanedName = String(nameRaw || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u3000/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleanedName) return '';
+  const aliasMap = getPhoneNameAliases();
+  const normalized = normalizePhonePersonName(cleanedName);
+  return aliasMap[normalized] || cleanedName;
+}
+
+function rememberPhoneNameAlias(aliasRaw, canonicalRaw) {
+  const alias = String(aliasRaw || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u3000/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const canonical = String(canonicalRaw || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u3000/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!alias || !canonical) return false;
+  const aliasNorm = normalizePhonePersonName(alias);
+  const canonicalNorm = normalizePhonePersonName(canonical);
+  if (!aliasNorm || !canonicalNorm || aliasNorm === canonicalNorm) return false;
+  const aliasMap = getPhoneNameAliases();
+  if (aliasMap[aliasNorm] === canonical) return false;
+  aliasMap[aliasNorm] = canonical;
+  console.log('[Phone] 记录联系人别名映射:', { alias, canonical });
+  return true;
+}
+
 /* ── HELPER: findOrCreateThread ── */
 function findOrCreateThread(nameRaw) {
   const ctx = getContext();
@@ -5124,21 +5164,27 @@ function findOrCreateThread(nameRaw) {
     console.log('[Phone:guard] blocked contact creation for user/invalid name:', cleanedName);
     return null;
   }
-  const normalized = normalizePhonePersonName(cleanedName);
+  const canonicalName = resolveCanonicalPhoneName(cleanedName) || cleanedName;
+  const normalized = normalizePhonePersonName(canonicalName);
   for (const th of Object.values(STATE.threads)) {
-    if (normalizePhonePersonName(th.name || '') === normalized) return th;
+    const thNorm = normalizePhonePersonName(resolveCanonicalPhoneName(th.name || ''));
+    if (thNorm === normalized) {
+      if (cleanedName !== th.name) rememberPhoneNameAlias(cleanedName, th.name || canonicalName);
+      return th;
+    }
   }
   const _colors = ['#7c3aed','#0891b2','#0d9488','#b45309','#be185d','#1d4ed8'];
   const colorIdx = Object.keys(STATE.threads).length % _colors.length;
   const tempId = `contact_${normalized.replace(/\s+/g, '_')}`;
   if (!STATE.threads[tempId]) {
     STATE.threads[tempId] = {
-      id: tempId, name: cleanedName,
-      initials: cleanedName.slice(0, 2),
+      id: tempId, name: canonicalName,
+      initials: canonicalName.slice(0, 2),
       avatarBg: `linear-gradient(145deg,${_colors[colorIdx]},${_colors[(colorIdx+1)%_colors.length]})`,
       type: 'contact', messages: [], unread: 0
     };
   }
+  if (cleanedName !== canonicalName) rememberPhoneNameAlias(cleanedName, canonicalName);
   return STATE.threads[tempId];
 }
 
@@ -5196,6 +5242,7 @@ function loadState(chatId) {
       if (!parsed) return null;
       if (parsed.__light) return null;
       parsed.threads = sanitizeThreadsForContext(parsed.threads || {}, ctx);
+      parsed.nameAliases = (parsed.nameAliases && typeof parsed.nameAliases === 'object') ? parsed.nameAliases : {};
       parsed = enrichPayloadMeta(parsed, ctx);
       try { localStorage.setItem(`rp-phone-v1-${chatId}`, JSON.stringify(parsed)); } catch(e) {}
       if (es) {
@@ -6945,6 +6992,20 @@ function bindUI() {
     $('#rp-xhs-detail-input').val('').attr('placeholder', `回复 @${uname}...`).focus();
   });
 
+  // 小红书 - 删除帖子
+  $(document).on('click', '#rp-xhs-del-post', function() {
+    const postId = $(this).data('postid') || STATE.xhsCurrentPost;
+    if (postId) deleteXHSPost(postId);
+  });
+
+  // 小红书 - 删除评论
+  $(document).on('click', '[data-xhs-del-cidx]', function() {
+    const cidx = parseInt($(this).data('xhs-del-cidx'), 10);
+    const postId = $(this).data('postid') || STATE.xhsCurrentPost;
+    if (!postId || Number.isNaN(cidx)) return;
+    deleteXHSComment(postId, cidx);
+  });
+
   $(document).on('click', '[data-app="api-settings"]', function() {
     lgFillAPIView();
     go('api-settings');
@@ -7473,6 +7534,7 @@ function bindUI() {
 
   // Moments: like
   installChatu8ButtonBridge();
+  installChatu8ImageSyncToPhone();
 
   // Moments: like
   $(document).on('click', '.rp-like-btn', function(e) {
@@ -7977,6 +8039,8 @@ function renderBubbles(threadId) {
         </div>
         <div class="rp-bts">${msg.time}</div>
       `);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      wrap.append(delBtn);
       area.append(wrap); return;
     }
     // ── 语音消息 ──
@@ -8043,6 +8107,9 @@ function renderBubbles(threadId) {
           <div class="rp-voice-txt" style="display:block">${escHtml(msg.voiceText)}</div>
         </div>
       `));
+      const btnRowGV = $('<div>').addClass('rp-btn-row');
+      btnRowGV.append($(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`));
+      inner.append(btnRowGV);
       inner.append($('<div>').addClass('rp-bts').text(msg.time));
       wrap.append(avEl, inner);
       area.append(wrap); return;
@@ -8073,6 +8140,9 @@ function renderBubbles(threadId) {
           </div>
         </div>
       `));
+      const btnRowGH = $('<div>').addClass('rp-btn-row');
+      btnRowGH.append($(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`));
+      inner.append(btnRowGH);
       inner.append($('<div>').addClass('rp-bts').text(msg.time));
       wrap.append(avEl, inner);
       area.append(wrap); return;
@@ -8097,6 +8167,8 @@ function renderBubbles(threadId) {
         </div>
         <div class="rp-bts">${msg.time}</div>
       `);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      wrap.append(delBtn);
       area.append(wrap); return;
     }
     // ── 图片生成占位（pending_image）──
@@ -8149,6 +8221,8 @@ function renderBubbles(threadId) {
         </div>
         <div class="rp-bts">${msg.time}</div>
       `);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      wrap.append(delBtn);
       area.append(wrap); return;
     }
     // ── user 发的红包 ──
@@ -8280,6 +8354,36 @@ function installChatu8ButtonBridge() {
       const t = e.target;
       const btn = t && t.closest ? t.closest('button.st-chatu8-image-button, button.image-tag-button') : null;
       if (!btn) return;
+
+      const inLiveWrap = !!btn.closest('.rp-phone-live-img-btns');
+      const inMomentWrap = !!btn.closest('.rp-phone-moment-live-img-btns');
+      const inHiddenWrap = !!btn.closest('.rp-phone-saved-img-btns');
+      const isManagedBtn = inLiveWrap || inMomentWrap || inHiddenWrap;
+      // 主楼原生按钮：不干预点击，但写入 rpImgWaitQueue 让 MutationObserver 知道该路由到哪
+      if (!isManagedBtn) {
+        // 仅在 click 事件时写一次（touchend+click 会各触发一次，避免重复）
+        if (e.type === 'click') {
+          const prompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || '').trim();
+          const now2 = Date.now();
+          const lastWrite = Number(btn.dataset.rpBridgeQueueTs || 0);
+          if (now2 - lastWrite > 1000) {
+            btn.dataset.rpBridgeQueueTs = String(now2);
+            window.rpImgWaitQueue = window.rpImgWaitQueue || [];
+            // 查找当前最新的 AI 消息 id
+            let _msgId = null;
+            try {
+              const _ctx2 = window.SillyTavern && typeof window.SillyTavern.getContext === 'function' ? window.SillyTavern.getContext() : null;
+              if (_ctx2 && _ctx2.chat && _ctx2.chat.length > 0) {
+                _msgId = _ctx2.chat.length - 1;
+              }
+            } catch(_) {}
+            window.rpImgWaitQueue.push({ threadId: STATE.currentThread || null, pendingMsgId: _msgId, prompt: prompt, addedAt: now2 });
+            console.log('[Phone:chatu8:bridge] 主楼橙色按钮点击，已写入 rpImgWaitQueue', { prompt: prompt.slice(0, 50), queueLen: window.rpImgWaitQueue.length });
+          }
+        }
+        return;
+      }
+
       const now = Date.now();
       const stampKey = e.type === 'click' ? 'rpBridgeClickTs' : 'rpBridgeTouchTs';
       const last = Number(btn.dataset[stampKey] || 0);
@@ -8288,7 +8392,7 @@ function installChatu8ButtonBridge() {
       console.log('[Phone:chatu8:bridge]', {
         type: e.type,
         text: String(btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim().slice(0, 60),
-        inHiddenWrap: !!btn.closest('.rp-phone-saved-img-btns')
+        isManagedBtn
       });
       const delay = e.type === 'touchend' ? 24 : 0;
       setTimeout(function() {
@@ -8304,6 +8408,88 @@ function installChatu8ButtonBridge() {
 }
 
 // ================================================================
+//  CHATU8 IMAGE SYNC TO PHONE
+// ================================================================
+function installChatu8ImageSyncToPhone() {
+  if (window._rpImageSyncInstalled) return;
+  window._rpImageSyncInstalled = true;
+  var ctx = window.SillyTavern && typeof window.SillyTavern.getContext === 'function' ? window.SillyTavern.getContext() : null;
+  var es = ctx && ctx.eventSource;
+  if (!es || typeof es.on !== 'function') return;
+
+  es.on('generate-image-response', function(rp) {
+    try {
+      if (!rp || !rp.success) return;
+      var imgData = rp.imageData || rp.imageUrl || null;
+      if (!imgData) return;
+      var reqId = rp.id || '';
+      console.log('[Phone:imageSync] generate-image-response received', { reqId: reqId, dataLen: String(imgData).length });
+
+      // 按 reqId 找对应主楼按钮的 prompt
+      var matchedPrompt = null;
+      var allBtns = document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button');
+      for (var i = 0; i < allBtns.length; i++) {
+        var b = allBtns[i];
+        if ((b.dataset.requestId || '') === reqId) {
+          matchedPrompt = (b.dataset.imageTag || b.dataset.link || '').trim();
+          break;
+        }
+      }
+      console.log('[Phone:imageSync] matched prompt', matchedPrompt ? matchedPrompt.slice(0, 60) : 'none');
+
+      // 找手机朋友圈里 prompt 匹配的 pending 条目，直接写入
+      if (matchedPrompt) {
+        var pendingBtns = document.querySelectorAll('.rp-moment-pending-img');
+        for (var j = 0; j < pendingBtns.length; j++) {
+          var pb = pendingBtns[j];
+          var pbPrompt = (pb.dataset.prompt || '').trim();
+          if (matchedPrompt.includes(pbPrompt.slice(0, 30)) || pbPrompt.includes(matchedPrompt.slice(0, 30))) {
+            var momentId = pb.dataset.mid;
+            console.log('[Phone:imageSync] matched moment pending btn', { momentId: momentId, promptHead: pbPrompt.slice(0, 50) });
+            // 直接写入 STATE.moments
+            try {
+              var wkeys = Object.keys(window);
+              for (var k = 0; k < wkeys.length; k++) {
+                var v = window[wkeys[k]];
+                if (v && typeof v === 'object' && Array.isArray(v.moments)) {
+                  var mom = v.moments.find(function(m) { return m.id === momentId; });
+                  if (mom) {
+                    mom.img = imgData;
+                    mom.pendingImg = null;
+                    mom.pendingImgType = null;
+                    if (typeof window.renderMoments === 'function') window.renderMoments();
+                    if (typeof window.saveState === 'function') window.saveState();
+                  }
+                  break;
+                }
+              }
+            } catch(se) { console.warn('[Phone:imageSync] state write failed', se); }
+            // 同时更新 DOM
+            var safeSrc = imgData.replace(/"/g, '&quot;');
+            pb.outerHTML = '<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="' + safeSrc + '" alt=""/></div>';
+            break;
+          }
+        }
+      }
+
+      // proxy img 备用（触发 MutationObserver 兼容旧逻辑）
+      if (!document.querySelector('img[data-chatu8-phone-bridge="' + reqId + '"]')) {
+        var proxyImg = document.createElement('img');
+        proxyImg.src = imgData;
+        proxyImg.setAttribute('data-chatu8-phone-bridge', reqId);
+        proxyImg.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;top:-9999px';
+        var chat = document.querySelector('#chat');
+        if (chat) chat.appendChild(proxyImg);
+      }
+    } catch(e) {
+      console.warn('[Phone:imageSync] error', e);
+    }
+  });
+
+  console.log('[Phone:imageSync] generate-image-response global listener installed');
+}
+
+// ================================================================
 //  PENDING IMAGE TRIGGER（点击"📷 点击生图"触发智绘姬）
 // ================================================================
 function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
@@ -8313,7 +8499,12 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
     if (!btn) return false;
     try {
       STATE._suppressClose = Date.now();
-      return dispatchSyntheticPrimaryClick(btn);
+      btn.scrollIntoView && btn.scrollIntoView({ block: 'nearest' });
+      btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      btn.dispatchEvent(new MouseEvent('mouseup',  { bubbles: true, cancelable: true }));
+      btn.dispatchEvent(new MouseEvent('click',    { bubbles: true, cancelable: true }));
+      console.log('[Phone:pendingImg] dispatched click to', (btn.dataset.requestId || '').slice(0, 20));
+      return true;
     } catch(e) {
       console.warn('[Phone:pendingImg] forceTriggerImageButton failed', e);
       return false;
@@ -8343,11 +8534,8 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
   for (const btn of btns) {
     const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
     const score = findPromptScore(btnPrompt);
-    const hasImg = !!btn.querySelector('img');
-    const loadingDone = btn.getAttribute('data-loading') === 'false';
-    const finalScore = score + (!hasImg && !loadingDone ? 10 : 0);
-    if (finalScore > bestScore) {
-      bestScore = finalScore;
+    if (score > bestScore) {
+      bestScore = score;
       bestBtn = btn;
     }
   }
@@ -8359,18 +8547,77 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
   }
 
   if (!triggered) {
-    // 2) 没找到对应按钮：点最后一条 AI 消息里的第一个未生成的智绘姬按钮
+    // 2) 没找到对应按钮：点最后一条 AI 消息里的第一个智绘姬按钮
     const allBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
-    const pending = allBtns.filter(b => b.getAttribute('data-loading') !== 'false' && !b.querySelector('img'));
-    if (pending.length > 0) {
-      triggered = forceTriggerImageButton(pending[0]);
-      if (triggered) console.log('[Phone:pendingImg] 兜底：点击最新的未完成智绘姬按钮');
+    if (allBtns.length > 0) {
+      triggered = forceTriggerImageButton(allBtns[0]);
+      if (triggered) console.log('[Phone:pendingImg] 兜底：点击最新的智绘姬按钮');
     }
   }
 
   if (!triggered) {
-    console.warn('[Phone:pendingImg] 未找到可触发的智绘姬按钮，prompt=', prompt);
-    if (triggerEl) triggerEl.innerHTML = '<span style="font-size:12px;opacity:0.6;">⚠️ 请在主楼手动点击生图按钮</span>';
+    // 按钮未就绪——placeholder.js 可能还未重新插入按钮。
+    // 先主动触发 MESSAGE_UPDATED 让 placeholder.js 重新工作，再等待后重试。
+    console.warn('[Phone:pendingImg] 未找到智绘姬按钮，尝试触发 placeholder 重建...', prompt);
+    if (triggerEl) triggerEl.innerHTML = '<span style="font-size:14px;">🔄</span><span style="font-size:12px;opacity:0.7;"> 等待按钮...</span>';
+
+    // 触发 MESSAGE_UPDATED （模拟铅笔退出动作）
+    try {
+      const _ctx = SillyTavern && typeof SillyTavern.getContext === 'function' ? SillyTavern.getContext() : null;
+      const _es = _ctx && _ctx.eventSource;
+      const _et = window.event_types || SillyTavern && SillyTavern.eventTypes;
+      if (_es && _et && _et['MESSAGE_UPDATED']) {
+        const _lastMsgIdx = (_ctx.chat && _ctx.chat.length > 0) ? _ctx.chat.length - 1 : 0;
+        _es.emit(_et['MESSAGE_UPDATED'], _lastMsgIdx);
+        console.log('[Phone:pendingImg] 已触发 MESSAGE_UPDATED, idx=', _lastMsgIdx);
+      }
+    } catch(_e) { console.warn('[Phone:pendingImg] 触发 MESSAGE_UPDATED 失败', _e); }
+
+    let _retryCount = 0;
+    const _retryInterval = setInterval(function() {
+      _retryCount++;
+      const _retryBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
+      let _retryTriggered = false;
+      if (normalizedPrompt) {
+        for (const btn of _retryBtns) {
+          const bp = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').replace(/\s+/g,' ').trim();
+          if (bp && (bp === normalizedPrompt || bp.includes(normalizedPrompt.slice(0,30)) || normalizedPrompt.includes(bp.slice(0,30)))) {
+            _retryTriggered = forceTriggerImageButton(btn);
+            if (_retryTriggered) { console.log('[Phone:pendingImg:retry] 重试成功，找到匹配按钮'); break; }
+          }
+        }
+      }
+      if (!_retryTriggered && _retryBtns.length > 0) {
+        _retryTriggered = forceTriggerImageButton(_retryBtns[0]);
+        if (_retryTriggered) console.log('[Phone:pendingImg:retry] 重试成功，兜底点击最新按钮');
+      }
+      if (_retryTriggered) {
+        clearInterval(_retryInterval);
+        window.rpImgWaitQueue = window.rpImgWaitQueue || [];
+        window.rpImgWaitQueue.push({ threadId, pendingMsgId: msgId, prompt, addedAt: Date.now() });
+        if (triggerEl) {
+          const _origHtml2 = triggerEl.innerHTML;
+          triggerEl.innerHTML = '<span style="font-size:17px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>';
+          triggerEl.style.cursor = 'default';
+          triggerEl.style.pointerEvents = 'none';
+          setTimeout(function() {
+            if (triggerEl && triggerEl.style.pointerEvents === 'none') {
+              triggerEl.innerHTML = _origHtml2;
+              triggerEl.style.cursor = 'pointer';
+              triggerEl.style.pointerEvents = 'auto';
+            }
+          }, 30000);
+        }
+      } else if (_retryCount >= 5) {
+        clearInterval(_retryInterval);
+        console.warn('[Phone:pendingImg:retry] 重试5次仍未找到按钮，放弃');
+        if (triggerEl) {
+          triggerEl.innerHTML = '<span style="font-size:12px;opacity:0.6;">⚠️ 请在主楼手动点击生图按钮</span>';
+          triggerEl.style.cursor = 'pointer';
+          triggerEl.style.pointerEvents = 'auto';
+        }
+      }
+    }, 600);
     return;
   }
 
@@ -8381,9 +8628,19 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
 
   // 更新气泡显示为"生成中..."
   if (triggerEl) {
+    const _origHtml = triggerEl.innerHTML;
     triggerEl.innerHTML = '<span style="font-size:17px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>';
     triggerEl.style.cursor = 'default';
     triggerEl.style.pointerEvents = 'none';
+    // 超时恢复：30秒内未收到图片则恢复按钮可点击状态，避免永久卡死
+    setTimeout(function() {
+      if (triggerEl && triggerEl.style.pointerEvents === 'none') {
+        triggerEl.innerHTML = _origHtml;
+        triggerEl.style.cursor = 'pointer';
+        triggerEl.style.pointerEvents = 'auto';
+        console.log('[Phone:pendingImg] 超时恢复生图按钮');
+      }
+    }, 30000);
   }
   } catch(err) {
     console.error('[Phone:pendingImg] 触发生图时出错', err);
@@ -8987,6 +9244,59 @@ function escapeRegExp(s) {
   return String(s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function getRealClockTime() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+function normalizeClockTime(value) {
+  const s = String(value || '').trim();
+  if (!s) return '';
+  const m = s.match(/\b(\d{1,2})[:：](\d{2})\b/);
+  if (!m) return '';
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return '';
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+function extractStoryClockTimeFromText(raw) {
+  const text = String(raw || '').replace(/<think>[\s\S]*?<\/think>/gi, ' ');
+  const hits = [];
+  let m;
+  const attrRe = /\bTIME\s*=\s*["']?(\d{1,2}[:：]\d{2})/gi;
+  while ((m = attrRe.exec(text)) !== null) {
+    const t = normalizeClockTime(m[1]);
+    if (t) hits.push(t);
+  }
+  const plainRe = /\b(\d{1,2}[:：]\d{2})\b/g;
+  while ((m = plainRe.exec(text)) !== null) {
+    const t = normalizeClockTime(m[1]);
+    if (t) hits.push(t);
+  }
+  return hits.length ? hits[hits.length - 1] : '';
+}
+
+function getStoryClockTime() {
+  try {
+    const ctx = typeof getContext === 'function' ? getContext() : null;
+    const chat = ctx?.chat || [];
+    for (let i = chat.length - 1; i >= 0; i--) {
+      const raw = String(chat[i]?.mes || '').trim();
+      if (!raw) continue;
+      const t = extractStoryClockTimeFromText(raw);
+      if (t) return t;
+    }
+  } catch (e) {
+    console.warn('[Phone:time] getStoryClockTime failed', e);
+  }
+  return '';
+}
+
+function resolvePhoneTime(preferredTime) {
+  return normalizeClockTime(preferredTime) || getStoryClockTime() || getRealClockTime();
+}
+
 function extractSmsSummaries(block) {
   const out = [];
   if (!block) return out;
@@ -9066,6 +9376,86 @@ function extractGroupSummaries(block) {
   return out;
 }
 
+function extractMomentSummaries(block) {
+  const out = [];
+  if (!block) return out;
+  const momentsExtRe = /<MOMENTS\b([^>]*)>([\s\S]*?)<\/MOMENTS>/gi;
+  let m;
+  while ((m = momentsExtRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const time = (attrs.TIME || '').trim();
+    const text = String(m[2] || '')
+      .replace(/<pic\b[\s\S]*?\/>/gi, '')
+      .replace(/<img\b[^>]*>/gi, '')
+      .replace(/image###[\s\S]*?###/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    if (!text) continue;
+    out.push({ from, time, text });
+  }
+  return out;
+}
+
+function extractDirectPhoneSummaries(block) {
+  const out = [];
+  if (!block) return out;
+  let m;
+
+  const voiceRe = /<VOICE\b([^>]*)>([\s\S]*?)<\/VOICE>/gi;
+  while ((m = voiceRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const duration = (attrs.DURATION || '').trim();
+    const text = String(m[2] || '').replace(/<[^>]+>/g, '').trim();
+    out.push({ kind: 'voice', from, duration, text });
+  }
+
+  const hongbaoRe = /<HONGBAO\b([^>]*)\/?\s*>/gi;
+  while ((m = hongbaoRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const amount = (attrs.AMOUNT || '').trim();
+    const note = (attrs.NOTE || '').trim();
+    if (!from && !amount && !note) continue;
+    out.push({ kind: 'hongbao', from, amount, note });
+  }
+
+  const simgRe = /<SIMG\b([^>]*)>([\s\S]*?)<\/SIMG>/gi;
+  while ((m = simgRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const text = String(m[2] || '')
+      .replace(/<pic\b[\s\S]*?\/>/gi, '')
+      .replace(/<img\b[^>]*>/gi, '')
+      .replace(/image###[\s\S]*?###/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    const src = (attrs.SRC || '').trim();
+    out.push({ kind: 'image', from, text, src });
+  }
+
+  const simgSelfRe = /<SIMG\b([^>]*)\/?\s*>/gi;
+  while ((m = simgSelfRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const src = (attrs.SRC || '').trim();
+    if (!src) continue;
+    const from = (attrs.FROM || '').trim();
+    out.push({ kind: 'image', from, text: '', src });
+  }
+
+  const locRe = /<(?:LOCATION|LOC)\b([^>]*)\/?\s*>(?:([\s\S]*?)<\/(?:LOCATION|LOC)>)?/gi;
+  while ((m = locRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const place = (attrs.PLACE || attrs.TEXT || attrs.NAME || '').trim() || String(m[2] || '').replace(/<[^>]+>/g, '').trim();
+    if (!place) continue;
+    out.push({ kind: 'location', from, place });
+  }
+
+  return out;
+}
+
 function removePhoneEchoFragments(textEl, fragments) {
   if (!textEl || !Array.isArray(fragments) || fragments.length === 0) return;
 
@@ -9125,10 +9515,12 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     if (!textEl) return;
     if (fp && textEl.dataset.rpPhoneRewriteFp === fp) return;
 
-    // 先解析出所有 SMS / COMMENT / GROUP 内容，后面用来从正文里精确删除
+    // 先解析出所有手机 / 朋友圈内容，后面用来从正文里精确删除
     const smsList = extractSmsSummaries(block);
     const commentList = extractCommentSummaries(block);
     const groupList = extractGroupSummaries(block);
+    const momentsList = extractMomentSummaries(block);
+    const directPhoneList = extractDirectPhoneSummaries(block);
 
     // ── 步骤1:DOM 清理 <phone> 及残余裸标签 ──
     // 先把 <phone> 内已渲染的智绘姬按钮（image-tag-button）提取出来，清理后贴回 mes_text
@@ -9175,9 +9567,8 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     textEl.querySelectorAll('.rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns').forEach(function(el) { el.remove(); });
     // 只有在确实提取到了“活按钮本体”时，才清理 innerHTML 重建后留下的死按钮
     // 否则保留主楼原按钮，避免出现“###image块还在，但点击生图按钮消失”的问题
-    if (savedImageBtns.length > 0) {
-      textEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button').forEach(function(btn) { btn.remove(); });
-    }
+    // 不再删除主楼正文里的 image-tag-button，避免删掉 st-chatu8 自己渲染的 inline 生图按钮
+    // savedImageBtns 收集的是 <phone> 标签内的按钮，已在上方随 phoneEl.remove() 一起删除，无需再进行二次清理
 
     // ── 步骤3：情况D — 散落的 SMS 文字行 ──
     if (smsList.length > 0) {
@@ -9202,25 +9593,20 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       removePhoneEchoFragments(textEl, groupTexts);
     }
 
-    // ── 步骤3c：情况E — 散落的 MOMENTS 文字行 ──
-    const momentsList = [];
-    const momentsExtRe = /<MOMENTS\b([^>]*)>([\s\S]*?)<\/MOMENTS>/gi;
-    let mm;
-    while ((mm = momentsExtRe.exec(block)) !== null) {
-      const mAttrs = getTagAttrs(mm[1]);
-      const mFrom = (mAttrs.FROM || '').trim();
-      const mTime = (mAttrs.TIME || '').trim();
-      const mText = (mm[2] || '').trim()
-        .replace(/<pic\b[\s\S]*?\/>/gi, '')
-        .replace(/<img\b[^>]*>/gi, '')
-        .replace(/image###[\s\S]*?###/gi, '')
-        .replace(/<[^>]+>/g, '')
-        .trim();
-      if (mText) momentsList.push({ from: mFrom, time: mTime, text: mText });
-    }
+    // ── 步骤3c：清理散落的朋友圈 / 语音 / 红包 / 图片 / 定位正文 ──
     if (momentsList.length > 0) {
       const momentTexts = momentsList.map(function(m) { return m.text; }).filter(Boolean);
       removePhoneEchoFragments(textEl, momentTexts);
+    }
+    if (directPhoneList.length > 0) {
+      const directTexts = directPhoneList.map(function(item) {
+        if (item.kind === 'voice') return item.text;
+        if (item.kind === 'hongbao') return [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
+        if (item.kind === 'image') return item.text;
+        if (item.kind === 'location') return item.place;
+        return '';
+      }).filter(Boolean);
+      removePhoneEchoFragments(textEl, directTexts);
     }
 
     // ── 步骤4:清理多余换行 ──
@@ -9231,18 +9617,19 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       .replace(/(?:<br\s*\/?>\s*)+$/i, '')
       .trim();
 
-    // ── 步骤5：追加分割线 + SMS/MOMENTS 摘要（所有情况均执行）──
+    // ── 步骤5：追加分割线 + 手机摘要（所有情况均执行）──
     const hasSms = smsList.length > 0;
     const hasGroups = groupList.length > 0;
     const hasMoments = momentsList.length > 0;
+    const hasDirectPhone = directPhoneList.length > 0;
 
-    if (hasSms || hasGroups || hasMoments) {
+    if (hasSms || hasGroups || hasMoments || hasDirectPhone) {
       const fallbackName = (STATE.threads?.[STATE.currentThread]?.name)
         || (getContext?.()?.name2)
         || '';
 
       // 分割线
-      const dividerLabel = (hasMoments && (hasSms || hasGroups)) ? '📱 手机 · 朋友圈'
+      const dividerLabel = (hasMoments && (hasSms || hasGroups || hasDirectPhone)) ? '📱 手机 · 朋友圈'
                          : hasMoments ? '📸 朋友圈'
                          : '📱 手机消息';
       html += `<hr class="rp-phone-divider" data-label="${dividerLabel}">`;
@@ -9274,6 +9661,24 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       momentsList.forEach(({ from, text }) => {
         html += `<span class="rp-phone-echo-block"><span class="rp-phone-echo-moment-tag">朋友圈</span><span class="rp-phone-echo-name">${escHtml(from)}：</span>${escHtml(text)}</span><br>`;
       });
+
+      // 直聊手机摘要行（语音 / 红包 / 图片 / 定位）
+      directPhoneList.forEach(function(item) {
+        const nameHtml = item.from ? `<span class="rp-phone-echo-name">${escHtml(item.from)}：</span>` : '';
+        if (item.kind === 'voice') {
+          const durationText = item.duration ? `🎤[${escHtml(item.duration)}]` : '🎤';
+          const voiceText = item.text ? ` ${escHtml(item.text)}` : '';
+          html += `<span class="rp-phone-echo-block">${nameHtml}${durationText}${voiceText}</span><br>`;
+        } else if (item.kind === 'hongbao') {
+          const hbText = [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
+          html += `<span class="rp-phone-echo-block">${nameHtml}${escHtml(hbText)}</span><br>`;
+        } else if (item.kind === 'image') {
+          const imageText = item.text ? `🖼️ ${escHtml(item.text)}` : '🖼️ 图片';
+          html += `<span class="rp-phone-echo-block">${nameHtml}${imageText}</span><br>`;
+        } else if (item.kind === 'location') {
+          html += `<span class="rp-phone-echo-block">${nameHtml}📍${escHtml(item.place)}</span><br>`;
+        }
+      });
     }
 
     if (html !== (textEl.innerHTML || '').trim()) {
@@ -9289,6 +9694,28 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     }
     if (fp) textEl.dataset.rpPhoneRewriteFp = fp;
     textEl.dataset.rpDone = '1';
+    // 修复： innerHTML 重建后，对最新 AI 消息触发 message_updated，让 placeholder.js 重新插入按钮
+    try {
+      const _ctx3 = window.SillyTavern && typeof window.SillyTavern.getContext === 'function' ? window.SillyTavern.getContext() : null;
+      const _es3 = _ctx3 && _ctx3.eventSource;
+      if (_es3 && typeof _es3.emit === 'function') {
+        const _mesEl3 = textEl.closest('.mes');
+        const _mesId3 = _mesEl3 ? parseInt(_mesEl3.getAttribute('mesid') || '-1', 10) : -1;
+        // 只对最新一条 AI 消息触发，避免历史批量处理时风险
+        const _allAiMes3 = document.querySelectorAll('.mes:not([is_user="true"])');
+        const _lastMesId3 = _allAiMes3.length > 0 ? parseInt(_allAiMes3[_allAiMes3.length - 1].getAttribute('mesid') || '-1', 10) : -1;
+        if (_mesId3 >= 0 && _mesId3 === _lastMesId3) {
+          // 延迟 1600ms 再触发，确保 schedulePhonePostProcess 的 4 次 retry（1400ms 最巚）全部跑完再触发，避免按钮反复被销毁
+          const _triggerKey3 = 'rpMsgUpdatedPending_' + _mesId3;
+          if (window[_triggerKey3]) clearTimeout(window[_triggerKey3]);
+          window[_triggerKey3] = setTimeout(function() {
+            window[_triggerKey3] = null;
+            console.log('[Raymond Phone] 触发 message_updated, mesId=', _mesId3, 'time=', Date.now());
+            try { _es3.emit('message_updated', _mesId3); } catch(_e) { console.warn('[Raymond Phone] emit message_updated failed', _e); }
+          }, 1600);
+        }
+      }
+    } catch(_e3) { console.warn('[Raymond Phone] MESSAGE_UPDATED trigger failed', _e3); }
   } catch(e) {
     console.warn('[Raymond Phone] applyPhoneCollapseToEl:', e);
   }
@@ -9305,18 +9732,8 @@ function rewritePhoneEchoInChat(block, fp) {
     const smsList = extractSmsSummaries(block);
     const commentList = extractCommentSummaries(block);
     const groupList = extractGroupSummaries(block);
-    const momentsList = [];
-    const momentsExtRe = /<MOMENTS\b([^>]*)>([\s\S]*?)<\/MOMENTS>/gi;
-    let mm;
-    while ((mm = momentsExtRe.exec(block)) !== null) {
-      const mText = (mm[2] || '').trim()
-        .replace(/<pic\b[\s\S]*?\/>/gi, '')
-        .replace(/<img\b[^>]*>/gi, '')
-        .replace(/image###[\s\S]*?###/gi, '')
-        .replace(/<[^>]+>/g, '')
-        .trim();
-      if (mText) momentsList.push(mText);
-    }
+    const momentsList = extractMomentSummaries(block).map(function(x) { return x.text; });
+    const directPhoneList = extractDirectPhoneSummaries(block);
 
     const fragments = []
       .concat(smsList.map(x => String(x.text || '').trim()))
@@ -9328,6 +9745,13 @@ function rewritePhoneEchoInChat(block, fp) {
         return '';
       }))
       .concat(momentsList)
+      .concat(directPhoneList.map(function(item) {
+        if (item.kind === 'voice') return String(item.text || '').trim();
+        if (item.kind === 'hongbao') return [item.amount, item.note].filter(Boolean).join(' ').trim();
+        if (item.kind === 'image') return String(item.text || '').trim();
+        if (item.kind === 'location') return String(item.place || '').trim();
+        return '';
+      }))
       .filter(Boolean);
 
     const candidates = [];
@@ -9337,7 +9761,7 @@ function rewritePhoneEchoInChat(block, fp) {
       const html = textEl.innerHTML || '';
       const txt  = (textEl.textContent || '').replace(/\s+/g, ' ').trim();
 
-      const hasPhoneTag = /<phone>|&lt;phone&gt;|<sms\b|<moments\b|&lt;sms\b|&lt;moments\b/i.test(html);
+      const hasPhoneTag = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc)\b/i.test(html);
       const hitFragment = fragments.some(function(f) {
         const s = String(f || '').replace(/\s+/g, ' ').trim();
         return s && txt.includes(s);
@@ -9505,7 +9929,7 @@ function parsePhone(block) {
   function routeImgToThread(threadId, src, time) {
     const th = STATE.threads[threadId];
     if (!th) return;
-    const fallbackTime = time || `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
+    const fallbackTime = resolvePhoneTime(time);
     const isDup = th.messages.some(msg => msg.type === 'image' && msg.src === src);
     if (isDup) return;
     th.messages.push({ id: `aimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: threadId, type: 'image', time: fallbackTime, src });
@@ -9546,7 +9970,11 @@ function parsePhone(block) {
     if (hasPendingThread && pendingFresh) {
       // 优先 pending:用户刚通过手机发了短信,回复一定属于这个线程
       threadId = pendingThreadId;
-      if (!fromRaw) fromRaw = STATE.threads[threadId]?.name || '';
+      const pendingName = STATE.threads[threadId]?.name || '';
+      if (fromRaw && pendingName && normalizePhonePersonName(fromRaw) !== normalizePhonePersonName(pendingName)) {
+        rememberPhoneNameAlias(fromRaw, pendingName);
+      }
+      if (!fromRaw) fromRaw = pendingName;
     } else if (fromRaw) {
       threadId = matchThread(fromRaw);
       if (!threadId) {
@@ -9564,8 +9992,7 @@ function parsePhone(block) {
       console.log('[Phone:diag] parsePhone: no threadId found for FROM=' + fromRaw0);
       continue;
     }
-    const fallbackTime = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
-    const msgTime = time || fallbackTime;
+    const msgTime = resolvePhoneTime(time);
     console.log('[Phone:diag] incomingMsg called', { threadId, text: text.slice(0,40), time: msgTime });
 
     // 先发已有图片（生图插件已替换完的 <img src>）
@@ -9736,7 +10163,7 @@ function parsePhone(block) {
     const fromName = m[1].trim();
     // 跳过 user 自己发出的红包(AI 确认回显),只处理 char 发来的
     if (_userName && fromName.toLowerCase() === _userName.toLowerCase()) continue;
-    incomingHongbao(fromName, m[2].trim(), m[3] ? m[3].trim() : '恭喜发财');
+    incomingHongbao(fromName, m[2].trim(), m[3] ? m[3].trim() : '恭喜发财', null);
     parsedCount++;
   }
   // ── VOICE ──
@@ -9822,10 +10249,7 @@ function parsePhone(block) {
       if (!senderTh) continue;
       grpThread.messages.push({
         id: `ggh_${Date.now()}`, from: 'incoming',
-        type: 'group_hongbao', name: fromRaw, time: (() => {
-          const now = new Date();
-          return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        })(),
+        type: 'group_hongbao', name: fromRaw, time: resolvePhoneTime(),
         amount, note, opened: false,
         initials: senderTh.initials, avatarBg: senderTh.avatarBg
       });
@@ -9892,14 +10316,15 @@ function parsePhone(block) {
 // ================================================================
 function matchThread(fromRaw) {
   if (isForbiddenPhoneContactName(fromRaw, getContext())) return null;
-  const normalized = normalizePhonePersonName(fromRaw);
+  const canonical = resolveCanonicalPhoneName(fromRaw) || fromRaw;
+  const normalized = normalizePhonePersonName(canonical);
 
   for (const th of Object.values(STATE.threads)) {
-    if (normalizePhonePersonName(th.name || '') === normalized) return th.id;
+    if (normalizePhonePersonName(resolveCanonicalPhoneName(th.name || '')) === normalized) return th.id;
   }
 
   for (const th of Object.values(STATE.threads)) {
-    const thName = normalizePhonePersonName(th.name || '');
+    const thName = normalizePhonePersonName(resolveCanonicalPhoneName(th.name || ''));
     if (normalized.includes(thName) || thName.includes(normalized)) return th.id;
   }
 
@@ -9912,16 +10337,17 @@ function matchThread(fromRaw) {
 function incomingMsg(threadId, text, time) {
   const th = STATE.threads[threadId];
   if (!th) return;
+  const resolvedTime = resolvePhoneTime(time);
 
   // 去重只看最近几条，避免“同一句话后来再次出现”被永久吞掉
   const recentMsgs = (th.messages || []).slice(-6);
-  const isDup = recentMsgs.some(m => m.from === threadId && m.text === text && (!time || !m.time || m.time === time));
+  const isDup = recentMsgs.some(m => m.from === threadId && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) {
     console.log('[Phone:diag] incomingMsg DEDUP blocked:', text.slice(0, 40));
     return;
   }
 
-  th.messages.push({ from: threadId, text, time });
+  th.messages.push({ from: threadId, text, time: resolvedTime });
 
   if (STATE.currentView !== 'thread' || STATE.currentThread !== threadId) {
     th.unread++;
@@ -9935,7 +10361,7 @@ function incomingMsg(threadId, text, time) {
   }
 
   showLiveChat(th.name, th.avatarBg, STATE.avatars?.[th.name] || null, text);
-  showBanner(th.name, text, time);
+  showBanner(th.name, text, resolvedTime);
   saveState(); // FIX2: 持久化收到的消息
 }
 
@@ -10293,7 +10719,7 @@ async function postUserMoment() {
   const text = $('#rp-compose-text').val().trim();
   if (!text) return;
   const now = new Date();
-  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts = resolvePhoneTime();
   const momentId = `user_${now.getTime()}`;
   STATE.diary = STATE.diary || [];
   STATE.moments = STATE.moments || [];
@@ -10474,14 +10900,13 @@ function resolveCall(result) {
 // ================================================================
 //  HONGBAO
 // ================================================================
-function incomingHongbao(fromRaw, amount, note) {
+function incomingHongbao(fromRaw, amount, note, time) {
   const thread = findOrCreateThread(fromRaw);
   if (!thread) return;
   // 去重:同 from+amount+note 已存在则跳过
   const isDup = thread.messages.some(m => m.type === 'hongbao' && m.name === fromRaw && m.amount === amount && m.note === note);
   if (isDup) return;
-  const now = new Date();
-  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts = resolvePhoneTime(time);
   thread.messages.push({
     id: `hb_${Date.now()}`, from: 'incoming',
     type: 'hongbao', name: fromRaw, time: ts,
@@ -10518,12 +10943,13 @@ function openHongbao(threadId, msgId) {
 function incomingVoice(fromRaw, time, duration, text) {
   const thread = findOrCreateThread(fromRaw);
   if (!thread) return;
+  const resolvedTime = resolvePhoneTime(time);
   // 去重:同 from+duration+text 已存在则跳过
-  const isDup = thread.messages.some(m => m.type === 'voice' && m.name === fromRaw && m.duration === duration && m.text === text);
+  const isDup = thread.messages.some(m => m.type === 'voice' && m.name === fromRaw && m.duration === duration && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) return;
   thread.messages.push({
     id: `vc_${Date.now()}`, from: 'incoming',
-    type: 'voice', name: fromRaw, time,
+    type: 'voice', name: fromRaw, time: resolvedTime,
     duration, text, played: false
   });
   thread.unread = (thread.unread || 0) + 1;
@@ -10550,6 +10976,7 @@ function playVoice(threadId, msgId) {
 const GROUP_COLORS = ['#7c3aed','#0891b2','#0d9488','#b45309','#be185d','#1d4ed8'];
 
 function incomingGroupMsg(fromRaw, groupName, time, text) {
+  const resolvedTime = resolvePhoneTime(time);
   const groupId = `grp_${groupName}`;
   if (!STATE.threads[groupId]) {
     const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
@@ -10564,11 +10991,11 @@ function incomingGroupMsg(fromRaw, groupName, time, text) {
   const senderTh = findOrCreateThread(fromRaw);
   if (!senderTh) return;
   // 去重只看最近几条，避免同一句群消息后续再次出现时被永久吞掉
-  const isDup = thread.messages.slice(-8).some(m => m.type === 'group_msg' && m.name === fromRaw && m.text === text && (!time || !m.time || m.time === time));
+  const isDup = thread.messages.slice(-8).some(m => m.type === 'group_msg' && m.name === fromRaw && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) return;
   thread.messages.push({
     id: `gm_${Date.now()}`, from: 'incoming',
-    type: 'group_msg', name: fromRaw, time, text,
+    type: 'group_msg', name: fromRaw, time: resolvedTime, text,
     initials: senderTh.initials, avatarBg: senderTh.avatarBg
   });
   thread.unread = (thread.unread || 0) + 1;
@@ -10622,8 +11049,7 @@ function sendUserHongbao() {
   if (!amount) return;
   const thread = STATE.threads[STATE.currentThread];
   if (!thread) return;
-  const now = new Date();
-  const ts  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts  = resolvePhoneTime();
   thread.messages.push({
     id: `uhb_${Date.now()}`, from: 'user',
     type: 'hongbao', name: '我', time: ts,
@@ -10655,8 +11081,7 @@ function triggerImagePick() {
     reader.onload = (e) => {
       const thread = STATE.threads[STATE.currentThread];
       if (!thread) { fi.remove(); return; }
-      const now = new Date();
-      const ts  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const ts  = resolvePhoneTime();
       const src = e.target.result;
       thread.messages.push({ id: `uimg_${Date.now()}`, from: 'user', type: 'image', time: ts, src });
       renderBubbles(thread.id);
@@ -10724,8 +11149,7 @@ function sendLocation() {
   if (!place) return;
   const thread = STATE.threads[STATE.currentThread];
   if (!thread) return;
-  const now = new Date();
-  const ts  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts  = resolvePhoneTime();
   thread.messages.push({
     id: `uloc_${Date.now()}`, from: 'user',
     type: 'location', time: ts, place
@@ -13119,7 +13543,10 @@ function renderXHSDetail(post) {
             <span style="font-size:10px;color:var(--rp-xhs-text-faint,#ccc)">${c.time||''}</span>
           </div>
           <div style="font-size:12px;color:var(--rp-xhs-text-soft,#444);line-height:1.6">${replyPart}${escHtml(c.text)}</div>
-          <div style="font-size:10px;color:#ff2442;margin-top:3px;cursor:pointer" data-reply-cidx="${idx}" data-reply-uname="${escHtml(c.user)}">回复</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:3px">
+            <div style="font-size:10px;color:#ff2442;cursor:pointer" data-reply-cidx="${idx}" data-reply-uname="${escHtml(c.user)}">回复</div>
+            <div style="font-size:10px;color:rgba(200,60,60,.72);cursor:pointer" data-xhs-del-cidx="${idx}" data-postid="${post.id}">删除</div>
+          </div>
         </div>
       `;
     }).join('');
@@ -13137,6 +13564,8 @@ function renderXHSDetail(post) {
     <div style="display:flex;align-items:center;gap:16px;padding:10px 0;border-top:1px solid #fff0f2;border-bottom:1px solid #fff0f2;margin-bottom:14px">
       <button id="rp-xhs-like-btn" data-postid="${post.id}" style="background:none;border:none;cursor:pointer;font-size:13px;color:${post.likedByUser?'#ff2442':'#bbb'};display:flex;align-items:center;gap:4px">${post.likedByUser?'❤️':'🤍'} <span id="rp-xhs-like-count">${likeK}</span></button>
       <div style="font-size:13px;color:var(--rp-xhs-text-faint,#bbb);display:flex;align-items:center;gap:4px">💬 <span>${(post.comments||[]).length}</span></div>
+      <div style="flex:1"></div>
+      <button id="rp-xhs-del-post" data-postid="${post.id}" style="background:none;border:none;cursor:pointer;font-size:12px;color:rgba(200,60,60,.78)">🗑️ 删除</button>
     </div>
     <div style="font-size:12px;font-weight:700;color:var(--rp-xhs-text,#333);margin-bottom:8px">全部评论 · ${(post.comments||[]).length}条</div>
     <div id="rp-xhs-comments-list">${commentsHtml}</div>
@@ -13392,6 +13821,48 @@ function toggleXHSLike(postId) {
   $('#rp-xhs-like-btn').css('color', post.likedByUser ? '#ff2442' : '#bbb').html(`${post.likedByUser?'❤️':'🤍'} <span id="rp-xhs-like-count">${likeK}</span>`);
 }
 
+function deleteXHSPost(postId) {
+  const list = STATE.xhsFeed || [];
+  const idx = list.findIndex(p => p.id === postId);
+  if (idx < 0) return;
+  list.splice(idx, 1);
+  STATE.xhsFeed = list;
+  if (STATE.xhsCurrentPost === postId) {
+    STATE.xhsCurrentPost = null;
+    STATE.xhsReplyToCidx = null;
+    go('xhs');
+    renderXHSFeed(false);
+  } else if (STATE.currentView === 'xhs') {
+    _renderXHSList();
+  }
+  saveState();
+}
+
+function deleteXHSComment(postId, commentIdx) {
+  const post = (STATE.xhsFeed || []).find(p => p.id === postId);
+  if (!post || !Array.isArray(post.comments) || commentIdx < 0 || commentIdx >= post.comments.length) return;
+  post.comments.splice(commentIdx, 1);
+  post.comments = post.comments.map(function(c) {
+    const replyTo = c.replyTo;
+    if (replyTo === null || replyTo === undefined) return c;
+    if (replyTo === commentIdx) return Object.assign({}, c, { replyTo: null });
+    if (replyTo > commentIdx) return Object.assign({}, c, { replyTo: replyTo - 1 });
+    return c;
+  });
+  if (STATE.xhsReplyToCidx === commentIdx) {
+    STATE.xhsReplyToCidx = null;
+    $('#rp-xhs-detail-input').val('').attr('placeholder','发表评论...');
+  } else if (typeof STATE.xhsReplyToCidx === 'number' && STATE.xhsReplyToCidx > commentIdx) {
+    STATE.xhsReplyToCidx -= 1;
+  }
+  saveState();
+  if (STATE.currentView === 'xhs-detail' && STATE.xhsCurrentPost === postId) {
+    renderXHSDetail(post);
+  } else if (STATE.currentView === 'xhs') {
+    _renderXHSList();
+  }
+}
+
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -13401,6 +13872,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
     console.log('[Phone:guard] incomingMoment blocked for user/invalid name:', fromRaw);
     return null;
   }
+  time = resolvePhoneTime(time);
   // ── momentId：from + time + 毫秒戳，每条唯一，彻底避免同时刻不同角色/纯图片碰撞 ──
   const _idBase = fromRaw.toLowerCase().replace(/\s+/g,'_') + '_' + time.replace(':','');
   const momentId = _idBase + '_' + Date.now();
@@ -13566,6 +14038,7 @@ function incomingComment(momentId, fromRaw, time, text, replyTo) {
   const threadId = matchThread(fromRaw);
   const th = STATE.threads[threadId];
   const name = th ? th.name : fromRaw;
+  const resolvedTime = resolvePhoneTime(time);
   let replyToIdx = null;
   if (replyTo) {
     replyToIdx = moment.comments.findIndex(cm => cm.name === replyTo);
@@ -13573,9 +14046,9 @@ function incomingComment(momentId, fromRaw, time, text, replyTo) {
   }
   moment.comments = moment.comments || [];
   // 去重只看最近几条，避免同一句评论在更晚时候再次出现时被永久吞掉
-  const isDup = moment.comments.slice(-8).some(c => c.name === name && c.text === text && (!time || !c.time || c.time === time));
+  const isDup = moment.comments.slice(-8).some(c => c.name === name && c.text === text && (!resolvedTime || !c.time || c.time === resolvedTime));
   if (isDup) return;
-  moment.comments.push({ from: threadId || fromRaw, name, text, time, replyTo: replyToIdx });
+  moment.comments.push({ from: threadId || fromRaw, name, text, time: resolvedTime, replyTo: replyToIdx });
   if (STATE.currentView === 'moments') renderMoments();
   saveState();
 }
@@ -13593,8 +14066,7 @@ function toggleLike(momentId) {
 async function sendMomentComment(momentId, text, replyToName) {
   const moment = STATE.moments && STATE.moments.find(m => m.id === momentId);
   if (!moment || !text.trim()) return;
-  const now = new Date();
-  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts = resolvePhoneTime();
   let replyToIdx = null;
   if (replyToName) {
     replyToIdx = moment.comments.findIndex(cm => cm.name === replyToName);
@@ -14304,10 +14776,10 @@ function gmDraw() {
 }
 
 function gmLoop(ts) {
+  // 修复：用闭包在函数入口捕获帧序号，防止旧帧当前号等于最新号的问题
+  const mySerial = GM._loopSerial;
   if (!GM.active || GM.hookState === 'idle') return;
-  // 修复手机端钩子框重叠：检查帧序号，丢弃过期的旧帧
-  // 用闭包捕获当前帧的序号，下一帧验证时使用
-  const mySerial = GM._expectedSerial;
+  if (mySerial !== GM._expectedSerial) return; // 旧帧，丢弃
   // Delta time (seconds), capped at 100ms to avoid huge jumps after tab sleep
   const dt = GM.lastFrameTime ? Math.min((ts - GM.lastFrameTime) / 1000, 0.1) : 1 / 60;
   GM.lastFrameTime = ts;
@@ -14360,11 +14832,10 @@ function gmLoop(ts) {
     }
   }
 
-  // 修复手机端钩子框重叠：绘制前也检查序号，防止旧帧在回合切换后仍绘制
-  if (mySerial === GM._expectedSerial) {
-    gmDraw();
-    GM.rafId = requestAnimationFrame(gmLoop);
-  }
+  // 绘制当前帧，并递归调度下一帧
+  gmDraw();
+  GM._loopSerial = GM._expectedSerial; // 更新：下一帧入口时用此值检查
+  GM.rafId = requestAnimationFrame(gmLoop);
 }
 
 function gmStartTimer() {
@@ -14600,6 +15071,7 @@ function gmStartCharTurn() {
   if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
   // 递增帧序号，让旧的 gmLoop 帧自动作废
   GM._expectedSerial++;
+  GM._loopSerial = GM._expectedSerial; // 同步：让第一帧不被丢弃
   gmAddMsg('sys', `--- ${GM.charName}的回合 ---`);
   gmSpawnItems();
   gmStartTimer();
@@ -14667,6 +15139,7 @@ function gmStartUserTurn() {
   if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
   // 递增帧序号，让旧的 gmLoop 帧自动作废
   GM._expectedSerial++;
+  GM._loopSerial = GM._expectedSerial; // 同步：让第一帧不被丢弃
   gmAddMsg('sys', '--- 你的回合 ---');
   GM.hookState = 'swing';
   GM.hookAngle = 0;
