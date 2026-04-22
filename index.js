@@ -1067,6 +1067,10 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   border: 1px solid rgba(130,90,255,.45) !important;
   color: #d4c8ff !important;
   border-radius: 12px !important;
+}
+#rp-phone.rp-theme-star .rp-blocklist-tag { background: rgba(239,68,68,.18) !important; color: #fca5a5 !important; }
+#rp-phone.rp-theme-star .rp-blocklist-tag .rp-block-x { color: #fca5a5 !important; }
+#rp-phone.rp-theme-star #rp-block-input { background: rgba(60,30,120,.5) !important; color: #d4c8ff !important; border-color: rgba(130,90,255,.35) !important; }
   font-size: 13.5px !important;
 }
 #rp-phone.rp-theme-misty .rp-avatar-upload-btn,
@@ -1475,6 +1479,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-misty .rp-tt { color: rgba(61,110,154,.5) !important; }
 /* Settings text */
 #rp-phone.rp-theme-misty #rp-view-settings * { color: #1a3050 !important; }
+#rp-phone.rp-theme-misty .rp-blocklist-tag { background: rgba(239,68,68,.1) !important; color: #b91c1c !important; }
+#rp-phone.rp-theme-misty .rp-blocklist-tag .rp-block-x { color: #b91c1c !important; }
+#rp-phone.rp-theme-misty #rp-block-input { background: rgba(255,255,255,.6) !important; color: #1a3050 !important; border-color: rgba(100,145,195,.3) !important; }
 /* Avatar */
 #rp-phone.rp-theme-misty .rp-av {
   border-radius: 20px !important;
@@ -1672,7 +1679,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 }
 
 /* ══ NUCLEAR: ALL views always transparent ══ */
-#rp-view-messages,#rp-view-thread,#rp-bubbles,#rp-view-moments,#rp-view-settings,#rp-view-api-settings,#rp-view-game,#rp-view-themes {
+#rp-view-messages,#rp-view-thread,#rp-bubbles,#rp-view-moments,#rp-view-settings,#rp-view-api-settings,#rp-view-game,#rp-view-themes,#rp-view-gword {
   background: transparent !important;
 }
 
@@ -1721,6 +1728,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   border: 1px solid rgba(220,130,165,.28) !important;
   color: #7a1038 !important; border-radius: 12px !important;
 }
+#rp-phone.rp-theme-candy .rp-blocklist-tag { background: rgba(239,68,68,.12) !important; color: #b91c1c !important; }
+#rp-phone.rp-theme-candy .rp-blocklist-tag .rp-block-x { color: #b91c1c !important; }
+#rp-phone.rp-theme-candy #rp-block-input { background: rgba(255,240,245,.6) !important; color: #7a1038 !important; border-color: rgba(220,130,165,.3) !important; }
 /* Moments: rose glass */
 #rp-phone.rp-theme-candy .rp-moment {
   background: rgba(255,255,255,.32) !important;
@@ -1899,7 +1909,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-candy #rp-view-settings,
 #rp-phone.rp-theme-candy #rp-view-api-settings,
 #rp-phone.rp-theme-candy #rp-view-game,
-#rp-phone.rp-theme-candy #rp-view-themes {
+#rp-phone.rp-theme-candy #rp-view-themes,
+#rp-phone.rp-theme-candy #rp-view-gword {
   background: var(--rp-home-wall) !important;
   background-size: cover !important;
   background-position: center !important;
@@ -1910,7 +1921,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-star #rp-view-settings,
 #rp-phone.rp-theme-star #rp-view-api-settings,
 #rp-phone.rp-theme-star #rp-view-game,
-#rp-phone.rp-theme-star #rp-view-themes {
+#rp-phone.rp-theme-star #rp-view-themes,
+#rp-phone.rp-theme-star #rp-view-gword {
   background: var(--rp-home-wall) !important;
   background-size: cover !important;
   background-position: center !important;
@@ -1921,7 +1933,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-misty #rp-view-settings,
 #rp-phone.rp-theme-misty #rp-view-api-settings,
 #rp-phone.rp-theme-misty #rp-view-game,
-#rp-phone.rp-theme-misty #rp-view-themes {
+#rp-phone.rp-theme-misty #rp-view-themes,
+#rp-phone.rp-theme-misty #rp-view-gword {
   background: var(--rp-home-wall) !important;
   background-size: cover !important;
   background-position: center !important;
@@ -2133,6 +2146,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark .rp-set-upload-btn{background:rgba(255,255,255,.08);color:#c8cce8}
 .rp-wall-reset-btn{background:rgba(0,0,0,.05)!important;color:#666!important}
 .rp-dark .rp-wall-reset-btn{background:rgba(255,255,255,.06)!important;color:rgba(200,190,255,.6)!important}
+.rp-blocklist-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:12px;background:rgba(239,68,68,.08);color:#b91c1c;cursor:default}.rp-blocklist-tag .rp-block-x{cursor:pointer;font-size:14px;font-weight:700;opacity:.6;margin-left:2px}.rp-blocklist-tag .rp-block-x:hover{opacity:1}
+.rp-dark .rp-blocklist-tag{background:rgba(239,68,68,.15);color:#fca5a5}
+.rp-dark #rp-block-input{background:rgba(255,255,255,.08)!important;color:#e0e4ff!important;border-color:rgba(255,255,255,.1)!important}
 .rp-set-avatar-preview{width:38px;height:38px;border-radius:19px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff}
 
 /* ===== DIARY VIEW ===== */
@@ -3470,6 +3486,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-phone-divider::before{content:attr(data-label);position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--SmartThemeChatBackground,#fff);padding:0 8px;font-size:11px;font-weight:600;color:rgba(0,0,0,.4);white-space:nowrap}
 .rp-dark .rp-phone-divider{border-top-color:rgba(255,255,255,.2)}
 .rp-dark .rp-phone-divider::before{color:rgba(255,255,255,.35);background:var(--SmartThemeChatBackground,#1a1a2e)}
+.rp-phone-echo-container{display:block;margin-top:6px}
 .rp-phone-echo-block{display:block;margin:2px 0;font-size:13px;line-height:1.55}
 .rp-phone-echo-name{font-weight:600;color:rgba(0,0,80,.65);margin-right:2px}
 .rp-phone-echo-moment-tag{font-size:10px;font-weight:700;color:rgba(180,40,80,.6);background:rgba(180,40,80,.08);border-radius:4px;padding:1px 5px;margin-right:4px;vertical-align:middle}
@@ -3617,10 +3634,12 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-folder-popup {
   background: rgba(255,255,255,0.18); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255,255,255,0.28); border-radius: 26px; padding: 18px 16px;
-  display: flex; flex-direction: row; gap: 14px; align-items: flex-start;
+  display: flex; flex-direction: row; flex-wrap: wrap; gap: 14px; align-items: flex-start;
+  justify-content: flex-start; max-width: 260px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.35);
 }
 .rp-folder-item {
+  width: calc(33.33% - 10px);
   min-width: 60px;
   display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer;
   transition: transform .15s cubic-bezier(.34,1.56,.64,1);
@@ -3772,6 +3791,65 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-star #ggold-chat .game-msg-sys{color:rgba(210,200,255,.88)}
 #rp-phone.rp-theme-star #ggold-chat .game-msg-user{color:#f0c0ff}
 #rp-phone.rp-theme-star #ggold-chat .game-msg-char{color:#c8b8ff}
+/* ══ 你说我猜 WORD GUESSING GAME ══ */
+#rp-view-gword{position:relative;background:transparent;display:flex;flex-direction:column;overflow:hidden;height:100%}
+#gword-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;flex-shrink:0;gap:4px}
+#gword-category-badge{font-size:12px;font-weight:700;color:#fff;background:rgba(0,0,0,.38);padding:3px 12px;border-radius:12px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+#gword-round-info{font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.32);padding:2px 10px;border-radius:12px;white-space:nowrap}
+#gword-status{text-align:center;padding:2px 12px;font-size:12px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);flex-shrink:0;min-height:18px}
+#gword-chat-hint{font-size:9.5px;color:rgba(224,64,122,.65);text-align:right;padding:0 14px 1px;flex-shrink:0}
+#gword-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:blur(5px);cursor:pointer}
+#gword-chat::-webkit-scrollbar{display:none}
+#gword-input-row{display:flex;gap:6px;padding:6px 12px 10px;flex-shrink:0;border-top:1px solid rgba(0,0,0,.06);align-items:center}
+#gword-input{flex:1;border-radius:18px;border:1px solid rgba(0,0,0,.12);padding:6px 12px;font-size:13px;background:rgba(255,255,255,.88);font-family:inherit;outline:none;color:#1a1008}
+#gword-send{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--rp-nav-btn,#e05888),color-mix(in srgb,var(--rp-nav-btn,#e05888) 70%,#000 30%));border:none;color:#fff;font-weight:800;cursor:pointer;font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#gword-giveup-btn{width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+#gword-giveup-btn:active{background:rgba(255,255,255,.4)}
+#gword-over{position:absolute;inset:0;background:rgba(0,0,0,.62);z-index:50;flex-direction:column;align-items:center;justify-content:center;gap:12px;display:none;border-radius:48px}
+.gword-over-emoji{font-size:48px;line-height:1}
+.gword-over-title{font-size:19px;font-weight:800;color:#fff}
+.gword-over-sub{font-size:12px;color:rgba(255,255,255,.8);text-align:center;padding:0 20px;line-height:1.5;white-space:pre-line}
+.gword-over-btn{padding:8px 18px;border-radius:20px;border:none;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-top:2px}
+#gword-mode-select{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:48px;backdrop-filter:blur(6px)}
+.gword-mode-title{font-size:17px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.gword-mode-sub{font-size:11px;color:rgba(255,255,255,.72);text-align:center;padding:0 24px;line-height:1.5;margin-top:-8px}
+.gword-mode-btn{width:180px;padding:10px 0;border-radius:22px;border:none;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.22)}
+#gword-mode-char{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff}
+#gword-mode-user{background:linear-gradient(135deg,#f472b6,#db2777);color:#fff}
+#gword-chat-fs{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:flex;flex-direction:column}
+#gword-chat-fs-hd{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.12)}
+#gword-chat-fs-title{color:#fff;font-weight:600;font-size:14px}
+#gword-chat-fs-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:50%;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+#gword-chat-fs-body{flex:1;overflow-y:auto;padding:8px 14px;display:flex;flex-direction:column;gap:4px}
+#gword-chat-fs-body::-webkit-scrollbar{display:none}
+#gword-chat-fs-body .game-msg{font-size:13px;line-height:1.6;padding:3px 0}
+#gword-chat-fs-body .game-msg-sys{color:rgba(240,230,215,.88)}
+#gword-chat-fs-body .game-msg-user{color:#ffd6e8;font-weight:600}
+#gword-chat-fs-body .game-msg-char{color:#fce8ff;font-weight:600}
+#gword-chat .game-msg{font-size:12px;line-height:1.55;padding:2px 0;font-weight:500}
+#gword-chat .game-msg-sys{color:rgba(255,240,225,.90);text-shadow:0 0 4px rgba(0,0,0,.8),0 1px 3px rgba(0,0,0,.6)}
+#gword-chat .game-msg-user{color:#ffd6e8;font-weight:600;text-shadow:0 0 4px rgba(0,0,0,.8),0 1px 3px rgba(0,0,0,.6)}
+#gword-chat .game-msg-char{color:#fce8ff;font-weight:600}
+#rp-phone.rp-theme-star #gword-chat{background:rgba(8,2,30,.52)!important}
+#rp-phone.rp-theme-star #gword-chat .game-msg-sys{color:rgba(210,200,255,.88)}
+#rp-phone.rp-theme-star #gword-chat .game-msg-user{color:#f0c0ff}
+#rp-phone.rp-theme-star #gword-chat .game-msg-char{color:#c8b8ff}
+#rp-phone.rp-theme-star #gword-chat-fs-body .game-msg-sys{color:rgba(210,200,255,.88)}
+#rp-phone.rp-theme-star #gword-chat-fs-body .game-msg-user{color:#f0c0ff}
+#rp-phone.rp-theme-star #gword-chat-fs-body .game-msg-char{color:#c8b8ff}
+#rp-phone.rp-theme-misty #gword-chat{background:rgba(0,15,40,.42)!important}
+#rp-phone.rp-theme-misty #gword-chat .game-msg-sys{color:rgba(200,228,255,.92);text-shadow:0 0 4px rgba(0,10,40,.8)}
+#rp-phone.rp-theme-misty #gword-chat .game-msg-user{color:rgba(255,210,228,.92);text-shadow:0 0 4px rgba(0,10,40,.8)}
+#rp-phone.rp-theme-misty #gword-chat .game-msg-char{color:rgba(185,228,255,.95)}
+#rp-phone.rp-theme-misty #gword-chat-fs-body .game-msg-sys{color:rgba(200,228,255,.92)}
+#rp-phone.rp-theme-misty #gword-chat-fs-body .game-msg-user{color:rgba(255,210,228,.92)}
+#rp-phone.rp-theme-misty #gword-chat-fs-body .game-msg-char{color:rgba(185,228,255,.95)}
+#rp-phone.rp-theme-candy #gword-input{background:rgba(255,255,255,.92)!important;border-color:rgba(220,130,165,.4)!important;color:#3a1020!important}
+#rp-phone.rp-theme-candy #gword-input::placeholder{color:rgba(58,16,32,.38)!important}
+.rp-folder-game-word{color:#f6d7e3}
+#rp-phone.rp-theme-candy .rp-folder-game-word{color:#ffeaf2 !important;filter:drop-shadow(0 0 5px rgba(255,255,255,.55)) drop-shadow(0 1px 3px rgba(120,20,50,.38)) !important}
+#rp-phone.rp-theme-star .rp-folder-game-word{color:#f7f2ff !important;filter:drop-shadow(0 0 6px rgba(180,150,255,.55)) drop-shadow(0 1px 3px rgba(0,0,0,.42)) !important}
+#rp-phone.rp-theme-misty .rp-folder-game-word{color:#2f587d !important;filter:drop-shadow(0 1px 2px rgba(255,255,255,.38)) drop-shadow(0 0 3px rgba(20,60,90,.15)) !important}
 #ggold-coop-bar{padding:0 12px 2px;flex-shrink:0;display:none}
 #ggold-coop-label{font-size:9.5px;color:rgba(255,255,255,.7);text-align:center;margin-bottom:2px}
 #ggold-coop-progress-bg{height:4px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
@@ -4667,6 +4745,7 @@ function buildStatePayload() {
     currentView: STATE.currentView || 'home',
     currentThread: STATE.currentThread || null,
     bankData: STATE.bankData || null,
+    blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
   }, ctx);
 }
 
@@ -4729,6 +4808,7 @@ const STATE = {
   darkMode: false,
   avatars: {},
   _lastAiFingerprint: null,
+  blocklist: [],
 };
 
 // FIX2: 按 chat slot key 存储各窗口的手机状态(内存缓存)
@@ -4780,7 +4860,61 @@ function isForbiddenPhoneContactName(nameRaw, ctx) {
   if (invalid.test(name)) return true;
   const userName = (ctx?.name1 || '').trim();
   if (userName && name.toLowerCase() === userName.toLowerCase()) return true;
+  // 黑名单检查：名字在黑名单中则禁止创建联系人/接收消息
+  if (isPhoneBlocked(name)) return true;
   return false;
+}
+
+// ── 黑名单工具函数 ──
+function isPhoneBlocked(nameRaw) {
+  const name = normalizePhonePersonName((nameRaw || '').trim());
+  if (!name) return false;
+  return (STATE.blocklist || []).some(b => normalizePhonePersonName(b) === name);
+}
+function addPhoneBlock(nameRaw) {
+  const name = (nameRaw || '').trim();
+  if (!name) return false;
+  if (isPhoneBlocked(name)) return false;
+  if (!STATE.blocklist) STATE.blocklist = [];
+  STATE.blocklist.push(name);
+  // 同时清理：删除该联系人的 thread + 相关朋友圈内容
+  _purgeBlockedContact(name);
+  saveState();
+  return true;
+}
+function removePhoneBlock(nameRaw) {
+  const name = (nameRaw || '').trim();
+  if (!name || !STATE.blocklist) return false;
+  const norm = normalizePhonePersonName(name);
+  const idx = STATE.blocklist.findIndex(b => normalizePhonePersonName(b) === norm);
+  if (idx === -1) return false;
+  STATE.blocklist.splice(idx, 1);
+  saveState();
+  return true;
+}
+function _purgeBlockedContact(nameRaw) {
+  const norm = normalizePhonePersonName(nameRaw);
+  // 删除该联系人的 thread
+  for (const [id, th] of Object.entries(STATE.threads)) {
+    if (normalizePhonePersonName(th.name || '') === norm) {
+      delete STATE.threads[id];
+    }
+  }
+  // 清理朋友圈中该联系人发的动态、点赞、评论
+  if (Array.isArray(STATE.moments)) {
+    STATE.moments = STATE.moments.filter(m => normalizePhonePersonName(m.name || '') !== norm);
+    STATE.moments.forEach(m => {
+      if (Array.isArray(m.likes)) m.likes = m.likes.filter(l => normalizePhonePersonName(l) !== norm);
+      if (Array.isArray(m.comments)) {
+        m.comments = m.comments.filter(c => normalizePhonePersonName(c.name || '') !== norm);
+      }
+    });
+  }
+  // 如果当前打开的线程是被删的人，退回消息列表
+  if (STATE.currentThread) {
+    const curTh = STATE.threads[STATE.currentThread];
+    if (!curTh) { STATE.currentThread = null; }
+  }
 }
 
 function sanitizeThreadsForContext(threads, ctx) {
@@ -4865,12 +4999,14 @@ function autoAddCharContact() {
     // 过滤无效名字:SillyTavern 本身、空白、纯数字
     const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
     if (invalid.test(charName.trim())) return;
+    if (isPhoneBlocked(charName)) return;
     // 已存在则跳过
     const exists = Object.values(STATE.threads).some(t =>
       normalizePhonePersonName(t.name || '') === normalizePhonePersonName(charName)
     );
     if (exists) return;
-    findOrCreateThread(charName);
+    const created = findOrCreateThread(charName);
+    if (!created) return;
     renderThreadList();
     saveState();
     console.log('[Phone] 自动添加联系人:', charName);
@@ -4978,6 +5114,7 @@ function syncToCurrentChat() {
       diary:         JSON.parse(JSON.stringify(_safeDiary)),
       avatars:       Object.assign({}, STATE.avatars || {}),
       bankData:      STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
+      blocklist:     Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     };
     const _tmpM = STATE.moments, _tmpD = STATE.diary;
     STATE.moments = _safeMoments; STATE.diary = _safeDiary;
@@ -4999,6 +5136,7 @@ function syncToCurrentChat() {
     STATE.avatars       = Object.assign({}, s.avatars || {});
     STATE.currentThread = s.currentThread || null;
     STATE.bankData      = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
+    STATE.blocklist     = Array.isArray(s.blocklist) ? s.blocklist.slice() : (STATE.blocklist || []);
   } else {
     const persisted = loadState(newChatId);
     if (persisted) {
@@ -5009,6 +5147,7 @@ function syncToCurrentChat() {
       STATE.diary         = persisted.diary   || [];
       STATE.avatars       = (persisted.avatars && Object.keys(persisted.avatars).length) ? persisted.avatars : (STATE.avatars || {});
       STATE.bankData      = persisted.bankData || null;
+      STATE.blocklist     = Array.isArray(persisted.blocklist) ? persisted.blocklist.slice() : [];
     } else {
       STATE.threads       = {};
       STATE.notifications = [];
@@ -5017,6 +5156,7 @@ function syncToCurrentChat() {
       STATE.diary         = [];
       STATE.avatars       = {};
       STATE.bankData      = null;
+      STATE.blocklist     = [];
     }
     STATE.currentThread = null;
   }
@@ -5084,22 +5224,27 @@ function rebuildContactsFromHistory(chatId) {
       if (!phoneMatch) return;
       const block = phoneMatch[1];
       // 仅提取 FROM 字段,创建联系人(不重复添加消息内容)
-      const re = /<(?:SMS|MOMENTS|COMMENT)[^>]+FROM="([^"]+)"/gi;
+      const re = /<(SMS|MOMENTS|COMMENT)[^>]+FROM="([^"]+)"/gi;
       let ma;
       while ((ma = re.exec(block)) !== null) {
-        const fromRaw = ma[1].trim();
+        const tagName = (ma[1] || '').trim().toUpperCase();
+        const fromRaw = (ma[2] || '').trim();
         if (isForbiddenPhoneContactName(fromRaw, ctx)) continue;
         // 只创建线程,不重复推送消息
         const exists = Object.values(STATE.threads).some(function(t) {
-          return normalizePhonePersonName(t.name || '') === normalizePhonePersonName(fromRaw);
+          return normalizePhonePersonName(resolveCanonicalPhoneName(t.name || '')) === normalizePhonePersonName(resolveCanonicalPhoneName(fromRaw));
         });
         if (!exists) {
-          const created = findOrCreateThread(fromRaw);
+          let created = null;
+          if (tagName === 'SMS') {
+            created = tryResolveUnknownSenderAsMainChar(fromRaw, ctx) || null;
+          }
+          if (!created) created = findOrCreateThread(fromRaw);
           if (created) changed = true;
         }
       }
     });
-    if (changed) { cleanInvalidContacts(); renderThreadList(); saveState(); }
+    if (changed) { mergeDuplicateThreads(); cleanInvalidContacts(); renderThreadList(); saveState(); }
   } catch(e) { console.warn('[Phone] rebuildContacts error', e); }
 }
 
@@ -5150,6 +5295,32 @@ function rememberPhoneNameAlias(aliasRaw, canonicalRaw) {
   aliasMap[aliasNorm] = canonical;
   console.log('[Phone] 记录联系人别名映射:', { alias, canonical });
   return true;
+}
+
+function getMainCharThread(ctx) {
+  const charName = getCurrentCharName(ctx || getContext());
+  if (!charName) return null;
+  const charNorm = normalizePhonePersonName(charName);
+  return Object.values(STATE.threads || {}).find(function(th) {
+    return normalizePhonePersonName(resolveCanonicalPhoneName(th?.name || '')) === charNorm;
+  }) || null;
+}
+
+function tryResolveUnknownSenderAsMainChar(nameRaw, ctx) {
+  const cleanedName = String(nameRaw || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u3000/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleanedName) return null;
+  const realCtx = ctx || getContext();
+  const mainCharName = getCurrentCharName(realCtx);
+  const mainThread = getMainCharThread(realCtx);
+  if (!mainCharName || !mainThread) return null;
+  if (matchThread(cleanedName)) return null;
+  rememberPhoneNameAlias(cleanedName, mainThread.name || mainCharName);
+  console.log('[Phone] 将陌生发信人并入当前主角:', { alias: cleanedName, canonical: mainThread.name || mainCharName });
+  return mainThread;
 }
 
 /* ── HELPER: findOrCreateThread ── */
@@ -5697,6 +5868,18 @@ const HTML = `
               </div>
             </div>
 
+            <div class="rp-set-section-title">黑名单管理</div>
+            <div class="rp-set-section">
+              <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
+                <div style="font-size:12px;color:#8a8a9a;line-height:1.4">拉黑后该角色不会出现在好友列表、不会发消息、不会在朋友圈互动。适用于多人卡场景。</div>
+                <div style="display:flex;gap:6px;min-width:0">
+                  <input id="rp-block-input" type="text" placeholder="输入角色名称..." style="flex:1;min-width:0;border-radius:8px;padding:6px 10px;font-size:13px;border:1px solid rgba(0,0,0,.12);outline:none;background:rgba(255,255,255,.7);color:#222" />
+                  <button id="rp-block-add-btn" style="flex-shrink:0;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;cursor:pointer;white-space:nowrap">拉黑</button>
+                </div>
+                <div id="rp-block-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+              </div>
+            </div>
+
 
           </div>
         </div>
@@ -5788,6 +5971,48 @@ const HTML = `
             <div class="ggold-mode-sub">选择游戏模式<br>3轮×2人，轮流挖矿</div>
             <button class="ggold-mode-btn" id="ggold-mode-vs" type="button">⚔️ 竞技模式<br><span style="font-size:10px;font-weight:400;opacity:.85">比拼总分，一决高下</span></button>
             <button class="ggold-mode-btn" id="ggold-mode-co" type="button">🤝 合作模式<br><span style="font-size:10px;font-weight:400;opacity:.85">共同达标，爬塔挑战</span></button>
+          </div>
+        </div>
+        <!-- 你说我猜 -->
+        <div id="rp-view-gword" class="rp-view" style="display:none">
+          <div class="rp-nav-bar">
+            <button class="rp-back" data-to="home">‹</button>
+            <span class="rp-nav-title">🎯 你说我猜</span>
+            <button id="gword-newbtn" style="font-size:12px;font-weight:600">新局</button>
+          </div>
+          <div id="gword-header">
+            <div id="gword-category-badge">分类：--</div>
+            <button id="gword-giveup-btn" type="button">🏳️</button>
+            <div id="gword-round-info">第0轮</div>
+          </div>
+          <div id="gword-status"></div>
+          <div id="gword-chat-hint">点击展开 ↗</div>
+          <div id="gword-chat"></div>
+          <div id="gword-input-row">
+            <input id="gword-input" type="text" placeholder="输入你的猜测..." autocomplete="off"/>
+            <button id="gword-send" type="button">↑</button>
+          </div>
+          <div id="gword-chat-fs" style="display:none">
+            <div id="gword-chat-fs-hd">
+              <span id="gword-chat-fs-title">💬 聊天记录</span>
+              <button id="gword-chat-fs-close">✕</button>
+            </div>
+            <div id="gword-chat-fs-body"></div>
+          </div>
+          <div id="gword-over" style="display:none">
+            <div class="gword-over-emoji" id="gword-over-emoji">🎉</div>
+            <div class="gword-over-title" id="gword-over-title">猜对了!</div>
+            <div class="gword-over-sub" id="gword-over-sub"></div>
+            <div id="gword-over-btns" style="display:flex;gap:10px;margin-top:6px">
+              <button class="gword-over-btn" id="gword-next">下一题</button>
+              <button class="gword-over-btn" id="gword-quit" style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.25)">不玩啦</button>
+            </div>
+          </div>
+          <div id="gword-mode-select">
+            <div class="gword-mode-title">🎯 你说我猜</div>
+            <div class="gword-mode-sub">选择游戏模式</div>
+            <button class="gword-mode-btn" id="gword-mode-char" type="button">🗣️ 你说我猜<br><span style="font-size:10px;font-weight:400;opacity:.85">角色描述，你来猜</span></button>
+            <button class="gword-mode-btn" id="gword-mode-user" type="button">💬 我说你猜<br><span style="font-size:10px;font-weight:400;opacity:.85">你来描述，角色猜</span></button>
           </div>
         </div>
         <!-- 飞行棋 -->
@@ -5926,6 +6151,15 @@ const HTML = `
                 </svg>
               </div>
               <div class="rp-folder-item-lbl">黄金矿工</div>
+            </div>
+            <div class="rp-folder-item" data-folder-app="gword">
+              <div class="rp-folder-item-ico rp-folder-game-word">
+                <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="8" y="8" width="24" height="24" rx="5" stroke-width="2"></rect>
+                  <text x="20" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" stroke="none">？</text>
+                </svg>
+              </div>
+              <div class="rp-folder-item-lbl">你说我猜</div>
             </div>
           </div>
         </div>
@@ -6087,30 +6321,46 @@ async function init() {
   refreshLockNotifs();
 
   // 监听 AI 消息:不同 ST 版本事件名可能不同,做多事件兜底
-  if (eventSource && event_types) {
+  // FIX: 使用 getContext() 获取活跃的事件源和事件类型，不依赖文件加载时捕获的 const
+  const liveCtx = (typeof getContext === 'function') ? getContext() : null;
+  const liveES = (liveCtx && liveCtx.eventSource) || eventSource;
+  // event_types 可能在 context 里叫 eventTypes 或 event_types
+  const liveET = (liveCtx && (liveCtx.eventTypes || liveCtx.event_types)) || event_types;
+  console.log('[Phone:init] liveES=', typeof liveES, !!liveES, 'same_as_const=', liveES === eventSource,
+    'liveET=', typeof liveET, !!liveET, liveET ? Object.keys(liveET).slice(0,8) : 'N/A',
+    'ctx_keys=', liveCtx ? Object.keys(liveCtx).filter(k => /event/i.test(k)) : 'no ctx');
+  if (liveES && liveET) {
     const aiEvtKeys = ['MESSAGE_RECEIVED', 'GENERATION_ENDED', 'MESSAGE_SWIPED'];
     aiEvtKeys.forEach(k => {
-      const ev = event_types[k];
+      const ev = liveET[k];
+      console.log('[Phone:init] event key', k, '→', ev, ev ? '✅ registering' : '❌ missing');
       if (ev) {
-        try { eventSource.on(ev, onAIMessage); } catch(e) {}
+        try { liveES.on(ev, onAIMessage); console.log('[Phone:init] registered', k, 'OK'); } catch(e) { console.error('[Phone:init] register FAILED', k, e); }
       }
     });
     // 用户消息渲染后也清理 OOC（处理历史记录重新渲染的情况）
-    const userMsgKey = event_types['USER_MESSAGE_RENDERED'] || event_types['MESSAGE_UPDATED'];
+    const userMsgKey = liveET['USER_MESSAGE_RENDERED'] || liveET['MESSAGE_UPDATED'];
     if (userMsgKey) {
-      try { eventSource.on(userMsgKey, () => { try { hideOocInUserBubbles(); } catch(e) {} }); } catch(e) {}
+      try { liveES.on(userMsgKey, () => { try { hideOocInUserBubbles(); } catch(e) {} }); } catch(e) {}
     }
     // ── 生图插件异步替换监听 ──
     // 智绘姬等生图插件完成生图后通过 MESSAGE_UPDATED 把 <img src="..."> 写入消息
     // 此时 onAIMessage 已经跑完（那时还没有 src），需要在这里单独扫描
-    if (event_types['MESSAGE_UPDATED']) {
+    if (liveET['MESSAGE_UPDATED']) {
       try {
-        eventSource.on(event_types['MESSAGE_UPDATED'], onMessageUpdatedForImages);
+        liveES.on(liveET['MESSAGE_UPDATED'], onMessageUpdatedForImages);
+      } catch(e) {}
+      try {
+        liveES.on(liveET['MESSAGE_UPDATED'], function(mesId) {
+          const nMesId = Number(mesId);
+          try { scheduleRepairPhoneByMesId(nMesId, 'message_updated'); } catch(e) {}
+          try { scheduleOnAIMessageKick('message_updated', 220); } catch(e) {}
+        });
       } catch(e) {}
     }
   }
   // FIX2: 监听聊天窗口切换
-  if (eventSource && event_types) eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+  if (liveES && liveET) liveES.on(liveET.CHAT_CHANGED, onChatChanged);
 
 
 
@@ -6429,22 +6679,13 @@ async function init() {
     console.warn('[Phone:chatu8] MutationObserver 启动失败', e);
   }
 
-  // 终极兜底:事件没触发时,轮询最后一条 AI 消息指纹
+  // 终极兜底轮询已停用：当前已有 eventSource / MESSAGE_UPDATED / MutationObserver / history repair 多路修复。
+  // 持续轮询会在页面稳定后反复介入，和其他插件形成 DOM 拉扯，导致 P1/P2 来回抖动。
   try {
-    if (window.__rpPhonePoller) clearInterval(window.__rpPhonePoller);
-    window.__rpPhonePoller = setInterval(() => {
-      try {
-        const ctx = getContext();
-        const chat = ctx?.chat;
-        if (!chat?.length) return;
-        const last = [...chat].reverse().find(m => !m.is_user);
-        if (!last?.mes) return;
-        const fp = `${ctx?.chatId || ''}|${last.mes.length}|${last.mes.slice(0, 24)}|${last.mes.slice(-24)}`;
-        if (fp === STATE._lastAiFingerprint) return;
-        // 不在这里写指纹,让 onAIMessage 内部统一管理
-        onAIMessage();
-      } catch(e) {}
-    }, 1200);
+    if (window.__rpPhonePoller) {
+      clearInterval(window.__rpPhonePoller);
+      window.__rpPhonePoller = null;
+    }
   } catch(e) {}
 
   // 判断是否为同一 session(FAB 关闭再打开),还是页面刷新/ST重启
@@ -6558,6 +6799,25 @@ async function init() {
     window._rpHomeSwipeGoto = gotoPage;
   })();
 
+  // 初始化后补一次当前聊天的单次点火：
+  // 某些 ST 刷新进入已打开聊天时，不会重放 MESSAGE_RECEIVED / GENERATION_ENDED，
+  // 但当前 DOM 与 ctx.chat 已经就绪。这里仅补一次，不恢复轮询。
+  setTimeout(function() {
+    try { installPhoneRenderObserver(); } catch(e) { console.warn('[Phone] install render observer failed', e); }
+    try { rewriteAllHistoryPhoneBlocks(); } catch(e) { console.warn('[Phone] init history rewrite failed', e); }
+    try {
+      const ctxKick = getContext();
+      const chatKick = ctxKick?.chat || [];
+      for (let i = chatKick.length - 1; i >= 0; i--) {
+        if (!chatKick[i]?.is_user && chatKick[i]?.mes) {
+          scheduleRepairPhoneByMesId(i, 'init-last-ai');
+          break;
+        }
+      }
+    } catch(e) { console.warn('[Phone] init mesId repair failed', e); }
+    try { scheduleOnAIMessageKick('init', 0); } catch(e) { console.warn('[Phone] initial onAIMessage kick failed', e); }
+  }, 900);
+
   // 延迟:等 ctx 稳定后添加当前 char 联系人 + 清理 DOM
   setTimeout(function() {
     try {
@@ -6601,6 +6861,7 @@ function onChatChanged() {
       diary:   JSON.parse(JSON.stringify(_safeDiary2)),
       avatars: Object.assign({}, STATE.avatars || {}),
       bankData: STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
+      blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     };
     const _tmpM2 = STATE.moments, _tmpD2 = STATE.diary;
     STATE.moments = _safeMoments2; STATE.diary = _safeDiary2;
@@ -6623,6 +6884,7 @@ function onChatChanged() {
     STATE.avatars = Object.assign({}, s.avatars || {});
     STATE.currentThread = s.currentThread;
     STATE.bankData = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
+    STATE.blocklist = Array.isArray(s.blocklist) ? s.blocklist.slice() : (STATE.blocklist || []);
   } else {
     const persisted = loadState(newChatId);
     if (persisted) {
@@ -6633,6 +6895,7 @@ function onChatChanged() {
       STATE.diary = persisted.diary || [];
       STATE.avatars = (persisted.avatars && Object.keys(persisted.avatars).length) ? persisted.avatars : (STATE.avatars || {});
       STATE.bankData = persisted.bankData || null;
+      STATE.blocklist = Array.isArray(persisted.blocklist) ? persisted.blocklist.slice() : [];
       STATE.currentThread = null;
     } else {
       STATE.threads = DEFAULT_THREADS();
@@ -6642,6 +6905,7 @@ function onChatChanged() {
       STATE.diary   = [];
       STATE.avatars = {};
       STATE.bankData = null;
+      STATE.blocklist = [];
       STATE.currentThread = null;
     }
   }
@@ -6681,6 +6945,11 @@ function onChatChanged() {
       // 历史消息折叠重建：确保刷新/切换对话后所有含 PHONE 的历史消息也显示折叠块
       setTimeout(function() {
         try { rewriteAllHistoryPhoneBlocks(); } catch(e) {}
+        // 单次补点火：页面刷新后某些 ST 时序下，AI 消息事件不会重放，
+        // 这里仅补一次 onAIMessage，不恢复轮询，避免重新进入 P1/P2 拉扯。
+        setTimeout(function() {
+          try { onAIMessage(); } catch(e) {}
+        }, 80);
       }, 300);
     } catch(e) { console.warn('[Phone] onChatChanged delayed error', e); }
   }, 600);
@@ -6897,6 +7166,9 @@ function bindUI() {
     } else if (app === 'ggold') {
       go('ggold');
       try { ggoldOpen(); } catch(ex) { console.warn('[Folder/ggold]', ex); }
+    } else if (app === 'gword') {
+      go('gword');
+      try { gwordOpen(); } catch(ex) { console.warn('[Folder/gword]', ex); }
     }
   });
   // ── Ludo game ────────────────────────────────────────────────
@@ -7788,6 +8060,46 @@ function bindUI() {
     applyWallpaper();
   });
 
+  // ── 黑名单事件绑定 ──
+  $(document).on('click', '#rp-block-add-btn', function() {
+    const input = $('#rp-block-input');
+    const name = input.val().trim();
+    if (!name) return;
+    if (addPhoneBlock(name)) {
+      input.val('');
+      renderBlocklist();
+      renderThreadList();
+      refreshBadges();
+    } else {
+      // 已在黑名单
+      input.val('');
+    }
+  });
+  $(document).on('keydown', '#rp-block-input', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('#rp-block-add-btn').trigger('click'); }
+  });
+  $(document).on('click', '.rp-block-x', function() {
+    const name = String($(this).attr('data-name') || '');
+    if (name && removePhoneBlock(name)) {
+      renderBlocklist();
+    }
+  });
+
+}
+
+// ================================================================
+//  黑名单渲染
+// ================================================================
+function renderBlocklist() {
+  const $list = $('#rp-block-list');
+  if (!$list.length) return;
+  $list.empty();
+  (STATE.blocklist || []).forEach(name => {
+    const safe = $('<span>').text(name).html().replace(/"/g, '&quot;');
+    $list.append(
+      `<span class="rp-blocklist-tag">${safe}<span class="rp-block-x" data-name="${safe}">×</span></span>`
+    );
+  });
 }
 
 // ================================================================
@@ -7876,7 +8188,15 @@ function renderThreadList() {
   Object.values(STATE.threads).forEach(th => {
     const lastMsg = th.messages.at(-1);
     const senderLabel = lastMsg ? (lastMsg.from === 'user' ? '我' : th.name.split(' ')[0]) : '';
-    const previewFull = lastMsg ? (senderLabel + ':' + lastMsg.text) : '暂无消息';
+    const lastText = lastMsg
+      ? (lastMsg.text || (lastMsg.type === 'image' ? '[图片]'
+        : lastMsg.type === 'voice' || lastMsg.type === 'group_voice' ? '🎤 [语音]'
+        : lastMsg.type === 'hongbao' || lastMsg.type === 'group_hongbao' ? '🧧 [红包]'
+        : lastMsg.type === 'group_msg' ? (lastMsg.name ? lastMsg.name + ':' + (lastMsg.text || '') : '')
+        : lastMsg.type === 'transfer' ? '💰 [转账]'
+        : ''))
+      : '';
+    const previewFull = lastMsg ? (senderLabel + ':' + lastText) : '暂无消息';
     const preview = previewFull.length > 28 ? previewFull.slice(0, 27) + '...' : previewFull;
     const time    = lastMsg ? lastMsg.time : '';
     const badgeDisplay = th.unread > 0 ? '' : 'display:none';
@@ -7906,11 +8226,12 @@ function go(view) {
   if (view === 'ludo') { try { if (!LG.active) lgInit(); else lgRender(); } catch(e) { console.warn('[Ludo]', e); } view = 'game'; }
   if (view === 'g2048') { try { if (!LG2048.active) g2048Init(); } catch(e) { console.warn('[2048]', e); } }
   if (view === 'ggold') { try { ggoldOpen(); } catch(e) { console.warn('[ggold]', e); } }
+  if (view === 'gword') { try { gwordOpen(); } catch(e) { console.warn('[gword]', e); } }
   if (view === 'api-settings') { lgFillAPIView(); }
   if (view === 'themes') { lgRenderThemePicker(); }
   $('.rp-view').hide();
   // 需要 flex 布局的视图
-  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio'];
+  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword'];
   if (flexViews.includes(view)) {
     $(`#rp-view-${view}`).css('display','flex');
   } else {
@@ -7926,7 +8247,7 @@ function go(view) {
   // 切换到 home 时重置到第0屏
   if (view === 'home' && window._rpHomeSwipeGoto) { window._rpHomeSwipeGoto(0, false); }
 
-  if (view === 'settings') { _bindAvatarUpload(); }
+  if (view === 'settings') { _bindAvatarUpload(); renderBlocklist(); }
 
   if (view === 'messages') {
     renderThreadList();
@@ -8714,10 +9035,14 @@ function sendSMS() {
     const memberNames = (th.members || [])
       .map(id => STATE.threads[id]?.name || id)
       .filter(Boolean);
+    const allowedGroupNames = Array.from(new Set(memberNames.concat(momentNPCs))).filter(Boolean);
+    const exactNameRule = allowedGroupNames.length > 0
+      ? `所有标签里的FROM字段必须严格使用以下原样名字之一:${allowedGroupNames.join(' / ')}。禁止翻译名字、禁止改写成中文译名、禁止使用别名、昵称、姓氏单独称呼。`
+      : '所有标签里的FROM字段必须严格使用当前已有联系人/群成员的原样名字,禁止翻译名字、禁止使用别名或中文译名。';
     const momentHint = (shouldTriggerMoment && momentNPCs.length > 0)
       ? `同时,在PHONE块里为角色「${momentNPCs.join('、')}」各追加1条朋友圈动态,格式:<MOMENTS FROM="角色名" TIME="${ts}">内容</MOMENTS>;`
       : '';
-    oocText = `[手机群聊提示:{{user}}在群聊「${groupName}」发了消息,当前时间${ts}。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<GMSG FROM="角色名" GROUP="${groupName}" TIME="${ts}">内容</GMSG>。${momentHint}]`;
+    oocText = `[手机群聊提示:{{user}}在群聊「${groupName}」发了消息,当前时间${ts}。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<GMSG FROM="角色名" GROUP="${groupName}" TIME="${ts}">内容</GMSG>。${exactNameRule}${momentHint}]`;
   } else {
     let isMainChar;
     if (mainCharName) {
@@ -8727,18 +9052,19 @@ function sendSMS() {
       isMainChar = false;
     }
 
+    const exactNameRule = `所有PHONE标签里的FROM字段必须严格使用这个精确名字:${th.name}。绝对禁止把${th.name}翻译成中文/英文别名,禁止使用译名、昵称、简称或其他写法。`;
     const momentCharList = shouldTriggerMoment
       ? (momentNPCs.length > 0 ? momentNPCs.join('、') : th.name)
       : null;
     const momentHint = momentCharList
-      ? `另外,在同一个PHONE块里,为角色「${momentCharList}」追加1条朋友圈动态,格式:<MOMENTS FROM="角色名" TIME="${ts}">内容</MOMENTS>;`
+      ? `另外,在同一个PHONE块里,为角色「${momentCharList}」追加1条朋友圈动态,格式:<MOMENTS FROM="角色名" TIME="${ts}">内容</MOMENTS>;这些MOMENTS/COMMENT里的FROM也必须严格沿用已有联系人原名,禁止翻译。`
       : '';
 
     if (isMainChar) {
-      oocText = `[手机短信提示:${th.name}收到{{user}}的短信,当前时间${ts}。按世界书手机UI协议输出,且必须满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。${momentHint}]`;
+      oocText = `[手机短信提示:${th.name}收到{{user}}的短信,当前时间${ts}。按世界书手机UI协议输出,且必须满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。${exactNameRule}${momentHint}]`;
     } else {
       const charName = mainCharName || '主角';
-      oocText = `[叙事指令:{{user}}私下给NPC"${th.name}"发了手机短信(时间${ts})。${charName}完全不知情,本轮不得提及此短信。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。${momentHint}]`;
+      oocText = `[叙事指令:{{user}}私下给NPC"${th.name}"发了手机短信(时间${ts})。${charName}完全不知情,本轮不得提及此短信。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<SMS FROM="${th.name}" TIME="${ts}">回复内容</SMS>,SMS内容必须是${th.name}自己说的话,绝对不能复制或重复{{user}}刚才说的内容。${exactNameRule}${momentHint}]`;
     }
   }
 
@@ -9057,8 +9383,18 @@ function onMessageUpdatedForImages(messageIndex) {
   }
 }
 
-function onAIMessage() {
+function onAIMessage(_retryCount) {
+  const retryCount = _retryCount || 0;
   try {
+    const _diagCtx1 = getContext();
+    const _diagCtx2 = window.SillyTavern?.getContext?.();
+    console.log('[Phone:diag] onAIMessage CALLED', {
+      retry: retryCount,
+      chatLen_local: _diagCtx1?.chat?.length,
+      chatLen_ST: _diagCtx2?.chat?.length,
+      getContext_is: getContext === window.getContext ? 'window.getContext' : getContext === SillyTavern?.getContext ? 'SillyTavern.getContext' : 'fallback',
+      ts: Date.now()
+    });
     const ctx  = getContext();
     const realSlotKey = getPhoneChatSlotKey(ctx);
     if (realSlotKey && STATE.chatId !== realSlotKey) {
@@ -9066,10 +9402,26 @@ function onAIMessage() {
       try { syncToCurrentChat(); } catch(e) { console.warn('[Phone:slot] syncToCurrentChat failed before parse', e); }
     }
     const chat = ctx?.chat;
-    if (!chat?.length) return;
+    if (!chat?.length) {
+      if (retryCount < 5) {
+        console.log('[Phone:diag] chat empty, retry', retryCount + 1, 'in 300ms');
+        setTimeout(() => onAIMessage(retryCount + 1), 300);
+        return;
+      }
+      console.warn('[Phone:diag] BAIL: chat still empty after 5 retries');
+      return;
+    }
 
-    const last = [...chat].reverse().find(m => !m.is_user);
-    if (!last?.mes) return;
+    let lastAiIdx = -1;
+    for (let i = chat.length - 1; i >= 0; i--) {
+      if (!chat[i]?.is_user) {
+        lastAiIdx = i;
+        break;
+      }
+    }
+    if (lastAiIdx < 0) { console.log('[Phone:diag] BAIL: no AI message found in chat'); return; }
+    const last = chat[lastAiIdx];
+    if (!last?.mes) { console.log('[Phone:diag] BAIL: last AI msg has no .mes'); return; }
 
     const raw = last.mes;
     // 指纹:只用于成功解析后去重,流式中间态不记录
@@ -9078,9 +9430,16 @@ function onAIMessage() {
     const midStart = Math.max(0, Math.floor(raw.length / 2) - 24);
     const midSlice = raw.slice(midStart, midStart + 48);
     const fp = `${ctx?.chatId || ''}|${raw.length}|${raw.slice(0, 48)}|${midSlice}|${raw.slice(-48)}`;
-    if (fp === STATE._lastAiFingerprint) {
+    const targetTextEl = document.querySelector(`.mes[mesid="${lastAiIdx}"]:not([is_user="true"]) .mes_text`);
+    const hasRenderedPhoneUi = !!targetTextEl?.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
+    const normalizedPreview = normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi, ''));
+    const mightContainPhone = /<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalizedPreview);
+    if (fp === STATE._lastAiFingerprint && (!mightContainPhone || hasRenderedPhoneUi)) {
       console.log('[Phone:diag] onAIMessage skipped: same fingerprint');
       return;
+    }
+    if (fp === STATE._lastAiFingerprint && mightContainPhone && !hasRenderedPhoneUi) {
+      console.log('[Phone:diag] same fingerprint but phone UI missing, retrying local repair');
     }
     // 修复思维链冲突: 先剥离 <think>...</think> 块，避免思维链内的 <PHONE> 格式
     // 与正文末尾的 <PHONE> 标签发生正则误合并
@@ -9113,11 +9472,18 @@ function onAIMessage() {
 
     if (phoneMatch) {
       const parsedCount = parsePhone(phoneMatch[1]);
-      if (parsedCount > 0) {
+      // ── FIX: PHONE 标签外可能还有 MOMENTS/COMMENT 等裸标签 ──
+      // 把 <PHONE>...</PHONE> 替换掉后，检查剩余部分是否还有待解析的标签
+      const outsidePhone = normalizedRaw.replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '');
+      const hasOutsideTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(outsidePhone);
+      if (hasOutsideTags) {
+        parsePhone(outsidePhone);
+      }
+      if (parsedCount > 0 || hasOutsideTags) {
         STATE._pendingPhoneReply = null;
-        rewritePhoneEchoInChat(phoneMatch[1], STATE._lastAiFingerprint);
-        beautifySMSInChat();
-        schedulePhonePostProcess(phoneMatch[1], STATE._lastAiFingerprint);
+        rewritePhoneEchoInChat(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
+        beautifySMSInChat(lastAiIdx);
+        schedulePhonePostProcess(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
         return;
       }
       // 极端兜底:PHONE 存在但结构不规范时,强行抽取第一条 SMS 文本落到 pending 线程
@@ -9128,7 +9494,7 @@ function onAIMessage() {
         const ts  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
         incomingMsg(STATE._pendingPhoneReply.threadId, looseText.slice(0, 200), ts);
         STATE._pendingPhoneReply = null;
-        beautifySMSInChat();
+        beautifySMSInChat(lastAiIdx);
         return;
       }
     }
@@ -9137,9 +9503,9 @@ function onAIMessage() {
       const parsedCount = parsePhone(normalizedRaw);
       if (parsedCount > 0) {
         STATE._pendingPhoneReply = null;
-        rewritePhoneEchoInChat(normalizedRaw, STATE._lastAiFingerprint);
-        beautifySMSInChat();
-        schedulePhonePostProcess(normalizedRaw, STATE._lastAiFingerprint);
+        rewritePhoneEchoInChat(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
+        beautifySMSInChat(lastAiIdx);
+        schedulePhonePostProcess(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
         return;
       }
       // 标签存在但未解析出任何消息:继续走兜底,避免"正文污染且手机无消息"
@@ -9472,7 +9838,7 @@ function removePhoneEchoFragments(textEl, fragments) {
       if (!node || !node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
       const p = node.parentElement;
       if (!p) return NodeFilter.FILTER_REJECT;
-      if (p.closest('.rp-phone-echo-block, .rp-phone-saved-img-btns, .mes_buttons')) return NodeFilter.FILTER_REJECT;
+      if (p.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons')) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });
@@ -9500,11 +9866,132 @@ function removePhoneEchoFragments(textEl, fragments) {
   });
 
   Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
-    if (el.closest('.rp-phone-echo-block, .rp-phone-saved-img-btns, .mes_buttons')) return;
+    if (el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons')) return;
     const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
     const hasMedia = !!el.querySelector('img, video, audio, button');
     if (!txt && !hasMedia) el.remove();
   });
+}
+
+function stripPhoneLiteralNodes(textEl) {
+  if (!textEl) return;
+  const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.closest('.rp-phone-echo-container, .rp-phone-live-img-btns, .mes_buttons, pre, code')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const textNodes = [];
+  let n;
+  while ((n = walker.nextNode())) textNodes.push(n);
+  textNodes.forEach(function(node) {
+    let val = String(node.nodeValue || '');
+    const before = val;
+    val = val
+      .replace(/<phone>[\s\S]*?<\/phone>/gi, '')
+      .replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '')
+      .replace(/<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment)\b[^>]*>/gi, '')
+      .replace(/&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment)\b[^&]*?&gt;/gi, '')
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n');
+    if (val !== before) node.nodeValue = val.trim();
+  });
+}
+
+function buildPhoneEchoContainer(block, smsList, commentList, groupList, momentsList, directPhoneList) {
+  const wrap = document.createElement('div');
+  wrap.className = 'rp-phone-echo-container';
+
+  const hasSms = smsList.length > 0;
+  const hasComments = commentList.length > 0;
+  const hasGroups = groupList.length > 0;
+  const hasMoments = momentsList.length > 0;
+  const hasDirectPhone = directPhoneList.length > 0;
+  if (!(hasSms || hasComments || hasGroups || hasMoments || hasDirectPhone)) return wrap;
+
+  const fallbackName = (STATE.threads?.[STATE.currentThread]?.name)
+    || (getContext?.()?.name2)
+    || '';
+
+  const dividerLabel = (hasMoments && (hasSms || hasComments || hasGroups || hasDirectPhone)) ? '📱 手机 · 朋友圈'
+                     : hasMoments ? '📸 朋友圈'
+                     : '📱 手机消息';
+  const divider = document.createElement('hr');
+  divider.className = 'rp-phone-divider';
+  divider.dataset.label = dividerLabel;
+  wrap.appendChild(divider);
+
+  function appendBlock(html) {
+    const row = document.createElement('span');
+    row.className = 'rp-phone-echo-block';
+    row.innerHTML = html;
+    wrap.appendChild(row);
+  }
+
+  // ── 黑名单过滤辅助：跳过被拉黑角色的回显 ──
+  const _echoBlockedNorms = (Array.isArray(STATE.blocklist) ? STATE.blocklist : []).map(b => normalizePhonePersonName(b)).filter(Boolean);
+  const _isEchoBlocked = (nameRaw) => {
+    if (!_echoBlockedNorms.length || !nameRaw) return false;
+    return _echoBlockedNorms.includes(normalizePhonePersonName(nameRaw));
+  };
+
+  smsList.forEach(function(item) {
+    if (_isEchoBlocked(item.from)) return;
+    const displayName = item.from || fallbackName;
+    const nameHtml = displayName ? `<span class="rp-phone-echo-name">${escHtml(displayName)}：</span>` : '';
+    appendBlock(`${nameHtml}${escHtml(item.text)}`);
+  });
+
+  commentList.forEach(function(item) {
+    if (_isEchoBlocked(item.from)) return;
+    const displayName = item.from || fallbackName;
+    const nameHtml = displayName ? `<span class="rp-phone-echo-name">${escHtml(displayName)}：</span>` : '';
+    appendBlock(`<span class="rp-phone-echo-moment-tag">评论</span>${nameHtml}${escHtml(item.text)}`);
+  });
+
+  groupList.forEach(function(item) {
+    if (_isEchoBlocked(item.from)) return;
+    const groupTag = item.group ? `<span class="rp-phone-echo-moment-tag">群聊 · ${escHtml(item.group)}</span>` : '<span class="rp-phone-echo-moment-tag">群聊</span>';
+    const nameHtml = item.from ? `<span class="rp-phone-echo-name">${escHtml(item.from)}：</span>` : '';
+    if (item.kind === 'gmsg' && item.text) {
+      appendBlock(`${groupTag}${nameHtml}${escHtml(item.text)}`);
+    } else if (item.kind === 'gvoice') {
+      const voiceText = item.text ? ` ${escHtml(item.text)}` : '';
+      const durationText = item.duration ? ` 🎤[${escHtml(item.duration)}]` : ' 🎤';
+      appendBlock(`${groupTag}${nameHtml}${durationText}${voiceText}`);
+    } else if (item.kind === 'ghongbao') {
+      const hbText = [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
+      appendBlock(`${groupTag}${nameHtml}${escHtml(hbText)}`);
+    }
+  });
+
+  momentsList.forEach(function(item) {
+    if (_isEchoBlocked(item.from)) return;
+    appendBlock(`<span class="rp-phone-echo-moment-tag">朋友圈</span><span class="rp-phone-echo-name">${escHtml(item.from)}：</span>${escHtml(item.text)}`);
+  });
+
+  directPhoneList.forEach(function(item) {
+    if (_isEchoBlocked(item.from)) return;
+    const nameHtml = item.from ? `<span class="rp-phone-echo-name">${escHtml(item.from)}：</span>` : '';
+    if (item.kind === 'voice') {
+      const durationText = item.duration ? `🎤[${escHtml(item.duration)}]` : '🎤';
+      const voiceText = item.text ? ` ${escHtml(item.text)}` : '';
+      appendBlock(`${nameHtml}${durationText}${voiceText}`);
+    } else if (item.kind === 'hongbao') {
+      const hbText = [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
+      appendBlock(`${nameHtml}${escHtml(hbText)}`);
+    } else if (item.kind === 'image') {
+      const imageText = item.text ? `🖼️ ${escHtml(item.text)}` : '🖼️ 图片';
+      appendBlock(`${nameHtml}${imageText}`);
+    } else if (item.kind === 'location') {
+      appendBlock(`${nameHtml}📍${escHtml(item.place)}`);
+    }
+  });
+
+  return wrap;
 }
 
 // ── 核心：对指定 textEl 执行 PHONE 块折叠处理 ──
@@ -9513,7 +10000,8 @@ function removePhoneEchoFragments(textEl, fragments) {
 function applyPhoneCollapseToEl(textEl, block, fp) {
   try {
     if (!textEl) return;
-    if (fp && textEl.dataset.rpPhoneRewriteFp === fp) return;
+    const hasExistingPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
+    if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi) return;
 
     // 先解析出所有手机 / 朋友圈内容，后面用来从正文里精确删除
     const smsList = extractSmsSummaries(block);
@@ -9526,47 +10014,27 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     // 先把 <phone> 内已渲染的智绘姬按钮（image-tag-button）提取出来，清理后贴回 mes_text
     // 这样 rpTriggerPendingImg 仍能找到对应按钮来触发/检测图片
     const savedImageBtns = [];
+    const seenBtns = new Set();
+    const collectLiveBtn = (btn) => {
+      if (!btn || seenBtns.has(btn)) return;
+      seenBtns.add(btn);
+      savedImageBtns.push(btn);
+    };
+    textEl.querySelectorAll('.rp-phone-live-img-btns button.st-chatu8-image-button, .rp-phone-live-img-btns button.image-tag-button').forEach(collectLiveBtn);
     textEl.querySelectorAll('phone').forEach(phoneEl => {
-      Array.from(phoneEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(btn => {
-        savedImageBtns.push(btn);
-      });
+      Array.from(phoneEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(collectLiveBtn);
       while (phoneEl.firstChild) phoneEl.removeChild(phoneEl.firstChild);
       phoneEl.remove();
     });
     textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment').forEach(tag => {
-      Array.from(tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(btn => {
-        savedImageBtns.push(btn);
-      });
+      Array.from(tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(collectLiveBtn);
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
     });
 
-    // ── 步骤2:innerHTML 正则替换（处理未被 DOM 解析的纯文本/实体形式）──
-    let html = textEl.innerHTML || '';
-
-    // 清除旧的分割线、旧折叠块、旧 saved-img-btns、旧 sms-echo（防重复，只删简单无嵌套的）
-    html = html.replace(/<hr[^>]*class="rp-phone-divider"[^>]*>/gi, '');
-    html = html.replace(/<details[^>]*\brp-phone-collapse\b[^>]*>[\s\S]*?<\/details>/gi, '');
-    html = html.replace(/<span[^>]*class="rp-sms-echo"[^>]*>[\s\S]*?<\/span>/gi, '');
-    html = html.replace(/<span[^>]*class="rp-phone-chatu8[^"]*"[^>]*>[\s\S]*?<\/span>/gi, '');
-
-    // 情况B：纯文本 <phone>...</phone>
-    const hadPhoneText = /<phone>[\s\S]*?<\/phone>/i.test(html);
-    if (hadPhoneText) {
-      html = html.replace(/<phone>[\s\S]*?<\/phone>/gi, '');
-    }
-
-    // 情况C：实体转义 &lt;phone&gt;...&lt;/phone&gt;
-    const hadPhoneEntity = !hadPhoneText && /&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/i.test(html);
-    if (hadPhoneEntity) {
-      html = html.replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '');
-    }
-
-    textEl.innerHTML = html;
-    // 用 DOM API 删除有嵌套子元素的旧摘要块和旧按钮容器（正则处理嵌套不可靠）
-    textEl.querySelectorAll('.rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns').forEach(function(el) { el.remove(); });
-    // 只有在确实提取到了“活按钮本体”时，才清理 innerHTML 重建后留下的死按钮
-    // 否则保留主楼原按钮，避免出现“###image块还在，但点击生图按钮消失”的问题
+    // ── 步骤2:尽量只做 DOM 级清理，不再整体重写 mes_text.innerHTML ──
+    textEl.querySelectorAll('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns').forEach(function(el) { el.remove(); });
+    stripPhoneLiteralNodes(textEl);
     // 不再删除主楼正文里的 image-tag-button，避免删掉 st-chatu8 自己渲染的 inline 生图按钮
     // savedImageBtns 收集的是 <phone> 标签内的按钮，已在上方随 phoneEl.remove() 一起删除，无需再进行二次清理
 
@@ -9609,80 +10077,10 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       removePhoneEchoFragments(textEl, directTexts);
     }
 
-    // ── 步骤4:清理多余换行 ──
-    html = textEl.innerHTML || '';
-    html = html
-      .replace(/(?:<br\s*\/?>[\s]*){2,}/gi, '<br>')
-      .replace(/^\s*(?:<br\s*\/?>\s*)+/i, '')
-      .replace(/(?:<br\s*\/?>\s*)+$/i, '')
-      .trim();
-
-    // ── 步骤5：追加分割线 + 手机摘要（所有情况均执行）──
-    const hasSms = smsList.length > 0;
-    const hasGroups = groupList.length > 0;
-    const hasMoments = momentsList.length > 0;
-    const hasDirectPhone = directPhoneList.length > 0;
-
-    if (hasSms || hasGroups || hasMoments || hasDirectPhone) {
-      const fallbackName = (STATE.threads?.[STATE.currentThread]?.name)
-        || (getContext?.()?.name2)
-        || '';
-
-      // 分割线
-      const dividerLabel = (hasMoments && (hasSms || hasGroups || hasDirectPhone)) ? '📱 手机 · 朋友圈'
-                         : hasMoments ? '📸 朋友圈'
-                         : '📱 手机消息';
-      html += `<hr class="rp-phone-divider" data-label="${dividerLabel}">`;
-
-      // SMS 摘要行
-      smsList.forEach(({ from, text }) => {
-        const displayName = from || fallbackName;
-        const nameHtml = displayName ? `<span class="rp-phone-echo-name">${escHtml(displayName)}：</span>` : '';
-        html += `<span class="rp-phone-echo-block">${nameHtml}${escHtml(text)}</span><br>`;
-      });
-
-      // GROUP 摘要行
-      groupList.forEach(function(item) {
-        const groupTag = item.group ? `<span class="rp-phone-echo-moment-tag">群聊 · ${escHtml(item.group)}</span>` : '<span class="rp-phone-echo-moment-tag">群聊</span>';
-        const nameHtml = item.from ? `<span class="rp-phone-echo-name">${escHtml(item.from)}：</span>` : '';
-        if (item.kind === 'gmsg' && item.text) {
-          html += `<span class="rp-phone-echo-block">${groupTag}${nameHtml}${escHtml(item.text)}</span><br>`;
-        } else if (item.kind === 'gvoice') {
-          const voiceText = item.text ? ` ${escHtml(item.text)}` : '';
-          const durationText = item.duration ? ` 🎤[${escHtml(item.duration)}]` : ' 🎤';
-          html += `<span class="rp-phone-echo-block">${groupTag}${nameHtml}${durationText}${voiceText}</span><br>`;
-        } else if (item.kind === 'ghongbao') {
-          const hbText = [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
-          html += `<span class="rp-phone-echo-block">${groupTag}${nameHtml}${escHtml(hbText)}</span><br>`;
-        }
-      });
-
-      // MOMENTS 摘要行
-      momentsList.forEach(({ from, text }) => {
-        html += `<span class="rp-phone-echo-block"><span class="rp-phone-echo-moment-tag">朋友圈</span><span class="rp-phone-echo-name">${escHtml(from)}：</span>${escHtml(text)}</span><br>`;
-      });
-
-      // 直聊手机摘要行（语音 / 红包 / 图片 / 定位）
-      directPhoneList.forEach(function(item) {
-        const nameHtml = item.from ? `<span class="rp-phone-echo-name">${escHtml(item.from)}：</span>` : '';
-        if (item.kind === 'voice') {
-          const durationText = item.duration ? `🎤[${escHtml(item.duration)}]` : '🎤';
-          const voiceText = item.text ? ` ${escHtml(item.text)}` : '';
-          html += `<span class="rp-phone-echo-block">${nameHtml}${durationText}${voiceText}</span><br>`;
-        } else if (item.kind === 'hongbao') {
-          const hbText = [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
-          html += `<span class="rp-phone-echo-block">${nameHtml}${escHtml(hbText)}</span><br>`;
-        } else if (item.kind === 'image') {
-          const imageText = item.text ? `🖼️ ${escHtml(item.text)}` : '🖼️ 图片';
-          html += `<span class="rp-phone-echo-block">${nameHtml}${imageText}</span><br>`;
-        } else if (item.kind === 'location') {
-          html += `<span class="rp-phone-echo-block">${nameHtml}📍${escHtml(item.place)}</span><br>`;
-        }
-      });
-    }
-
-    if (html !== (textEl.innerHTML || '').trim()) {
-      textEl.innerHTML = html;
+    // ── 步骤4/5：单独挂载摘要容器，避免覆盖正文和按钮 ──
+    const echoWrap = buildPhoneEchoContainer(block, smsList, commentList, groupList, momentsList, directPhoneList);
+    if (echoWrap.childNodes.length > 0) {
+      textEl.appendChild(echoWrap);
     }
     // ── 把提取的智绘姬按钮作为“活按钮”贴回 mes_text（保留原始事件监听），避免 innerHTML 重建后的死按钮失效 ──
     if (savedImageBtns.length > 0) {
@@ -9694,11 +10092,20 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     }
     if (fp) textEl.dataset.rpPhoneRewriteFp = fp;
     textEl.dataset.rpDone = '1';
-    // 修复： innerHTML 重建后，对最新 AI 消息触发 message_updated，让 placeholder.js 重新插入按钮
+    textEl.dataset.rpHistDone = '1';
+    // 只有涉及生图/图片按钮回填时，才触发 message_updated。
+    // 纯短信/朋友圈文本不再主动 emit，避免流式结束后再触发一次外部重绘，把当前楼层内容二次改写。
+    const shouldEmitMessageUpdated = !!fp;
+    const needsMessageUpdated = shouldEmitMessageUpdated && (
+      savedImageBtns.length > 0
+      || /<(SIMG|img|image)\b/i.test(String(block || ''))
+      || /image###[\s\S]*?###/i.test(String(block || ''))
+      || /<pic\b/i.test(String(block || ''))
+    );
     try {
       const _ctx3 = window.SillyTavern && typeof window.SillyTavern.getContext === 'function' ? window.SillyTavern.getContext() : null;
       const _es3 = _ctx3 && _ctx3.eventSource;
-      if (_es3 && typeof _es3.emit === 'function') {
+      if (needsMessageUpdated && _es3 && typeof _es3.emit === 'function') {
         const _mesEl3 = textEl.closest('.mes');
         const _mesId3 = _mesEl3 ? parseInt(_mesEl3.getAttribute('mesid') || '-1', 10) : -1;
         // 只对最新一条 AI 消息触发，避免历史批量处理时风险
@@ -9721,8 +10128,18 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
   }
 }
 
-function rewritePhoneEchoInChat(block, fp) {
+function rewritePhoneEchoInChat(block, fp, targetMesId) {
   try {
+    // 实时链路优先精确命中当前这条消息，不再让目标楼层靠 DOM 内容猜测。
+    if (Number.isFinite(targetMesId) && targetMesId >= 0) {
+      const exactMsg = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"])`);
+      const exactTextEl = exactMsg?.querySelector('.mes_text') || null;
+      if (exactTextEl) {
+        applyPhoneCollapseToEl(exactTextEl, block, fp);
+        return true;
+      }
+    }
+
     const allMsgs = Array.from(document.querySelectorAll('.mes:not([is_user="true"])'));
     if (!allMsgs.length) return false;
 
@@ -9754,29 +10171,25 @@ function rewritePhoneEchoInChat(block, fp) {
       }))
       .filter(Boolean);
 
-    const candidates = [];
+    let taggedTarget = null;
     for (let i = allMsgs.length - 1; i >= 0; i--) {
       const textEl = allMsgs[i]?.querySelector('.mes_text');
       if (!textEl) continue;
       const html = textEl.innerHTML || '';
-      const txt  = (textEl.textContent || '').replace(/\s+/g, ' ').trim();
-
       const hasPhoneTag = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc)\b/i.test(html);
-      const hitFragment = fragments.some(function(f) {
-        const s = String(f || '').replace(/\s+/g, ' ').trim();
-        return s && txt.includes(s);
-      });
-
-      if (hasPhoneTag || hitFragment) candidates.push(textEl);
+      if (hasPhoneTag) {
+        taggedTarget = textEl;
+        break;
+      }
     }
 
-    if (candidates.length > 0) {
-      candidates.forEach(function(textEl, idx) {
-        applyPhoneCollapseToEl(textEl, block, fp ? `${fp}::cand${idx}` : null);
-      });
+    if (taggedTarget) {
+      applyPhoneCollapseToEl(taggedTarget, block, fp);
       return true;
     }
 
+    // 不再按正文片段去全历史模糊匹配。
+    // 那会把这次 PHONE 内容错误挂到上一条已经渲染过手机摘要的 AI 楼层上，造成 4→2 / 6→4 这种稳定错层。
     const lastMsg = allMsgs[allMsgs.length - 1];
     const fallbackTextEl = lastMsg?.querySelector('.mes_text') || null;
     if (!fallbackTextEl) return false;
@@ -9788,9 +10201,9 @@ function rewritePhoneEchoInChat(block, fp) {
   }
 }
 
-function schedulePhonePostProcess(block, fp) {
+function schedulePhonePostProcess(block, fp, targetMesId) {
   try {
-    const taskKey = `${fp || 'nofp'}|${String(block || '').length}`;
+    const taskKey = `${fp || 'nofp'}|${String(block || '').length}|${targetMesId ?? 'nomesid'}`;
     if (STATE._lastPostProcessKey === taskKey) return;
     STATE._lastPostProcessKey = taskKey;
 
@@ -9798,12 +10211,10 @@ function schedulePhonePostProcess(block, fp) {
     delays.forEach(function(delay, idx) {
       setTimeout(function() {
         try {
-          const ok = rewritePhoneEchoInChat(block, fp ? `${fp}::retry${idx}` : null);
-          beautifySMSInChat();
-          if (!ok || idx >= 1) {
-            // DOM 晚到时，直接重扫整段历史，和刷新后的补救逻辑保持一致
-            rewriteAllHistoryPhoneBlocks();
-          }
+          rewritePhoneEchoInChat(block, fp ? `${fp}::retry${idx}` : null, targetMesId);
+          beautifySMSInChat(targetMesId);
+          // 不再在实时收尾链路里触发全历史补扫。
+          // 历史补扫只在切窗/刷新时跑，避免把当前刚挂对的 PHONE 又改写到旧楼层。
         } catch(e) {
           console.warn('[Raymond Phone] schedulePhonePostProcess:', e);
         }
@@ -9811,6 +10222,150 @@ function schedulePhonePostProcess(block, fp) {
     });
   } catch(e) {
     console.warn('[Raymond Phone] schedulePhonePostProcess outer:', e);
+  }
+}
+
+function scheduleOnAIMessageKick(reason, delay) {
+  try {
+    const wait = Number.isFinite(delay) ? delay : 80;
+    if (window.__rpPhoneUpdateKickTimer) clearTimeout(window.__rpPhoneUpdateKickTimer);
+    window.__rpPhoneUpdateKickTimer = setTimeout(function() {
+      window.__rpPhoneUpdateKickTimer = null;
+      try {
+        console.log('[Phone:kick] onAIMessage via', reason || 'unknown');
+        onAIMessage();
+      } catch(e) {
+        console.warn('[Raymond Phone] scheduleOnAIMessageKick:', e);
+      }
+    }, wait);
+  } catch(e) {
+    console.warn('[Raymond Phone] scheduleOnAIMessageKick outer:', e);
+  }
+}
+
+function scheduleRepairPhoneByMesId(targetMesId, reason) {
+  try {
+    if (!Number.isFinite(targetMesId) || targetMesId < 0) return;
+    const retryDelays = [0, 120, 320, 700, 1400];
+    retryDelays.forEach(function(delay, idx) {
+      setTimeout(function() {
+        try {
+          const repaired = repairPhoneMessageByMesId(targetMesId);
+          console.log('[Phone:repair:schedule]', { mesId: targetMesId, reason: reason || 'unknown', retry: idx, repaired: !!repaired });
+        } catch(e) {
+          console.warn('[Raymond Phone] scheduleRepairPhoneByMesId:', e);
+        }
+      }, delay);
+    });
+  } catch(e) {
+    console.warn('[Raymond Phone] scheduleRepairPhoneByMesId outer:', e);
+  }
+}
+
+function installPhoneRenderObserver() {
+  try {
+    if (window.__rpPhoneRenderObserverInstalled) return;
+    const chatRoot = document.querySelector('#chat');
+    if (!chatRoot || typeof MutationObserver !== 'function') return;
+    window.__rpPhoneRenderObserverInstalled = true;
+    window.__rpPhoneRenderObserverTimers = window.__rpPhoneRenderObserverTimers || new Map();
+
+    const queueMesRepair = function(mesId, reason) {
+      try {
+        if (!Number.isFinite(mesId) || mesId < 0) return;
+        const timers = window.__rpPhoneRenderObserverTimers;
+        const oldTimer = timers.get(mesId);
+        if (oldTimer) clearTimeout(oldTimer);
+        const t = setTimeout(function() {
+          timers.delete(mesId);
+          try { scheduleRepairPhoneByMesId(mesId, reason || 'dom-observer'); } catch(e) {}
+        }, 90);
+        timers.set(mesId, t);
+      } catch(e) {
+        console.warn('[Raymond Phone] queueMesRepair failed', e);
+      }
+    };
+
+    const scanNode = function(node, reason) {
+      try {
+        if (!node || node.nodeType !== 1) return;
+        const mesNodes = [];
+        if (node.matches && node.matches('.mes:not([is_user="true"])')) mesNodes.push(node);
+        if (node.querySelectorAll) node.querySelectorAll('.mes:not([is_user="true"])').forEach(function(el) { mesNodes.push(el); });
+        mesNodes.forEach(function(mesEl) {
+          const mesId = parseInt(mesEl.getAttribute('mesid') || '-1', 10);
+          if (!Number.isFinite(mesId) || mesId < 0) return;
+          queueMesRepair(mesId, reason || 'dom-observer');
+        });
+      } catch(e) {
+        console.warn('[Raymond Phone] scanNode failed', e);
+      }
+    };
+
+    const observer = new MutationObserver(function(mutations) {
+      try {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(function(node) { scanNode(node, 'dom-added'); });
+            if (mutation.target && mutation.target.nodeType === 1) {
+              const mesEl = mutation.target.closest ? mutation.target.closest('.mes:not([is_user="true"])') : null;
+              if (mesEl) {
+                const mesId = parseInt(mesEl.getAttribute('mesid') || '-1', 10);
+                if (Number.isFinite(mesId) && mesId >= 0) queueMesRepair(mesId, 'dom-childList');
+              }
+            }
+          } else if (mutation.type === 'characterData') {
+            const parent = mutation.target && mutation.target.parentElement;
+            const mesEl = parent && parent.closest ? parent.closest('.mes:not([is_user="true"])') : null;
+            if (mesEl) {
+              const mesId = parseInt(mesEl.getAttribute('mesid') || '-1', 10);
+              if (Number.isFinite(mesId) && mesId >= 0) queueMesRepair(mesId, 'dom-charData');
+            }
+          }
+        });
+      } catch(e) {
+        console.warn('[Raymond Phone] phone render observer tick failed', e);
+      }
+    });
+
+    observer.observe(chatRoot, { childList: true, subtree: true, characterData: true });
+    window.__rpPhoneRenderObserver = observer;
+    console.log('[Phone:observer] render observer installed');
+  } catch(e) {
+    console.warn('[Raymond Phone] installPhoneRenderObserver failed', e);
+  }
+}
+
+function repairPhoneMessageByMesId(targetMesId) {
+  try {
+    if (!Number.isFinite(targetMesId) || targetMesId < 0) return false;
+    const ctx = getContext();
+    const chat = ctx?.chat || [];
+    const msg = chat[targetMesId];
+    if (!msg || msg.is_user || !msg.mes) return false;
+
+    const rawStripped = String(msg.mes).replace(/<think>[\s\S]*?<\/think>/gi, '');
+    const normalizedRaw = normalizePhoneMarkup(rawStripped);
+    const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
+    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(normalizedRaw);
+    if (!phoneMatch && !hasBarePhoneTags) return false;
+
+    const textEl = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"]) .mes_text`);
+    if (!textEl) return false;
+
+    const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
+    const textHtml = textEl.innerHTML || '';
+    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b/i.test(textHtml);
+    if (hasRenderedPhoneUi && !hasResidualPhoneMarkup) return false;
+
+    const block = phoneMatch ? phoneMatch[1] : normalizedRaw;
+    applyPhoneCollapseToEl(textEl, block, null);
+    beautifySMSInChat(targetMesId);
+    console.log('[Phone:repair] repaired message after update', { mesId: targetMesId });
+    return true;
+  } catch(e) {
+    console.warn('[Raymond Phone] repairPhoneMessageByMesId:', e);
+    return false;
   }
 }
 
@@ -9823,16 +10378,38 @@ function rewriteAllHistoryPhoneBlocks() {
     const domMsgs = Array.from(document.querySelectorAll('.mes:not([is_user="true"])'));
     if (!domMsgs.length) return;
 
-    // 找所有非用户 AI 消息（排除已处理过的）
-    let domIdx = 0;
-    chat.forEach(function(msg) {
+    // 优先按 mesid 精确对齐 chat 下标，避免“第几个 AI 消息”与真实 DOM 楼层不一致，
+    // 导致流式结束后的历史补扫把当前 PHONE 渲染挪回 0 楼/上一楼。
+    const domByMesId = new Map();
+    domMsgs.forEach(function(el) {
+      const mesId = parseInt(el.getAttribute('mesid') || '-1', 10);
+      if (Number.isFinite(mesId) && mesId >= 0) domByMesId.set(mesId, el);
+    });
+
+    let fallbackDomIdx = 0;
+    chat.forEach(function(msg, chatIdx) {
       if (msg.is_user || !msg.mes) return;
-      const domEl = domMsgs[domIdx++];
+
+      let domEl = domByMesId.get(chatIdx) || null;
+      if (!domEl) {
+        while (fallbackDomIdx < domMsgs.length) {
+          const candidate = domMsgs[fallbackDomIdx++];
+          const candidateMesId = parseInt(candidate?.getAttribute('mesid') || '-1', 10);
+          if (!Number.isFinite(candidateMesId) || candidateMesId < 0 || candidateMesId === chatIdx) {
+            domEl = candidate;
+            break;
+          }
+        }
+      }
       if (!domEl) return;
+
       const textEl = domEl.querySelector('.mes_text');
       if (!textEl) return;
-      // 已处理且没有散落标签残留的跳过（但如果还有 rp-phone-collapse 说明已经处理好了，也跳过）
-      if (textEl.dataset.rpHistDone === '1') return;
+      const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
+      const textHtml = textEl.innerHTML || '';
+      const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b/i.test(textHtml);
+      // 已处理且当前 UI 完整、也没有残余标签时跳过；否则允许历史自愈
+      if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) return;
 
       const rawStripped = msg.mes.replace(/<think>[\s\S]*?<\/think>/gi, '');
       const normalizedRaw = normalizePhoneMarkup(rawStripped);
@@ -9978,10 +10555,17 @@ function parsePhone(block) {
     } else if (fromRaw) {
       threadId = matchThread(fromRaw);
       if (!threadId) {
-        // FROM 名字匹配失败 → 自动新建该 NPC 的线程，不要把消息误投到当前打开的线程
-        const newTh = findOrCreateThread(fromRaw);
-        threadId = newTh.id;
-        console.log('[Phone:diag] parsePhone: FROM "' + fromRaw + '" not in contacts, auto-created thread', threadId);
+        const resolvedMainTh = tryResolveUnknownSenderAsMainChar(fromRaw, ctx);
+        if (resolvedMainTh?.id) {
+          threadId = resolvedMainTh.id;
+          console.log('[Phone:diag] parsePhone: FROM "' + fromRaw + '" mapped to main char thread', threadId);
+        } else {
+          // FROM 名字匹配失败 → 自动新建该 NPC 的线程，不要把消息误投到当前打开的线程
+          const newTh = findOrCreateThread(fromRaw);
+          if (!newTh) { console.log('[Phone:guard] blocked contact for FROM:', fromRaw); continue; }
+          threadId = newTh.id;
+          console.log('[Phone:diag] parsePhone: FROM "' + fromRaw + '" not in contacts, auto-created thread', threadId);
+        }
       }
     } else if (STATE.currentThread && STATE.threads?.[STATE.currentThread]) {
       threadId = STATE.currentThread;
@@ -10507,8 +11091,9 @@ function refreshLockNotifs() {
 function refreshBadges() {
   let total = 0;
   Object.values(STATE.threads).forEach(th => {
-    const el = $(`#rp-tbadge-${th.id}`);
-    if (el.length) {
+    const _badgeNode = document.getElementById(`rp-tbadge-${th.id}`);
+    if (_badgeNode) {
+      const el = $(_badgeNode);
       th.unread > 0 ? el.text(th.unread).show() : el.hide();
     }
     total += th.unread;
@@ -10521,9 +11106,17 @@ function updatePreviews() {
     const last = th.messages.at(-1);
     if (!last) return;
     const sl = last.from === 'user' ? '我' : th.name.split(' ')[0];
-    const pf = sl + ':' + last.text;
-    $(`#rp-tp-${th.id}`).text(pf.length > 28 ? pf.slice(0, 27) + '...' : pf);
-    $(`#rp-tt-${th.id}`).text(last.time);
+    const lt = last.text || (last.type === 'image' ? '[图片]'
+      : last.type === 'voice' || last.type === 'group_voice' ? '🎤 [语音]'
+      : last.type === 'hongbao' || last.type === 'group_hongbao' ? '🧧 [红包]'
+      : last.type === 'group_msg' ? (last.name ? last.name + ':' + (last.text || '') : '')
+      : last.type === 'transfer' ? '💰 [转账]'
+      : '');
+    const pf = sl + ':' + lt;
+    const _tpNode = document.getElementById(`rp-tp-${th.id}`);
+    if (_tpNode) $(_tpNode).text(pf.length > 28 ? pf.slice(0, 27) + '...' : pf);
+    const _ttNode = document.getElementById(`rp-tt-${th.id}`);
+    if (_ttNode) $(_ttNode).text(last.time);
   });
 }
 
@@ -11295,9 +11888,18 @@ function showLiveChat(name, avatarBg, customImg, text) {
 // ================================================================
 //  CHAT BUBBLE BEAUTIFICATION
 // ================================================================
-function hidePhoneTagsInChat() {
-  // 遍历所有消息,把 ST 渲染出的 <phone>/<sms>/<moments>/<comment> 等标签移除
-  document.querySelectorAll('.mes_text').forEach(el => {
+function hidePhoneTagsInChat(targetMesId) {
+  // 默认只清理目标楼层；只有未指定时才全量扫历史。
+  let targets = [];
+  if (Number.isFinite(targetMesId) && targetMesId >= 0) {
+    const exactEl = document.querySelector(`.mes[mesid="${targetMesId}"] .mes_text`);
+    if (exactEl) targets = [exactEl];
+  }
+  if (!targets.length) {
+    targets = Array.from(document.querySelectorAll('.mes_text'));
+  }
+
+  targets.forEach(el => {
     // 方法1:先整体清空 <phone> 元素内容再移除,防止子文本节点遗留在 DOM 里
     el.querySelectorAll('phone').forEach(phoneEl => {
       // 清空所有子节点(包括 sms/text 文本节点),再从 DOM 删除
@@ -11309,15 +11911,8 @@ function hidePhoneTagsInChat() {
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
     });
-    // 方法2:innerHTML 兜底,处理以纯文本存在的 <PHONE>...</PHONE>
-    if (/<phone>/i.test(el.innerHTML)) {
-      el.innerHTML = el.innerHTML.replace(/<phone>[\s\S]*?<\/phone>/gi, '').trim();
-    }
-    // 方法3:处理被转义成 &lt;PHONE&gt;...&lt;/PHONE&gt; 的文本
-    // 注意:跳过已有折叠块的消息，避免破坏 <pre> 里存放的原始内容
-    if (/&lt;phone&gt;/i.test(el.innerHTML) && !el.querySelector('details.rp-phone-collapse')) {
-      el.innerHTML = el.innerHTML.replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '').trim();
-    }
+    // 不再整体改写 innerHTML，避免把智绘姬按钮节点重建掉
+    stripPhoneLiteralNodes(el);
   });
 }
 
@@ -11342,19 +11937,29 @@ function hideOocInUserBubbles() {
   });
 }
 
-function beautifySMSInChat() {
+function beautifySMSInChat(targetMesId) {
   try {
-    // 每次调用先清理全部消息中的 <PHONE> 可见内容
-    hidePhoneTagsInChat();
+    // 生成期只清理目标楼层，避免反复全楼扫描
+    hidePhoneTagsInChat(targetMesId);
 
     const ctx = getContext();
     if (!ctx?.name) return;
     const charName = ctx.name;
-    const allMsgs = document.querySelectorAll('.mes:not([is_user="true"])');
-    if (!allMsgs.length) return;
-    const lastMsg = allMsgs[allMsgs.length - 1];
-    const textEl  = lastMsg?.querySelector('.mes_text');
-    if (!textEl || textEl.dataset.rpDone) return;
+    let textEl = null;
+    if (Number.isFinite(targetMesId) && targetMesId >= 0) {
+      textEl = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"]) .mes_text`);
+    }
+    if (!textEl) {
+      const allMsgs = document.querySelectorAll('.mes:not([is_user="true"])');
+      if (!allMsgs.length) return;
+      const lastMsg = allMsgs[allMsgs.length - 1];
+      textEl = lastMsg?.querySelector('.mes_text') || null;
+    }
+    if (!textEl) return;
+    const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-divider, .rp-phone-live-img-btns');
+    const textHtml = textEl.innerHTML || '';
+    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b/i.test(textHtml);
+    if (textEl.dataset.rpDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) return;
     textEl.dataset.rpDone = '1';
 
     const thread   = Object.values(STATE.threads).find(t => t.name === charName);
@@ -11405,8 +12010,147 @@ function beautifySMSInChat() {
       }
     };
     Array.from(textEl.childNodes).forEach(walkText);
+
+    // ── 黑名单主楼过滤：隐藏被拉黑角色的对话行 ──
+    hideBlockedLinesInChat(targetMesId);
   } catch(e) {
     console.warn('[Raymond Phone] beautify:', e);
+  }
+}
+
+// ================================================================
+//  黑名单主楼过滤 — 隐藏被拉黑角色在主楼正文中的对话行
+// ================================================================
+function hideBlockedLinesInChat(targetMesId) {
+  try {
+    const bl = STATE.blocklist;
+    if (!Array.isArray(bl) || bl.length === 0) return;
+
+    // 构建匹配用的 normalized 名字集合
+    const blockedNorms = bl.map(b => normalizePhonePersonName(b)).filter(Boolean);
+    if (!blockedNorms.length) return;
+
+    // 选定要扫描的 .mes_text 元素
+    let textEls = [];
+    if (Number.isFinite(targetMesId) && targetMesId >= 0) {
+      const el = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"]) .mes_text`);
+      if (el) textEls = [el];
+    }
+    if (!textEls.length) {
+      // fallback: 扫最后一条 AI 消息
+      const allMsgs = document.querySelectorAll('.mes:not([is_user="true"])');
+      if (allMsgs.length) {
+        const last = allMsgs[allMsgs.length - 1];
+        const el = last?.querySelector('.mes_text');
+        if (el) textEls = [el];
+      }
+    }
+    if (!textEls.length) return;
+
+    textEls.forEach(textEl => {
+      if (!textEl) return;
+      // 策略：遍历 textEl 的直接子节点（通常是 <p>、文本节点、<br> 分隔的行）
+      // 对于每个"行"检查是否以黑名单角色名开头（"Name:" 或 "Name："）
+      // 如果匹配，给该节点加 display:none
+
+      // 1) 处理 <p>、<div>、<span>、<em>、<strong> 等块/内联元素
+      const checkAndHide = (node) => {
+        if (!node || node.nodeType !== 1) return; // 只处理元素节点
+        // 跳过已经是手机 UI 的容器
+        if (node.classList && (
+          node.classList.contains('rp-phone-echo-container') ||
+          node.classList.contains('rp-phone-echo-block') ||
+          node.classList.contains('rp-cb') ||
+          node.classList.contains('rp-phone-live-img-btns')
+        )) return;
+        // 已处理过的跳过
+        if (node.dataset.rpBlockChecked === '1') return;
+        node.dataset.rpBlockChecked = '1';
+
+        const text = (node.textContent || '').trim();
+        if (!text) return;
+
+        // 匹配 "Name:" 或 "Name：" 开头
+        for (const norm of blockedNorms) {
+          // 从 text 开头提取可能的名字部分（到第一个冒号）
+          const colonIdx = text.indexOf(':');
+          const fullColonIdx = text.indexOf('：');
+          let nameEnd = -1;
+          if (colonIdx >= 0 && (fullColonIdx < 0 || colonIdx <= fullColonIdx)) nameEnd = colonIdx;
+          else if (fullColonIdx >= 0) nameEnd = fullColonIdx;
+          if (nameEnd <= 0 || nameEnd > 40) continue; // 名字不应超过 40 字符
+
+          const namePart = normalizePhonePersonName(text.slice(0, nameEnd));
+          if (namePart === norm) {
+            node.style.display = 'none';
+            node.dataset.rpBlockedHidden = '1';
+            return;
+          }
+        }
+      };
+
+      // 处理块级子元素（<p>, <div> 等）
+      textEl.querySelectorAll('p, div').forEach(checkAndHide);
+
+      // 2) 处理以 <br> 分隔的文本行（更常见的 SillyTavern 格式）
+      //    遍历 childNodes，在 <br> 之间的节点组成一个"行"
+      const children = Array.from(textEl.childNodes);
+      let lineNodes = [];
+
+      const processLine = () => {
+        if (!lineNodes.length) return;
+        // 取这一行的完整文本
+        const lineText = lineNodes.map(n => n.textContent || '').join('').trim();
+        if (!lineText) { lineNodes = []; return; }
+
+        for (const norm of blockedNorms) {
+          const colonIdx = lineText.indexOf(':');
+          const fullColonIdx = lineText.indexOf('：');
+          let nameEnd = -1;
+          if (colonIdx >= 0 && (fullColonIdx < 0 || colonIdx <= fullColonIdx)) nameEnd = colonIdx;
+          else if (fullColonIdx >= 0) nameEnd = fullColonIdx;
+          if (nameEnd <= 0 || nameEnd > 40) continue;
+
+          const namePart = normalizePhonePersonName(lineText.slice(0, nameEnd));
+          if (namePart === norm) {
+            // 把这一行的所有节点包裹在一个 hidden span 里
+            const wrapper = document.createElement('span');
+            wrapper.style.display = 'none';
+            wrapper.dataset.rpBlockedHidden = '1';
+            wrapper.dataset.rpBlockChecked = '1';
+            // insertBefore 第一个节点的位置
+            const firstNode = lineNodes[0];
+            const parent = firstNode.parentNode;
+            if (parent) {
+              parent.insertBefore(wrapper, firstNode);
+              lineNodes.forEach(n => wrapper.appendChild(n));
+            }
+            lineNodes = [];
+            return;
+          }
+        }
+        lineNodes = [];
+      };
+
+      for (const child of children) {
+        // 跳过已处理的手机 UI 容器
+        if (child.nodeType === 1 && child.dataset?.rpBlockChecked === '1') continue;
+        if (child.nodeType === 1 && child.dataset?.rpBlockedHidden === '1') continue;
+
+        const isBr = child.nodeType === 1 && child.tagName === 'BR';
+        if (isBr) {
+          processLine();
+        } else {
+          lineNodes.push(child);
+        }
+      }
+      processLine(); // 处理最后一行
+
+      // 3) 清理隐藏行后可能残留的连续空 <br>
+      //    （不删除 <br>，避免破坏排版；只是视觉上已经干净了）
+    });
+  } catch(e) {
+    console.warn('[Raymond Phone] hideBlockedLinesInChat:', e);
   }
 }
 
@@ -12631,7 +13375,7 @@ async function friendsInteractOnMoment(momentId) {
   const authorName = moment.name;
   // user发的动态:char已由charRespondToUserMoment处理,这里只让NPC互动,避免char重复评论
   const isUserMoment = moment.from === 'user';
-  const allFriends = (isUserMoment ? npcs : [charName, ...npcs]).filter(n => n && n !== authorName);
+  const allFriends = (isUserMoment ? npcs : [charName, ...npcs]).filter(n => n && n !== authorName && !isPhoneBlocked(n));
   if (allFriends.length === 0) return;
 
   const ts = () => {
@@ -14023,16 +14767,28 @@ function incomingComment(momentId, fromRaw, time, text, replyTo) {
     console.log('[Phone:guard] incomingComment blocked for user/invalid name:', fromRaw);
     return;
   }
-  // 优先精确匹配，其次做 includes 模糊匹配
-  let moment = STATE.moments && (
-    STATE.moments.find(m => m.id === momentId) ||
-    STATE.moments.find(m => m.id.includes(momentId) || momentId.includes(m.id))
-  );
-  if (!moment) {
-    // Fallback: 找最近一条动态（不局限于 user，避免评论打到错误动态）
-    moment = (STATE.moments && STATE.moments.length > 0)
-      ? STATE.moments[STATE.moments.length - 1]
-      : null;
+  // 优先精确匹配 → 严格模糊匹配 → 按作者 fallback
+  let moment = null;
+  if (momentId && STATE.moments) {
+    // 1. 精确匹配
+    moment = STATE.moments.find(m => m.id === momentId);
+    // 2. 模糊匹配：要求 momentId 至少 8 字符，防止空串/极短串误命中
+    if (!moment && momentId.length >= 8) {
+      const candidates = STATE.moments.filter(m => m.id.includes(momentId) || momentId.includes(m.id));
+      if (candidates.length === 1) {
+        moment = candidates[0]; // 唯一候选，安全
+      } else if (candidates.length > 1) {
+        // 多候选 = 不可靠，放弃模糊匹配，交给 fallback
+        console.log('[Phone:comment] fuzzy matched', candidates.length, 'moments, skipping to fallback');
+      }
+    }
+  }
+  if (!moment && STATE.moments && STATE.moments.length > 0) {
+    // 3. Fallback：取最近一条非评论者本人发的动态
+    const fromNorm = normNameKey(fromRaw);
+    moment = [...STATE.moments].reverse().find(m => normNameKey(m.name) !== fromNorm)
+      || STATE.moments[STATE.moments.length - 1];
+    console.log('[Phone:comment] fallback to moment:', moment.id, 'for commenter:', fromRaw);
   }
   if (!moment) return;
   const threadId = matchThread(fromRaw);
@@ -15361,6 +16117,337 @@ function ggoldBindEvents() {
   $(document).on('keydown', '#ggold-input', function(e) { if (e.key === 'Enter') ggoldSendChat(); });
 }
 
+// ================================================================
+//  🎯 你说我猜 (Word Guessing) — 双模式猜词游戏
+// ================================================================
+const GWORD = {
+  active: false,
+  mode: null,
+  answer: '',
+  category: '',
+  hints: [],
+  guesses: [],
+  chatLog: [],
+  round: 0,
+  charName: '对方',
+  charGiveUpRound: 0,
+  processing: false,
+  usedWords: [],
+};
+let _gwordBound = false;
+
+function gwordOpen() {
+  if (!_gwordBound) { gwordBindEvents(); _gwordBound = true; }
+  const ctx = typeof getContext === 'function' ? getContext() : {};
+  GWORD.charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
+  GWORD.active = false;
+  GWORD.processing = false;
+  GWORD.mode = null;
+  GWORD.answer = '';
+  GWORD.category = '';
+  GWORD.hints = [];
+  GWORD.guesses = [];
+  GWORD.chatLog = [];
+  GWORD.round = 0;
+  const modeEl = document.getElementById('gword-mode-select');
+  const overEl = document.getElementById('gword-over');
+  const chatEl = document.getElementById('gword-chat');
+  if (modeEl) modeEl.style.display = 'flex';
+  if (overEl) overEl.style.display = 'none';
+  if (chatEl) chatEl.innerHTML = '';
+  $('#gword-status').text('');
+  $('#gword-category-badge').text('分类：--');
+  $('#gword-round-info').text('第0轮');
+}
+
+async function gwordStartGame(mode) {
+  GWORD.mode = mode;
+  GWORD.hints = [];
+  GWORD.guesses = [];
+  GWORD.chatLog = [];
+  GWORD.round = 0;
+  GWORD.processing = true;
+  GWORD.charGiveUpRound = Math.floor(Math.random() * 5) + 5;
+  const modeEl = document.getElementById('gword-mode-select');
+  const overEl = document.getElementById('gword-over');
+  const chatEl = document.getElementById('gword-chat');
+  if (modeEl) modeEl.style.display = 'none';
+  if (overEl) overEl.style.display = 'none';
+  if (chatEl) chatEl.innerHTML = '';
+  $('#gword-input').attr('placeholder', mode === 'char-describe' ? '输入你的猜测...' : '输入描述提示...');
+  gwordMsg('sys', '✨ 正在出题中...');
+  // fixed word bank
+  const GWORD_BANK = {
+    '食品': ['香蕉','苹果','西瓜','草莓','葡萄','芒果','榴莲','火龙果','樱桃','柠檬','橙子','菠萝','椰子','荔枝','桃子','梨','哈密瓜','蓝莓','猕猴桃','石榴','红薯','土豆','番茄','黄瓜','茄子','玉米','豆腐','饺子','包子','馒头','面条','米饭','炒饭','披萨','汉堡','薯条','三明治','寿司','拉面','火锅','烤鸭','月饼','粽子','汤圆','冰淇淋','蛋糕','巧克力','饼干','面包','泡面','麻辣烫','煎饼','春卷','臭豆腐','糖葡芦'],
+    '电影': ['让子弹飞','大话西游','霸王别姬','功夫','疯狂动物城','哪吒闹海','战狼','流浪地球','泰坦尼克号','阿凡达','蜘蛛侠','钢铁侠','复仇者联盟','盗梦空间','星际穿越','千与千寻','龙猫','你的名字','冰雪奇缘','狮子王','哈利波特','指环王','变形金刚','速度与激情','侏罗纪公园','海底总动员','飞屋环游记','寻梦环游记','疯狂原始人','超能陆战队','头脑特工队','机器人总动员','美人鱼','长津湖','红海行动','唐人街探案'],
+    '职业': ['医生','护士','老师','律师','警察','消防员','厨师','司机','飞行员','宇航员','记者','摄影师','画家','歌手','演员','导演','程序员','设计师','建筑师','会计','翻译','快递员','外卖员','理发师','兽医','农民','渔夫','裁缝','主播','模特','调酒师','考古学家','潜水员'],
+    '饮料': ['可乐','雪碧','奶茶','咖啡','豆浆','牛奶','果汁','矿泉水','啤酒','红酒','白酒','绿茶','红茶','乌龙茶','酸梅汤','椰汁','柠檬水','气泡水','冰红茶','王老吉','美年达','芬达','养乐多'],
+    '生活用品': ['牙刷','牙膏','毛巾','肥皂','洗发水','梳子','镜子','雨伞','钥匙','钱包','手机','耳机','充电器','书包','眼镜','手表','闹钟','台灯','拖鞋','枕头','被子','衣架','剪刀','胶带','指甲刀','创可贴','温度计','电风扇','热水壶','保温杯','垃圾桶','扫把','拖把','遥控器','插座','电池']
+  };
+  const cats = Object.keys(GWORD_BANK);
+  let category, answer;
+  // pick a word not in usedWords
+  let attempts = 0;
+  do {
+    category = cats[Math.floor(Math.random() * cats.length)];
+    const words = GWORD_BANK[category];
+    answer = words[Math.floor(Math.random() * words.length)];
+    attempts++;
+  } while (GWORD.usedWords.includes(answer) && attempts < 50);
+  GWORD.category = category;
+  GWORD.answer = answer;
+  GWORD.usedWords.push(answer);
+  if (GWORD.usedWords.length > 30) GWORD.usedWords.shift();
+  GWORD.active = true;
+  GWORD.processing = false;
+  $('#gword-category-badge').text('分类：' + category);
+  $('#gword-round-info').text('第0轮');
+  // clear the "generating" message
+  if (chatEl) chatEl.innerHTML = '';
+  if (mode === 'char-describe') {
+    gwordMsg('sys', '🎯 模式：你说我猜。分类：「' + category + '」');
+    gwordMsg('sys', GWORD.charName + ' 已经想好了一个词，开始给你提示啦！');
+    $('#gword-status').text('');
+    await gwordCharHint();
+  } else {
+    gwordMsg('sys', '🎯 模式：我说你猜。分类：「' + category + '」');
+    gwordMsg('sys', '💡 答案是：「' + answer + '」，请给出提示让' + GWORD.charName + '猜！');
+    $('#gword-status').text('答案：' + answer);
+  }
+}
+
+async function gwordCharHint(userLastGuess) {
+  if (!GWORD.active || GWORD.processing) return;
+  GWORD.processing = true;
+  GWORD.round++;
+  $('#gword-round-info').text('第' + GWORD.round + '轮');
+
+  const persona = typeof g2048GetPersona === 'function' ? g2048GetPersona() : '';
+  const ctx = typeof getContext === 'function' ? getContext() : {};
+  const userName = (ctx && ctx.name1) || '你';
+  const charName = GWORD.charName;
+  const answerChars = GWORD.answer.split('');
+  const forbiddenNote = '禁止在回复中出现以下任何一个字：' + answerChars.join('、');
+  const prevHintsNote = GWORD.hints.length > 0
+    ? '\n[你已经给过的提示，不得重复或近似]: ' + GWORD.hints.join(' / ') : '';
+  const chatHistory = GWORD.chatLog.length > 0
+    ? '\n[对话历史]:\n' + GWORD.chatLog.map(function(m) {
+        return (m.role === 'user' ? userName : charName) + ': ' + m.text;
+      }).join('\n') : '';
+
+  let prompt;
+  if (userLastGuess) {
+    prompt = (persona ? persona + '\n' : '')
+      + '[猜词游戏场景]你正在和' + userName + '玩猜词游戏。'
+      + '\n答案是「' + GWORD.answer + '」，分类是「' + GWORD.category + '」。'
+      + '\n' + forbiddenNote
+      + chatHistory
+      + '\n' + userName + '最后说的是「' + userLastGuess + '」。'
+      + prevHintsNote
+      + '\n任务：在一条消息里完成两件事：1.先口语化地回应' + userName + '的话（2.然后自然地过渡到下一个提示。合在一句或两句话里，总共不超过30字，语气自然贴合角色人设。'
+      + '\n例如：“不是哦，再想想~这个东西你每天都会用到”“差一点！提示你，它是圆形的”'
+      + '\n禁止给字数/笔画提示。纯对话台词，不带括号、*号、动作描写。'
+      + '\n提示策略：前几轮模糊抽象，随轮次逐渐明确。';
+  } else {
+    prompt = (persona ? persona + '\n' : '')
+      + '[猜词游戏场景]你正在和' + userName + '玩猜词游戏。'
+      + '\n答案是「' + GWORD.answer + '」，分类是「' + GWORD.category + '」。'
+      + '\n' + forbiddenNote
+      + prevHintsNote
+      + '\n请给出一个提示来描述这个词，15字以内，纯对话台词，语气自然贴合角色人设。'
+      + '\n禁止给字数/笔画提示。前几轮要模糊抽象，随轮次逐渐明确。';
+  }
+  const raw = await lgCallAPI(prompt, 100);
+  let hint = raw ? cleanGameReply(raw, charName) : '';
+  if (!hint || hint.length < 2) hint = '这个东西很常见哦~';
+  // 泄露答案则重试
+  if (answerChars.some(function(c) { return hint.includes(c); })) {
+    const retryPrompt = prompt + '\n上次的回复「' + hint + '」包含了答案的字，请重新生成。';
+    const retryRaw = await lgCallAPI(retryPrompt, 100);
+    const retryHint = retryRaw ? cleanGameReply(retryRaw, charName) : '';
+    if (retryHint && retryHint.length >= 2 && !answerChars.some(function(c) { return retryHint.includes(c); })) {
+      hint = retryHint;
+    }
+  }
+  GWORD.hints.push(hint);
+  gwordMsg('char', hint);
+  GWORD.processing = false;
+}
+
+async function gwordUserGuess(text) {
+  if (!GWORD.active || GWORD.processing || GWORD.mode !== 'char-describe') return;
+  GWORD.processing = true;
+  text = text.trim();
+  if (!text) { GWORD.processing = false; return; }
+  gwordMsg('user', text);
+  GWORD.guesses.push(text);
+  // check answer - normalize: trim, lowercase, strip punctuation
+  const normText = text.toLowerCase().replace(/[\s\u3000!！?？。，,\.~～…·\-—]+/g, '');
+  const normAnswer = GWORD.answer.toLowerCase().replace(/[\s\u3000!！?？。，,\.~～…·\-—]+/g, '');
+  if (normText.includes(normAnswer) || normText === normAnswer) {
+    gwordMsg('sys', '🎉 恭喜，答案就是「' + GWORD.answer + '」！你在第' + GWORD.round + '轮猜对了！');
+    GWORD.active = false;
+    // AI celebration first, then show overlay
+    const persona = typeof g2048GetPersona === 'function' ? g2048GetPersona() : '';
+    const ctx = typeof getContext === 'function' ? getContext() : {};
+    const userName = (ctx && ctx.name1) || '你';
+    const wp = (persona ? persona + '\n' : '') + '[猜词游戏]' + userName + '在第' + GWORD.round + '轮猜对了答案「' + GWORD.answer + '」！\n请以' + GWORD.charName + '的身份说一句庆祝或评价的话，15字以内，纯对话台词。';
+    try {
+      const r = await lgCallAPI(wp, 80);
+      const cleaned = r ? cleanGameReply(r, GWORD.charName) : '';
+      if (cleaned && cleaned.length > 1) gwordMsg('char', cleaned);
+    } catch(e) {}
+    // delay overlay so user can read char's response
+    await new Promise(function(res) { setTimeout(res, 1500); });
+    gwordEndRound(true);
+    return;
+  }
+  gwordMsg('sys', '❌ 不对哦，再想想~');
+  GWORD.processing = false;
+  await gwordCharHint(text);
+}
+
+async function gwordUserHint(text) {
+  if (!GWORD.active || GWORD.processing || GWORD.mode !== 'user-describe') return;
+  text = text.trim();
+  if (!text) return;
+  // check if contains full answer
+  if (text.includes(GWORD.answer)) {
+    gwordMsg('sys', '⚠️ 不能直接说出答案哦~');
+    return;
+  }
+  GWORD.processing = true;
+  gwordMsg('user', text);
+  GWORD.hints.push(text);
+  GWORD.round++;
+  $('#gword-round-info').text('第' + GWORD.round + '轮');
+  const persona = typeof g2048GetPersona === 'function' ? g2048GetPersona() : '';
+  const ctx = typeof getContext === 'function' ? getContext() : {};
+  const userName = (ctx && ctx.name1) || '你';
+  const charName = GWORD.charName;
+  const allHints = GWORD.hints.map(function(h, i) { return '第' + (i+1) + '轮: ' + h; }).join('\n');
+  const prevGuesses = GWORD.guesses.length > 0
+    ? '\n[你之前猜过的（都不对）]: ' + GWORD.guesses.join('、')
+    : '';
+  const shouldGiveUp = GWORD.round >= GWORD.charGiveUpRound;
+  let prompt;
+  if (shouldGiveUp) {
+    prompt = (persona ? persona + '\n' : '')
+      + '[猜词游戏场景]你和' + userName + '在玩猜词游戏，' + userName + '在出题让你猜。'
+      + '\n分类：' + GWORD.category
+      + '\n' + userName + '给出的所有提示：\n' + allHints
+      + prevGuesses
+      + '\n你已经猜了很多轮了，这次你决定认输。请以' + charName + '的身份说一句认输的话，15字以内，纯对话台词。';
+  } else {
+    const earlyRound = GWORD.round <= 2;
+    prompt = (persona ? persona + '\n' : '')
+      + '[猜词游戏场景]你和' + userName + '在玩猜词游戏，' + userName + '在出题让你猜。'
+      + '\n分类：' + GWORD.category
+      + '\n' + userName + '给出的所有提示：\n' + allHints
+      + prevGuesses
+      + (earlyRound
+        ? '\n重要：现在才第' + GWORD.round + '轮，提示还太少，你不可能猜对。请故意猜一个同分类但不正确的答案，要合理但一定要是错的。不要猜太明显的答案。'
+        : '\n请综合所有提示和分类，猜一个你认为最可能的答案。')
+      + '\n格式：只说一个词语作为答案，可以加一句口语化短评，总共不超过20字，纯对话台词，贴合角色人设。';
+  }
+  const raw = await lgCallAPI(prompt, 100);
+  let reply = raw ? cleanGameReply(raw, charName) : '';
+  GWORD.processing = false;
+  if (shouldGiveUp) {
+    if (!reply || reply.length < 2) reply = '我猜不出来了，我认输！';
+    gwordMsg('char', reply);
+    gwordMsg('sys', '🏳️ ' + GWORD.charName + ' 认输了！答案是「' + GWORD.answer + '」');
+    gwordEndRound(true);
+    return;
+  }
+  if (!reply || reply.length < 1) reply = '我猜是...不知道呢';
+  gwordMsg('char', reply);
+  GWORD.guesses.push(reply);
+  // check if char guessed right
+  if (reply.includes(GWORD.answer)) {
+    gwordMsg('sys', '🎉 ' + GWORD.charName + ' 猜对了！答案就是「' + GWORD.answer + '」');
+    gwordEndRound(true);
+  } else {
+    gwordMsg('sys', '❌ 没猜对，继续给提示吧~');
+  }
+}
+
+function gwordGiveUp() {
+  if (!GWORD.active) return;
+  gwordMsg('sys', '🏳️ 认输了！答案是「' + GWORD.answer + '」');
+  gwordEndRound(false);
+}
+
+function gwordEndRound(won) {
+  GWORD.active = false;
+  GWORD.processing = false;
+  const emoji = won ? '🎉' : '😅';
+  const title = won
+    ? (GWORD.mode === 'char-describe' ? '猜对了！' : '回合结束！')
+    : '认输了~';
+  const sub = '答案：' + GWORD.answer + '\n共用了 ' + GWORD.round + ' 轮';
+  $('#gword-over-emoji').text(emoji);
+  $('#gword-over-title').text(title);
+  $('#gword-over-sub').text(sub);
+  $('#gword-over').css('display', 'flex');
+}
+
+function gwordMsg(type, text) {
+  const cls = type === 'user' ? 'game-msg-user' : type === 'char' ? 'game-msg-char' : 'game-msg-sys';
+  const pre = type === 'char' ? GWORD.charName + ': ' : '';
+  const editBtnHtml = type === 'char' ? '<button class="game-edit-btn" onclick="event.stopPropagation();gameInlineEdit(this)" title="\u7f16\u8f91"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>' : '';
+  const msgHtml = '<div class="game-msg ' + cls + '"><span class="game-msg-text">' + pre + text + '</span>' + editBtnHtml + '</div>';
+  const chat = document.getElementById('gword-chat');
+  if (chat) { chat.insertAdjacentHTML('beforeend', msgHtml); chat.scrollTop = chat.scrollHeight; }
+  // sync to fullscreen if open
+  const fs = document.getElementById('gword-chat-fs');
+  if (fs && fs.style.display !== 'none') {
+    const body = document.getElementById('gword-chat-fs-body');
+    if (body) { body.insertAdjacentHTML('beforeend', msgHtml); body.scrollTop = body.scrollHeight; }
+  }
+  if (type === 'user' || type === 'char') {
+    GWORD.chatLog.push({ role: type, text: text });
+    if (GWORD.chatLog.length > 30) GWORD.chatLog.shift();
+  }
+}
+
+function gwordBindEvents() {
+  $(document).on('click', '#gword-mode-char', function() { gwordStartGame('char-describe'); });
+  $(document).on('click', '#gword-mode-user', function() { gwordStartGame('user-describe'); });
+  $(document).on('click', '#gword-send', function() {
+    const input = document.getElementById('gword-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    if (GWORD.mode === 'char-describe') gwordUserGuess(text);
+    else if (GWORD.mode === 'user-describe') gwordUserHint(text);
+  });
+  $(document).on('keydown', '#gword-input', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('#gword-send').trigger('click'); }
+  });
+  $(document).on('click', '#gword-giveup-btn', function() { gwordGiveUp(); });
+  $(document).on('click', '#gword-newbtn', function() { gwordOpen(); });
+  $(document).on('click', '#gword-next', function() {
+    $('#gword-over').hide();
+    gwordStartGame(GWORD.mode);
+  });
+  $(document).on('click', '#gword-quit', function() {
+    $('#gword-over').hide();
+    gwordOpen();
+  });
+  // fullscreen chat
+  $(document).on('click', '#gword-chat', function() {
+    const body = document.getElementById('gword-chat-fs-body');
+    if (!body) return;
+    body.innerHTML = document.getElementById('gword-chat').innerHTML;
+    body.scrollTop = body.scrollHeight;
+    $('#gword-chat-fs').css('display', 'flex');
+  });
+  $(document).on('click', '#gword-chat-hint', function() { $('#gword-chat').trigger('click'); });
+  $(document).on('click', '#gword-chat-fs-close', function() { $('#gword-chat-fs').hide(); });
+}
+
 function ggoldInit() {
   if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = true; }
   ggoldOpen();
@@ -16281,6 +17368,8 @@ function cleanGameReply(raw, charName) {
   text = text.replace(/^#{1,6}\s*.{0,100}$/gm, '').trim();
   // 4b. bold/italic 标记保留内容
   text = text.replace(/[*_]{1,3}([^*_\n]+)[*_]{1,3}/g, '$1').trim();
+  // 4c. 删除中文/英文括号包裹的动作描写，如（指尖轻点桌面）(smiles)
+  text = text.replace(/[(（][^)）]{1,30}[)）]/g, '').trim();
   // 5. 删除标签行
   text = text.replace(/^【[^】]{1,30}】[::*]?\s*/gm, '').trim();
   text = text.replace(/^\[[A-Z][A-Z\s:_\-]{1,30}\]\s*/gm, '').trim();
