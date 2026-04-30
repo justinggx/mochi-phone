@@ -11,7 +11,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-fab {
   position:fixed; right:20px; bottom:20px; z-index:2147483647;
   width:52px; height:52px; border-radius:50%;
-  background:rgba(255,255,255,.95); backdrop-filter:blur(12px);
+  background:rgba(255,255,255,.95); backdrop-filter:none;
   border:1px solid rgba(0,0,0,.1);
   display:flex; align-items:center; justify-content:center;
   padding:6px; overflow:hidden; cursor:grab;
@@ -44,7 +44,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
     background: rgba(255,255,255,.95) !important;
     border: 1px solid rgba(0,0,0,.1) !important;
     box-shadow: 0 4px 24px rgba(0,0,0,.18) !important;
-    backdrop-filter: blur(12px) !important;
+    backdrop-filter:none !important;
     z-index: 2147483647 !important;
   }
   /* PC mode: phone stays at fixed right:84px - centering via JS class only */
@@ -351,7 +351,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-ln {
   position: relative;
   z-index: 2;
-  background:var(--rp-ln-bg); backdrop-filter:blur(24px);
+  background:var(--rp-ln-bg); backdrop-filter:none;
   border:1px solid var(--rp-ln-bd); border-radius:14px;
   padding:10px 14px; display:flex; flex-direction:column; gap:4px;
   box-shadow:0 2px 8px rgba(0,0,0,.08);
@@ -488,8 +488,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   background:var(--rp-about-card-bg);
   border:1px solid var(--rp-about-card-bd);
   box-shadow:0 4px 20px rgba(0,0,0,.08);
-  backdrop-filter:blur(16px) saturate(1.3);
-  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
   width:100%;
 }
 #rp-about-title {
@@ -673,7 +673,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ✅ FIX3: modal 已移至 #rp-screen 内部,position:absolute; inset:0 现在正确覆盖手机屏幕 */
 #rp-add-modal {
   position:absolute; inset:0; z-index:600;
-  background:rgba(0,0,0,.4); backdrop-filter:blur(8px);
+  background:rgba(0,0,0,.4); backdrop-filter:none;
   display:flex; align-items:center; justify-content:center;
   padding:20px;
 }
@@ -709,7 +709,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── NOTIFICATION BANNER ── */
 #rp-notif-banner {
   position:absolute; top:52px; left:10px; right:10px;
-  background:rgba(255,255,255,.95); backdrop-filter:blur(24px);
+  background:rgba(255,255,255,.95); backdrop-filter:none;
   border:1px solid rgba(0,0,0,.08); border-radius:15px;
   padding:11px 13px; display:flex; align-items:center; gap:10px;
   z-index:500; box-shadow:0 6px 24px rgba(0,0,0,.2);
@@ -942,8 +942,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-candy #rp-pending-queue {
   background: rgba(255, 234, 244, .82) !important;
   border-top-color: rgba(188, 68, 118, .42) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
 }
 #rp-phone.rp-theme-candy .rp-pending-item {
   color: #7a163f !important;
@@ -958,8 +958,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-star #rp-pending-queue {
   background: rgba(18, 10, 48, .72) !important;
   border-top-color: rgba(148, 110, 255, .35) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
 }
 #rp-phone.rp-theme-star .rp-pending-item {
   color: #e4d8ff !important;
@@ -972,8 +972,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-misty #rp-pending-queue {
   background: rgba(228, 241, 252, .72) !important;
   border-top-color: rgba(96, 146, 186, .32) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
 }
 #rp-phone.rp-theme-misty .rp-pending-item {
   color: #1f4a6a !important;
@@ -2193,7 +2193,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-star .rp-diary-send-btn{background:linear-gradient(135deg,#7c3aed,#a855f7)}
 #rp-phone.rp-theme-star .rp-diary-empty{color:rgba(180,165,255,.35)}
 #rp-phone.rp-theme-star #rp-gen-diary{color:#a78bfa}
-#rp-phone.rp-theme-misty .rp-diary-entry{background:rgba(235,248,255,.76);border-color:rgba(100,170,220,.35);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2)}
+#rp-phone.rp-theme-misty .rp-diary-entry{background:rgba(235,248,255,.76);border-color:rgba(100,170,220,.35);backdrop-filter:none;-webkit-backdrop-filter:none saturate(1.2)}
 #rp-phone.rp-theme-misty .rp-diary-author{color:#0a1828;font-weight:700}
 #rp-phone.rp-theme-misty .rp-diary-date{color:rgba(40,80,130,.8)}
 #rp-phone.rp-theme-misty .rp-diary-body{color:#0d1e30;line-height:1.75}
@@ -2229,7 +2229,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .g2048-drow{display:none}
 .g2048-dir{width:34px;height:24px;border-radius:7px;border:none;background:rgba(187,173,160,.5);color:#776e65;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .g2048-dir:active{background:rgba(187,173,160,.85)}
-#g2048-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:blur(5px);cursor:pointer}
+#g2048-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:none;cursor:pointer}
 #g2048-chat::-webkit-scrollbar{display:none}
 #g2048-input-row{display:flex;gap:6px;padding:6px 12px 10px;flex-shrink:0;border-top:1px solid rgba(0,0,0,.06)}
 #g2048-input{flex:1;border-radius:18px;border:1px solid rgba(0,0,0,.12);padding:6px 12px;font-size:13px;background:rgba(255,255,255,.88);font-family:inherit;outline:none;color:#1a1008}
@@ -2242,7 +2242,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 
 /* 2048 fullscreen chat */
 #g2048-chat-hint{font-size:9.5px;color:rgba(240,225,205,.55);text-align:right;padding:0 16px 2px;flex-shrink:0;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-#g2048-chat-fs{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:flex;flex-direction:column}
+#g2048-chat-fs{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.78);backdrop-filter:none;display:flex;flex-direction:column}
 #g2048-chat-fs-hd{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.12)}
 #g2048-chat-fs-title{color:#fff;font-weight:600;font-size:14px}
 #g2048-chat-fs-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:50%;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
@@ -2382,7 +2382,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   background-image: var(--rp-home-wall);
   background-size: cover;
   background-position: center;
-  filter: blur(30px) saturate(1.35) brightness(1.04);
+  filter:none;
 }
 /* ── 第2层:主题色调染色 ── */
 #rp-compose-modal::after {
@@ -2407,8 +2407,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ══ 导航栏 - 更亮玻璃条,带模糊分隔感 ══ */
 #rp-compose-modal .rp-nav-bar {
   background: rgba(255,255,255,.55) !important;
-  backdrop-filter: blur(20px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
   border-bottom: 1px solid rgba(255,255,255,.45) !important;
   box-shadow: 0 1px 0 rgba(0,0,0,.05) !important;
 }
@@ -2453,8 +2453,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ══ 玻璃卡片 ══ */
 .rp-compose-card {
   background: rgba(255,255,255,.55);
-  backdrop-filter: blur(18px) saturate(1.5);
-  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,.75);
   box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 1px 0 rgba(255,255,255,.6) inset;
@@ -2639,7 +2639,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   background-size: cover !important;
   background-position: center !important;
 }
-#rp-view-xhs .rp-nav-bar,#rp-view-xhs-detail .rp-nav-bar,#rp-view-xhs-compose .rp-nav-bar{flex:0 0 auto!important;background:rgba(255,255,255,.55)!important;border-bottom:1px solid var(--rp-xhs-border)!important;backdrop-filter:blur(18px) saturate(1.4)!important;-webkit-backdrop-filter:blur(18px) saturate(1.4)!important}
+#rp-view-xhs .rp-nav-bar,#rp-view-xhs-detail .rp-nav-bar,#rp-view-xhs-compose .rp-nav-bar{flex:0 0 auto!important;background:rgba(255,255,255,.55)!important;border-bottom:1px solid var(--rp-xhs-border)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none saturate(1.4)!important}
 #rp-phone.rp-theme-star #rp-view-xhs .rp-nav-bar,
 #rp-phone.rp-theme-star #rp-view-xhs-detail .rp-nav-bar,
 #rp-phone.rp-theme-star #rp-view-xhs-compose .rp-nav-bar{background:rgba(10,5,32,.55)!important;border-bottom-color:rgba(140,110,255,.2)!important}
@@ -2652,9 +2652,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-xhs-detail-body{scrollbar-width:none;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important}
 #rp-xhs-list::-webkit-scrollbar,#rp-xhs-detail-body::-webkit-scrollbar{display:none}
 /* XHS卡片：半透明磨砂玻璃，重要区域遮罩，边缘壁纸透出 */
-.rp-xhs-card{background:rgba(255,255,255,.62)!important;backdrop-filter:blur(14px) saturate(1.2)!important;-webkit-backdrop-filter:blur(14px) saturate(1.2)!important;border:none!important;border-bottom:1px solid var(--rp-xhs-border)!important;border-radius:0!important;box-shadow:none!important;padding:12px 14px!important;margin:0 8px!important;border-radius:16px!important;margin-bottom:6px!important;transition:background .12s ease!important}
-#rp-phone.rp-theme-star  .rp-xhs-card{background:rgba(14,8,40,.62)!important;backdrop-filter:blur(14px) saturate(1.2)!important;-webkit-backdrop-filter:blur(14px) saturate(1.2)!important}
-#rp-phone.rp-theme-misty .rp-xhs-card{background:rgba(225,242,255,.60)!important;backdrop-filter:blur(14px) saturate(1.2)!important;-webkit-backdrop-filter:blur(14px) saturate(1.2)!important}
+.rp-xhs-card{background:rgba(255,255,255,.62)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border:none!important;border-bottom:1px solid var(--rp-xhs-border)!important;border-radius:0!important;box-shadow:none!important;padding:12px 14px!important;margin:0 8px!important;border-radius:16px!important;margin-bottom:6px!important;transition:background .12s ease!important}
+#rp-phone.rp-theme-star  .rp-xhs-card{background:rgba(14,8,40,.62)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none saturate(1.2)!important}
+#rp-phone.rp-theme-misty .rp-xhs-card{background:rgba(225,242,255,.60)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none saturate(1.2)!important}
 .rp-xhs-card::before{display:none}
 .rp-xhs-card:hover{background:rgba(255,255,255,.72)!important}
 #rp-phone.rp-theme-star  .rp-xhs-card:hover{background:rgba(18,10,50,.72)!important}
@@ -2687,7 +2687,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-xhs-comment>div:first-child>div:first-child{display:flex!important;align-items:center!important;gap:6px!important;margin-bottom:5px!important}
 .rp-xhs-comment>div:first-child>div:nth-child(2){font-size:12px!important;line-height:1.74!important;color:var(--rp-xhs-text-soft)!important}
 .rp-xhs-comment [data-reply-cidx]{margin-top:7px!important;color:var(--rp-xhs-accent)!important;background:var(--rp-xhs-chip)!important;border-radius:999px!important;padding:4px 10px!important;display:inline-flex!important}
-#rp-xhs-detail-input-bar{flex:0 0 auto!important;background:rgba(255,255,255,.72)!important;border-top:1px solid var(--rp-xhs-border)!important;backdrop-filter:blur(18px) saturate(1.4)!important;-webkit-backdrop-filter:blur(18px) saturate(1.4)!important;padding:8px 12px 10px!important;position:relative!important;z-index:10!important}
+#rp-xhs-detail-input-bar{flex:0 0 auto!important;background:rgba(255,255,255,.72)!important;border-top:1px solid var(--rp-xhs-border)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:8px 12px 10px!important;position:relative!important;z-index:10!important}
 #rp-phone.rp-theme-star  #rp-xhs-detail-input-bar{background:rgba(10,5,32,.72)!important;border-top-color:rgba(140,110,255,.2)!important}
 #rp-phone.rp-theme-misty #rp-xhs-detail-input-bar{background:rgba(220,240,255,.72)!important;border-top-color:rgba(100,170,220,.2)!important}
 #rp-xhs-detail-input,#rp-xhs-post-title,#rp-xhs-post-body{background:var(--rp-xhs-card)!important;border:1px solid var(--rp-xhs-border)!important;color:var(--rp-xhs-text)!important;box-shadow:0 4px 14px rgba(0,0,0,.03)!important}
@@ -2699,7 +2699,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-view-xhs-compose .rp-nav-bar .rp-back{padding:6px 10px!important;border-radius:999px!important;background:var(--rp-xhs-chip)!important;border:1px solid var(--rp-xhs-border)!important}
 #rp-view-xhs-compose .rp-nav-bar .rp-nav-title{font-weight:800!important;letter-spacing:.02em!important}
 #rp-view-xhs-compose>div:nth-child(2){padding:16px 14px 20px!important;background:transparent!important}
-#rp-view-xhs-compose>div:nth-child(2)>div{background:var(--rp-xhs-panel)!important;border:1px solid var(--rp-xhs-border)!important;border-radius:24px!important;padding:16px!important;box-shadow:var(--rp-xhs-shadow-2)!important;position:relative!important;overflow:hidden!important;backdrop-filter:blur(14px) saturate(1.08)!important;-webkit-backdrop-filter:blur(14px) saturate(1.08)!important}
+#rp-view-xhs-compose>div:nth-child(2)>div{background:var(--rp-xhs-panel)!important;border:1px solid var(--rp-xhs-border)!important;border-radius:24px!important;padding:16px!important;box-shadow:var(--rp-xhs-shadow-2)!important;position:relative!important;overflow:hidden!important;backdrop-filter:none saturate(1.08)!important;-webkit-backdrop-filter:none saturate(1.08)!important}
 #rp-view-xhs-compose>div:nth-child(2)>div::before{content:"";position:absolute;inset:0 0 auto 0;height:64px;background:linear-gradient(180deg,rgba(255,255,255,.18),transparent);pointer-events:none}
 #rp-view-xhs-compose [style*="font-size:11px;color:#999"]{color:var(--rp-xhs-text-soft)!important;font-size:11.5px!important;font-weight:700!important;letter-spacing:.02em!important}
 #rp-xhs-post-title{background:var(--rp-xhs-card)!important;border:1px solid var(--rp-xhs-border)!important;border-radius:18px!important;padding:13px 14px!important;margin-bottom:14px!important;font-size:14px!important;font-weight:700!important;box-shadow:0 4px 14px rgba(0,0,0,.03)!important}
@@ -3114,8 +3114,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── 回到上一版：玻璃磨砂卡 ── */
 .rp-ts-undo-btn {
   background: rgba(255,255,255,.52) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
   color: #7a1840 !important;
   border: 1.5px solid rgba(220,130,165,.35) !important;
   box-shadow: 0 3px 14px rgba(200,80,120,.12), inset 0 1px 0 rgba(255,255,255,.6) !important;
@@ -3145,8 +3145,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── Misty 主题 ── */
 #rp-phone.rp-theme-misty .rp-ts-undo-btn {
   background: rgba(230,244,255,.62) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
   border-color: rgba(100,165,210,.38) !important;
   color: #1a3a5a !important;
   box-shadow: 0 3px 14px rgba(60,120,180,.12), inset 0 1px 0 rgba(255,255,255,.7) !important;
@@ -3458,7 +3458,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark .rp-add-choice-item{color:#e0e4ff;border-bottom-color:rgba(255,255,255,.06)}
 .rp-add-choice-item:last-child{border-bottom:none}
 .rp-add-choice-item:active{background:rgba(0,0,0,.04)}
-.rp-add-choice-delete{color:#ef4444!important}#rp-del-picker{flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:0!important;background:transparent;overflow:hidden}#rp-del-picker::before{content:"";position:absolute;inset:-40px;z-index:0;background-image:var(--rp-home-wall);background-size:cover;background-position:center;filter:blur(28px) saturate(1.3) brightness(1.04)}#rp-del-picker::after{content:"";position:absolute;inset:0;z-index:1;background:rgba(255,245,250,.68)}#rp-del-picker > *{position:relative;z-index:2}#rp-del-picker .rp-nav-bar{background:rgba(255,255,255,.55)!important;backdrop-filter:blur(18px) saturate(1.5)!important;-webkit-backdrop-filter:blur(18px) saturate(1.5)!important;border-bottom:1px solid rgba(255,255,255,.45)!important;box-shadow:0 1px 0 rgba(0,0,0,.05)!important}#rp-del-picker #rp-del-cancel{color:var(--rp-nav-btn)!important;background:none!important;border:none!important;cursor:pointer!important;font-size:15px!important}#rp-del-picker #rp-del-confirm{color:#ef4444!important;font-weight:700!important;background:none!important;border:none!important;cursor:pointer!important;font-size:15px!important}#rp-del-list{flex:1;overflow-y:auto;padding:8px 0}.rp-del-pick-av{width:36px;height:36px;border-radius:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}.rp-del-pick-item{display:flex;align-items:center;gap:12px;padding:12px 18px;cursor:pointer;background:rgba(255,255,255,.45);border-bottom:1px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);transition:background .12s}.rp-del-pick-item:active{background:rgba(255,255,255,.65)}.rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.08);border-bottom-color:rgba(239,68,68,.15)}.rp-del-pick-name{flex:1;font-size:14px;font-weight:500;color:#222}.rp-del-chk{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid rgba(0,0,0,.22);flex-shrink:0;display:flex;align-items:center;justify-content:center}.rp-del-pick-item.rp-del-selected .rp-del-chk{background:#ef4444;border-color:#ef4444}.rp-del-pick-item.rp-del-selected .rp-del-chk::after{content:"✓";color:#fff;font-size:13px}.rp-dark #rp-del-picker::after{background:rgba(4,3,18,.86)}.rp-dark #rp-del-picker .rp-nav-bar{background:rgba(6,4,22,.55)!important;border-bottom-color:rgba(255,255,255,.07)!important}.rp-dark .rp-del-pick-item{background:rgba(255,255,255,.06);border-bottom-color:rgba(255,255,255,.05)}.rp-dark .rp-del-pick-item:active{background:rgba(255,255,255,.1)}.rp-dark .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.14)}.rp-dark .rp-del-pick-name{color:#e0e4ff}.rp-dark .rp-del-chk{border-color:rgba(255,255,255,.28)}#rp-phone.rp-theme-star #rp-del-picker::after{background:rgba(6,3,22,.82)}#rp-phone.rp-theme-star #rp-del-picker .rp-nav-bar{background:rgba(10,5,32,.55)!important;border-bottom-color:rgba(140,110,255,.2)!important}#rp-phone.rp-theme-star .rp-del-pick-item{background:rgba(140,100,255,.08);border-bottom-color:rgba(140,100,255,.12)}#rp-phone.rp-theme-star .rp-del-pick-item:active{background:rgba(140,100,255,.16)}#rp-phone.rp-theme-star .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.14)}#rp-phone.rp-theme-star .rp-del-pick-name{color:#dde0ff}#rp-phone.rp-theme-star .rp-del-chk{border-color:rgba(160,120,255,.45)}#rp-phone.rp-theme-candy #rp-del-picker::after{background:rgba(255,240,248,.64)}#rp-phone.rp-theme-candy #rp-del-picker .rp-nav-bar{background:rgba(255,255,255,.55)!important;border-bottom-color:rgba(200,100,140,.15)!important}#rp-phone.rp-theme-candy .rp-del-pick-item{background:rgba(255,255,255,.5);border-bottom-color:rgba(200,100,140,.1)}#rp-phone.rp-theme-candy .rp-del-pick-item:active{background:rgba(255,255,255,.72)}#rp-phone.rp-theme-candy .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.06)}#rp-phone.rp-theme-candy .rp-del-pick-name{color:#4a1030}#rp-phone.rp-theme-candy .rp-del-chk{border-color:rgba(200,100,140,.4)}#rp-phone.rp-theme-misty #rp-del-picker::after{background:rgba(222,240,255,.66)}#rp-phone.rp-theme-misty #rp-del-picker .rp-nav-bar{background:rgba(220,238,255,.55)!important;border-bottom-color:rgba(80,150,210,.18)!important}#rp-phone.rp-theme-misty .rp-del-pick-item{background:rgba(255,255,255,.5);border-bottom-color:rgba(100,160,210,.12)}#rp-phone.rp-theme-misty .rp-del-pick-item:active{background:rgba(255,255,255,.72)}#rp-phone.rp-theme-misty .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.06)}#rp-phone.rp-theme-misty .rp-del-pick-name{color:#1a3a5c}#rp-phone.rp-theme-misty .rp-del-chk{border-color:rgba(100,160,210,.4)}
+.rp-add-choice-delete{color:#ef4444!important}#rp-del-picker{flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:0!important;background:transparent;overflow:hidden}#rp-del-picker::before{content:"";position:absolute;inset:-40px;z-index:0;background-image:var(--rp-home-wall);background-size:cover;background-position:center;filter:none}#rp-del-picker::after{content:"";position:absolute;inset:0;z-index:1;background:rgba(255,245,250,.68)}#rp-del-picker > *{position:relative;z-index:2}#rp-del-picker .rp-nav-bar{background:rgba(255,255,255,.55)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-bottom:1px solid rgba(255,255,255,.45)!important;box-shadow:0 1px 0 rgba(0,0,0,.05)!important}#rp-del-picker #rp-del-cancel{color:var(--rp-nav-btn)!important;background:none!important;border:none!important;cursor:pointer!important;font-size:15px!important}#rp-del-picker #rp-del-confirm{color:#ef4444!important;font-weight:700!important;background:none!important;border:none!important;cursor:pointer!important;font-size:15px!important}#rp-del-list{flex:1;overflow-y:auto;padding:8px 0}.rp-del-pick-av{width:36px;height:36px;border-radius:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}.rp-del-pick-item{display:flex;align-items:center;gap:12px;padding:12px 18px;cursor:pointer;background:rgba(255,255,255,.45);border-bottom:1px solid rgba(255,255,255,.3);backdrop-filter:none;transition:background .12s}.rp-del-pick-item:active{background:rgba(255,255,255,.65)}.rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.08);border-bottom-color:rgba(239,68,68,.15)}.rp-del-pick-name{flex:1;font-size:14px;font-weight:500;color:#222}.rp-del-chk{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid rgba(0,0,0,.22);flex-shrink:0;display:flex;align-items:center;justify-content:center}.rp-del-pick-item.rp-del-selected .rp-del-chk{background:#ef4444;border-color:#ef4444}.rp-del-pick-item.rp-del-selected .rp-del-chk::after{content:"✓";color:#fff;font-size:13px}.rp-dark #rp-del-picker::after{background:rgba(4,3,18,.86)}.rp-dark #rp-del-picker .rp-nav-bar{background:rgba(6,4,22,.55)!important;border-bottom-color:rgba(255,255,255,.07)!important}.rp-dark .rp-del-pick-item{background:rgba(255,255,255,.06);border-bottom-color:rgba(255,255,255,.05)}.rp-dark .rp-del-pick-item:active{background:rgba(255,255,255,.1)}.rp-dark .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.14)}.rp-dark .rp-del-pick-name{color:#e0e4ff}.rp-dark .rp-del-chk{border-color:rgba(255,255,255,.28)}#rp-phone.rp-theme-star #rp-del-picker::after{background:rgba(6,3,22,.82)}#rp-phone.rp-theme-star #rp-del-picker .rp-nav-bar{background:rgba(10,5,32,.55)!important;border-bottom-color:rgba(140,110,255,.2)!important}#rp-phone.rp-theme-star .rp-del-pick-item{background:rgba(140,100,255,.08);border-bottom-color:rgba(140,100,255,.12)}#rp-phone.rp-theme-star .rp-del-pick-item:active{background:rgba(140,100,255,.16)}#rp-phone.rp-theme-star .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.14)}#rp-phone.rp-theme-star .rp-del-pick-name{color:#dde0ff}#rp-phone.rp-theme-star .rp-del-chk{border-color:rgba(160,120,255,.45)}#rp-phone.rp-theme-candy #rp-del-picker::after{background:rgba(255,240,248,.64)}#rp-phone.rp-theme-candy #rp-del-picker .rp-nav-bar{background:rgba(255,255,255,.55)!important;border-bottom-color:rgba(200,100,140,.15)!important}#rp-phone.rp-theme-candy .rp-del-pick-item{background:rgba(255,255,255,.5);border-bottom-color:rgba(200,100,140,.1)}#rp-phone.rp-theme-candy .rp-del-pick-item:active{background:rgba(255,255,255,.72)}#rp-phone.rp-theme-candy .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.06)}#rp-phone.rp-theme-candy .rp-del-pick-name{color:#4a1030}#rp-phone.rp-theme-candy .rp-del-chk{border-color:rgba(200,100,140,.4)}#rp-phone.rp-theme-misty #rp-del-picker::after{background:rgba(222,240,255,.66)}#rp-phone.rp-theme-misty #rp-del-picker .rp-nav-bar{background:rgba(220,238,255,.55)!important;border-bottom-color:rgba(80,150,210,.18)!important}#rp-phone.rp-theme-misty .rp-del-pick-item{background:rgba(255,255,255,.5);border-bottom-color:rgba(100,160,210,.12)}#rp-phone.rp-theme-misty .rp-del-pick-item:active{background:rgba(255,255,255,.72)}#rp-phone.rp-theme-misty .rp-del-pick-item.rp-del-selected{background:rgba(239,68,68,.06)}#rp-phone.rp-theme-misty .rp-del-pick-name{color:#1a3a5c}#rp-phone.rp-theme-misty .rp-del-chk{border-color:rgba(100,160,210,.4)}
 .rp-grp-pick-item{display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.05);transition:background .12s}.rp-grp-pick-item:active{background:rgba(0,0,0,.04)}.rp-grp-pick-item.selected{background:rgba(37,99,235,.06)}.rp-dark .rp-grp-pick-item{border-bottom-color:rgba(255,255,255,.05)}.rp-dark .rp-grp-pick-item.selected{background:rgba(90,120,255,.1)}.rp-grp-pick-av{width:36px;height:36px;border-radius:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}.rp-grp-pick-name{flex:1;font-size:14px;font-weight:500;color:#222}.rp-dark .rp-grp-pick-name{color:#e0e4ff}.rp-grp-pick-chk{width:22px;height:22px;border-radius:11px;border:1.5px solid rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;flex-shrink:0;transition:all .15s}
 .rp-grp-pick-item.selected .rp-grp-pick-chk{background:#2563eb;border-color:#2563eb;color:#fff}
 .rp-grp-modal{background:#fff;border-radius:16px;overflow:hidden;width:90%;max-width:290px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
@@ -3508,15 +3508,15 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-view{z-index:1}
 
 /* ══ LUDO GAME - Candy Garden 糖果花园 ══ */
-#rp-view-game{background:transparent;display:flex;flex-direction:column}
+#rp-view-game{background:transparent;display:flex;flex-direction:column;overflow:hidden;height:100%}
 .rp-dark #rp-view-game{background:transparent}
 #rp-view-game .rp-nav-bar{background:rgba(255,255,255,.55)!important;border-bottom:1px solid rgba(180,120,200,.2)!important}
 #rp-view-game .rp-nav-title{color:#4a1060!important;font-weight:700}
 .rp-dark #rp-view-game .rp-nav-title{color:#e8d0ff!important}
 #rp-view-game .rp-back{color:#b060d0!important}
 /* Board */
-#rp-game-board-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 0;overflow:hidden;min-height:0}
-#rp-ludo-canvas{border-radius:16px;max-width:262px;max-height:262px;display:block;box-shadow:0 4px 24px rgba(160,80,200,.18),0 1px 0 rgba(255,255,255,.9) inset,0 8px 32px rgba(0,0,0,.08)}
+#rp-game-board-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 0;overflow:hidden;min-height:0;max-height:calc(100% - 140px)}
+#rp-ludo-canvas{border-radius:16px;max-width:242px;max-height:242px;display:block;box-shadow:0 4px 24px rgba(160,80,200,.18),0 1px 0 rgba(255,255,255,.9) inset,0 8px 32px rgba(0,0,0,.08)}
 /* Controls */
 #rp-game-controls{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(255,255,255,.55);border-top:1px solid rgba(180,120,200,.18);flex-shrink:0;gap:10px}
 .rp-dark #rp-game-controls{background:rgba(30,10,40,.7);border-top-color:rgba(200,120,255,.1)}
@@ -3538,7 +3538,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark #rp-game-chat{background:rgba(30,10,40,.4);border-top-color:rgba(200,120,255,.08)}
 #rp-game-chat-hint{font-size:9.5px;color:rgba(160,80,200,.5);text-align:right;padding:0 14px 1px;flex-shrink:0}
 /* Full-screen chat */
-#rp-game-chat-fs{position:absolute;top:12%;bottom:0;left:0;right:0;z-index:200;background:rgba(250,245,255,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;flex-direction:column}
+#rp-game-chat-fs{position:absolute;top:12%;bottom:0;left:0;right:0;z-index:200;background:rgba(250,245,255,.97);backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;flex-direction:column}
 .rp-dark #rp-game-chat-fs{background:rgba(18,8,28,.97)}
 #rp-game-chat-fs-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(180,120,200,.15);flex-shrink:0}
 #rp-game-chat-fs-title{font-size:14px;font-weight:600;color:#4a1060}
@@ -3556,7 +3556,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .game-msg-sys{color:#9ca3af;text-align:center;font-style:italic}
 .rp-dark .game-msg-sys{color:rgba(255,255,255,.35)}
 /* ── Square Event Popup - bright clean card ── */
-#rp-sq-event{position:absolute;inset:0;z-index:60;background:rgba(100,50,150,.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;border-radius:48px}
+#rp-sq-event{position:absolute;inset:0;z-index:60;background:rgba(100,50,150,.25);backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;align-items:center;justify-content:center;border-radius:48px}
 #rp-sq-event-box{background:#fff;border:1px solid rgba(200,150,255,.3);border-radius:24px;padding:24px 22px;max-width:230px;text-align:center;box-shadow:0 8px 40px rgba(150,80,200,.2),0 2px 8px rgba(0,0,0,.08)}
 .rp-dark #rp-sq-event-box{background:linear-gradient(145deg,#1e0a30,#120520)}
 #rp-sq-event-sq{font-size:10px;color:#b07ad0;margin-bottom:8px;letter-spacing:1.5px;text-transform:uppercase}
@@ -3591,7 +3591,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-game-send{width:28px!important;height:28px!important;min-width:28px!important;border-radius:14px!important;background:linear-gradient(135deg,#f472b6,#a855f7)!important;border:none!important;color:#fff!important;font-size:14px!important;cursor:pointer!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-shrink:0!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;padding:0!important;margin:0!important;box-shadow:0 2px 8px rgba(168,85,247,.35)!important}
 #rp-game-send:hover{opacity:.85!important}
 /* Win overlay */
-#rp-game-win{position:absolute;inset:0;background:rgba(120,60,180,.3);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
+#rp-game-win{position:absolute;inset:0;background:rgba(120,60,180,.3);backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
 .game-win-box{background:#fff;border:1px solid rgba(200,150,255,.3);border-radius:28px;padding:32px 24px;text-align:center;max-width:224px;width:88%;box-shadow:0 12px 48px rgba(160,80,200,.25),0 2px 8px rgba(0,0,0,.06)}
 .rp-dark .game-win-box{background:linear-gradient(145deg,#1e0a30,#120520);border-color:rgba(200,150,255,.2)}
 .game-win-emoji{font-size:66px;margin-bottom:10px;line-height:1}
@@ -3632,7 +3632,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   text-shadow: 0 1px 6px rgba(0,0,0,0.55); text-align: center; letter-spacing: .8px;
 }
 .rp-folder-popup {
-  background: rgba(255,255,255,0.18); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  background: rgba(255,255,255,0.18); backdrop-filter:none; -webkit-backdrop-filter:none;
   border: 1px solid rgba(255,255,255,0.28); border-radius: 26px; padding: 18px 16px;
   display: flex; flex-direction: row; flex-wrap: wrap; gap: 14px; align-items: flex-start;
   justify-content: flex-start; max-width: 260px;
@@ -3727,7 +3727,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-misty .rp-fi-empty { opacity: 0 !important; }
 #rp-phone.rp-theme-misty #rp-folder-modal {
   background: rgba(160,195,220,0.38);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  backdrop-filter:none; -webkit-backdrop-filter:none;
 }
 #rp-phone.rp-theme-misty .rp-folder-popup {
   background: rgba(230,242,252,0.55);
@@ -3764,7 +3764,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #ggold-launch-btn:disabled{opacity:.45;cursor:not-allowed}
 #ggold-turn-badge{font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.32);padding:2px 10px;border-radius:12px;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #ggold-chat-hint{font-size:9.5px;color:rgba(224,64,122,.65);text-align:right;padding:0 14px 1px;flex-shrink:0}
-#ggold-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:blur(5px);cursor:pointer}
+#ggold-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:none;cursor:pointer}
 #ggold-chat::-webkit-scrollbar{display:none}
 #ggold-input-row{display:flex;gap:6px;padding:6px 12px 10px;flex-shrink:0;border-top:1px solid rgba(0,0,0,.06)}
 #ggold-input{flex:1;border-radius:18px;border:1px solid rgba(0,0,0,.12);padding:6px 12px;font-size:13px;background:rgba(255,255,255,.88);font-family:inherit;outline:none;color:#1a1008}
@@ -3774,7 +3774,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .ggold-over-title{font-size:19px;font-weight:800;color:#fff}
 .ggold-over-sub{font-size:12px;color:rgba(255,255,255,.8);text-align:center;padding:0 20px;line-height:1.5;white-space:pre-line}
 .ggold-over-btn{padding:8px 18px;border-radius:20px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-top:2px}
-#ggold-mode-select{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:48px;backdrop-filter:blur(6px)}
+#ggold-mode-select{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:48px;backdrop-filter:none}
 .ggold-mode-title{font-size:17px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
 .ggold-mode-sub{font-size:11px;color:rgba(255,255,255,.72);text-align:center;padding:0 24px;line-height:1.5;margin-top:-8px}
 .ggold-mode-btn{width:180px;padding:10px 0;border-radius:22px;border:none;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.22)}
@@ -3798,7 +3798,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #gword-round-info{font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.32);padding:2px 10px;border-radius:12px;white-space:nowrap}
 #gword-status{text-align:center;padding:2px 12px;font-size:12px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);flex-shrink:0;min-height:18px}
 #gword-chat-hint{font-size:9.5px;color:rgba(224,64,122,.65);text-align:right;padding:0 14px 1px;flex-shrink:0}
-#gword-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:blur(5px);cursor:pointer}
+#gword-chat{flex:1 1 0;min-height:0;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column;gap:2px;margin:0 8px;background:rgba(0,0,0,.28);border-radius:8px;backdrop-filter:none;cursor:pointer}
 #gword-chat::-webkit-scrollbar{display:none}
 #gword-input-row{display:flex;gap:6px;padding:6px 12px 10px;flex-shrink:0;border-top:1px solid rgba(0,0,0,.06);align-items:center}
 #gword-input{flex:1;border-radius:18px;border:1px solid rgba(0,0,0,.12);padding:6px 12px;font-size:13px;background:rgba(255,255,255,.88);font-family:inherit;outline:none;color:#1a1008}
@@ -3810,13 +3810,13 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .gword-over-title{font-size:19px;font-weight:800;color:#fff}
 .gword-over-sub{font-size:12px;color:rgba(255,255,255,.8);text-align:center;padding:0 20px;line-height:1.5;white-space:pre-line}
 .gword-over-btn{padding:8px 18px;border-radius:20px;border:none;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-top:2px}
-#gword-mode-select{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:48px;backdrop-filter:blur(6px)}
+#gword-mode-select{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:48px;backdrop-filter:none}
 .gword-mode-title{font-size:17px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
 .gword-mode-sub{font-size:11px;color:rgba(255,255,255,.72);text-align:center;padding:0 24px;line-height:1.5;margin-top:-8px}
 .gword-mode-btn{width:180px;padding:10px 0;border-radius:22px;border:none;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.22)}
 #gword-mode-char{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff}
 #gword-mode-user{background:linear-gradient(135deg,#f472b6,#db2777);color:#fff}
-#gword-chat-fs{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:flex;flex-direction:column}
+#gword-chat-fs{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.78);backdrop-filter:none;display:flex;flex-direction:column}
 #gword-chat-fs-hd{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.12)}
 #gword-chat-fs-title{color:#fff;font-weight:600;font-size:14px}
 #gword-chat-fs-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:50%;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
@@ -3861,7 +3861,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-api-btn{width:30px;height:30px;border-radius:15px;background:rgba(168,85,247,.1);border:1.5px solid rgba(168,85,247,.22);color:#7c3aed;font-size:12px;cursor:pointer;display:flex!important;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;font-weight:700;padding:0;visibility:visible!important;pointer-events:auto!important}
 #rp-api-btn:hover{background:rgba(168,85,247,.22)}
 .rp-dark #rp-api-btn{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.3);color:#c084fc}
-#rp-api-panel{position:absolute;inset:0;z-index:80;background:rgba(80,30,130,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;border-radius:48px}
+#rp-api-panel{position:absolute;inset:0;z-index:80;background:rgba(80,30,130,.28);backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;align-items:center;justify-content:center;border-radius:48px}
 #rp-api-box{background:#fff;border:1px solid rgba(200,150,255,.3);border-radius:24px;padding:22px 20px;width:222px;max-width:92%;box-shadow:0 8px 40px rgba(150,80,200,.22)}
 .rp-dark #rp-api-box{background:linear-gradient(145deg,#1e0a30,#120520);border-color:rgba(200,150,255,.2)}
 .rp-api-title{font-size:15px;font-weight:800;color:#2d1060;margin-bottom:5px}
@@ -4163,7 +4163,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   position: absolute; bottom: -18px; left: 15%; right: 15%;
   height: 36px;
   background: var(--bank-hero-border);
-  filter: blur(18px);
+  filter:none;
   opacity: .38;
   pointer-events: none;
   z-index: -1;
@@ -4179,7 +4179,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   border-radius: 20px;
   padding: 3px 10px 3px 7px;
   margin-bottom: 14px;
-  backdrop-filter: blur(8px);
+  backdrop-filter:none;
 }
 .rp-bank-hero-chip-dot {
   width: 6px; height: 6px;
@@ -4604,7 +4604,6 @@ function injectStyles() {
   style.id = 'rp-phone-css';
   style.textContent = RP_PHONE_CSS;
   document.head.appendChild(style);
-  console.log('[Raymond Phone] CSS injected');
 }
 
 // ST extensions use global variables, not ES6 modules
@@ -4617,19 +4616,21 @@ const getContext = window.getContext || SillyTavern?.getContext || (() => ({}));
 // extension_settings 是 ES module export,不在 window 上
 let _rp_ext_settings = null;
 let _rp_save_fn = null;
+let _rp_script_mod = null;
 (async function _rpLoadModules() {
   try {
     const ext = await import('../../../extensions.js');
     if (ext && ext.extension_settings) {
       _rp_ext_settings = ext.extension_settings;
-      console.log('[Phone] extension_settings 加载成功 ✅');
     }
   } catch(e) { console.warn('[Phone] 无法加载 extensions.js:', e.message); }
   try {
     const scr = await import('../../../../script.js');
-    if (scr && typeof scr.saveSettingsDebounced === 'function') {
-      _rp_save_fn = scr.saveSettingsDebounced;
-      console.log('[Phone] saveSettingsDebounced 加载成功 ✅');
+    if (scr) {
+      _rp_script_mod = scr;
+      if (typeof scr.saveSettingsDebounced === 'function') {
+        _rp_save_fn = scr.saveSettingsDebounced;
+      }
     }
   } catch(e) { console.warn('[Phone] 无法加载 script.js:', e.message); }
 })();
@@ -4763,7 +4764,6 @@ function flushStateNow() {
           if (k.startsWith('rp-phone-v1-') && k !== curKey) localStorage.removeItem(k);
         });
         localStorage.setItem(curKey, jsonStr);
-        console.log('[Phone] saveState: cleared old keys, retry ok');
       } catch(q2) {
         console.warn('[Raymond Phone] saveState failed even after cleanup', q2);
       }
@@ -5009,7 +5009,6 @@ function autoAddCharContact() {
     if (!created) return;
     renderThreadList();
     saveState();
-    console.log('[Phone] 自动添加联系人:', charName);
   } catch(e) { /* ignore */ }
 }
 
@@ -5023,7 +5022,6 @@ function cleanInvalidContacts() {
     if (isForbiddenPhoneContactName(name, ctx)) {
       delete STATE.threads[k];
       changed = true;
-      console.log('[Phone] 清理无效联系人:', name);
     }
   });
   if (changed) { renderThreadList(); saveState(); }
@@ -5067,7 +5065,6 @@ function mergeDuplicateThreads() {
     delete STATE.threads[drop.id];
     if (STATE.currentThread === drop.id) STATE.currentThread = keep.id;
     changed = true;
-    console.log('[Phone] 合并重复联系人线程:', { keep: keep.name, drop: drop.name, keepId: keep.id, dropId: drop.id });
   });
 
   if (changed) {
@@ -5088,7 +5085,6 @@ function syncToCurrentChat() {
   // 切换前把当前头像备份到 _AV(防止切换后丢失)
   Object.assign(_AV, STATE.avatars || {});
 
-  console.log('[Phone] syncToCurrentChat:', STATE.chatId, '->', newChatId);
 
   // 保存旧窗口状态
   // FIX: CHAT_CHANGED 可能未及时触发，导致 STATE.chatId 滞后，此时内存里的 moments/diary
@@ -5164,7 +5160,6 @@ function syncToCurrentChat() {
 
   cleanInvalidContacts();
   mergeDuplicateThreads();
-  autoAddCharContact();
   go('lock');
   renderThreadList();
   refreshBadges();
@@ -5202,7 +5197,6 @@ async function fetchServerSettings() {
         try { localStorage.setItem('rp-phone-v1-' + k, JSON.stringify(serverEs[EXT_KEY][k])); } catch(e3) {}
       });
     }
-    console.log('[Phone] 从服务器同步完成');
     return true;
   } catch(e) {
     console.warn('[Phone] fetchServerSettings 失败:', e);
@@ -5258,6 +5252,71 @@ function normalizePhonePersonName(nameRaw) {
     .toLowerCase();
 }
 
+function isPhoneUserName(nameRaw, ctx) {
+  const name = normalizePhonePersonName(nameRaw);
+  if (!name) return false;
+  const userName = normalizePhonePersonName((ctx?.name1 || '').trim());
+  if (userName && name === userName) return true;
+  return /^(user|me|self|myself|我|自己)$/.test(name);
+}
+
+function shouldHideMomentCommentByName(commentLike, comments, ctx, seen) {
+  if (!commentLike) return false;
+  if (!seen) seen = new Set();
+  if (seen.has(commentLike)) return false;
+  seen.add(commentLike);
+
+  const selfName = commentLike.name || commentLike.user || commentLike.from || '';
+  if (isPhoneUserName(selfName, ctx)) return true;
+
+  const replyTo = commentLike.replyTo;
+  if (replyTo === null || replyTo === undefined) return false;
+
+  if (typeof replyTo === 'number' && Array.isArray(comments) && comments[replyTo]) {
+    const target = comments[replyTo];
+    const targetName = target?.name || target?.user || target?.from || '';
+    if (isPhoneUserName(targetName, ctx)) return true;
+    return shouldHideMomentCommentByName(target, comments, ctx, seen);
+  }
+
+  if (typeof replyTo === 'string') {
+    if (isPhoneUserName(replyTo, ctx)) return true;
+    if (Array.isArray(comments)) {
+      const target = comments.find(c => normalizePhonePersonName(c?.name || c?.user || c?.from || '') === normalizePhonePersonName(replyTo));
+      if (target) return shouldHideMomentCommentByName(target, comments, ctx, seen);
+    }
+  }
+
+  return false;
+}
+
+function getVisibleMomentComments(comments, ctx) {
+  const list = Array.isArray(comments) ? comments : [];
+  return list.filter(function(cm) {
+    return !shouldHideMomentCommentByName(cm, list, ctx);
+  });
+}
+
+function getVisibleMomentCommentsWithIndexMap(comments, ctx) {
+  const list = Array.isArray(comments) ? comments : [];
+  const visible = [];
+  const oldToNew = {};
+  list.forEach(function(cm, idx) {
+    if (!shouldHideMomentCommentByName(cm, list, ctx)) {
+      oldToNew[idx] = visible.length;
+      visible.push(Object.assign({ __oldIdx: idx }, cm));
+    }
+  });
+  visible.forEach(function(cm) {
+    if (typeof cm.replyTo === 'number') {
+      cm.replyTo = (oldToNew[cm.replyTo] !== undefined) ? oldToNew[cm.replyTo] : null;
+    } else if (typeof cm.replyTo === 'string' && isPhoneUserName(cm.replyTo, ctx)) {
+      cm.replyTo = null;
+    }
+  });
+  return visible;
+}
+
 function getPhoneNameAliases() {
   if (!STATE.nameAliases || typeof STATE.nameAliases !== 'object') STATE.nameAliases = {};
   return STATE.nameAliases;
@@ -5293,7 +5352,6 @@ function rememberPhoneNameAlias(aliasRaw, canonicalRaw) {
   const aliasMap = getPhoneNameAliases();
   if (aliasMap[aliasNorm] === canonical) return false;
   aliasMap[aliasNorm] = canonical;
-  console.log('[Phone] 记录联系人别名映射:', { alias, canonical });
   return true;
 }
 
@@ -5319,7 +5377,6 @@ function tryResolveUnknownSenderAsMainChar(nameRaw, ctx) {
   if (!mainCharName || !mainThread) return null;
   if (matchThread(cleanedName)) return null;
   rememberPhoneNameAlias(cleanedName, mainThread.name || mainCharName);
-  console.log('[Phone] 将陌生发信人并入当前主角:', { alias: cleanedName, canonical: mainThread.name || mainCharName });
   return mainThread;
 }
 
@@ -5332,7 +5389,6 @@ function findOrCreateThread(nameRaw) {
     .replace(/\s+/g, ' ')
     .trim();
   if (isForbiddenPhoneContactName(cleanedName, ctx)) {
-    console.log('[Phone:guard] blocked contact creation for user/invalid name:', cleanedName);
     return null;
   }
   const canonicalName = resolveCanonicalPhoneName(cleanedName) || cleanedName;
@@ -5378,7 +5434,6 @@ function saveGlobalAvatars() {
   try {
     const json = JSON.stringify(STATE.avatars || {});
     sessionStorage.setItem('rp-phone-avatars-global', json);
-    console.log('[Phone:av] saved to sessionStorage, keys:', Object.keys(STATE.avatars || {}));
   } catch(e) {
     console.warn('[Phone:av] sessionStorage save failed:', e);
   }
@@ -5582,7 +5637,7 @@ const HTML = `
                   <circle cx="185" cy="175" r="2"   fill="currentColor" opacity=".09"/>
                 </svg>
                 <div class="rp-about-card">
-                  <div id="rp-about-title">🍡 mochi-phone</div>
+                  <div id="rp-about-title">🍡 mochiphone</div>
                   <div id="rp-about-author">by 棠栀 Talia</div>
                   <div id="rp-about-divider"></div>
                   <div id="rp-about-notice">
@@ -6023,7 +6078,7 @@ const HTML = `
             <span></span>
           </div>
           <div id="rp-game-board-wrap">
-            <canvas id="rp-ludo-canvas" width="260" height="260"></canvas>
+            <canvas id="rp-ludo-canvas" width="240" height="240"></canvas>
           </div>
           <div id="rp-game-controls">
             <div class="rp-game-info">
@@ -6031,6 +6086,7 @@ const HTML = `
               <div class="rp-game-status" id="rp-game-status-text">按骰子开始!</div>
             </div>
             <button id="rp-dice-btn" type="button" title="掷骰子">🎲</button>
+            <button id="rp-newboard-btn" type="button" title="换棋盘" style="width:auto;height:28px;border-radius:14px;background:linear-gradient(145deg,#818cf8,#c084fc);border:none;color:#fff;font-size:11px;cursor:pointer;box-shadow:0 2px 8px rgba(129,140,248,.3);flex-shrink:0;padding:0 10px;letter-spacing:0.5px">换图</button>
             <div id="rp-dice-face"></div>
           </div>
           <div id="rp-game-chat-hint" style="font-size:9.5px;color:rgba(224,64,122,.65);text-align:right;padding:0 14px 1px;flex-shrink:0">点击展开 ↗</div>
@@ -6046,6 +6102,14 @@ const HTML = `
               <div class="game-win-sub" id="game-win-sub">你率先抵达终点,赢得了这场飞行棋!</div>
               <button class="game-win-btn" id="game-restart-btn" type="button">再来一局</button>
             </div>
+          </div>
+          <div id="rp-ludo-spicy" style="position:absolute;inset:0;background:rgba(250,245,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:101;gap:12px;padding:20px">
+            <div style="font-size:20px">🎲</div>
+            <div style="font-size:15px;font-weight:700;color:#7c3aed">选择今晚的尺度</div>
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">任务会根据选择随机生成</div>
+            <button class="rp-spicy-btn" data-spicy="1" style="width:180px;padding:10px;border:2px solid #f9a8d4;border-radius:14px;background:#fdf2f8;font-size:14px;cursor:pointer;font-weight:600;color:#be185d">🌸 清纯版</button>
+            <button class="rp-spicy-btn" data-spicy="2" style="width:180px;padding:10px;border:2px solid #f87171;border-radius:14px;background:#fef2f2;font-size:14px;cursor:pointer;font-weight:600;color:#dc2626">🔥 普通版</button>
+            <button class="rp-spicy-btn" data-spicy="3" style="width:180px;padding:10px;border:2px solid #c084fc;border-radius:14px;background:#faf5ff;font-size:14px;cursor:pointer;font-weight:600;color:#7c3aed">💋 大胆版</button>
           </div>
           <!-- API 设置面板 -->
           <div id="rp-api-panel" style="display:none">
@@ -6187,7 +6251,7 @@ const HTML = `
 // ================================================================
 async function init() {
   // ── 版权水印（仅开发者控制台可见）──
-  console.log('%c🍡 mochi-phone | 免费发布于 DC社区·旅程 / 类脑 / 多林国 | 其他渠道获取均视为盗版', 'color:#e06080;font-size:12px;font-weight:600;');
+  console.log('%c🍡 mochiphone | 免费发布于 DC社区·旅程 / 类脑 / 多林国 | 其他渠道获取均视为盗版', 'color:#e06080;font-size:12px;font-weight:600;');
 
   // Hot-reload safety: remove stale phone element & force CSS re-inject
   const stale = document.getElementById('rp-wrapper');
@@ -6269,14 +6333,12 @@ async function init() {
     // 恢复上次停留的界面(仅限同一 session 内,刷新页面后回锁屏)
     STATE._savedView = saved.currentView || null;
     STATE._savedThread = saved.currentThread || null;
-    console.log('[Raymond Phone] 已恢复历史状态 chatId:', STATE.chatId);
   }
   // 合并全局头像(优先级最高,覆盖 chatId 绑定的旧头像)
   mergeGlobalAvatars();
   // 同步到 _AV 和 window._rpAV
   Object.assign(_AV, STATE.avatars || {});
   window._rpAV = Object.assign(window._rpAV || {}, STATE.avatars || {});
-  console.log('[Phone:av] init avatars:', Object.keys(window._rpAV || {}));
   // 立即同步清理无效联系人(不等延迟,防止用户看到 SillyTavern)
   cleanInvalidContacts();
 
@@ -6299,7 +6361,6 @@ async function init() {
             from: msg.from, type: 'pending_image', prompt, time: msg.time || ''
           };
           changed = true;
-          console.log('[Phone:migrate] 旧消息迁移为 pending_image', { prompt: prompt.slice(0,50) });
         }
       });
     }
@@ -6326,16 +6387,12 @@ async function init() {
   const liveES = (liveCtx && liveCtx.eventSource) || eventSource;
   // event_types 可能在 context 里叫 eventTypes 或 event_types
   const liveET = (liveCtx && (liveCtx.eventTypes || liveCtx.event_types)) || event_types;
-  console.log('[Phone:init] liveES=', typeof liveES, !!liveES, 'same_as_const=', liveES === eventSource,
-    'liveET=', typeof liveET, !!liveET, liveET ? Object.keys(liveET).slice(0,8) : 'N/A',
-    'ctx_keys=', liveCtx ? Object.keys(liveCtx).filter(k => /event/i.test(k)) : 'no ctx');
   if (liveES && liveET) {
     const aiEvtKeys = ['MESSAGE_RECEIVED', 'GENERATION_ENDED', 'MESSAGE_SWIPED'];
     aiEvtKeys.forEach(k => {
       const ev = liveET[k];
-      console.log('[Phone:init] event key', k, '→', ev, ev ? '✅ registering' : '❌ missing');
       if (ev) {
-        try { liveES.on(ev, onAIMessage); console.log('[Phone:init] registered', k, 'OK'); } catch(e) { console.error('[Phone:init] register FAILED', k, e); }
+        try { liveES.on(ev, onAIMessage); } catch(e) { console.error('[Phone:init] register FAILED', e); }
       }
     });
     // 用户消息渲染后也清理 OOC（处理历史记录重新渲染的情况）
@@ -6401,18 +6458,12 @@ async function init() {
               const isInChat = !!img.closest('.mes_block, .mes');
               if (!isInMesText && !isChatu8 && !isInChat) continue;
 
-              const ts = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
+              const ts = resolvePhoneTime();
 
               // ── 朋友圈生图优先：仅当 waitQueue 里有朋友圈条目（threadId=null）时才截图给朋友圈 ──
               // 若 waitQueue 只有线程条目（SMS生图）或为空（ComfyUI自动生图），不走此路径
               const _hasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => !e.threadId);
               if (STATE._pendingMomentImgs && STATE._pendingMomentImgs.size > 0 && _hasMomentInQueue) {
-                console.log('[Phone:moment:obs:diag] 触发朋友圈路径检查', {
-                  pendingSize: STATE._pendingMomentImgs.size,
-                  pendingKeys: Array.from(STATE._pendingMomentImgs.keys()).map(k => k.slice(0, 40)),
-                  src: src.slice(0, 60),
-                  waitQueueLen: (window.rpImgWaitQueue || []).length,
-                });
                 // 优先检查 img 的 prompt 属性做精确匹配
                 const imgPromptAttr = (img.getAttribute('prompt') || img.getAttribute('data-prompt') || '').trim();
                 let matchedMomentId = null;
@@ -6420,17 +6471,13 @@ async function init() {
                   if (STATE._pendingMomentImgs.has(imgPromptAttr)) {
                     matchedMomentId = STATE._pendingMomentImgs.get(imgPromptAttr);
                     STATE._pendingMomentImgs.delete(imgPromptAttr);
-                    console.log('[Phone:moment:obs:diag] prompt 精确匹配成功', { matchedMomentId, prompt: imgPromptAttr.slice(0, 40) });
                   } else {
                     const short = imgPromptAttr.slice(0, 50);
                     for (const [k, v] of STATE._pendingMomentImgs) {
                       if (k.slice(0, 50) === short) { matchedMomentId = v; STATE._pendingMomentImgs.delete(k); break; }
                     }
-                    if (matchedMomentId) console.log('[Phone:moment:obs:diag] prompt 模糊匹配成功', { matchedMomentId });
-                    else console.log('[Phone:moment:obs:diag] prompt 属性匹配失败，走兜底', { imgPromptAttr: imgPromptAttr.slice(0, 40) });
                   }
                 } else {
-                  console.log('[Phone:moment:obs:diag] img 无 prompt 属性，走兜底');
                 }
                 // 若无 prompt 属性，兜底：遍历 waitQueue 朋友圈条目，优先通过其 prompt
                 // 在 _pendingMomentImgs 里精确反查 momentId（防止多 moment 并发时顺序错配）
@@ -6446,7 +6493,6 @@ async function init() {
                       bestEntry = entry;
                       matchedMomentId = STATE._pendingMomentImgs.get(entry.prompt);
                       STATE._pendingMomentImgs.delete(entry.prompt);
-                      console.log('[Phone:moment:obs:diag] 兜底从 waitQueue.prompt 精确反查 momentId', { matchedMomentId, prompt: entry.prompt.slice(0, 40) });
                       break;
                     }
                     // 模糊匹配（前50字符）
@@ -6456,7 +6502,6 @@ async function init() {
                         bestEntry = entry;
                         matchedMomentId = v;
                         STATE._pendingMomentImgs.delete(k);
-                        console.log('[Phone:moment:obs:diag] 兜底从 waitQueue.prompt 模糊反查 momentId', { matchedMomentId, prompt: entry.prompt.slice(0, 40) });
                         break;
                       }
                     }
@@ -6471,19 +6516,16 @@ async function init() {
                       for (const [k, v] of STATE._pendingMomentImgs) {
                         if (v === matchedMomentId) { STATE._pendingMomentImgs.delete(k); break; }
                       }
-                      console.log('[Phone:moment:obs:diag] 兜底从 waitQueue 顺序取 momentId（无 prompt 反查）', { matchedMomentId });
                     } else {
                       // 降级：waitQueue 里没有朋友圈条目，取 _pendingMomentImgs 第一条（最后手段）
                       const firstKey = STATE._pendingMomentImgs.keys().next().value;
                       matchedMomentId = STATE._pendingMomentImgs.get(firstKey);
                       STATE._pendingMomentImgs.delete(firstKey);
-                      console.log('[Phone:moment:obs:diag] 兜底取 _pendingMomentImgs 第一条（waitQueue 无朋友圈条目）', { firstKey: (firstKey||'').slice(0, 40), matchedMomentId });
                     }
                   }
                 }
                 if (matchedMomentId) {
                   const moment = STATE.moments && STATE.moments.find(mo => mo.id === matchedMomentId);
-                  console.log('[Phone:moment:obs:diag] moment 查找结果', { matchedMomentId, found: !!moment, hasImg: !!moment?.img, imgVal: (moment?.img||'').slice(0,40) });
                   if (moment && !moment.img) {
                     moment.img = src;
                     moment.pendingImg = null;
@@ -6491,24 +6533,20 @@ async function init() {
                     // 成功回填后，同步清理 waitQueue 里该 moment 的残留条目，避免下一张图误消费
                     if (window.rpImgWaitQueue && window.rpImgWaitQueue.length) {
                       const wIdx = window.rpImgWaitQueue.findIndex(e => !e.threadId && e.pendingMsgId === matchedMomentId);
-                      if (wIdx >= 0) { window.rpImgWaitQueue.splice(wIdx, 1); console.log('[Phone:moment:obs:diag] 同步清理 waitQueue 条目', { matchedMomentId }); }
+                      if (wIdx >= 0) { window.rpImgWaitQueue.splice(wIdx, 1); ; }
                     }
                     // 双保险：直接 DOM 手术精准替换图片区域（不依赖 currentView 判断）
                     const $momentEl = $(`#rp-moments-list .rp-moment[data-mid="${matchedMomentId}"]`);
                     if ($momentEl.length) {
                       $momentEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
-                      console.log('[Phone:moment:obs] 直接 DOM 手术更新图片 ✅', { momentId: matchedMomentId });
                     }
                     if (STATE.currentView === 'moments') renderMoments();
                     saveState();
-                    console.log('[Phone:moment:obs] 朋友圈配图回填（Observer）✅', { momentId: matchedMomentId, src: src.slice(0, 80) });
                     continue; // 成功回填，跳过线程路由
                   } else if (moment && moment.img) {
-                    console.log('[Phone:moment:obs] 朋友圈图已存在，跳过', { momentId: matchedMomentId });
                     continue; // 图已存在，不再路由
                   } else {
                     // moment 不存在（兜底取错了 key），不 continue，降级走 waitQueue 路径
-                    console.log('[Phone:moment:obs] moment 不存在（兜底 key 不匹配），降级走 waitQueue', { matchedMomentId });
                   }
                 }
               }
@@ -6518,7 +6556,6 @@ async function init() {
                 const waitEntry = window.rpImgWaitQueue[0];
                 if (!waitEntry) continue;
                 if (now - waitEntry.addedAt < -2000) continue;
-                console.log('[Phone:obs:diag] 进入 waitQueue 线程路由', { threadId: waitEntry.threadId, pendingMsgId: waitEntry.pendingMsgId, src: src.slice(0,60) });
 
                 const { threadId: targetThread, pendingMsgId: targetPendingId } = waitEntry;
 
@@ -6531,14 +6568,12 @@ async function init() {
                     if (STATE._pendingMomentImgs.has(waitEntry.prompt)) {
                       resolvedMomentId = STATE._pendingMomentImgs.get(waitEntry.prompt);
                       STATE._pendingMomentImgs.delete(waitEntry.prompt);
-                      console.log('[Phone:chatu8:moment] waitEntry.prompt 精确反查 momentId', { resolvedMomentId });
                     } else {
                       const shortP = waitEntry.prompt.slice(0, 50);
                       for (const [k, v] of STATE._pendingMomentImgs) {
                         if (k.slice(0, 50) === shortP) {
                           resolvedMomentId = v;
                           STATE._pendingMomentImgs.delete(k);
-                          console.log('[Phone:chatu8:moment] waitEntry.prompt 模糊反查 momentId', { resolvedMomentId });
                           break;
                         }
                       }
@@ -6554,11 +6589,9 @@ async function init() {
                     const $momentEl = $(`#rp-moments-list .rp-moment[data-mid="${resolvedMomentId}"]`);
                     if ($momentEl.length) {
                       $momentEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
-                      console.log('[Phone:chatu8:moment] 直接 DOM 手术更新图片 ✅', { momentId: resolvedMomentId });
                     }
                     if (STATE.currentView === 'moments') renderMoments();
                     saveState();
-                    console.log('[Phone:chatu8:moment] 朋友圈生图自动回填', { momentId: resolvedMomentId, src: src.slice(0, 80) });
                   } else {
                     window.rpImgWaitQueue.shift();
                   }
@@ -6569,11 +6602,9 @@ async function init() {
                 if (!th) { console.warn('[Phone:obs:diag] 线程不存在，跳过', { targetThread }); window.rpImgWaitQueue.shift(); continue; }
 
                 const alreadyHas = th.messages.some(m => m.type === 'image' && m.src === src);
-                if (alreadyHas) { console.log('[Phone:obs:diag] 图已存在，跳过'); continue; }
 
                 window.rpImgWaitQueue.shift();
                 const pidx = th.messages.findIndex(m => m.id === targetPendingId);
-                console.log('[Phone:obs:diag] 替换 pending_image', { targetThread, targetPendingId, pidx, currentView: STATE.currentView, currentThread: STATE.currentThread });
                 const newImgMsg = { id: `chatu8_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: targetThread, type: 'image', time: ts, src };
                 if (pidx >= 0) {
                   newImgMsg.time = th.messages[pidx].time || ts;
@@ -6586,7 +6617,6 @@ async function init() {
                 if (STATE.currentView === 'thread' && STATE.currentThread === targetThread) renderBubbles(targetThread);
                 showBanner(th.name, '[图片]', ts);
                 saveState();
-                console.log('[Phone:chatu8] pending_image 已替换为真实图片', { threadId: targetThread, src: src.slice(0, 80) });
 
               } else {
                 // ── 模式B：队列空（ComfyUI/自动生图模式）──
@@ -6631,7 +6661,6 @@ async function init() {
                     moment.pendingImgType = null;
                     if (STATE.currentView === 'moments') renderMoments();
                     saveState();
-                    console.log('[Phone:moment:comfy:obs] ComfyUI 朋友圈配图回填成功', { momentId: comfyEntry.momentId, src: src.slice(0, 80) });
                   }
                   continue; // 已被朋友圈消费，不走线程路由
                 }
@@ -6648,7 +6677,6 @@ async function init() {
                     if (firstKey) STATE._pendingComfyPics.delete(firstKey);
                   } else {
                     // 没有任何 pending 记录，这是主楼正文图片，跳过
-                    console.log('[Phone:chatu8] 模式B：无 pending 记录，跳过主楼正文图', { src: src.slice(0, 60) });
                     continue;
                   }
                 }
@@ -6666,14 +6694,12 @@ async function init() {
                 if (STATE.currentView === 'thread' && STATE.currentThread === targetThread) renderBubbles(targetThread);
                 showBanner(th.name, '[图片]', comfyTime);
                 saveState();
-                console.log('[Phone:chatu8] ComfyUI 图片已定向路由', { threadId: targetThread, src: src.slice(0, 80) });
               }
             }
           }
         }
       });
       chatu8Observer.observe(chatContainer, { childList: true, subtree: true });
-      console.log('[Phone:chatu8] MutationObserver 已启动（显式等待队列模式）');
     }
   } catch(e) {
     console.warn('[Phone:chatu8] MutationObserver 启动失败', e);
@@ -6709,7 +6735,6 @@ async function init() {
   } else {
     go('lock'); // 刷新/重启 → 锁屏
   }
-  console.log('[Raymond Phone] ✅ loaded');
   // 首次加载也清除外圈（覆盖所有主题）
   requestAnimationFrame(() => rpStripFrameRing());
 
@@ -6821,8 +6846,6 @@ async function init() {
   // 延迟:等 ctx 稳定后添加当前 char 联系人 + 清理 DOM
   setTimeout(function() {
     try {
-      // autoAddCharContact 内有 !ctx.chatId 守卫,主页无 char 时不执行
-      autoAddCharContact();
       hidePhoneTagsInChat();
       hideOocInUserBubbles();
     } catch(e) {}
@@ -6929,7 +6952,7 @@ function onChatChanged() {
   refreshLockNotifs();
   renderPendingQueue();
 
-  // 延迟执行:等 ctx.name2 稳定后再添加联系人
+  // 延迟执行:等 ctx.name2 稳定后再做清理与历史重建
   // 记录当前 chatId,防止用户快速切换导致竞态
   var _expectedChatId = STATE.chatId;
   setTimeout(function() {
@@ -6938,7 +6961,6 @@ function onChatChanged() {
       if (STATE.chatId !== _expectedChatId) return;
       cleanInvalidContacts();
       mergeDuplicateThreads();
-      autoAddCharContact();
       hidePhoneTagsInChat();
       hideOocInUserBubbles();
       rebuildContactsFromHistory(_expectedChatId);
@@ -7542,6 +7564,27 @@ function bindUI() {
     if (LG.turn === 'user' && !LG.rolling && LG.active) lgUserRoll();
   });
 
+  // 换棋盘按钮: 重新生成路径+主题+事件格,重置位置
+  $(document).on('click', '#rp-newboard-btn', function() {
+    if (!LG.active) return;
+    LUDO_PATH = lgGeneratePath();
+    LUDO_PATH_LEN = LUDO_PATH.length;
+    LUDO_THEME = LUDO_THEMES[Math.floor(Math.random() * LUDO_THEMES.length)];
+    _lgDecos = _lgGenerateDecos(LUDO_PATH, LUDO_THEME, 12);
+    // Keep spicy level - regenerate events for new path length
+    const curSpicy = LG._spicyLevel || 1;
+    lgGenerateEvents(curSpicy);
+    LG.userPos = 0; LG.charPos = 0;
+    LG.turn = 'user'; LG.rolling = false;
+    LG.userSkip = false; LG.charSkip = false;
+    LG.taskActive = null; LG.taskBusy = false;
+    LG.pendingReroll = null; LG.justDidTask = false;
+    $('#rp-dice-btn').prop('disabled', false);
+    lgRender();
+    lgStatus('你先出手 - 按🎲掷骰子!');
+    lgMsg('sys', `🔄 新棋盘! ${LUDO_THEME.name} · ${LUDO_PATH_LEN}格`);
+  });
+
   $(document).on('click', '#rp-game-send', function() {
     const t = $('#rp-game-input').val().trim();
     if (t) { lgGameChat(t); $('#rp-game-input').val(''); }
@@ -7653,6 +7696,11 @@ function bindUI() {
     lgInit();
   });
 
+  $(document).on('click', '.rp-spicy-btn', function() {
+    const level = parseInt($(this).attr('data-spicy')) || 1;
+    lgStartGame(level);
+  });
+
   // ── 全屏查看聊天记录 ─────────────────────────────────────────
   $(document).on('click', '#rp-game-chat-hint', function() {
     $('#rp-game-chat').trigger('click');
@@ -7711,7 +7759,6 @@ function bindUI() {
         }
       }
       jQuery('#rp-game-chat-fs').hide();
-      console.log('[Ludo] Fullscreen closed');
     });
   });
 
@@ -7732,20 +7779,15 @@ function bindUI() {
 
   // Settings: file input change - read image, resize to max 200px, then store
   $(document).on('change', '#rp-avatar-file-input', function(e) {
-    console.log('[Phone:av] file input change fired');
     const file = e.target.files && e.target.files[0];
-    if (!file) { console.log('[Phone:av] no file'); return; }
-    console.log('[Phone:av] file:', file.name, file.size, 'who:', $('#rp-avatar-select').val());
     const who = $('#rp-avatar-select').val();
     const reader = new FileReader();
     reader.onerror = function(err) { console.error('[Phone:av] FileReader error:', err); };
     reader.onload = function(ev) {
-      console.log('[Phone:av] FileReader loaded, dataURL len:', ev.target.result && ev.target.result.length);
       // Resize to max 200x200 to avoid localStorage quota issues
       const img = new Image();
       img.onerror = function(err) { console.error('[Phone:av] Image load error:', err); };
       img.onload = function() {
-        console.log('[Phone:av] Image loaded:', img.width, 'x', img.height);
         try {
           const MAX = 200;
           const scale = Math.min(1, MAX / Math.max(img.width, img.height));
@@ -7755,7 +7797,6 @@ function bindUI() {
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          console.log('[Phone:av] canvas resized to:', w, 'x', h, 'dataUrl len:', dataUrl.length);
           STATE.avatars = STATE.avatars || {};
           STATE.avatars[who] = dataUrl;
           setAvatar(who, dataUrl);
@@ -7820,7 +7861,6 @@ function bindUI() {
     const momentId = $(this).data('mid');
     const prompt = $(this).data('prompt') || '';
     const self = this;
-    console.log('[Phone:moment:click:diag] 点击生图按钮', { momentId, prompt: prompt.slice(0, 60), promptLen: prompt.length });
 
     // ── 优先：检查主楼是否已有对应图片，有则直接回填，无需重新生图 ──
     const moment = STATE.moments && STATE.moments.find(function(m) { return m.id === momentId; });
@@ -7846,7 +7886,6 @@ function bindUI() {
         moment.pendingImgType = null;
         renderMoments();
         saveState();
-        console.log('[Phone:moment:direct] 主楼图片已存在，直接回填朋友圈', { momentId, src: alreadySrc.slice(0, 80) });
         return;
       }
     }
@@ -7870,11 +7909,6 @@ function bindUI() {
     if (now - lastTs < 450) return;
     this.dataset.rpTriggerTs = String(now);
     const $el = $(this);
-    console.log('[Phone:pendingImg:delegate]', {
-      type: e.type,
-      msgId: $el.attr('data-msgid') || $el.data('msgid') || '',
-      prompt: String($el.attr('data-prompt') || $el.data('prompt') || '').slice(0, 50)
-    });
     rpTriggerPendingImg(
       $el.attr('data-threadid') || $el.data('threadid'),
       $el.attr('data-msgid') || $el.data('msgid'),
@@ -8176,7 +8210,6 @@ function addContact() {
   renderThreadList();
   saveState(); // FIX2: 持久化新联系人
 
-  console.log(`[Raymond Phone] 添加联系人: ${name} (${id})`);
 }
 
 // ================================================================
@@ -8510,7 +8543,6 @@ function renderBubbles(threadId) {
       pendingBtn.attr('data-prompt', msg.prompt || '');
       pendingBtn.on('click', function(e) {
         e.stopPropagation();
-        console.log('[Phone:pendingImg:direct] click', { msgId: $(this).data('msgid'), prompt: String($(this).data('prompt') || '').slice(0, 50) });
         rpTriggerPendingImg($(this).data('threadid'), $(this).data('msgid'), $(this).data('prompt'), this);
       });
       const timeEl = $(`<div class="rp-bts">${msg.time}</div>`);
@@ -8699,7 +8731,6 @@ function installChatu8ButtonBridge() {
               }
             } catch(_) {}
             window.rpImgWaitQueue.push({ threadId: STATE.currentThread || null, pendingMsgId: _msgId, prompt: prompt, addedAt: now2 });
-            console.log('[Phone:chatu8:bridge] 主楼橙色按钮点击，已写入 rpImgWaitQueue', { prompt: prompt.slice(0, 50), queueLen: window.rpImgWaitQueue.length });
           }
         }
         return;
@@ -8710,11 +8741,6 @@ function installChatu8ButtonBridge() {
       const last = Number(btn.dataset[stampKey] || 0);
       if (now - last < 500) return;
       btn.dataset[stampKey] = String(now);
-      console.log('[Phone:chatu8:bridge]', {
-        type: e.type,
-        text: String(btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim().slice(0, 60),
-        isManagedBtn
-      });
       const delay = e.type === 'touchend' ? 24 : 0;
       setTimeout(function() {
         try { dispatchSyntheticPrimaryClick(btn, { mode: e.type === 'touchend' ? 'touch' : 'mouse' }); } catch(_) {}
@@ -8744,7 +8770,6 @@ function installChatu8ImageSyncToPhone() {
       var imgData = rp.imageData || rp.imageUrl || null;
       if (!imgData) return;
       var reqId = rp.id || '';
-      console.log('[Phone:imageSync] generate-image-response received', { reqId: reqId, dataLen: String(imgData).length });
 
       // 按 reqId 找对应主楼按钮的 prompt
       var matchedPrompt = null;
@@ -8756,7 +8781,6 @@ function installChatu8ImageSyncToPhone() {
           break;
         }
       }
-      console.log('[Phone:imageSync] matched prompt', matchedPrompt ? matchedPrompt.slice(0, 60) : 'none');
 
       // 找手机朋友圈里 prompt 匹配的 pending 条目，直接写入
       if (matchedPrompt) {
@@ -8766,7 +8790,6 @@ function installChatu8ImageSyncToPhone() {
           var pbPrompt = (pb.dataset.prompt || '').trim();
           if (matchedPrompt.includes(pbPrompt.slice(0, 30)) || pbPrompt.includes(matchedPrompt.slice(0, 30))) {
             var momentId = pb.dataset.mid;
-            console.log('[Phone:imageSync] matched moment pending btn', { momentId: momentId, promptHead: pbPrompt.slice(0, 50) });
             // 直接写入 STATE.moments
             try {
               var wkeys = Object.keys(window);
@@ -8807,7 +8830,6 @@ function installChatu8ImageSyncToPhone() {
     }
   });
 
-  console.log('[Phone:imageSync] generate-image-response global listener installed');
 }
 
 // ================================================================
@@ -8824,7 +8846,6 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
       btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       btn.dispatchEvent(new MouseEvent('mouseup',  { bubbles: true, cancelable: true }));
       btn.dispatchEvent(new MouseEvent('click',    { bubbles: true, cancelable: true }));
-      console.log('[Phone:pendingImg] dispatched click to', (btn.dataset.requestId || '').slice(0, 20));
       return true;
     } catch(e) {
       console.warn('[Phone:pendingImg] forceTriggerImageButton failed', e);
@@ -8863,7 +8884,6 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
   if (bestBtn && bestScore > 0) {
     triggered = forceTriggerImageButton(bestBtn);
     if (triggered) {
-      console.log('[Phone:pendingImg] 已触发智绘姬按钮点击', { prompt: normalizedPrompt.slice(0, 50), matchScore: bestScore });
     }
   }
 
@@ -8872,7 +8892,6 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
     const allBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
     if (allBtns.length > 0) {
       triggered = forceTriggerImageButton(allBtns[0]);
-      if (triggered) console.log('[Phone:pendingImg] 兜底：点击最新的智绘姬按钮');
     }
   }
 
@@ -8890,7 +8909,6 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
       if (_es && _et && _et['MESSAGE_UPDATED']) {
         const _lastMsgIdx = (_ctx.chat && _ctx.chat.length > 0) ? _ctx.chat.length - 1 : 0;
         _es.emit(_et['MESSAGE_UPDATED'], _lastMsgIdx);
-        console.log('[Phone:pendingImg] 已触发 MESSAGE_UPDATED, idx=', _lastMsgIdx);
       }
     } catch(_e) { console.warn('[Phone:pendingImg] 触发 MESSAGE_UPDATED 失败', _e); }
 
@@ -8904,13 +8922,11 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
           const bp = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').replace(/\s+/g,' ').trim();
           if (bp && (bp === normalizedPrompt || bp.includes(normalizedPrompt.slice(0,30)) || normalizedPrompt.includes(bp.slice(0,30)))) {
             _retryTriggered = forceTriggerImageButton(btn);
-            if (_retryTriggered) { console.log('[Phone:pendingImg:retry] 重试成功，找到匹配按钮'); break; }
           }
         }
       }
       if (!_retryTriggered && _retryBtns.length > 0) {
         _retryTriggered = forceTriggerImageButton(_retryBtns[0]);
-        if (_retryTriggered) console.log('[Phone:pendingImg:retry] 重试成功，兜底点击最新按钮');
       }
       if (_retryTriggered) {
         clearInterval(_retryInterval);
@@ -8945,7 +8961,6 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
   // 3) 触发成功：把这个请求加入等待队列，MutationObserver 收到图片后来消费
   window.rpImgWaitQueue = window.rpImgWaitQueue || [];
   window.rpImgWaitQueue.push({ threadId, pendingMsgId: msgId, prompt, addedAt: Date.now() });
-  console.log('[Phone:pendingImg] 已加入等待队列', { threadId, msgId, queueLen: window.rpImgWaitQueue.length });
 
   // 更新气泡显示为"生成中..."
   if (triggerEl) {
@@ -8959,7 +8974,6 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
         triggerEl.innerHTML = _origHtml;
         triggerEl.style.cursor = 'pointer';
         triggerEl.style.pointerEvents = 'auto';
-        console.log('[Phone:pendingImg] 超时恢复生图按钮');
       }
     }, 30000);
   }
@@ -8982,8 +8996,7 @@ function sendSMS() {
   if (!STATE.currentThread || STATE.pendingMessages.length === 0) return;
 
   const th  = STATE.threads[STATE.currentThread];
-  const now = new Date();
-  const ts  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts  = resolvePhoneTime();
 
   // 写入手机 UI(全部排队消息)
   const allMessages = [...STATE.pendingMessages];
@@ -8999,7 +9012,6 @@ function sendSMS() {
 
   const ta = document.querySelector('#send_textarea');
   if (!ta) return;
-
   const mainText = ta.value.trim();
 
   // 拼装可见行动描述
@@ -9068,27 +9080,17 @@ function sendSMS() {
     }
   }
 
-  // FIX1: 用 setExtensionPrompt 注入隐藏 OOC,不在聊天框显示
-  const hasExtPrompt = typeof setExtensionPrompt === 'function' && extension_prompt_types;
-  console.log('[Raymond Phone] sendSMS triggered', {
-    threadId: STATE.currentThread,
-    threadType: th.type,
-    isGroupThread,
-    hasExtPrompt,
-    oocText,
-  });
-  if (hasExtPrompt) {
-    // 将 smsLine 和 oocText 合并注入,用户聊天框不显示任何提示语
-    setExtensionPrompt('rp-phone-ooc', `${smsLine}\n${oocText}`, extension_prompt_types.BEFORE_PROMPT, 0, false, 0);
-    console.log('[Raymond Phone] setExtensionPrompt called with BEFORE_PROMPT, depth=0');
-    ta.value = mainText || '';
-  } else {
-    // 降级:OOC 直接写入消息(旧版 ST 兼容)
-    // 只把 smsLine 写入输入框(可见叙事行),oocText 不放进去以免显示在气泡里
-    console.warn('[Raymond Phone] setExtensionPrompt not available, falling back to inline OOC');
-    ta.value = mainText ? `${mainText}\n${smsLine}\n${oocText}` : `${smsLine}\n${oocText}`;
-  }
+  // P2 隐藏：把提示词包进 <Request: ...>，让主楼保留同一条消息，同时隐藏提示内容。
+  // 用户已实测这条链路可隐藏中间内容；注意 Request 内不能含 []【】{}<>，所以先做净化。
+  const requestSafeOoc = makeRequestSafePhoneOoc(oocText);
+  const requestWrappedText = mainText
+    ? `${mainText}
+${smsLine}
+<Request: ${requestSafeOoc}>`
+    : `${smsLine}
+<Request: ${requestSafeOoc}>`;
 
+  ta.value = requestWrappedText;
   ta.dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector('#send_but')?.click();
 
@@ -9099,40 +9101,22 @@ function sendSMS() {
     sentAt: Date.now(),
   };
 
-  // 发送后清除隐藏提示
-  if (hasExtPrompt) {
-    setTimeout(() => setExtensionPrompt('rp-phone-ooc', ''), 300);
-  }
-
-  // 无论走哪条路径,发送后都从用户气泡 DOM 里抹掉 OOC 方括号提示
-  // (防止 setExtensionPrompt 不可用时 OOC 文字暴露给用户)
-  setTimeout(function() {
-    try {
-      const allUserMsgs = document.querySelectorAll('.mes[is_user="true"]');
-      if (!allUserMsgs.length) return;
-      const lastUserMsg = allUserMsgs[allUserMsgs.length - 1];
-      const textEl = lastUserMsg && lastUserMsg.querySelector('.mes_text');
-      if (!textEl) return;
-      // 把 [...] 形式的 OOC 指令行从 innerHTML 里删掉
-      let html = textEl.innerHTML || '';
-      // 匹配 [手机短信提示:...] / [叙事指令:...] / [手机群聊提示:...] 及其 HTML 转义变体
-      html = html.replace(/\[(?:手机短信提示|叙事指令|手机群聊提示)[^\]]*\]/g, '');
-      // 清理多余换行/br
-      html = html
-        .replace(/(?:<br\s*\/?>[\s]*){2,}/gi, '<br>')
-        .replace(/^\s*(?:<br\s*\/?>\s*)+/i, '')
-        .replace(/(?:<br\s*\/?>\s*)+$/i, '')
-        .trim();
-      textEl.innerHTML = html;
-    } catch(e) {
-      console.warn('[Raymond Phone] OOC DOM cleanup failed:', e);
-    }
-  }, 400);
+  // Request 包装路径不再依赖 extension prompt / display_text 清理链。
 }
 
 // ================================================================
 //  AI MESSAGE PARSER
 // ================================================================
+function makeRequestSafePhoneOoc(raw) {
+  let text = String(raw || '');
+  text = text
+    .replace(/\{\{user\}\}/gi, '用户')
+    .replace(/[\[\]【】\{\}<>「」『』]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text;
+}
+
 function normalizePhoneMarkup(raw) {
   let s = String(raw || '');
   // HTML 实体反转义(有些渲染链会把标签转成实体)
@@ -9164,13 +9148,11 @@ function onMessageUpdatedForImages(messageIndex) {
     // messageIndex 可能是数字索引，也可能没传
     const idx = typeof messageIndex === 'number' ? messageIndex : ctx.chat.length - 1;
     const msg = ctx.chat[idx];
-    console.log('[Phone:img:diag] MESSAGE_UPDATED fired', { idx, is_user: msg?.is_user, hasMes: !!msg?.mes, msgName: msg?.name });
     if (!msg || msg.is_user || !msg.mes) return;
 
     // 只处理含有 <img src="..."> 的消息（已被生图插件替换完的）
     const imgRe = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*\/?>/gi;
     const hasImgSrc = imgRe.test(msg.mes);
-    console.log('[Phone:img:diag] hasImgSrc=', hasImgSrc, '| mes前100字:', msg.mes.slice(0, 100));
     if (!hasImgSrc) return;
     imgRe.lastIndex = 0;
 
@@ -9190,13 +9172,11 @@ function onMessageUpdatedForImages(messageIndex) {
 
     // 检查这批图片是否已全部处理过
     const newSrcs = srcs.filter(src => !STATE._imgExtractedFps.has(`${msgFp}|${src}`));
-    console.log('[Phone:img:diag] MESSAGE_UPDATED 图片提取', { msgFp, totalSrcs: srcs.length, newSrcs: newSrcs.length, pendingMomentSize: STATE._pendingMomentImgs?.size || 0, waitQueueLen: (window.rpImgWaitQueue||[]).length });
     if (newSrcs.length === 0) return;
 
     // ── 朋友圈生图回填：仅当 waitQueue 里有朋友圈条目（threadId=null）时才优先处理 ──
     const _msgHasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => !e.threadId);
     if (STATE._pendingMomentImgs && STATE._pendingMomentImgs.size > 0 && _msgHasMomentInQueue) {
-      console.log('[Phone:moment:msg:diag] MESSAGE_UPDATED 进入朋友圈检查', { pendingKeys: Array.from(STATE._pendingMomentImgs.keys()).map(k=>k.slice(0,40)), newSrcs: newSrcs.map(s=>s.slice(0,40)) });
       // 尝试从消息文本里找 image###prompt### 来精确匹配
       const chatu8Re2 = /image###([\s\S]*?)###/gi;
       let cu;
@@ -9230,7 +9210,6 @@ function onMessageUpdatedForImages(messageIndex) {
         const $mEl = $(`#rp-moments-list .rp-moment[data-mid="${momentId}"]`);
         if ($mEl.length) $mEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
         momentFilled = true;
-        console.log('[Phone:moment:img] 朋友圈配图回填成功', { momentId, src: src.slice(0, 80) });
       }
       if (momentFilled) {
         if (STATE.currentView === 'moments') renderMoments();
@@ -9256,7 +9235,6 @@ function onMessageUpdatedForImages(messageIndex) {
             firstMomentId = STATE._pendingMomentImgs.get(entry.prompt);
             STATE._pendingMomentImgs.delete(entry.prompt);
             foundByPrompt = true;
-            console.log('[Phone:moment:img] 兜底从 waitQueue.prompt 精确反查 momentId', { firstMomentId, prompt: entry.prompt.slice(0, 40) });
             break;
           }
           const shortP = entry.prompt.slice(0, 50);
@@ -9265,7 +9243,6 @@ function onMessageUpdatedForImages(messageIndex) {
               firstMomentId = v;
               STATE._pendingMomentImgs.delete(k);
               foundByPrompt = true;
-              console.log('[Phone:moment:img] 兜底从 waitQueue.prompt 模糊反查 momentId', { firstMomentId, prompt: entry.prompt.slice(0, 40) });
               break;
             }
           }
@@ -9279,12 +9256,10 @@ function onMessageUpdatedForImages(messageIndex) {
             for (const [k, v] of STATE._pendingMomentImgs) {
               if (v === firstMomentId) { STATE._pendingMomentImgs.delete(k); break; }
             }
-            console.log('[Phone:moment:img] 兜底从 waitQueue 顺序取 momentId（无 prompt 反查）', { firstMomentId });
           } else {
             const firstKey = STATE._pendingMomentImgs.keys().next().value;
             firstMomentId = STATE._pendingMomentImgs.get(firstKey);
             STATE._pendingMomentImgs.delete(firstKey);
-            console.log('[Phone:moment:img] 兜底取 _pendingMomentImgs 第一条（waitQueue 无条目）', { firstMomentId });
           }
         }
         const moment = STATE.moments && STATE.moments.find(mo => mo.id === firstMomentId);
@@ -9305,19 +9280,16 @@ function onMessageUpdatedForImages(messageIndex) {
           if ($mEl2.length) $mEl2.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
           if (STATE.currentView === 'moments') renderMoments();
           saveState();
-          console.log('[Phone:moment:img] 朋友圈配图兜底回填', { momentId: firstMomentId, src: src.slice(0, 80) });
           // 剔除已消费的 src
           newSrcs.splice(0, 1);
           if (newSrcs.length === 0) return;
         } else if (moment && moment.img) {
           // 图已存在，标记消费跳过
           STATE._imgExtractedFps.add(`${msgFp}|${src}`);
-          console.log('[Phone:moment:img] 朋友圈兜底：图已存在，标记消费跳过', { momentId: firstMomentId });
           newSrcs.splice(0, 1);
           if (newSrcs.length === 0) return;
         } else {
           // moment 不存在（兜底 key 不匹配），不标记消费，让图片继续走线程路由
-          console.log('[Phone:moment:img] 朋友圈兜底：moment 不存在（key 不匹配），不消费，继续线程路由', { firstMomentId });
         }
       }
     }
@@ -9334,7 +9306,6 @@ function onMessageUpdatedForImages(messageIndex) {
       if (msgCharName) {
         targetThread = matchThread(msgCharName);
         if (targetThread) {
-          console.log('[Phone:img] MESSAGE_UPDATED: 通过角色名匹配线程', { name: msgCharName, threadId: targetThread });
         }
       }
     }
@@ -9344,19 +9315,16 @@ function onMessageUpdatedForImages(messageIndex) {
       const threadIds = Object.keys(STATE.threads || {});
       if (threadIds.length === 1) {
         targetThread = threadIds[0];
-        console.log('[Phone:img] MESSAGE_UPDATED: 单线程兜底', { threadId: targetThread });
       }
     }
 
     if (!targetThread) {
-      console.log('[Phone:img] MESSAGE_UPDATED: no targetThread, skipping', { msgName: msg.name });
       return;
     }
     const th = STATE.threads[targetThread];
     if (!th) return;
 
-    const now = new Date();
-    const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const ts = resolvePhoneTime();
 
     newSrcs.forEach(src => {
       // 二次去重：消息列表里已存在则跳过
@@ -9368,7 +9336,6 @@ function onMessageUpdatedForImages(messageIndex) {
         from: targetThread, type: 'image', time: ts, src
       });
       STATE._imgExtractedFps.add(`${msgFp}|${src}`);
-      console.log('[Phone:img] 生图路由成功', { threadId: targetThread, src: src.slice(0, 60) });
     });
 
     if (newSrcs.length > 0) {
@@ -9388,13 +9355,6 @@ function onAIMessage(_retryCount) {
   try {
     const _diagCtx1 = getContext();
     const _diagCtx2 = window.SillyTavern?.getContext?.();
-    console.log('[Phone:diag] onAIMessage CALLED', {
-      retry: retryCount,
-      chatLen_local: _diagCtx1?.chat?.length,
-      chatLen_ST: _diagCtx2?.chat?.length,
-      getContext_is: getContext === window.getContext ? 'window.getContext' : getContext === SillyTavern?.getContext ? 'SillyTavern.getContext' : 'fallback',
-      ts: Date.now()
-    });
     const ctx  = getContext();
     const realSlotKey = getPhoneChatSlotKey(ctx);
     if (realSlotKey && STATE.chatId !== realSlotKey) {
@@ -9404,7 +9364,6 @@ function onAIMessage(_retryCount) {
     const chat = ctx?.chat;
     if (!chat?.length) {
       if (retryCount < 5) {
-        console.log('[Phone:diag] chat empty, retry', retryCount + 1, 'in 300ms');
         setTimeout(() => onAIMessage(retryCount + 1), 300);
         return;
       }
@@ -9419,9 +9378,7 @@ function onAIMessage(_retryCount) {
         break;
       }
     }
-    if (lastAiIdx < 0) { console.log('[Phone:diag] BAIL: no AI message found in chat'); return; }
     const last = chat[lastAiIdx];
-    if (!last?.mes) { console.log('[Phone:diag] BAIL: last AI msg has no .mes'); return; }
 
     const raw = last.mes;
     // 指纹:只用于成功解析后去重,流式中间态不记录
@@ -9435,11 +9392,9 @@ function onAIMessage(_retryCount) {
     const normalizedPreview = normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi, ''));
     const mightContainPhone = /<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalizedPreview);
     if (fp === STATE._lastAiFingerprint && (!mightContainPhone || hasRenderedPhoneUi)) {
-      console.log('[Phone:diag] onAIMessage skipped: same fingerprint');
       return;
     }
     if (fp === STATE._lastAiFingerprint && mightContainPhone && !hasRenderedPhoneUi) {
-      console.log('[Phone:diag] same fingerprint but phone UI missing, retrying local repair');
     }
     // 修复思维链冲突: 先剥离 <think>...</think> 块，避免思维链内的 <PHONE> 格式
     // 与正文末尾的 <PHONE> 标签发生正则误合并
@@ -9449,33 +9404,26 @@ function onAIMessage(_retryCount) {
     const hasPhoneClose = /<\/PHONE>/i.test(normalizedRaw);
     const hasSmsOpen    = /<SMS\b/i.test(normalizedRaw);
     const hasSmsClose   = /<\/SMS>/i.test(normalizedRaw);
-    console.log('[Phone:diag] onAIMessage called', {
-      rawLen: raw.length,
-      hasPhoneOpen, hasPhoneClose, hasSmsOpen, hasSmsClose,
-      rawSnippet: raw.slice(0, 120)
-    });
 
     // 流式生成中间态保护
     if (hasPhoneOpen && !hasPhoneClose) {
-      console.log('[Phone:diag] EARLY RETURN: PHONE not closed (streaming)');
       return;
     }
     if (hasSmsOpen && !hasSmsClose) {
-      console.log('[Phone:diag] EARLY RETURN: SMS not closed (streaming)');
       return;
     }
     // 消息完整,记录指纹防止同一完整消息被重复处理
     STATE._lastAiFingerprint = fp;
     const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
     // 兼容:有些模型会漏掉 <PHONE> 包裹,但仍输出 <SMS>/<GMSG>
-    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(normalizedRaw);
+    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(normalizedRaw);
 
     if (phoneMatch) {
       const parsedCount = parsePhone(phoneMatch[1]);
       // ── FIX: PHONE 标签外可能还有 MOMENTS/COMMENT 等裸标签 ──
       // 把 <PHONE>...</PHONE> 替换掉后，检查剩余部分是否还有待解析的标签
       const outsidePhone = normalizedRaw.replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '');
-      const hasOutsideTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(outsidePhone);
+      const hasOutsideTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(outsidePhone);
       if (hasOutsideTags) {
         parsePhone(outsidePhone);
       }
@@ -9490,9 +9438,7 @@ function onAIMessage(_retryCount) {
       const looseSms = phoneMatch[1].match(/<SMS\b[^>]*>([\s\S]*?)(?:<\/SMS>|$)/i);
       const looseText = (looseSms?.[1] || '').replace(/<[^>]+>/g, ' ').trim();
       if (looseText && STATE._pendingPhoneReply?.threadId && STATE.threads?.[STATE._pendingPhoneReply.threadId]) {
-        const now = new Date();
-        const ts  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        incomingMsg(STATE._pendingPhoneReply.threadId, looseText.slice(0, 200), ts);
+        incomingMsg(STATE._pendingPhoneReply.threadId, looseText.slice(0, 200), resolvePhoneTime());
         STATE._pendingPhoneReply = null;
         beautifySMSInChat(lastAiIdx);
         return;
@@ -9543,8 +9489,7 @@ function onAIMessage(_retryCount) {
       if (!th) continue;
       const isDup = th.messages.some(msg => msg.type === 'image' && msg.src === src);
       if (isDup) continue;
-      const now = new Date();
-      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const ts = resolvePhoneTime();
       th.messages.push({ id: `aimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: targetThread, type: 'image', time: ts, src });
       if (STATE.currentView !== 'thread' || STATE.currentThread !== targetThread) th.unread++;
       refreshBadges(); updatePreviews();
@@ -9686,6 +9631,7 @@ function extractCommentSummaries(block) {
   while ((m = commentTagRe.exec(block)) !== null) {
     const attrs = getTagAttrs(m[1]);
     const from = (attrs.FROM || '').trim();
+    const replyTo = (attrs.REPLY_TO || attrs.REPLYTO || attrs.REPLY || '').trim();
     const text = String(m[2] || '')
       .replace(/<pic\b[\s\S]*?\/>/gi, '')
       .replace(/<img\b[^>]*>/gi, '')
@@ -9693,7 +9639,7 @@ function extractCommentSummaries(block) {
       .replace(/<[^>]+>/g, '')
       .trim();
     if (!text) continue;
-    out.push({ from, text });
+    out.push({ from, text, replyTo: replyTo || null });
   }
   return out;
 }
@@ -9822,16 +9768,50 @@ function extractDirectPhoneSummaries(block) {
   return out;
 }
 
+function normalizePhoneCompareText(s) {
+  return String(s || '')
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/[“”„‟＂]/g, '"')
+    .replace(/[‘’‛＇]/g, "'")
+    .replace(/(?:\.{3,}|…|⋯|·{3,}|•{3,}|。{3,})/g, '...')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildLoosePhoneFragmentRegex(fragment) {
+  const normalized = normalizePhoneCompareText(fragment);
+  if (!normalized) return null;
+  const parts = normalized.split(/(\"|'|\.{3}|\s+)/).filter(Boolean).map(function(part) {
+    if (/^\s+$/.test(part)) return '\\s+';
+    if (part === '...') return '(?:\\.\\.\\.|…|⋯|·{3,}|•{3,}|。{3,})';
+    if (part === '"') return '(?:"|&quot;|&#34;|“|”|„|‟|＂)';
+    if (part === "'") return "(?:'|&#39;|&apos;|‘|’|‛|＇)";
+    return escapeRegExp(part).replace(/\s+/g, '\\s+');
+  });
+  if (!parts.length) return null;
+  return new RegExp(parts.join(''), 'g');
+}
+
 function removePhoneEchoFragments(textEl, fragments) {
   if (!textEl || !Array.isArray(fragments) || fragments.length === 0) return;
 
   const cleaned = Array.from(new Set(
     fragments
-      .map(function(s) { return String(s || '').replace(/\s+/g, ' ').trim(); })
+      .map(function(s) { return normalizePhoneCompareText(s); })
       .filter(Boolean)
   )).sort(function(a, b) { return b.length - a.length; });
 
   if (!cleaned.length) return;
+
+  const matchers = cleaned.map(function(fragment) {
+    return {
+      fragment,
+      regex: buildLoosePhoneFragmentRegex(fragment),
+    };
+  }).filter(function(x) { return x.regex; });
+
+  if (!matchers.length) return;
 
   const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
@@ -9850,11 +9830,12 @@ function removePhoneEchoFragments(textEl, fragments) {
   textNodes.forEach(function(node) {
     let val = node.nodeValue;
     let changed = false;
-    cleaned.forEach(function(fragment) {
-      if (!fragment) return;
-      const escaped = escapeRegExp(fragment).replace(/\s+/g, '\\s+');
+    matchers.forEach(function(item) {
+      if (!item.fragment || !item.regex) return;
+      const normalizedVal = normalizePhoneCompareText(val);
+      if (!normalizedVal || !normalizedVal.includes(item.fragment)) return;
       const before = val;
-      val = val.replace(new RegExp(escaped, 'g'), '');
+      val = val.replace(item.regex, '');
       if (val !== before) changed = true;
     });
     if (!changed) return;
@@ -9867,8 +9848,12 @@ function removePhoneEchoFragments(textEl, fragments) {
 
   Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
     if (el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons')) return;
-    const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    const txt = normalizePhoneCompareText(el.textContent || '');
     const hasMedia = !!el.querySelector('img, video, audio, button');
+    if (cleaned.includes(txt) && !hasMedia) {
+      el.remove();
+      return;
+    }
     if (!txt && !hasMedia) el.remove();
   });
 }
@@ -9893,8 +9878,8 @@ function stripPhoneLiteralNodes(textEl) {
     val = val
       .replace(/<phone>[\s\S]*?<\/phone>/gi, '')
       .replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '')
-      .replace(/<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment)\b[^>]*>/gi, '')
-      .replace(/&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment)\b[^&]*?&gt;/gi, '')
+      .replace(/<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|location|loc)\b[^>]*>/gi, '')
+      .replace(/&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|location|loc)\b[^&]*?&gt;/gi, '')
       .replace(/[ \t]{2,}/g, ' ')
       .replace(/\n{3,}/g, '\n\n');
     if (val !== before) node.nodeValue = val.trim();
@@ -9912,30 +9897,39 @@ function buildPhoneEchoContainer(block, smsList, commentList, groupList, moments
   const hasDirectPhone = directPhoneList.length > 0;
   if (!(hasSms || hasComments || hasGroups || hasMoments || hasDirectPhone)) return wrap;
 
+  const _ctx = (typeof getContext === 'function' ? getContext() : null);
   const fallbackName = (STATE.threads?.[STATE.currentThread]?.name)
-    || (getContext?.()?.name2)
+    || (_ctx?.name2)
     || '';
 
   const dividerLabel = (hasMoments && (hasSms || hasComments || hasGroups || hasDirectPhone)) ? '📱 手机 · 朋友圈'
                      : hasMoments ? '📸 朋友圈'
                      : '📱 手机消息';
-  const divider = document.createElement('hr');
-  divider.className = 'rp-phone-divider';
-  divider.dataset.label = dividerLabel;
-  wrap.appendChild(divider);
+  let dividerMounted = false;
+  function ensureDivider() {
+    if (dividerMounted) return;
+    const divider = document.createElement('hr');
+    divider.className = 'rp-phone-divider';
+    divider.dataset.label = dividerLabel;
+    wrap.appendChild(divider);
+    dividerMounted = true;
+  }
 
   function appendBlock(html) {
+    ensureDivider();
     const row = document.createElement('span');
     row.className = 'rp-phone-echo-block';
     row.innerHTML = html;
     wrap.appendChild(row);
   }
 
-  // ── 黑名单过滤辅助：跳过被拉黑角色的回显 ──
+  // ── 黑名单 / user 过滤辅助：跳过被拉黑角色，以及 AI 代 user 说的话回显 ──
   const _echoBlockedNorms = (Array.isArray(STATE.blocklist) ? STATE.blocklist : []).map(b => normalizePhonePersonName(b)).filter(Boolean);
   const _isEchoBlocked = (nameRaw) => {
-    if (!_echoBlockedNorms.length || !nameRaw) return false;
-    return _echoBlockedNorms.includes(normalizePhonePersonName(nameRaw));
+    if (!nameRaw) return false;
+    if (isPhoneUserName(nameRaw, _ctx)) return true;
+    if (_echoBlockedNorms.length && _echoBlockedNorms.includes(normalizePhonePersonName(nameRaw))) return true;
+    return false;
   };
 
   smsList.forEach(function(item) {
@@ -9945,7 +9939,11 @@ function buildPhoneEchoContainer(block, smsList, commentList, groupList, moments
     appendBlock(`${nameHtml}${escHtml(item.text)}`);
   });
 
-  commentList.forEach(function(item) {
+  const visibleEchoComments = getVisibleMomentComments(commentList.map(function(item) {
+    return { name: item.from || '', from: item.from || '', text: item.text || '', replyTo: item.replyTo || null };
+  }), _ctx);
+
+  visibleEchoComments.forEach(function(item) {
     if (_isEchoBlocked(item.from)) return;
     const displayName = item.from || fallbackName;
     const nameHtml = displayName ? `<span class="rp-phone-echo-name">${escHtml(displayName)}：</span>` : '';
@@ -10026,7 +10024,7 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       while (phoneEl.firstChild) phoneEl.removeChild(phoneEl.firstChild);
       phoneEl.remove();
     });
-    textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment').forEach(tag => {
+    textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment, location, loc').forEach(tag => {
       Array.from(tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(collectLiveBtn);
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
@@ -10117,7 +10115,6 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
           if (window[_triggerKey3]) clearTimeout(window[_triggerKey3]);
           window[_triggerKey3] = setTimeout(function() {
             window[_triggerKey3] = null;
-            console.log('[Raymond Phone] 触发 message_updated, mesId=', _mesId3, 'time=', Date.now());
             try { _es3.emit('message_updated', _mesId3); } catch(_e) { console.warn('[Raymond Phone] emit message_updated failed', _e); }
           }, 1600);
         }
@@ -10232,7 +10229,6 @@ function scheduleOnAIMessageKick(reason, delay) {
     window.__rpPhoneUpdateKickTimer = setTimeout(function() {
       window.__rpPhoneUpdateKickTimer = null;
       try {
-        console.log('[Phone:kick] onAIMessage via', reason || 'unknown');
         onAIMessage();
       } catch(e) {
         console.warn('[Raymond Phone] scheduleOnAIMessageKick:', e);
@@ -10251,7 +10247,6 @@ function scheduleRepairPhoneByMesId(targetMesId, reason) {
       setTimeout(function() {
         try {
           const repaired = repairPhoneMessageByMesId(targetMesId);
-          console.log('[Phone:repair:schedule]', { mesId: targetMesId, reason: reason || 'unknown', retry: idx, repaired: !!repaired });
         } catch(e) {
           console.warn('[Raymond Phone] scheduleRepairPhoneByMesId:', e);
         }
@@ -10330,7 +10325,6 @@ function installPhoneRenderObserver() {
 
     observer.observe(chatRoot, { childList: true, subtree: true, characterData: true });
     window.__rpPhoneRenderObserver = observer;
-    console.log('[Phone:observer] render observer installed');
   } catch(e) {
     console.warn('[Raymond Phone] installPhoneRenderObserver failed', e);
   }
@@ -10347,7 +10341,7 @@ function repairPhoneMessageByMesId(targetMesId) {
     const rawStripped = String(msg.mes).replace(/<think>[\s\S]*?<\/think>/gi, '');
     const normalizedRaw = normalizePhoneMarkup(rawStripped);
     const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
-    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(normalizedRaw);
+    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(normalizedRaw);
     if (!phoneMatch && !hasBarePhoneTags) return false;
 
     const textEl = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"]) .mes_text`);
@@ -10361,7 +10355,6 @@ function repairPhoneMessageByMesId(targetMesId) {
     const block = phoneMatch ? phoneMatch[1] : normalizedRaw;
     applyPhoneCollapseToEl(textEl, block, null);
     beautifySMSInChat(targetMesId);
-    console.log('[Phone:repair] repaired message after update', { mesId: targetMesId });
     return true;
   } catch(e) {
     console.warn('[Raymond Phone] repairPhoneMessageByMesId:', e);
@@ -10414,7 +10407,7 @@ function rewriteAllHistoryPhoneBlocks() {
       const rawStripped = msg.mes.replace(/<think>[\s\S]*?<\/think>/gi, '');
       const normalizedRaw = normalizePhoneMarkup(rawStripped);
       const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
-      const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO)\b/i.test(normalizedRaw);
+      const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(normalizedRaw);
 
       if (phoneMatch) {
         applyPhoneCollapseToEl(textEl, phoneMatch[1], null);
@@ -10444,9 +10437,10 @@ function getTagAttrs(attrText) {
 function parsePhone(block) {
   let parsedCount = 0;
   let m;
+  const ctx = getContext(); // FIX: ctx was previously undeclared, causing ReferenceError for new NPCs
 
   // ── 严禁 AI 替 user 发言：获取 user 名字，所有 FROM 解析处都会跳过 user 名 ──
-  const _parseUserName = (typeof getContext === 'function' ? getContext()?.name1 : null) || '';
+  const _parseUserName = (ctx?.name1) || '';
   function _isUserFrom(fromStr) {
     if (!_parseUserName || !fromStr) return false;
     return fromStr.trim().toLowerCase() === _parseUserName.toLowerCase();
@@ -10523,7 +10517,6 @@ function parsePhone(block) {
     const attrs    = getTagAttrs(m[1]);
     const fromRaw0 = (attrs.FROM || '').trim();
     // 严禁 AI 替 user 发言：FROM 是 user 名字时直接跳过
-    if (_isUserFrom(fromRaw0)) { console.log('[Phone:guard] SMS FROM=user blocked:', fromRaw0); continue; }
     const time     = (attrs.TIME || '').trim();
     const rawContent = m[2] || '';
 
@@ -10532,52 +10525,49 @@ function parsePhone(block) {
     const text = sanitizeSmsText(smsCleanText);
 
     // 线程路由策略:
-    // 1) 若存在 pending(刚由本端发起短信),优先落到 pending 线程
-    // 2) 按 FROM 精确/模糊匹配已有线程
-    // 3) FROM 匹配不到时,先试当前打开的线程 (currentThread),不立即新建孤立线程
-    // 4) FROM 为空时退化到 currentThread
-    // 5) 以上都失败才新建
+    // 1) 有明确 FROM 时，优先按 FROM 精确/模糊匹配已有线程
+    // 2) 只有 FROM 为空时，才允许 fallback 到 pending 线程
+    // 3) FROM 匹配不到时，先尝试解析为主角别名；仍失败再新建该 NPC 线程
+    // 4) FROM 为空时再退化到 currentThread
     let threadId = null;
     let fromRaw = fromRaw0;
 
     const pendingThreadId = STATE._pendingPhoneReply?.threadId;
-    const hasPendingThread = !!(pendingThreadId && STATE.threads?.[pendingThreadId]);
+    const pendingThread = pendingThreadId ? STATE.threads?.[pendingThreadId] : null;
+    const hasPendingThread = !!pendingThread;
     const pendingFresh = !!(STATE._pendingPhoneReply && (Date.now() - (STATE._pendingPhoneReply.sentAt || 0) < 300000));
+    const matchedThreadId = fromRaw ? matchThread(fromRaw) : null;
+    const pendingMatchesFrom = !!(fromRaw && matchedThreadId && matchedThreadId === pendingThreadId);
 
-    if (hasPendingThread && pendingFresh) {
-      // 优先 pending:用户刚通过手机发了短信,回复一定属于这个线程
-      threadId = pendingThreadId;
-      const pendingName = STATE.threads[threadId]?.name || '';
-      if (fromRaw && pendingName && normalizePhonePersonName(fromRaw) !== normalizePhonePersonName(pendingName)) {
-        rememberPhoneNameAlias(fromRaw, pendingName);
-      }
-      if (!fromRaw) fromRaw = pendingName;
-    } else if (fromRaw) {
-      threadId = matchThread(fromRaw);
+    if (fromRaw) {
+      // 有明确 FROM 时，优先尊重 FROM；只有 FROM 本来就指向 pending 线程时才落 pending
+      threadId = pendingMatchesFrom ? pendingThreadId : matchedThreadId;
       if (!threadId) {
         const resolvedMainTh = tryResolveUnknownSenderAsMainChar(fromRaw, ctx);
         if (resolvedMainTh?.id) {
           threadId = resolvedMainTh.id;
-          console.log('[Phone:diag] parsePhone: FROM "' + fromRaw + '" mapped to main char thread', threadId);
         } else {
           // FROM 名字匹配失败 → 自动新建该 NPC 的线程，不要把消息误投到当前打开的线程
           const newTh = findOrCreateThread(fromRaw);
-          if (!newTh) { console.log('[Phone:guard] blocked contact for FROM:', fromRaw); continue; }
           threadId = newTh.id;
-          console.log('[Phone:diag] parsePhone: FROM "' + fromRaw + '" not in contacts, auto-created thread', threadId);
         }
       }
+      if (threadId === pendingThreadId && pendingThread?.name && fromRaw && normalizePhonePersonName(fromRaw) !== normalizePhonePersonName(pendingThread.name)) {
+        rememberPhoneNameAlias(fromRaw, pendingThread.name);
+      }
+    } else if (hasPendingThread && pendingFresh) {
+      // 仅在没有 FROM 时，才用 pending 线程兜底
+      threadId = pendingThreadId;
+      fromRaw = pendingThread?.name || '';
     } else if (STATE.currentThread && STATE.threads?.[STATE.currentThread]) {
       threadId = STATE.currentThread;
       fromRaw = STATE.threads[threadId]?.name || '';
     }
 
     if (!threadId) {
-      console.log('[Phone:diag] parsePhone: no threadId found for FROM=' + fromRaw0);
       continue;
     }
     const msgTime = resolvePhoneTime(time);
-    console.log('[Phone:diag] incomingMsg called', { threadId, text: text.slice(0,40), time: msgTime });
 
     // 先发已有图片（生图插件已替换完的 <img src>）
     smsImgs.forEach(src => routeImgToThread(threadId, src, msgTime));
@@ -10592,7 +10582,6 @@ function parsePhone(block) {
       const pp = (pa.prompt || '').trim();
       if (pp) {
         STATE._pendingComfyPics.set(pp, { threadId, time: msgTime });
-        console.log('[Phone:comfy] 注册 ComfyUI pending pic', { threadId, prompt: pp.slice(0, 50) });
       }
     }
 
@@ -10612,7 +10601,6 @@ function parsePhone(block) {
       if (STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
       showBanner(th.name, '📷 图片生成中...', msgTime);
       saveState();
-      console.log('[Phone:pendingImg] 添加 pending_image 占位', { threadId, prompt: prompt.slice(0, 50) });
     });
 
     if (text) {
@@ -10640,7 +10628,6 @@ function parsePhone(block) {
   while ((m = momentsRe.exec(block)) !== null) {
     const mAttrs = getTagAttrs(m[1]);
     const fromNameRaw = (mAttrs.FROM || '').trim();
-    if (_isUserFrom(fromNameRaw)) { console.log('[Phone:guard] MOMENTS FROM=user blocked:', fromNameRaw); continue; }
     const rawMomentContent = m[2] || '';
     // 支持 MOMENTS 内容里有 <img src> (生图插件替换后)，优先作为配图
     const { imgs: momentImgs, cleanText: momentCleanText, pendingPrompts: momentPendingPrompts } = extractImgsFromText(rawMomentContent);
@@ -10665,7 +10652,7 @@ function parsePhone(block) {
     }
 
     const effectivePendingPrompt = pendingPrompt || comfyPendingPrompt;
-    const momentId = incomingMoment(fromName, momentTime, momentCleanText.trim(), momentImg, effectivePendingPrompt, comfyPendingPrompt ? 'comfy' : 'chatu8');
+    const momentId = incomingMoment(fromName, momentTime, momentCleanText.trim(), momentImg, effectivePendingPrompt, comfyPendingPrompt ? 'comfy' : 'chatu8', true);
 
     // 同步写 _pendingMomentImgs，供 Observer/MESSAGE_UPDATED 回填
     if (effectivePendingPrompt) {
@@ -10675,9 +10662,7 @@ function parsePhone(block) {
       if (comfyPendingPrompt) {
         STATE._pendingComfyPics = STATE._pendingComfyPics || new Map();
         STATE._pendingComfyPics.set(comfyPendingPrompt, { threadId: '__moment__', momentId, time: momentTime });
-        console.log('[Phone:moment:comfy] 朋友圈 ComfyUI 等待生图', { momentId, prompt: comfyPendingPrompt.slice(0, 50) });
       } else {
-        console.log('[Phone:moment:pending] 朋友圈智绘姬等待生图', { momentId, prompt: pendingPrompt.slice(0, 50) });
       }
 
       // ── 立即检查主楼是否已有对应图片（图片先于 parsePhone 生成的情况）──
@@ -10698,7 +10683,6 @@ function parsePhone(block) {
                 STATE._pendingMomentImgs.delete(effectivePendingPrompt);
                 if (STATE.currentView === 'moments') renderMoments();
                 saveState();
-                console.log('[Phone:moment:earlyFill] 主楼图片早于 parsePhone，直接回填', { momentId, src: imgEl.src.slice(0, 80) });
               }
             }
             break;
@@ -10713,7 +10697,9 @@ function parsePhone(block) {
   while ((m = commentRe.exec(block)) !== null) {
     const cAttrs = getTagAttrs(m[1]);
     const commentFrom = (cAttrs.FROM || '').trim();
-    if (_isUserFrom(commentFrom)) { console.log('[Phone:guard] COMMENT FROM=user blocked:', commentFrom); continue; }
+    const _commentMomentId = (cAttrs.MOMENT_ID || '').trim();
+    const _commentReplyTo = cAttrs.REPLY_TO ? cAttrs.REPLY_TO.trim() : null;
+    const _commentText = (m[2] || '').trim();
     incomingComment(
       (cAttrs.MOMENT_ID || '').trim(),
       commentFrom,
@@ -10736,7 +10722,6 @@ function parsePhone(block) {
   const callRe = /<CALL\s+FROM="([^"]+)"\s+TIME="([^"]+)"\s*\/?>/gi;
   while ((m = callRe.exec(block)) !== null) {
     const callFrom = m[1].trim();
-    if (_isUserFrom(callFrom)) { console.log('[Phone:guard] CALL FROM=user blocked:', callFrom); continue; }
     incomingCall(callFrom, m[2].trim());
     parsedCount++;
   }
@@ -10754,7 +10739,6 @@ function parsePhone(block) {
   const voiceRe = /<VOICE\s+FROM="([^"]+)"\s+TIME="([^"]+)"\s+DURATION="([^"]+)">([\s\S]*?)<\/VOICE>/gi;
   while ((m = voiceRe.exec(block)) !== null) {
     const voiceFrom = m[1].trim();
-    if (_isUserFrom(voiceFrom)) { console.log('[Phone:guard] VOICE FROM=user blocked:', voiceFrom); continue; }
     incomingVoice(voiceFrom, m[2].trim(), m[3].trim(), m[4].trim());
     parsedCount++;
   }
@@ -10763,7 +10747,6 @@ function parsePhone(block) {
   while ((m = gmsgRe.exec(block)) !== null) {
     const gAttrs = getTagAttrs(m[1]);
     const gmsgFrom = (gAttrs.FROM || '').trim();
-    if (_isUserFrom(gmsgFrom)) { console.log('[Phone:guard] GMSG FROM=user blocked:', gmsgFrom); continue; }
     incomingGroupMsg(gmsgFrom, (gAttrs.GROUP || '').trim(), (gAttrs.TIME || '').trim(), String(m[2] || '').trim());
     parsedCount++;
   }
@@ -10777,7 +10760,6 @@ function parsePhone(block) {
     const groupName = (gAttrs.GROUP || '').trim();
     const time = (gAttrs.TIME || '').trim();
     // 严禁 AI 替 user 发言
-    if (_isUserFrom(fromRaw)) { console.log('[Phone:guard] GVOICE FROM=user blocked:', fromRaw); continue; }
     const duration = (gAttrs.DURATION || '').trim(), voiceText = String(m[2] || '').trim();
     const groupId = `grp_${groupName}`;
     if (!STATE.threads[groupId]) {
@@ -10814,7 +10796,6 @@ function parsePhone(block) {
   while ((m = ghongbaoRe.exec(block)) !== null) {
     const gAttrs = getTagAttrs(m[1]);
     const fromRaw = (gAttrs.FROM || '').trim(), groupName = (gAttrs.GROUP || '').trim();
-    if (_isUserFrom(fromRaw)) { console.log('[Phone:guard] GHONGBAO FROM=user blocked:', fromRaw); continue; }
     const amount = (gAttrs.AMOUNT || '').trim(), note = (gAttrs.NOTE || '').trim() || '恭喜发财';
     const groupId = `grp_${groupName}`;
     if (!STATE.threads[groupId]) {
@@ -10927,7 +10908,6 @@ function incomingMsg(threadId, text, time) {
   const recentMsgs = (th.messages || []).slice(-6);
   const isDup = recentMsgs.some(m => m.from === threadId && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) {
-    console.log('[Phone:diag] incomingMsg DEDUP blocked:', text.slice(0, 40));
     return;
   }
 
@@ -11243,7 +11223,7 @@ async function generateAIDiary() {
     var prompt = '\u4eca\u65e5\u5bf9\u8bdd\uff1a\n' + recent + '\n\n' + charName + '\u7684\u4eca\u65e5\u65e5\u8bb0\uff1a';
     var resp = await lgCallAPI(prompt, 350, sysMsg);
     if (!resp) return;
-    var ts = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    var ts = resolvePhoneTime();
     var diaryText = resp.trim();
     // 从正文开头提取故事内日期(如「2023年11月15日」)
     var storyDateMatch = diaryText.match(/^(\d{4}\u5e74\d{1,2}\u6708\d{1,2}\u65e5|\d{4}\/\d{1,2}\/\d{1,2}|\d{1,2}\u6708\d{1,2}\u65e5)/);
@@ -11263,7 +11243,7 @@ async function postUserDiary() {
   $('#rp-diary-input').val('');
   var now = new Date();
   var dateStr = (now.getMonth()+1) + '/' + now.getDate();
-  var ts = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  var ts = resolvePhoneTime();
   var entryId = 'diary_' + now.getTime();
   STATE.diary = STATE.diary || [];
   STATE.diary.push({ id: entryId, date: dateStr, time: ts, author: 'user', text: text, reply: null, replyTime: null });
@@ -11299,7 +11279,7 @@ async function postUserDiary() {
     if (resp2) {
       var cleaned2 = resp2.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
       var now2 = new Date();
-      var ts2 = String(now2.getHours()).padStart(2,'0') + ':' + String(now2.getMinutes()).padStart(2,'0');
+      var ts2 = resolvePhoneTime();
       var entry = (STATE.diary || []).find(function(d) { return d.id === entryId; });
       if (entry) { entry.reply = cleaned2; entry.replyTime = ts2; }
       saveState(); renderDiary();
@@ -11332,9 +11312,9 @@ async function postUserMoment() {
   go('moments');
   saveState();
   // 先强制主角评论,再让 NPC 们自由互动
-  setTimeout(() => charRespondToUserMoment(momentId), 800);
+  // [DISABLED]   setTimeout(() => charRespondToUserMoment(momentId), 800);
   // 好友自动点赞+评论(user的动态)
-  setTimeout(() => friendsInteractOnMoment(momentId), 2500);
+  // [DISABLED]   setTimeout(() => friendsInteractOnMoment(momentId), 2500);
 }
 
 // ================================================================
@@ -11343,8 +11323,6 @@ async function postUserMoment() {
 function _bindAvatarUpload() {
   const fileInput = document.getElementById('rp-avatar-file-input');
   const uploadBtn = document.getElementById('rp-avatar-upload-btn');
-  if (!fileInput || !uploadBtn) { console.log('[Phone:av] _bindAvatarUpload: elements not found'); return; }
-  console.log('[Phone:av] _bindAvatarUpload: binding');
   const newInput = fileInput.cloneNode(true);
   fileInput.parentNode.replaceChild(newInput, fileInput);
   uploadBtn.onclick = function(e) {
@@ -11352,7 +11330,6 @@ function _bindAvatarUpload() {
     newInput.value = ''; newInput.click();
   };
   newInput.onchange = function() {
-    console.log('[Phone:av] onchange fired, files:', this.files && this.files.length);
     const file = this.files && this.files[0];
     if (!file) return;
     const who = document.getElementById('rp-avatar-select')?.value || 'user';
@@ -11367,7 +11344,6 @@ function _bindAvatarUpload() {
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        console.log('[Phone:av] ready, who:', who, 'len:', dataUrl.length);
         setAvatar(who, dataUrl);
         updateAvatarPreviewSwatch(who);
         renderMoments(); renderThreadList(); renderDiary();
@@ -11375,7 +11351,6 @@ function _bindAvatarUpload() {
       };
       img.onerror = function() {
         const dataUrl = ev.target.result;
-        console.log('[Phone:av] img err, raw, who:', who);
         setAvatar(who, dataUrl);
         updateAvatarPreviewSwatch(who);
         renderMoments(); renderThreadList(); renderDiary();
@@ -11662,13 +11637,11 @@ function sendUserHongbao() {
 }
 
 function triggerImagePick() {
-  console.log('[Raymond Phone] triggerImagePick called');
   $('#rp-attach-panel').hide();
   const fi = $('<input type="file" accept="image/*" style="display:none">');
   $('body').append(fi);
   fi.on('change', function() {
     const file = this.files[0];
-    console.log('[Raymond Phone] File selected:', file?.name, file?.type);
     if (!file) { fi.remove(); return; }
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -11689,7 +11662,6 @@ function triggerImagePick() {
           dt.items.add(new File([blob], 'photo.jpg', { type: file.type }));
           stImgInput.files = dt.files;
           stImgInput.dispatchEvent(new Event('change', { bubbles: true }));
-          console.log('[Raymond Phone] Image attached to ST #file_form_input ✓');
         } else {
           console.warn('[Raymond Phone] #file_form_input not found');
         }
@@ -11888,6 +11860,159 @@ function showLiveChat(name, avatarBg, customImg, text) {
 // ================================================================
 //  CHAT BUBBLE BEAUTIFICATION
 // ================================================================
+
+function stripPhoneOocText(raw) {
+  if (raw == null) return '';
+  let text = String(raw);
+  text = text
+    .replace(/\[(?:手机短信提示|叙事指令|手机群聊提示)[\s\S]*?\]/g, '')
+    .replace(/(?:<br\s*\/?>\s*){2,}/gi, '<br>')
+    .replace(/^\s*(?:<br\s*\/?>\s*)+/i, '')
+    .replace(/(?:<br\s*\/?>\s*)+$/i, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return text;
+}
+
+function cleanupUserOocOnce(opts, options) {
+  try {
+    const visibleText = opts && opts.visibleText ? String(opts.visibleText) : '';
+    const mutateChat = !!(options && options.mutateChat);
+    const allUserMsgs = Array.from(document.querySelectorAll('.mes[is_user="true"]'));
+    const targets = allUserMsgs.length ? [allUserMsgs[allUserMsgs.length - 1]] : [];
+    let touched = false;
+
+    targets.forEach(function(userMsg) {
+      const textEl = userMsg && userMsg.querySelector('.mes_text');
+      if (!textEl) return;
+      const before = textEl.innerHTML || '';
+      let after = stripPhoneOocText(before);
+      // fallback 内联注入时，理想状态是主楼只显示可见行动描述 smsLine。
+      // 如果清完后仍残留奇怪空壳，直接回填 smsLine；不碰 AI 隐藏 prompt 发送链路。
+      if (visibleText && /(?:手机短信提示|叙事指令|手机群聊提示)/.test(after)) after = escHtml(visibleText);
+      if (after !== before) {
+        textEl.innerHTML = after;
+        touched = true;
+      }
+    });
+
+    // 同步清理当前 chat 最后一条 user 消息，避免后续局部重绘又把 OOC 画回来。
+    // 仅在 prompt 组装完成/开始生成之后执行；fallback 内联 OOC 不能在组 prompt 前从 chat 记录移除。
+    const ctx = mutateChat && (typeof getContext === 'function') ? getContext() : null;
+    const chat = ctx && ctx.chat;
+    if (mutateChat && Array.isArray(chat)) {
+      for (let i = chat.length - 1; i >= 0; i--) {
+        const m = chat[i];
+        if (!m || !m.is_user) continue;
+        if (typeof m.mes === 'string' && /\[(?:手机短信提示|叙事指令|手机群聊提示)[\s\S]*?\]/.test(m.mes)) {
+          m.mes = visibleText || stripPhoneOocText(m.mes);
+          touched = true;
+          try { if (typeof saveChatConditional === 'function') saveChatConditional(); } catch(_) {}
+        }
+        break;
+      }
+    }
+    return touched;
+  } catch(e) {
+    console.warn('[Raymond Phone] OOC cleanup failed:', e);
+    return false;
+  }
+}
+
+function scheduleUserOocCleanup(opts) {
+  try {
+    if (window.__rpUserOocCleanupTimer) {
+      clearTimeout(window.__rpUserOocCleanupTimer);
+      window.__rpUserOocCleanupTimer = null;
+    }
+    if (window.__rpUserOocCleanupObserver) {
+      try { window.__rpUserOocCleanupObserver.disconnect(); } catch(_) {}
+      window.__rpUserOocCleanupObserver = null;
+    }
+
+    const done = function() {
+      if (window.__rpUserOocCleanupObserver) {
+        try { window.__rpUserOocCleanupObserver.disconnect(); } catch(_) {}
+        window.__rpUserOocCleanupObserver = null;
+      }
+      if (window.__rpUserOocCleanupTimer) {
+        clearTimeout(window.__rpUserOocCleanupTimer);
+        window.__rpUserOocCleanupTimer = null;
+      }
+    };
+
+    const tryCleanup = function() {
+      const touched = cleanupUserOocOnce(opts || {}, { mutateChat: false });
+      if (touched) done();
+      return touched;
+    };
+
+    // 如果消息已同步渲染，立刻一次完成；否则挂一次性 observer 等用户消息真正落 DOM。
+    if (tryCleanup()) return;
+
+    const chatRoot = document.querySelector('#chat');
+    if (chatRoot && typeof MutationObserver === 'function') {
+      window.__rpUserOocCleanupObserver = new MutationObserver(function(mutations) {
+        for (const mutation of mutations) {
+          const target = mutation.target && mutation.target.nodeType === 1 ? mutation.target : mutation.target?.parentElement;
+          const hasUserMsg = Array.from(mutation.addedNodes || []).some(function(node) {
+            if (!node || node.nodeType !== 1) return false;
+            return (node.matches && node.matches('.mes[is_user="true"], .mes[is_user="true"] *'))
+              || (node.querySelector && node.querySelector('.mes[is_user="true"]'));
+          }) || (target && target.closest && target.closest('.mes[is_user="true"]'));
+          if (hasUserMsg) {
+            tryCleanup();
+            break;
+          }
+        }
+      });
+      window.__rpUserOocCleanupObserver.observe(chatRoot, { childList: true, subtree: true, characterData: true });
+    }
+
+    // 兜底只保留一次：极端情况下 DOM observer 没收到 ST 的渲染事件，4 秒后扫一次然后退出。
+    window.__rpUserOocCleanupTimer = setTimeout(function() {
+      try { cleanupUserOocOnce(opts || {}, { mutateChat: false }); } finally { done(); }
+    }, 4000);
+  } catch(e) {
+    console.warn('[Raymond Phone] schedule OOC cleanup failed:', e);
+  }
+}
+
+function scheduleUserOocChatCleanup(opts) {
+  try {
+    let done = false;
+    let fallbackTimer = null;
+    const run = function() {
+      if (done) return;
+      done = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      cleanupUserOocOnce(opts || {}, { mutateChat: true });
+      try {
+        if (eventSource && typeof eventSource.removeListener === 'function') {
+          if (event_types?.GENERATE_AFTER_COMBINE_PROMPTS) eventSource.removeListener(event_types.GENERATE_AFTER_COMBINE_PROMPTS, run);
+          if (event_types?.CHAT_COMPLETION_PROMPT_READY) eventSource.removeListener(event_types.CHAT_COMPLETION_PROMPT_READY, run);
+          if (event_types?.GENERATION_STARTED) eventSource.removeListener(event_types.GENERATION_STARTED, run);
+        }
+      } catch(_) {}
+    };
+    let armed = false;
+    const armOnce = function(ev) {
+      if (!eventSource || !ev || typeof eventSource.once !== 'function') return;
+      armed = true;
+      eventSource.once(ev, run);
+    };
+    try {
+      armOnce(event_types?.GENERATE_AFTER_COMBINE_PROMPTS);
+      armOnce(event_types?.CHAT_COMPLETION_PROMPT_READY);
+      armOnce(event_types?.GENERATION_STARTED);
+    } catch(_) {}
+    // 兜底：若事件名不存在/未触发，等足够久再清 chat 记录，避免抢在 prompt 组装前删掉 fallback 内联 OOC。
+    fallbackTimer = setTimeout(run, armed ? 6000 : 2500);
+  } catch(e) {
+    console.warn('[Raymond Phone] schedule chat OOC cleanup failed:', e);
+  }
+}
+
 function hidePhoneTagsInChat(targetMesId) {
   // 默认只清理目标楼层；只有未指定时才全量扫历史。
   let targets = [];
@@ -11907,7 +12032,7 @@ function hidePhoneTagsInChat(targetMesId) {
       phoneEl.remove();
     });
     // 残余的裸 sms/gmsg 等标签(不在 phone 内)也一并清除
-    el.querySelectorAll('sms, moments, comment, notify, sync, call, voice, gmsg, gvoice, ghongbao, simg, hongbao').forEach(tag => {
+    el.querySelectorAll('sms, moments, comment, notify, sync, call, voice, gmsg, gvoice, ghongbao, simg, hongbao, location, loc').forEach(tag => {
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
     });
@@ -11919,21 +12044,9 @@ function hidePhoneTagsInChat(targetMesId) {
 // 清理用户气泡里遗留的 OOC 括号指令（历史消息持久化清理）
 function hideOocInUserBubbles() {
   document.querySelectorAll('.mes[is_user="true"] .mes_text').forEach(el => {
-    let html = el.innerHTML || '';
-    // 匹配 [手机短信提示:...] / [叙事指令:...] / [手机群聊提示:...] 含多行内容
-    const before = html;
-    html = html.replace(/\[(?:手机短信提示|叙事指令|手机群聊提示)[^\]]*\]/g, '');
-    // 兜底:跨行版本（有些浏览器把换行渲染成 <br>，导致方括号跨行）
-    html = html.replace(/\[(?:手机短信提示|叙事指令|手机群聊提示)[\s\S]*?\]/g, '');
-    if (html !== before) {
-      // 清理多余空行
-      html = html
-        .replace(/(?:<br\s*\/?>[\s]*){2,}/gi, '<br>')
-        .replace(/^\s*(?:<br\s*\/?>\s*)+/i, '')
-        .replace(/(?:<br\s*\/?>\s*)+$/i, '')
-        .trim();
-      el.innerHTML = html;
-    }
+    const before = el.innerHTML || '';
+    const after = stripPhoneOocText(before);
+    if (after !== before) el.innerHTML = after;
   });
 }
 
@@ -12900,7 +13013,6 @@ async function _doGetMomentsCtx(chatIdHint) {
             const content = e?.content || e?.text || '';
             if (content) wiTexts.push(content);
           });
-          console.log('[getMomentsCtx] loadWorldInfo:', wiName, '- entries:', Object.keys(wiData.entries).length);
         }
       }
     } catch(e) { console.warn('[getMomentsCtx] loadWorldInfo failed:', e.message); }
@@ -12929,7 +13041,6 @@ async function _doGetMomentsCtx(chatIdHint) {
     } catch(e) { console.warn('[getMomentsCtx] window.world_info scan failed:', e.message); }
 
     const totalLen = wiTexts.reduce((s,t) => s + t.length, 0);
-    console.log('[getMomentsCtx] wiTexts total chars:', totalLen);
 
     const allWIText = wiTexts.join('\n');
     if (allWIText) {
@@ -12987,7 +13098,6 @@ async function _doGetMomentsCtx(chatIdHint) {
         const fullText = entryText.replace(/<[^>]+>/g, '').replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
         if (fullText.length > 30) {
           npcPersonaMap[k] = fullText.slice(0, 600);
-          console.log('[getMomentsCtx] WI entry matched:', nameCore, '→ key:', k, '| len:', fullText.length);
         }
       });
 
@@ -13027,12 +13137,10 @@ async function _doGetMomentsCtx(chatIdHint) {
           ].filter(Boolean).join(';');
           if (persona) {
             npcPersonaMap[fk] = persona;
-            console.log('[getMomentsCtx] friends_circle fallback:', fcName, '->', persona.slice(0,60));
           }
         });
       }
 
-      console.log('[getMomentsCtx] npcPersonaMap keys:', Object.keys(npcPersonaMap));
     }
   } catch(e) { /* ignore */ }
 
@@ -13129,7 +13237,6 @@ async function _doGetMomentsCtx(chatIdHint) {
       }
     }
   });
-  console.log('[getMomentsCtx] filteredPersonaMap keys:', Object.keys(filteredPersonaMap));
 
   const result = {
     charName,
@@ -13143,7 +13250,6 @@ async function _doGetMomentsCtx(chatIdHint) {
   _getMomentsCtxCache = result;
   _getMomentsCtxCacheTime = Date.now();
   _getMomentsCtxCacheChatId = chatIdHint || (getContext()?.chatId || (getContext()?.characterId != null ? `char_${getContext().characterId}` : 'default'));
-  console.log('[getMomentsCtx] cache updated for', _getMomentsCtxCacheChatId);
   return result;
 }
 
@@ -13202,11 +13308,11 @@ async function generateAIMoments() {
     posts.forEach((post, i) => {
       if (!post.from || !post.text) return;
       const d = new Date(now.getTime() + i * 60000);
-      const ts = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      const ts = resolvePhoneTime();
       incomingMoment(post.from.trim(), ts, post.text.trim(), post.img || null);
     });
     if (STATE.currentView === 'moments') renderMoments();
-    setTimeout(() => momentAISocial(null), 1000);
+  // [DISABLED]     setTimeout(() => momentAISocial(null), 1000);
   } catch(e) {
     console.warn('[Moments] generateAIMoments error:', e);
     const container = $('#rp-moments-list');
@@ -13243,8 +13349,7 @@ async function charRespondToUserMoment(momentId) {
   if (resp) {
     const cleaned = resp.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
     if (cleaned) {
-      const now = new Date();
-      const ts = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+      const ts = resolvePhoneTime();
       if (!moment.likes.includes(charName)) moment.likes.push(charName);
       incomingComment(momentId, charName, ts, cleaned, null);
       if (STATE.currentView === 'moments') renderMoments();
@@ -13282,8 +13387,7 @@ async function charRespondToUserMoment(momentId) {
       if (resp) {
         const cleaned = resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
         if (cleaned && cleaned.length > 2) {
-          const now2 = new Date();
-          const ts2 = String(now2.getHours()).padStart(2,'0') + ':' + String(now2.getMinutes()).padStart(2,'0');
+          const ts2 = resolvePhoneTime();
           incomingComment(momentId, npc, ts2, cleaned, null);
           if (STATE.currentView === 'moments') renderMoments();
           saveState();
@@ -13335,8 +13439,7 @@ async function momentAISocial(targetMomentId) {
     const jsonStr2 = resp.match(/\[[\s\S]*\]/)?.[0];
     if (!jsonStr2) return;
     const actions = JSON.parse(jsonStr2);
-    const now = new Date();
-    const ts = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    const ts = resolvePhoneTime();
     actions.slice(0, 6).forEach(a => {
       if (!a.from || !a.momentId) return;
       const fromKey = normNameKey(a.from);
@@ -13378,10 +13481,7 @@ async function friendsInteractOnMoment(momentId) {
   const allFriends = (isUserMoment ? npcs : [charName, ...npcs]).filter(n => n && n !== authorName && !isPhoneBlocked(n));
   if (allFriends.length === 0) return;
 
-  const ts = () => {
-    const d = new Date();
-    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-  };
+  const ts = () => resolvePhoneTime();
 
   // ── 点赞:每个好友随机70%概率点赞 ──
   allFriends.forEach(name => {
@@ -13532,8 +13632,7 @@ async function generateAIReply(momentId, userCommentText, fromName) {
   const prompt3 = authorName + '的朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
   const resp = await lgCallAPI(prompt3, 120, sysMsg3);
   if (!resp) return;
-  const now = new Date();
-  const ts = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const ts = resolvePhoneTime();
   const cleaned = resp.trim().replace(/^[「"']|[」"']$/g, '');
   incomingComment(momentId, authorName, ts, cleaned, null);
 }
@@ -13552,10 +13651,7 @@ function cleanMomentText(text) {
     .trim();
 }
 function renderMoments() {
-  console.log('[Phone:diag] renderMoments STATE.avatars=', JSON.stringify(STATE.avatars));
-  console.log('[Phone:diag] renderMoments called from:', new Error().stack.split('\n').slice(1,4).join(' | '));
   const momentImgSnap = (STATE.moments||[]).map(m=>({id:m.id,hasImg:!!m.img,pendingImg:m.pendingImg?.slice(0,20)}));
-  console.log('[Phone:diag] renderMoments moments snapshot:', JSON.stringify(momentImgSnap));
   const container = $('#rp-moments-list').empty();
   if (!STATE.moments || STATE.moments.length === 0) {
     container.append('<div class="rp-moments-empty"><span>📭</span><span>暂无动态</span></div>');
@@ -13567,11 +13663,12 @@ function renderMoments() {
     const liked = moment.likes.includes('user');
     const likeNames = moment.likes.map(l => l === 'user' ? _uname : l);
     const likeCount = likeNames.length;
+    const visibleComments = getVisibleMomentCommentsWithIndexMap(moment.comments, _ctx);
     let commentsHtml = '';
-    if (moment.comments && moment.comments.length > 0) {
-      const items = moment.comments.map((cm, idx) => {
+    if (visibleComments.length > 0) {
+      const items = visibleComments.map((cm, idx) => {
         const replyPart = cm.replyTo !== null && cm.replyTo !== undefined
-          ? `回复 <span class="rp-moment-cname">${moment.comments[cm.replyTo]?.name || '?'}</span>:`
+          ? `回复 <span class="rp-moment-cname">${visibleComments[cm.replyTo]?.name || '?'}</span>:`
           : '';
         return `<div class="rp-moment-comment">
           <span class="rp-moment-cname">${escHtml(cm.name)}</span>:${replyPart}${escHtml(cm.text)}
@@ -13680,7 +13777,6 @@ function renderXHSFeed(forceRefresh) {
 
 function _renderXHSList(box) {
   mergeGlobalAvatars();
-  console.log('[Phone:diag] _renderXHSList STATE.avatars=', JSON.stringify(STATE.avatars));
   box = box || $('#rp-xhs-list');
   box.empty();
   const list = STATE.xhsFeed || [];
@@ -14158,7 +14254,6 @@ async function buildXHSFeedWithAI(appendMode) {
     const prompt = `角色信息:${charInfo}\n用户名:${userName}\n近期对话片段:${(recentChat||'').slice(0,100)}\n\n本次3条帖子话题方向:\n${chosenTopics.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\n生成JSON:`;
 
     const resp = await xhsCallAPI(prompt, sysMsg);
-    console.log('[XHS] raw resp:', resp ? resp.slice(0, 300) : 'null');
     if (resp) {
       let items = [];
       try {
@@ -14325,7 +14420,7 @@ function postUserXHS() {
   const ctx = getContext() || {};
   const userName = ctx?.name1 || '我';
   const now = new Date();
-  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts = resolvePhoneTime();
   const dateStr = `${now.getMonth()+1}-${now.getDate()}`;
   const post = {
     id: `xhs_user_${Date.now()}`,
@@ -14437,8 +14532,7 @@ ${relationCtx ? relationCtx + '\n' : ''}
   const baseTs = now.getTime();
   items.forEach((item, i) => {
     if (!item.user || !item.text) return;
-    const t = new Date(baseTs + (i+1)*15000);
-    const ts = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    const ts = resolvePhoneTime();
     post.comments = post.comments || [];
     post.comments.push({ from: 'stranger_'+i, user: item.user, text: item.text, time: ts, replyTo: null });
   });
@@ -14455,8 +14549,7 @@ async function sendXHSComment(postId, text, replyToCidx) {
   if (!post || !text.trim()) return;
   const ctx = getContext() || {};
   const userName = ctx?.name1 || '我';
-  const now = new Date();
-  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const ts = resolvePhoneTime();
   post.comments = post.comments || [];
   const replyToIdx = (replyToCidx !== null && replyToCidx !== undefined && post.comments[replyToCidx]) ? replyToCidx : null;
   post.comments.push({ from: 'user', user: userName, text: text.trim(), time: ts, replyTo: replyToIdx });
@@ -14538,8 +14631,7 @@ ${relationCtx ? '\n' + relationCtx + '\n' : ''}
     setTimeout(() => {
       const p2 = (STATE.xhsFeed || []).find(x => x.id === postId);
       if (!p2) return;
-      const now = new Date();
-      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const ts = resolvePhoneTime();
       const nick = r.user || '路人甲🍿';
       const replyText = (r.text || '').trim();
       if (!replyText) return;
@@ -14611,9 +14703,8 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType) {
+function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType, _skipAutoSocial) {
   if (isForbiddenPhoneContactName(fromRaw, getContext())) {
-    console.log('[Phone:guard] incomingMoment blocked for user/invalid name:', fromRaw);
     return null;
   }
   time = resolvePhoneTime(time);
@@ -14689,7 +14780,6 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
         _es[EXT_KEY][_realChatId] = makeLightweightPayload(_slot);
         _saveSettings();
       }
-      console.log('[Phone:moment] 已写入正确 slot:', _realChatId, _dup ? _dup.id : momentId);
     } catch(e) { console.warn('[Phone:moment] 写入正确 slot 失败', e); }
     return momentId; // 不污染当前 STATE.moments
   }
@@ -14726,7 +14816,6 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
       }
       if (STATE.currentView === 'moments') renderMoments();
       saveState();
-      console.log('[Phone:moment:update] ComfyUI 完成，回填已存在 moment 的图片', { momentId, src: img.slice(0, 80) });
     }
     return existingMoment.id;  // 必须返回 id，否则 parsePhone 的 _pendingMomentImgs.set 会写入 undefined
   }
@@ -14735,7 +14824,6 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
     // 和 SMS 保持一致：新好友第一次发朋友圈时也自动建联系人线程
     const newTh = findOrCreateThread(fromRaw);
     threadId = newTh?.id || null;
-    console.log('[Phone:diag] incomingMoment: FROM "' + fromRaw + '" not in contacts, auto-created thread', threadId);
   }
   const th = STATE.threads[threadId];
   STATE.moments = STATE.moments || [];
@@ -14757,14 +14845,18 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
   if (STATE.currentView === 'moments') renderMoments();
   showBanner((th ? th.name : fromRaw), '发了朋友圈:' + (text ? text.slice(0,25) + (text.length>25?'...':'') : '📷 图片'), time);
   saveState();
-  // 好友自动点赞+评论
-  setTimeout(() => friendsInteractOnMoment(momentId), 1500);
+  // 好友自动点赞+评论（parsePhone 调用时跳过，因为主楼已有 <COMMENT> 标签）
+  if (!_skipAutoSocial) {
+  // [DISABLED]     setTimeout(() => friendsInteractOnMoment(momentId), 1500);
+  }
   return momentId; // 供调用方（parsePhone）获取真实 ID 用于 _pendingMomentImgs 映射
 }
 
 function incomingComment(momentId, fromRaw, time, text, replyTo) {
   if (isForbiddenPhoneContactName(fromRaw, getContext())) {
-    console.log('[Phone:guard] incomingComment blocked for user/invalid name:', fromRaw);
+    return;
+  }
+  if (isPhoneUserName(fromRaw, getContext()) || (replyTo && isPhoneUserName(replyTo, getContext()))) {
     return;
   }
   // 优先精确匹配 → 严格模糊匹配 → 按作者 fallback
@@ -14779,16 +14871,52 @@ function incomingComment(momentId, fromRaw, time, text, replyTo) {
         moment = candidates[0]; // 唯一候选，安全
       } else if (candidates.length > 1) {
         // 多候选 = 不可靠，放弃模糊匹配，交给 fallback
-        console.log('[Phone:comment] fuzzy matched', candidates.length, 'moments, skipping to fallback');
       }
     }
   }
   if (!moment && STATE.moments && STATE.moments.length > 0) {
-    // 3. Fallback：取最近一条非评论者本人发的动态
+    // 3. Fallback：尝试从 momentId 字符串里提取作者名匹配动态
+    //    momentId 格式通常是 "角色名_HHMM_timestamp"，AI 可能只给了 "角色名_HHMM" 部分
+    //    或者 AI 瞎编了一个完全不对的 ID
     const fromNorm = normNameKey(fromRaw);
-    moment = [...STATE.moments].reverse().find(m => normNameKey(m.name) !== fromNorm)
-      || STATE.moments[STATE.moments.length - 1];
-    console.log('[Phone:comment] fallback to moment:', moment.id, 'for commenter:', fromRaw);
+    if (momentId) {
+      // 尝试从 momentId 提取动态作者名
+      // moment ID 格式: "角色名_HHMM_timestamp" (角色名中空格已被替换为_)
+      // 从尾部剥离 _timestamp 和 _HHMM 部分，剩余即为作者名
+      let idAuthorPart = momentId;
+      // 剥离尾部的 _数字时间戳 (如 _1714369800000)
+      idAuthorPart = idAuthorPart.replace(/_\d{10,}$/, '');
+      // 剥离尾部的 _HHMM (如 _1430)
+      idAuthorPart = idAuthorPart.replace(/_\d{3,4}$/, '');
+      // 把下划线还原为空格用于匹配
+      if (idAuthorPart) {
+        const idAuthorNorm = normNameKey(idAuthorPart.replace(/_/g, ' '));
+        // 按作者名匹配（最近的优先）
+        const byAuthor = [...STATE.moments].reverse().find(m =>
+          normNameKey(m.name) === idAuthorNorm || normNameKey(m.from) === idAuthorNorm
+        );
+        if (byAuthor) {
+          moment = byAuthor;
+        }
+      }
+    }
+    // 如果通过作者名也找不到，再尝试：只有1条动态时才兜底，否则放弃（防止乱挂）
+    if (!moment) {
+      if (STATE.moments.length === 1) {
+        moment = STATE.moments[0];
+      } else {
+
+        // 最后尝试：如果有 replyTo（回复评论），优先找评论者自己的动态；否则找非本人动态
+        const candidate = [...STATE.moments].reverse().find(m => {
+          if (replyTo) return normNameKey(m.name) === fromNorm; // 回复评论：找自己的动态
+          return normNameKey(m.name) !== fromNorm && !(m.comments || []).some(c => normNameKey(c.name) === fromNorm);
+        });
+        if (candidate) {
+          moment = candidate;
+        } else {
+        }
+      }
+    }
   }
   if (!moment) return;
   const threadId = matchThread(fromRaw);
@@ -14838,7 +14966,7 @@ async function sendMomentComment(momentId, text, replyToName) {
     setTimeout(() => generateAIReply(momentId, text.trim(), moment.name), 600);
   } else {
     // 评论的是用户自己的动态 → 触发 AI 社交互动
-    setTimeout(() => momentAISocial(momentId), 600);
+  // [DISABLED]     setTimeout(() => momentAISocial(momentId), 600);
   }
 }
 
@@ -14990,24 +15118,14 @@ function _collectWorldInfoText(charName) {
   const segments = [];
   try {
     const ctx = (typeof getContext === 'function') ? getContext() : {};
-    // a. ctx 注入文本(已触发词条) — 先收集再过滤,不直接全量塞入
-    [ctx.worldInfoBefore, ctx.worldInfoAfter, ctx.world_info, ctx.lorebook]
+    // a. ctx 注入文本(已触发词条) — 只用 ST 已触发的词条
+    [ctx.worldInfoBefore, ctx.worldInfoAfter]
       .filter(Boolean).forEach(s => {
         // 按换行分段,每段单独过滤
         String(s).split(/\n{2,}/).forEach(seg => { if (seg.trim().length > 10) segments.push(seg.trim()); });
       });
     // b. extension_prompts — 跳过,内容不可控,容易污染人设
-    // c. 全量扫描 window.world_info(ST 内存常驻,不依赖触发)
-    try {
-      const wi = window.world_info || {};
-      Object.values(wi).forEach(function(book) {
-        const entries = book.entries || book.content || {};
-        Object.values(entries).forEach(function(e) {
-          const content = (e.content || e.text || '').trim();
-          if (content && content.length > 10) segments.push(content);
-        });
-      });
-    } catch(e) {}
+    // c. 全量扫描 window.world_info — 已移除，避免其他角色的世界书污染当前角色
   } catch(e) {}
 
   if (!segments.length) return '';
@@ -15102,7 +15220,7 @@ function g2048StripActions(text) {
   text = text.replace(/[\uff08((][^)\uff09)]{1,60}[)\uff09)]/g, '');
   text = text.replace(/\*[^*]{1,60}\*/g, '');
   // 删除行首/行尾的动词短句(轻笑道、他说、微微一顿 等)
-  text = text.replace(/^[\s\u3000]*([\u4e00-\u9fa5]{1,6}[\u8bf4\u9053\u7b11\u9f3b\u54fc\u8ebb\u4f4e\u8f7b\u5fae][\u8bf4\u9053]?)[,,::\s]*/u, '');
+  text = text.replace(/^[\s\u3000]*[\u4e00-\u9fa5]{1,6}[\u8bf4\u9053\u7b11\u9f3b\u54fc\u8ebb\u4f4e\u8f7b\u5fae][\u8bf4\u9053]?[,,:：]\s*/u, '');
   // 删除首尾引号
   text = text.replace(/^[\u201c\u201d\u2018\u2019\u300c\u300d"'\uff02\u300e\u300f]+/, '').replace(/[\u201c\u201d\u2018\u2019\u300c\u300d"'\uff02\u300e\u300f]+$/, '');
   // 删除省略号(注意:. 必须转义为 \. 否则是通配符)
@@ -15199,6 +15317,7 @@ const GM_HOOK_GO_SPEED_PS = 132;                  // px per second
 // cached gradient objects (rebuilt on first draw / canvas resize)
 let _gmBgGrad = null, _gmBgGradW = 0, _gmBgGradH = 0;
 let _gmPulleyGrad = null;
+let _gmFieldCanvas = null, _gmFieldCtx = null, _gmFieldW = 0, _gmFieldH = 0, _gmFieldDirty = true;
 
 const GM_ITEMS_DEF = [
   { type:'gold_s',  emoji:'🟡', label:'小金块', score:50,  weight:1.0, r:9  },
@@ -15253,6 +15372,7 @@ function gmSpawnItems() {
     if (ok) placed.push({ ...def, x, y, grabbed: false });
   }
   GM.items = placed;
+  _gmFieldDirty = true;
 }
 
 function gmDrawItem(ctx, type, x, y, r) {
@@ -15435,14 +15555,21 @@ function gmDrawItem(ctx, type, x, y, r) {
   ctx.restore();
 }
 
-function gmDraw() {
-  const canvas = document.getElementById('ggold-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+function gmRenderFieldCache(canvas, W, H) {
+  if (!_gmFieldCanvas || _gmFieldW !== W || _gmFieldH !== H) {
+    _gmFieldCanvas = document.createElement('canvas');
+    _gmFieldCanvas.width = W;
+    _gmFieldCanvas.height = H;
+    _gmFieldCtx = _gmFieldCanvas.getContext('2d');
+    _gmFieldW = W;
+    _gmFieldH = H;
+    _gmFieldDirty = true;
+  }
+  if (!_gmFieldDirty || !_gmFieldCtx) return;
+
+  const ctx = _gmFieldCtx;
   ctx.clearRect(0, 0, W, H);
 
-  // 背景（缓存 gradient，避免每帧重新分配）
   if (!_gmBgGrad || _gmBgGradW !== W || _gmBgGradH !== H) {
     _gmBgGrad = ctx.createLinearGradient(0, 0, 0, H);
     _gmBgGrad.addColorStop(0, 'rgba(18,9,4,.9)');
@@ -15453,20 +15580,30 @@ function gmDraw() {
   ctx.fillStyle = _gmBgGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // 地面线
   ctx.strokeStyle = 'rgba(200,150,60,.45)';
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4, 3]);
   ctx.beginPath(); ctx.moveTo(0, 52); ctx.lineTo(W, 52); ctx.stroke();
   ctx.setLineDash([]);
 
-  // 物品（用canvas绘制替代emoji）
   ctx.save();
   for (const item of GM.items) {
     if (item.grabbed) continue;
     gmDrawItem(ctx, item.type, item.x, item.y, item.r);
   }
   ctx.restore();
+
+  _gmFieldDirty = false;
+}
+
+function gmDraw() {
+  const canvas = document.getElementById('ggold-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  gmRenderFieldCache(canvas, W, H);
+  ctx.clearRect(0, 0, W, H);
+  if (_gmFieldCanvas) ctx.drawImage(_gmFieldCanvas, 0, 0);
 
   // 绳子（链条样式，分段绘制）
   const hx = GM_ANCHOR_X + Math.sin(GM.hookAngle) * GM.hookLen;
@@ -15557,6 +15694,7 @@ function gmLoop(ts) {
       hit.grabbed = true;
       GM.hookedItem = hit;
       GM.hookState = 'return';
+      _gmFieldDirty = true;
       gmAddMsg('sys', `钩到了 ${hit.emoji} ${hit.label}！`);
     }
     if (GM.hookLen >= GM_MAX_HOOK_LEN || hx < 0 || hx > 270 || hy > 192) {
@@ -15643,6 +15781,7 @@ function gmUpdateRoundUI() {
 
 function gmAddMsg(type, text) {
   GM.chatLog.push({ type, text });
+  if (GM.chatLog.length > 30) GM.chatLog.shift();
   const chat = document.getElementById('ggold-chat');
   if (!chat) return;
   const div = document.createElement('div');
@@ -15742,7 +15881,7 @@ async function gmTriggerChat(event) {
     const personaInline = persona ? '【角色人设】\n' + persona + '\n' : '';
     const prompt = personaInline + recentPlot + avoidNote + '\n[场景设定]你正在剧情场景中陪' + userName + '一起玩黄金矿工游戏（' + modeStr + '）。当前：' + roundStr + '，' + scoreStr + '。\n刚刚发生：' + eventDesc + '。\n请以' + charName + '的身份，用中文口语说一句话(不超过25字)，方向参考：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何禁用关键词片段。';
 
-    const reply = await lgCallAPI(prompt, 80, sysMsg);
+    const reply = await lgCallAPI(prompt, 150, sysMsg);
     if (reply && reply.trim()) {
       const cleaned = cleanGameReply(reply, charName);
       if (!cleaned || cleaned.length < 2) return;
@@ -15760,18 +15899,14 @@ async function gmTriggerChat(event) {
       });
       if (!isEcho) {
         gmAddMsg('char', g2048StripActions(cleaned));
-        GM.chatLog.push({ type: 'char', text: cleaned });
-        if (GM.chatLog.length > 30) GM.chatLog.shift();
       } else {
         // 自我重复时重试（人设同样内联进 prompt）
         const retryPrompt = personaInline + recentPlot + '\n[场景设定]你在陪' + userName + '玩黄金矿工游戏。' + eventDesc + '。\n你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请说一句完全不同的话，可以聊聊游戏局势、你们的关系、或者随口一句符合你性格的感慨。20字以内，纯对话台词。';
-        const reply2 = await lgCallAPI(retryPrompt, 80, sysMsg);
+        const reply2 = await lgCallAPI(retryPrompt, 150, sysMsg);
         if (reply2 && reply2.trim()) {
           const cleaned2 = cleanGameReply(reply2, charName);
           if (cleaned2 && cleaned2.length > 1) {
             gmAddMsg('char', g2048StripActions(cleaned2));
-            GM.chatLog.push({ type: 'char', text: cleaned2 });
-            if (GM.chatLog.length > 30) GM.chatLog.shift();
           }
         }
       }
@@ -15991,6 +16126,7 @@ function ggoldOpen() {
   GM.towerLevel = parseInt(localStorage.getItem(_towerKey) || '0');
   if (GM.towerLevel >= GM.towerTargets.length) GM.towerLevel = GM.towerTargets.length - 1;
   gmReadColors();
+  _gmFieldDirty = true;
   if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
   if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
   GM.active = false;
@@ -16098,18 +16234,36 @@ function ggoldBindEvents() {
         + historyNote + avoidNote
         + '\n[黄金矿工游戏聊天场景]' + userName + '对你说:「' + text + '」\n请以' + charName + '的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
 
-      const reply = await lgCallAPI(p, 100);
+      const reply = await lgCallAPI(p, 150);
       const cleaned = reply && reply.trim() ? cleanGameReply(reply, charName) : '';
-      const isEcho = cleaned && recentCharReplies.some(r => r === cleaned.trim());
-      if (cleaned && cleaned.length > 1 && !isEcho) {
+
+      // 检测复读1：和用户输入相同
+      const userTextNorm = text.trim().toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
+      const cleanedNorm  = (cleaned || '').toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
+      const isEchoUser = cleaned && (cleanedNorm === userTextNorm || cleaned.trim() === text.trim());
+
+      // 检测复读2：和 chatLog 最近 char 回复相同
+      const isEchoSelf = cleaned && recentCharReplies.some(r => r === cleaned.trim());
+
+      if (cleaned && cleaned.length > 1 && !isEchoUser && !isEchoSelf) {
         gmAddMsg('char', cleaned);
-      } else if (isEcho) {
+      } else if (isEchoUser || isEchoSelf) {
+        const echoReason = isEchoSelf ? '你刚才已经说过「' + recentCharReplies[recentCharReplies.length-1] + '」了，请给出完全不同的回应' : '请换一个角度回应用户';
         const retryP = (persona ? persona + '\n' : '')
           + historyNote
-          + '[黄金矿工游戏聊天场景]' + userName + '说:「' + text + '」\n你刚才已经说过「' + recentCharReplies[recentCharReplies.length-1] + '」了，必须给出完全不同的回应，15字以内，纯对话台词。';
-        const r2 = await lgCallAPI(retryP, 80);
+          + '[黄金矿工游戏聊天场景]' + echoReason + '。' + userName + '说:「' + text + '」\n请以' + charName + '的身份给出一句新鲜的回应，15字以内，纯对话台词。';
+        const r2 = await lgCallAPI(retryP, 150);
         const c2 = r2 && r2.trim() ? cleanGameReply(r2, charName) : '';
-        if (c2 && c2.length > 1) gmAddMsg('char', c2);
+        if (c2 && c2.length > 1) {
+          gmAddMsg('char', c2);
+        } else {
+          const fallbacks2 = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
+          gmAddMsg('char', fallbacks2[Math.floor(Math.random() * fallbacks2.length)]);
+        }
+      } else {
+        // API 返回空，兜底
+        const fallbacks = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
+        gmAddMsg('char', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
       }
     })();
   }
@@ -16206,7 +16360,6 @@ async function gwordStartGame(mode) {
   if (chatEl) chatEl.innerHTML = '';
   if (mode === 'char-describe') {
     gwordMsg('sys', '🎯 模式：你说我猜。分类：「' + category + '」');
-    gwordMsg('sys', GWORD.charName + ' 已经想好了一个词，开始给你提示啦！');
     $('#gword-status').text('');
     await gwordCharHint();
   } else {
@@ -16242,10 +16395,11 @@ async function gwordCharHint(userLastGuess) {
       + '\n答案是「' + GWORD.answer + '」，分类是「' + GWORD.category + '」。'
       + '\n' + forbiddenNote
       + chatHistory
-      + '\n' + userName + '最后说的是「' + userLastGuess + '」。'
+      + '\n' + userName + '最后猜的是「' + userLastGuess + '」。'
       + prevHintsNote
-      + '\n任务：在一条消息里完成两件事：1.先口语化地回应' + userName + '的话（2.然后自然地过渡到下一个提示。合在一句或两句话里，总共不超过30字，语气自然贴合角色人设。'
-      + '\n例如：“不是哦，再想想~这个东西你每天都会用到”“差一点！提示你，它是圆形的”'
+      + '\n任务：判断对方这次没猜中后，直接给出下一条提示。'
+      + '\n要求：只输出猜词相关台词，不要寒暄，不要先回应用户聊天内容，不要复述对方原话。总共15字以内，语气自然贴合角色人设。'
+      + '\n可以像这样：“不对哦，它一般是冰的”“再猜猜，它通常是白色的”'
       + '\n禁止给字数/笔画提示。纯对话台词，不带括号、*号、动作描写。'
       + '\n提示策略：前几轮模糊抽象，随轮次逐渐明确。';
   } else {
@@ -16257,13 +16411,13 @@ async function gwordCharHint(userLastGuess) {
       + '\n请给出一个提示来描述这个词，15字以内，纯对话台词，语气自然贴合角色人设。'
       + '\n禁止给字数/笔画提示。前几轮要模糊抽象，随轮次逐渐明确。';
   }
-  const raw = await lgCallAPI(prompt, 100);
+  const raw = await lgCallAPI(prompt, 150);
   let hint = raw ? cleanGameReply(raw, charName) : '';
   if (!hint || hint.length < 2) hint = '这个东西很常见哦~';
   // 泄露答案则重试
   if (answerChars.some(function(c) { return hint.includes(c); })) {
     const retryPrompt = prompt + '\n上次的回复「' + hint + '」包含了答案的字，请重新生成。';
-    const retryRaw = await lgCallAPI(retryPrompt, 100);
+    const retryRaw = await lgCallAPI(retryPrompt, 150);
     const retryHint = retryRaw ? cleanGameReply(retryRaw, charName) : '';
     if (retryHint && retryHint.length >= 2 && !answerChars.some(function(c) { return retryHint.includes(c); })) {
       hint = retryHint;
@@ -16293,7 +16447,7 @@ async function gwordUserGuess(text) {
     const userName = (ctx && ctx.name1) || '你';
     const wp = (persona ? persona + '\n' : '') + '[猜词游戏]' + userName + '在第' + GWORD.round + '轮猜对了答案「' + GWORD.answer + '」！\n请以' + GWORD.charName + '的身份说一句庆祝或评价的话，15字以内，纯对话台词。';
     try {
-      const r = await lgCallAPI(wp, 80);
+      const r = await lgCallAPI(wp, 150);
       const cleaned = r ? cleanGameReply(r, GWORD.charName) : '';
       if (cleaned && cleaned.length > 1) gwordMsg('char', cleaned);
     } catch(e) {}
@@ -16350,7 +16504,7 @@ async function gwordUserHint(text) {
         : '\n请综合所有提示和分类，猜一个你认为最可能的答案。')
       + '\n格式：只说一个词语作为答案，可以加一句口语化短评，总共不超过20字，纯对话台词，贴合角色人设。';
   }
-  const raw = await lgCallAPI(prompt, 100);
+  const raw = await lgCallAPI(prompt, 150);
   let reply = raw ? cleanGameReply(raw, charName) : '';
   GWORD.processing = false;
   if (shouldGiveUp) {
@@ -16497,7 +16651,7 @@ function g2048UserMove(dir) {
     $('#g2048-over').css('display', 'flex');
     var persona = g2048GetPersona();
     var wp = (persona ? persona + '\n' : '') + '[2048游戏场景]我们在一起玩2048数字拼盘游戏中合力达成了2048！\n请以' + LG2048.charName + '的身份用中文口语说一句庆祝的话，20字以内，纯对话台词，不带括号、*号、动作描写、省略号。';
-    lgCallAPI(wp, 80).then(function(r) {
+    lgCallAPI(wp, 150).then(function(r) {
       var cleaned = r && r.trim() ? cleanGameReply(r, LG2048.charName) : '';
       if (cleaned && cleaned.length > 1) g2048Msg('char', g2048StripActions(cleaned));
     });
@@ -16609,7 +16763,7 @@ function g2048CharTurn() {
     var topicHint = topicPool2048[Math.floor(Math.random() * topicPool2048.length)];
     // prompt 弱化游戏信息权重，突出"陪伴聊天"而非"游戏解说"
     var p = (persona ? persona + '\n' : '') + recentPlot + avoidNote + '\n[当前场景]你和' + userName2048 + '正在一边玩2048一边聊天，游戏只是背景，重点是你们之间的对话。\n请以' + LG2048.charName + '的身份，用中文口语说一句话(20字以内)，说话方向：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何禁用关键词片段。';
-    lgCallAPI(p, 80).then(function(r) {
+    lgCallAPI(p, 150).then(function(r) {
       var cleaned = r && r.trim() ? cleanGameReply(r, LG2048.charName) : '';
       // 常见无意义虚词/短语，排除在相似度判断之外
       var stopWords2048 = new Set(['的','了','吗','呢','啊','哦','哈','嗯','嘛','吧','呀','啦','哇','噢','哎','哟','喔','诶','对','好','是','不','我','你','他','她','它','们','这','那','也','都','在','有','和','与','或','但','就','才','还','又','很','真','太','最','更','已','要','会','能','可','去','来','说','做','想','看','给','让','把','被','从','到','为','以','于','同','跟','用','只','没','没有']);
@@ -16636,7 +16790,7 @@ function g2048CharTurn() {
         var retryTopics = ['随口撒个娇或聊聊心情', '说一句关心' + userName2048 + '的话', '聊一句和游戏完全无关的事', '说句符合性格的俏皮话或感慨'];
         var retryTopic = retryTopics[Math.floor(Math.random() * retryTopics.length)];
         var retryP = (persona ? persona + '\n' : '') + '[你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请换一句完全不同的话。]\n以' + LG2048.charName + '的身份：' + retryTopic + '。15字以内，纯对话台词，不带*号括号动作描写。';
-        lgCallAPI(retryP, 80).then(function(r2) {
+        lgCallAPI(retryP, 150).then(function(r2) {
           var c2 = r2 && r2.trim() ? cleanGameReply(r2, LG2048.charName) : '';
           if (c2 && c2.length > 1 && LG2048.active) g2048Msg('char', g2048StripActions(c2));
         }).catch(function(){});
@@ -16697,24 +16851,37 @@ function g2048Chat(text) {
     + avoidCharNote
     + '\n[2048游戏聊天场景]' + userName + '对你说:「' + text + '」\n请以' + cName + '的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
 
-  lgCallAPI(p, 100).then(function(r) {
+  lgCallAPI(p, 150).then(function(r) {
     var cleaned = r && r.trim() ? cleanGameReply(r, cName) : '';
-    var isSelfEcho = cleaned && recentCharReplies2048.some(function(prev){ return prev === cleaned.trim(); });
-    if (cleaned && cleaned.length > 1 && !isSelfEcho) {
+
+    // 检测复读1：和用户输入相同
+    var userTextNorm = text.trim().toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
+    var cleanedNorm  = (cleaned || '').toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
+    var isEchoUser = cleaned && (cleanedNorm === userTextNorm || cleaned.trim() === text.trim());
+
+    // 检测复读2：和 chatLog 最近 char 回复相同
+    var isEchoSelf = cleaned && recentCharReplies2048.some(function(prev){ return prev === cleaned.trim(); });
+
+    if (cleaned && cleaned.length > 1 && !isEchoUser && !isEchoSelf) {
       g2048Msg('char', g2048StripActions(cleaned));
-    } else if (isSelfEcho) {
-      console.warn('[2048] g2048Chat: self-echo, retrying');
+    } else if (isEchoUser || isEchoSelf) {
+      var echoReason = isEchoSelf ? '你刚才已经说过「' + recentCharReplies2048[recentCharReplies2048.length-1] + '」了，请给出完全不同的回应' : '请换一个角度回应用户';
       var retryP = (persona ? persona + '\n' : '')
         + historyNote
-        + '[2048游戏聊天场景]' + userName + '说:「' + text + '」\n你刚才已经说过「' + recentCharReplies2048[recentCharReplies2048.length-1] + '」了，必须给出完全不同的回应，15字以内，纯对话台词。';
-      lgCallAPI(retryP, 80).then(function(r2) {
+        + '[2048游戏聊天场景]' + echoReason + '。' + userName + '说:「' + text + '」\n请以' + cName + '的身份给出一句新鲜的回应，15字以内，纯对话台词。';
+      lgCallAPI(retryP, 150).then(function(r2) {
         var c2 = r2 && r2.trim() ? cleanGameReply(r2, cName) : '';
         var isRetryEcho = c2 && recentCharReplies2048.some(function(prev){ return prev === c2.trim(); });
         if (c2 && c2.length > 1 && !isRetryEcho) g2048Msg('char', g2048StripActions(c2));
-        else console.warn('[2048] g2048Chat: retry also echoed or empty, suppressing');
+        else {
+          var fallbacks2 = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
+          g2048Msg('char', fallbacks2[Math.floor(Math.random() * fallbacks2.length)]);
+        }
       });
     } else {
-      console.warn('[2048] g2048Chat: API returned empty or too short');
+      // API 返回空，兜底
+      var fallbacks = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
+      g2048Msg('char', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
     }
   });
 }
@@ -16747,73 +16914,363 @@ function g2048Chat(text) {
 //  LUDO GAME
 // ================================================================
 
-// 13×13 board, CELL=20px → 260px
-// Common path: 48 squares [row, col], clockwise from User entry
-const LUDO_PATH = [
-  [12,5],[11,5],[10,5],[9,5],[8,5],            // 0-4  : up left col of bottom arm
-  [7,5],[7,4],[7,3],[7,2],[7,1],[7,0],          // 5-10 : left across row7
-  [6,0],[5,0],                                  // 11-12: up left side
-  [5,1],[5,2],[5,3],[5,4],[5,5],                // 13-17: right across row5
-  [4,5],[3,5],[2,5],[1,5],[0,5],                // 18-22: up left col of top arm
-  [0,6],                                        // 23   : top centre
-  [0,7],[1,7],[2,7],[3,7],[4,7],                // 24-28: down right col of top arm ← Char entry
-  [5,7],[5,8],[5,9],[5,10],[5,11],[5,12],       // 29-34: right across row5
-  [6,12],[7,12],                                // 35-36: down right side
-  [7,11],[7,10],[7,9],[7,8],[7,7],              // 37-41: left across row7
-  [8,7],[9,7],[10,7],[11,7],[12,7],             // 42-46: down right col of bottom arm
-  [12,6],                                       // 47   : bottom centre ← User re-entry / home start
+// ══ Phase 2 Step 2: Procedural board generation + themes ═══════════════════
+// Board is now dynamically generated each game. LUDO_PATH is mutable.
+let LUDO_PATH = [];
+let LUDO_PATH_LEN = 0;
+let LUDO_THEME = null; // current theme object
+
+// ── 5 colour themes ──────────────────────────────────────────────────────────
+const LUDO_THEMES = [
+  {
+    name: '🌸 樱花粉', key: 'sakura',
+    bg: '#fdf2f8', empty: '#f9f0f5', path: '#fff0f6',
+    pathBorder: 'rgba(236,72,153,0.08)', pathGlow: 'rgba(236,72,153,0.13)',
+    start: '#d1fae5', end: '#fef9c3',
+    event: 'rgba(219,39,119,0.32)', seqNum: 'rgba(180,80,140,0.22)',
+    deco: ['🌸','🌷','💮','✿'], decoAlpha: 0.18,
+  },
+  {
+    name: '💜 薰衣草', key: 'lavender',
+    bg: '#faf5ff', empty: '#f3eef8', path: '#f5f0ff',
+    pathBorder: 'rgba(139,92,246,0.08)', pathGlow: 'rgba(139,92,246,0.13)',
+    start: '#d1fae5', end: '#fef9c3',
+    event: 'rgba(124,58,237,0.32)', seqNum: 'rgba(124,58,237,0.2)',
+    deco: ['🦋','✨','💜','🔮'], decoAlpha: 0.16,
+  },
+  {
+    name: '🍃 薄荷糖', key: 'mint',
+    bg: '#f0fdf4', empty: '#e8f5ee', path: '#ecfdf5',
+    pathBorder: 'rgba(16,185,129,0.08)', pathGlow: 'rgba(16,185,129,0.13)',
+    start: '#dbeafe', end: '#fef9c3',
+    event: 'rgba(5,150,105,0.32)', seqNum: 'rgba(16,185,129,0.22)',
+    deco: ['🍃','🌿','☘️','🌱'], decoAlpha: 0.15,
+  },
+  {
+    name: '🍑 蜜桃橘', key: 'peach',
+    bg: '#fff7ed', empty: '#fef0e4', path: '#fff8f0',
+    pathBorder: 'rgba(251,146,60,0.08)', pathGlow: 'rgba(251,146,60,0.13)',
+    start: '#d1fae5', end: '#fde68a',
+    event: 'rgba(234,88,12,0.32)', seqNum: 'rgba(194,120,60,0.2)',
+    deco: ['🍑','🌻','🧡','🔆'], decoAlpha: 0.15,
+  },
+  {
+    name: '💎 星空蓝', key: 'starry',
+    bg: '#eff6ff', empty: '#e8eef8', path: '#f0f4ff',
+    pathBorder: 'rgba(59,130,246,0.08)', pathGlow: 'rgba(59,130,246,0.13)',
+    start: '#d1fae5', end: '#fef9c3',
+    event: 'rgba(37,99,235,0.32)', seqNum: 'rgba(59,130,246,0.2)',
+    deco: ['⭐','✨','💫','🌙'], decoAlpha: 0.16,
+  },
 ];
-const LUDO_PATH_LEN = LUDO_PATH.length; // 48
 
-// Home-run lanes (5 squares, col6, toward centre row6)
-const USER_HOME_RUN = [[11,6],[10,6],[9,6],[8,6],[7,6]];  // up col6
-const CHAR_HOME_RUN = [[1,6],[2,6],[3,6],[4,6],[5,6]];    // down col6
+// ── DFS constrained random walk path generator ───────────────────────────────
+// Generates a connected path on a 13×13 grid, length 40-60 cells
+function lgGeneratePath() {
+  const N = 12;  const MIN_LEN = 35, MAX_LEN = 52;
+  const TARGET = MIN_LEN + Math.floor(Math.random() * (MAX_LEN - MIN_LEN + 1));
 
-// Absolute path indices that are "safe" squares (can't eat)
-const LUDO_SAFE = new Set([0, 12, 24, 36]);
-// ── Square events (格子事件) ───────────────────────────────────────
-const SQUARE_EVENTS = {
-  2:  { emoji:'💬', text:'说一句情话', note:'请在下方对话框分享', type:'talk' },
-  3:  { emoji:'💭', text:'回忆第一次心动', note:'请在下方对话框分享', type:'talk' },
-  5:  { emoji:'🤗', text:'给对方一个拥抱', note:'请在对话框互动(需有动作描写)', type:'action' },
-  6:  { emoji:'🤫', text:'分享一个秘密', note:'请在下方对话框分享', type:'talk' },
-  8:  { emoji:'✨', text:'赞美对方一句话', note:'请在下方对话框说', type:'talk' },
-  10: { emoji:'📖', text:'说一件难忘往事', note:'请在下方对话框分享', type:'talk' },
-  11: { emoji:'⬅️', text:'后退三格', note:'', type:'move', delta:-3 },
-  13: { emoji:'😘', text:'轻轻吻对方脸颊', note:'请在对话框互动(需有动作描写)', type:'action' },
-  15: { emoji:'💗', text:'说一句有关对方的真心话', note:'请在下方对话框说', type:'talk' },
-  16: { emoji:'🍜', text:'喜欢吃什么?', note:'请在下方对话框回答', type:'talk' },
-  18: { emoji:'❤️', text:'喜欢对方哪一点?', note:'请在下方对话框回答', type:'talk' },
-  19: { emoji:'🥹', text:'分享一个感动瞬间', note:'请在下方对话框分享', type:'talk' },
-  21: { emoji:'🥰', text:'叫对方最可爱的昵称', note:'请在下方对话框说', type:'talk' },
-  23: { emoji:'🎁', text:'如果可以无条件提一个要求,会提什么?', note:'请在下方对话框回答', type:'talk' },
-  24: { emoji:'💆', text:'给对方按摩肩膀1分钟', note:'请在对话框互动(需有动作描写)', type:'action' },
-  26: { emoji:'🙈', text:'分享一个不为人知的小习惯', note:'请在下方对话框分享', type:'talk' },
-  27: { emoji:'🌈', text:'对彼此未来的幻想是什么样的?', note:'请在下方对话框分享', type:'talk' },
-  29: { emoji:'⏩', text:'前进六格', note:'', type:'move', delta:6 },
-  31: { emoji:'🤝', text:'十指相扣30秒', note:'请在对话框互动(需有动作描写)', type:'action' },
-  32: { emoji:'🎀', text:'最想收到什么礼物?', note:'请在下方对话框回答', type:'talk' },
-  34: { emoji:'😊', text:'跟对方一起发生过的最开心的事是什么?', note:'请在下方对话框分享', type:'talk' },
-  36: { emoji:'🎵', text:'给对方唱一小段情歌', note:'请在对话框互动(需有动作描写)', type:'action' },
-  37: { emoji:'💫', text:'对方的存在让自己变成了更好的人了吗?', note:'请在下方对话框回答', type:'talk' },
-  39: { emoji:'🫂', text:'亲密动作:轻轻拥抱并从背后环住', note:'请在对话框互动(需有动作描写)', type:'action' },
-  40: { emoji:'👀', text:'对方什么时候看起来最好看?', note:'请在下方对话框回答', type:'talk' },
-  42: { emoji:'⏸️', text:'停留此格,跳过下一轮', note:'', type:'skip' },
-  44: { emoji:'🌟', text:'对对方连说三句夸奖的话', note:'请在下方对话框说', type:'talk' },
-  45: { emoji:'⏩', text:'前进三格', note:'', type:'move', delta:3 },
-  47: { emoji:'🏷️', text:'你最想给对方起的绰号是什么?', note:'请在下方对话框分享', type:'talk' },
-  49: { emoji:'🎲', text:'幸运格!再掷一次骰子', note:'', type:'reroll' },
-  50: { emoji:'🤏', text:'轻轻捏对方脸蛋保持三秒', note:'请在对话框互动(需有动作描写)', type:'action' },
-  52: { emoji:'🧧', text:'给对方发个红包', note:'请在对话框互动', type:'action' },
-  53: { emoji:'💍', text:'最终告白:说出"无论走到第几格,我都想和你一起"', note:'到达终点!', type:'talk' },
-};
+  // Direction vectors: up, down, left, right
+  const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
+
+  function tryGenerate() {
+    const visited = Array.from({length: N}, () => Array(N).fill(false));
+    const path = [];
+
+    // Random start from left or bottom edge
+    let sr, sc;
+    if (Math.random() < 0.5) {
+      // Bottom edge
+      sr = N - 1; sc = 1 + Math.floor(Math.random() * (N - 2));
+    } else {
+      // Left edge
+      sr = 1 + Math.floor(Math.random() * (N - 2)); sc = 0;
+    }
+
+    path.push([sr, sc]);
+    visited[sr][sc] = true;
+
+    let r = sr, c = sc;
+    let stuck = 0;
+
+    while (path.length < TARGET) {
+      // Shuffle directions
+      const dirs = [...DIRS].sort(() => Math.random() - 0.5);
+      let moved = false;
+
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr, nc = c + dc;
+        // Bounds check: stay within 0..N-1 with 0-cell margin on edges for aesthetics
+        if (nr < 0 || nr >= N || nc < 0 || nc >= N) continue;
+        if (visited[nr][nc]) continue;
+
+        // Avoid creating 2x2 filled blocks (keeps path from looking blobby)
+        if (_lgHas2x2(visited, nr, nc, N)) continue;
+
+        path.push([nr, nc]);
+        visited[nr][nc] = true;
+        r = nr; c = nc;
+        moved = true;
+        stuck = 0;
+        break;
+      }
+
+      if (!moved) {
+        return null; // dead end, retry from scratch
+      }
+    }
+    return path;
+  }
+
+  // Retry until we get a valid path (usually succeeds within 1-3 tries)
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const result = tryGenerate();
+    if (result && result.length >= MIN_LEN) {
+      return result;
+    }
+  }
+
+  // Ultimate fallback: simple S-shape
+  return _lgFallbackPath(N);
+}
+
+// Check if placing a cell at (nr,nc) would create a 2×2 block
+function _lgHas2x2(visited, nr, nc, N) {
+  // Check all 4 possible 2×2 blocks that include (nr,nc)
+  for (const [dr, dc] of [[-1,-1],[-1,0],[0,-1],[0,0]]) {
+    const tr = nr + dr, tc = nc + dc;
+    if (tr < 0 || tr + 1 >= N || tc < 0 || tc + 1 >= N) continue;
+    let count = 0;
+    for (let i = 0; i <= 1; i++) {
+      for (let j = 0; j <= 1; j++) {
+        const cr = tr + i, cc = tc + j;
+        if ((cr === nr && cc === nc) || visited[cr][cc]) count++;
+      }
+    }
+    if (count >= 4) return true;
+  }
+  return false;
+}
+
+// Fallback S-shape path
+function _lgFallbackPath(N) {
+  const path = [];
+  let r = N - 1, c = 1, dir = 1; // start bottom-left, go right
+  while (path.length < 48 && r >= 0) {
+    path.push([r, c]);
+    c += dir;
+    if (c >= N - 1 || c <= 0) {
+      dir = -dir;
+      r--;
+      if (r >= 0) path.push([r, c]);
+    }
+  }
+  return path.slice(0, 48);
+}
+
+// Generate decorations for empty cells (theme-specific)
+function _lgGenerateDecos(path, theme, N) {
+  const pathSet = new Set(path.map(([r,c]) => `${r},${c}`));
+  const decos = [];
+  const count = 8 + Math.floor(Math.random() * 6); // 8-13 decorations
+  let attempts = 0;
+  while (decos.length < count && attempts < 200) {
+    attempts++;
+    const r = Math.floor(Math.random() * N);
+    const c = Math.floor(Math.random() * N);
+    const key = `${r},${c}`;
+    if (pathSet.has(key)) continue;
+    if (decos.some(d => d.r === r && d.c === c)) continue;
+    // Don't place too close to path
+    let tooClose = false;
+    for (const [pr, pc] of path) {
+      if (Math.abs(pr - r) <= 0 && Math.abs(pc - c) <= 0) { tooClose = true; break; }
+    }
+    if (tooClose) continue;
+    decos.push({
+      r, c,
+      emoji: theme.deco[Math.floor(Math.random() * theme.deco.length)],
+      rot: Math.random() * 40 - 20, // slight random rotation feeling via offset
+    });
+  }
+  return decos;
+}
+
+// Store decorations per board so they don't change on re-render
+let _lgDecos = [];
+
+// Phase 2: Home Run removed, no eat mechanic, shared linear path
+// Both players run the same LUDO_PATH from pos 1 (index 0) to pos LUDO_PATH_LEN (win)
+// ══ Square events (任务格) ══════════════════════════════════════════════════
+let SQUARE_EVENTS = {};
+
+const TASK_POOL = [
+  // ══ 💬 TRUTH (真心话) ══
+  // 🌸 level 1
+  { cat:'truth', level:1, emoji:'💬', text:'说出对方一个让你觉得很可爱的小习惯', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你们之间最难忘的一个瞬间是什么？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你最喜欢对方的哪个表情？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'用一个词形容你们的关系', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你觉得对方最像哪个角色？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你最想和对方一起去哪里旅行？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'说出你对对方的第一印象', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你什么时候会特别想对方？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你偷偷为对方做过什么事？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你们之间有什么只有彼此知道的暗号/梗？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'你觉得对方最吸引你的地方是什么？', type:'talk' },
+  { cat:'truth', level:1, emoji:'💬', text:'用三个词形容对方', type:'talk' },
+  // 🔥 level 2
+  { cat:'truth', level:2, emoji:'💬', text:'说出你暗中吃醋过的一件事', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'你们吵架时你心里在想什么？', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'你有没有偷偷存过对方的照片？哪张？', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'对方做过最让你心动的一件事是什么？', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'你有没有做过关于对方的梦？说来听听', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'你最怕对方知道你什么事？', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'如果时光倒流，你会在哪个时刻吻对方？', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'说出你藏在心里一直没说出口的一句话', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'你觉得你们之间还缺少什么？', type:'talk' },
+  { cat:'truth', level:2, emoji:'💬', text:'你有没有因为对方失眠过？那天发生了什么？', type:'talk' },
+  // 💋 level 3
+  { cat:'truth', level:3, emoji:'💋', text:'你对对方动心的瞬间，具体到细节', type:'talk' },
+  { cat:'truth', level:3, emoji:'💋', text:'说出你最大胆的一个幻想', type:'talk' },
+  { cat:'truth', level:3, emoji:'💋', text:'你们之间最暧昧的一次是什么场景？', type:'talk' },
+  { cat:'truth', level:3, emoji:'💋', text:'你想对对方做但一直没敢做的事是什么？', type:'talk' },
+  { cat:'truth', level:3, emoji:'💋', text:'你觉得对方身上最性感的地方是哪里？', type:'talk' },
+  { cat:'truth', level:3, emoji:'💋', text:'描述你理想中和对方的一个夜晚', type:'talk' },
+  { cat:'truth', level:3, emoji:'💋', text:'你会因为对方的什么举动瞬间脸红？', type:'talk' },
+  { cat:'truth', level:3, emoji:'💋', text:'如果只剩最后一天，你最想和对方做什么？', type:'talk' },
+
+  // ══ 💪 DARE (大冒险) ══
+  // 🌸 level 1
+  { cat:'dare', level:1, emoji:'🤗', text:'给对方一个拥抱，保持 10 秒', type:'action' },
+  { cat:'dare', level:1, emoji:'🤝', text:'牵起对方的手，说一句温柔的话', type:'action' },
+  { cat:'dare', level:1, emoji:'💆', text:'给对方捏捏肩膀，持续 30 秒', type:'action' },
+  { cat:'dare', level:1, emoji:'🪞', text:'模仿对方的一个招牌动作', type:'action' },
+  { cat:'dare', level:1, emoji:'💗', text:'对着对方说一句情话', type:'talk' },
+  { cat:'dare', level:1, emoji:'🏷️', text:'给对方起一个只有你们之间的昵称', type:'talk' },
+  { cat:'dare', level:1, emoji:'✋', text:'摸摸对方的头发，说「辛苦了」', type:'action' },
+  { cat:'dare', level:1, emoji:'📱', text:'给对方发一条煽情的消息', type:'action' },
+  { cat:'dare', level:1, emoji:'✍️', text:'用手指在对方掌心写一个字，让对方猜', type:'action' },
+  // 🔥 level 2
+  { cat:'dare', level:2, emoji:'😘', text:'亲对方脸颊一下', type:'action' },
+  { cat:'dare', level:2, emoji:'🫂', text:'从背后抱住对方 10 秒', type:'action' },
+  { cat:'dare', level:2, emoji:'💋', text:'吻对方的尾椎骨', type:'action' },
+  { cat:'dare', level:2, emoji:'😚', text:'接吻 30 秒不能分开', type:'action' },
+  { cat:'dare', level:2, emoji:'👀', text:'对视 10 秒不能先移开目光', type:'action' },
+  { cat:'dare', level:2, emoji:'🥰', text:'用最嗲的语气叫对方的名字', type:'talk' },
+  { cat:'dare', level:2, emoji:'💓', text:'把手放在对方胸口感受心跳 10 秒', type:'action' },
+  { cat:'dare', level:2, emoji:'🌬️', text:'给对方吹一下额头的头发', type:'action' },
+  { cat:'dare', level:2, emoji:'😤', text:'假装吃醋，说一段让对方哄你的话', type:'talk' },
+  // 💋 level 3
+  { cat:'dare', level:3, emoji:'💕', text:'从后面环住对方的腰，说「别走」', type:'action' },
+  { cat:'dare', level:3, emoji:'😘', text:'亲对方腰窝 10 秒', type:'action' },
+  { cat:'dare', level:3, emoji:'👄', text:'咬对方耳朵说一句悄悄话', type:'action' },
+  { cat:'dare', level:3, emoji:'💋', text:'在对方锁骨处轻轻一吻', type:'action' },
+  { cat:'dare', level:3, emoji:'💗', text:'牵起对方的手放在你心口，说「你感受到了吗」', type:'action' },
+  { cat:'dare', level:3, emoji:'✨', text:'用指尖描对方的嘴唇轮廓', type:'action' },
+  { cat:'dare', level:3, emoji:'🤍', text:'额头贴额头，闭眼 10 秒，什么都别说', type:'action' },
+  { cat:'dare', level:3, emoji:'🫂', text:'拥抱对方，在耳边说今晚最想说的一句话', type:'action' },
+
+  // ══ 🎲 MECH (机制格) ══ — all level 1
+  { cat:'mech', level:1, emoji:'⬆️', text:'前进 2 格', type:'move', delta:2 },
+  { cat:'mech', level:1, emoji:'⬆️', text:'前进 3 格', type:'move', delta:3 },
+  { cat:'mech', level:1, emoji:'⏩', text:'前进 5 格', type:'move', delta:5 },
+  { cat:'mech', level:1, emoji:'⬇️', text:'后退 2 格', type:'move', delta:-2 },
+  { cat:'mech', level:1, emoji:'⬇️', text:'后退 3 格', type:'move', delta:-3 },
+  { cat:'mech', level:1, emoji:'⏪', text:'后退 5 格', type:'move', delta:-5 },
+  { cat:'mech', level:1, emoji:'⏸️', text:'跳过下一轮', type:'skip' },
+  { cat:'mech', level:1, emoji:'⏸️', text:'对方跳过下一轮', type:'skip_opponent' },
+  { cat:'mech', level:1, emoji:'🍀', text:'幸运！再掷一次', type:'reroll' },
+  { cat:'mech', level:1, emoji:'🔄', text:'和对方交换位置', type:'swap' },
+  { cat:'mech', level:1, emoji:'👫', text:'双方都前进 3 格', type:'both_move', delta:3 },
+  { cat:'mech', level:1, emoji:'👫', text:'双方都后退 2 格', type:'both_move', delta:-2 },
+  { cat:'mech', level:1, emoji:'🤔', text:'选择：自己前进 3 格或让对方后退 3 格', type:'choice' },
+  { cat:'mech', level:1, emoji:'😱', text:'回到起点', type:'move_to', target:1 },
+  { cat:'mech', level:1, emoji:'🏃', text:'直接前进到对方当前位置', type:'move_to_opponent' },
+  { cat:'mech', level:1, emoji:'🌀', text:'随机传送到棋盘上任意一格', type:'teleport' },
+  { cat:'mech', level:1, emoji:'🎡', text:'幸运转盘：随机前进 1-6 格', type:'random_move' },
+  { cat:'mech', level:1, emoji:'🎯', text:'双方都回到中间位置', type:'both_move_to', target:'mid' },
+
+  // ══ 😂 FUN (整活格) ══
+  // 🌸 level 1
+  { cat:'fun', level:1, emoji:'😂', text:'模仿对方说"我爱你"的样子', type:'talk' },
+  { cat:'fun', level:1, emoji:'🗣️', text:'用方言说一句情话', type:'talk' },
+  { cat:'fun', level:1, emoji:'🐱', text:'学一种动物叫，让对方猜是什么', type:'action' },
+  { cat:'fun', level:1, emoji:'🎬', text:'模仿偶像剧/电视剧/小说等经典台词，认真表演', type:'action' },
+  { cat:'fun', level:1, emoji:'👶', text:'用婴儿语气说一段正经的话', type:'talk' },
+  { cat:'fun', level:1, emoji:'💌', text:'用指定的词（爱、今晚、冰箱）编一句告白', type:'talk' },
+  { cat:'fun', level:1, emoji:'📺', text:'假装你是主播，对方是小黄车内即将上架的商品，用 30 秒介绍对方', type:'talk' },
+  // 🔥 level 2
+  { cat:'fun', level:2, emoji:'😤', text:'模仿对方生气时的样子', type:'action' },
+  { cat:'fun', level:2, emoji:'📞', text:'打电话给你最近联系的好友，夸对方 10 秒', type:'action' },
+  { cat:'fun', level:2, emoji:'😎', text:'用最油腻的方式对对方说"宝贝你好美/帅"', type:'talk' },
+  { cat:'fun', level:2, emoji:'🥺', text:'模仿对方撒娇的样子', type:'action' },
+  { cat:'fun', level:2, emoji:'📜', text:'用古风腔调向对方表白', type:'talk' },
+  { cat:'fun', level:2, emoji:'📱', text:'让对方翻你手机相册 30 秒，你不能阻止', type:'action' },
+  { cat:'fun', level:2, emoji:'🗣️', text:'用最认真的表情念一段绕口令', type:'talk' },
+  // 💋 level 3
+  { cat:'fun', level:3, emoji:'🔥', text:'说一句 100% 能让对方脸红心跳的话', type:'talk' },
+  { cat:'fun', level:3, emoji:'🧱', text:'对对方做一个"壁咚"动作并说一句台词', type:'action' },
+  { cat:'fun', level:3, emoji:'😳', text:'模仿对方害羞时的反应', type:'action' },
+  { cat:'fun', level:3, emoji:'🎭', text:'假装你是偶像剧男女主，即兴演一段吵架', type:'action' },
+  { cat:'fun', level:3, emoji:'💘', text:'用颤抖的声音念"我好喜欢你"，表现得像第一次表白', type:'talk' },
+  { cat:'fun', level:3, emoji:'🍺', text:'认真地演一段"醉酒撒娇要抱抱"', type:'action' },
+  { cat:'fun', level:3, emoji:'🫣', text:'假装打翻醋坛子，质问对方"你手机里那个人是谁"', type:'talk' },
+];
+
+function lgGenerateEvents(spicyLevel) {
+  // spicyLevel: 1=清纯, 2=普通, 3=大胆
+  const pool = TASK_POOL.filter(t => t.level <= spicyLevel);
+
+  // Group by category
+  const groups = { truth: [], dare: [], mech: [], fun: [] };
+  pool.forEach(t => groups[t.cat].push(t));
+
+  // Shuffle each group
+  const shuffle = arr => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  // Event count = floor(pathLen * 0.6)
+  const eventCount = Math.floor(LUDO_PATH_LEN * 0.6);
+  const perCat = Math.max(2, Math.ceil(eventCount / 4));
+  const selected = [
+    ...shuffle(groups.truth).slice(0, perCat),
+    ...shuffle(groups.dare).slice(0, perCat),
+    ...shuffle(groups.mech).slice(0, perCat),
+    ...shuffle(groups.fun).slice(0, perCat),
+  ];
+
+  // Shuffle all selected tasks, trim to eventCount
+  const shuffled = shuffle(selected).slice(0, eventCount);
+
+  // Generate random positions along shared path (skip first 2 and last)
+  const allPositions = [];
+  for (let i = 2; i < LUDO_PATH_LEN - 1; i++) allPositions.push(i);
+  const positions = shuffle(allPositions).slice(0, shuffled.length).sort((a, b) => a - b);
+
+  const events = {};
+  positions.forEach((pos, i) => {
+    const task = shuffled[i];
+    const note = (task.type === 'action') ? '请在对话框互动(需有动作描写)'
+               : (task.type === 'talk') ? '请在下方对话框分享'
+               : '';
+    events[pos] = { ...task, note };
+  });
+
+  SQUARE_EVENTS = events;
+}
 
 
-// Player entry indices into LUDO_PATH
-const USER_ENTRY = 0;   // (12,5)
-const CHAR_ENTRY = 24;  // (0,7)
 
-// Positions: 0=home yard, 1-48=common path, 49-53=home run, 54=WIN
+// Phase 2: shared path, no separate entries
+
+// Positions: 0=start yard, 1 to LUDO_PATH_LEN=shared path, LUDO_PATH_LEN=WIN
 const LG = {
   active: false,
   userPos: 0,
@@ -16912,7 +17369,27 @@ function lgInitFabDrag() {
 }
 
 function lgInit() {
+  // Show spiciness selector
+  const overlay = document.getElementById('rp-ludo-spicy');
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function lgStartGame(spicyLevel) {
+  // Hide selector
+  const overlay = document.getElementById('rp-ludo-spicy');
+  if (overlay) overlay.style.display = 'none';
+
+  // Phase 2 Step 2: Generate random board + theme
+  LUDO_PATH = lgGeneratePath();
+  LUDO_PATH_LEN = LUDO_PATH.length;
+  LUDO_THEME = LUDO_THEMES[Math.floor(Math.random() * LUDO_THEMES.length)];
+  _lgDecos = _lgGenerateDecos(LUDO_PATH, LUDO_THEME, 12);
+
+  // Generate random events (uses dynamic LUDO_PATH_LEN)
+  lgGenerateEvents(spicyLevel || 1);
+
   LG.active   = true;
+  LG._spicyLevel = spicyLevel || 1;
   LG.userPos  = 0;
   LG.charPos  = 0;
   LG.turn     = 'user';
@@ -16925,6 +17402,8 @@ function lgInit() {
   LG.taskChatCount = 0;
   LG.justDidTask   = false;
   LG.taskActive    = null;
+  LG.taskBusy      = false;
+  LG.lastTaskTime  = 0;
 
   const ctx = getContext();
   LG.charName = ctx?.name2 || ctx?.name || '对方';
@@ -16943,174 +17422,127 @@ function lgInit() {
   };
   LG._animFrame = requestAnimationFrame(_animLoop);
   lgStatus('你先出手 - 按🎲掷骰子!');
-  lgMsg('sys', `游戏开始!先到终点者胜。粉=你,紫=${LG.charName}`);
-  setTimeout(() => lgCharComment('game_start'), 900);
+  lgMsg('sys', `游戏开始! ${LUDO_THEME.name} · ${LUDO_PATH_LEN}格 · 先到终点者胜。粉=你,紫=${LG.charName}`);
 }
 
-// Convert player position → canvas pixel coords
+// Convert player position → canvas pixel coords (dynamic path)
 function lgCoords(player, pos) {
   const CELL = 20, H = CELL / 2;
+  const off = player === 'user' ? -3 : 3;
+  if (!LUDO_PATH.length) return {x: H, y: H};
   if (pos === 0) {
-    // sitting in home yard
-    return player === 'user' ? {x:2*CELL+H, y:10*CELL+H} : {x:10*CELL+H, y:2*CELL+H};
+    const [r, c] = LUDO_PATH[0];
+    return {x: c*CELL+H + off, y: Math.min(r*CELL+H + CELL*0.6, 12*CELL - CELL*0.5)};
   }
-  if (pos >= 54) {
-    return {x:6*CELL+H, y:6*CELL+H}; // centre finish
+  if (pos >= LUDO_PATH_LEN) {
+    const [r, c] = LUDO_PATH[LUDO_PATH_LEN - 1];
+    return {x: c*CELL+H + off, y: r*CELL+H};
   }
-  if (pos >= 49) {
-    const hr = player === 'user' ? USER_HOME_RUN : CHAR_HOME_RUN;
-    const [r,c] = hr[pos - 49] || hr[hr.length-1];
-    return {x:c*CELL+H, y:r*CELL+H};
-  }
-  const entry = player === 'user' ? USER_ENTRY : CHAR_ENTRY;
-  const idx   = (entry + pos - 1) % LUDO_PATH_LEN;
-  const [r,c] = LUDO_PATH[idx];
-  return {x:c*CELL+H, y:r*CELL+H};
+  const [r, c] = LUDO_PATH[pos - 1];
+  return {x: c*CELL+H + off, y: r*CELL+H};
 }
 
 function lgRender() {
   const canvas = document.getElementById('rp-ludo-canvas');
-  if (!canvas) return;
+  if (!canvas || !LUDO_PATH.length) return;
   const C = canvas.getContext('2d');
-  const CELL = 20, N = 13, W = N * CELL;
+  const CELL = 20, N = 12, W = N * CELL;
+  const T = LUDO_THEME || LUDO_THEMES[0];
 
   C.clearRect(0, 0, W, W);
 
   // ── Background ──
-  C.fillStyle = '#faf5ff';
+  C.fillStyle = T.bg;
   C.fillRect(0, 0, W, W);
 
-  // ── Cross arms ──
-  C.fillStyle = '#f3e8ff';
-  C.fillRect(5*CELL, 0, 3*CELL, W);
-  C.fillRect(0, 5*CELL, W, 3*CELL);
+  // ── Empty grid cells ──
+  C.fillStyle = T.empty;
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      C.fillRect(c*CELL+0.5, r*CELL+0.5, CELL-1, CELL-1);
+    }
+  }
 
-  // ── Home zones ──
-  const ugrd = C.createRadialGradient(2.5*CELL, 11*CELL, 4, 2.5*CELL, 11*CELL, 65);
-  ugrd.addColorStop(0, '#fce4ec'); ugrd.addColorStop(1, '#f8bbd0');
-  C.fillStyle = ugrd;
-  C.fillRect(0, 8*CELL, 5*CELL, 5*CELL);
-  const cgrd = C.createRadialGradient(10.5*CELL, 2*CELL, 4, 10.5*CELL, 2*CELL, 65);
-  cgrd.addColorStop(0, '#ede9fe'); cgrd.addColorStop(1, '#c4b5fd');
-  C.fillStyle = cgrd;
-  C.fillRect(8*CELL, 0, 5*CELL, 5*CELL);
-  C.fillStyle = '#f1f5f9';
-  C.fillRect(0, 0, 5*CELL, 5*CELL);
-  C.fillRect(8*CELL, 8*CELL, 5*CELL, 5*CELL);
+  // ── Decorations (theme-specific, on empty cells) ──
+  if (_lgDecos && _lgDecos.length) {
+    C.save();
+    C.globalAlpha = T.decoAlpha || 0.16;
+    C.font = `${CELL*0.5}px serif`;
+    C.textAlign = 'center'; C.textBaseline = 'middle';
+    _lgDecos.forEach(d => {
+      C.fillText(d.emoji, d.c*CELL+CELL/2 + (d.rot||0)*0.1, d.r*CELL+CELL/2);
+    });
+    C.restore();
+  }
 
-  // ── Centre (candy gradient) ──
-  const grad = C.createRadialGradient(6.5*CELL, 6.5*CELL, 2, 6.5*CELL, 6.5*CELL, 36);
-  grad.addColorStop(0, '#f9a8d4'); grad.addColorStop(.4, '#c084fc');
-  grad.addColorStop(.8, '#818cf8'); grad.addColorStop(1, '#bfdbfe');
-  C.fillStyle = grad;
-  C.fillRect(5*CELL, 5*CELL, 3*CELL, 3*CELL);
+  // ── Path glow (behind path cells) ──
+  LUDO_PATH.forEach(([r,c]) => {
+    C.shadowColor = T.pathGlow;
+    C.shadowBlur = 6;
+    C.fillStyle = T.path;
+    C.fillRect(c*CELL, r*CELL, CELL, CELL);
+    C.shadowBlur = 0;
+  });
 
-  // ── Path squares ──
-  C.lineWidth = .5;
+  // ── Path cells ──
+  C.lineWidth = 0.5;
   LUDO_PATH.forEach(([r,c], idx) => {
-    let fill = '#ffffff';
-    if (c === 6 && r > 6) fill = '#fce4ec';
-    if (c === 6 && r < 6) fill = '#ede9fe';
-    // 只有玩家入口格(index 0 和 24)显示金星+黄色,index 12/36 是两人局不使用的入口,普通白格
-    const isPlayerEntry = (idx === 0 || idx === 24);
-    if (isPlayerEntry) fill = '#fef9c3';
+    const isStart = (idx === 0);
+    const isEnd   = (idx === LUDO_PATH_LEN - 1);
+    let fill = T.path;
+    if (isStart) fill = T.start;
+    if (isEnd)   fill = T.end;
+
     C.fillStyle = fill;
-    C.strokeStyle = 'rgba(160,100,200,.1)';
-    C.fillRect(c*CELL+.5, r*CELL+.5, CELL-1, CELL-1);
+    C.strokeStyle = T.pathBorder;
+    C.fillRect(c*CELL+0.5, r*CELL+0.5, CELL-1, CELL-1);
     C.strokeRect(c*CELL, r*CELL, CELL, CELL);
-    if (isPlayerEntry) {
-      C.fillStyle = 'rgba(217,119,6,.75)';
-      C.font = `${CELL*.48}px serif`;
+
+    // Start marker: ▶
+    if (isStart) {
+      C.fillStyle = 'rgba(16,185,129,0.8)';
+      C.font = `${CELL*0.45}px serif`;
       C.textAlign = 'center'; C.textBaseline = 'middle';
-      C.fillText('★', c*CELL+CELL/2, r*CELL+CELL/2);
+      C.fillText('▶', c*CELL+CELL/2, r*CELL+CELL/2);
+    }
+    // End marker: 🚩
+    if (isEnd) {
+      C.font = `${CELL*0.52}px serif`;
+      C.textAlign = 'center'; C.textBaseline = 'middle';
+      C.fillText('🚩', c*CELL+CELL/2, r*CELL+CELL/2+1);
+    }
+    // Sequence numbers (multiples of 5 only, not on start/end)
+    const num = idx + 1;
+    if (!isStart && !isEnd && num % 5 === 0) {
+      C.fillStyle = T.seqNum;
+      C.font = `${CELL*0.36}px -apple-system, sans-serif`;
+      C.textAlign = 'center'; C.textBaseline = 'middle';
+      C.fillText(String(num), c*CELL+CELL/2, r*CELL+CELL/2);
     }
   });
 
-  // ── Event markers - USER PATH ONLY (fix: 仅标注用户路径,避免误判) ──
+  // ── Event markers (diamond pulse) ──
   {
     const pulse = 0.5 + 0.5 * Math.abs(Math.sin(Date.now() / 800));
     C.save();
     Object.keys(SQUARE_EVENTS).forEach(posStr => {
       const pos = parseInt(posStr);
-      if (pos >= 1 && pos <= 48) {
-        const uIdx = (USER_ENTRY + pos - 1) % LUDO_PATH_LEN;
-        const [ur, uc] = LUDO_PATH[uIdx];
+      if (pos >= 1 && pos <= LUDO_PATH_LEN && LUDO_PATH[pos-1]) {
+        const [ur, uc] = LUDO_PATH[pos - 1];
         const mx = uc * CELL + CELL * 0.5;
         const my = ur * CELL + CELL * 0.5;
-        const r  = CELL * 0.14 * (0.85 + 0.15 * pulse);
+        const d  = CELL * 0.14 * (0.85 + 0.15 * pulse);
         C.beginPath();
-        C.moveTo(mx,     my - r);
-        C.lineTo(mx + r, my    );
-        C.lineTo(mx,     my + r);
-        C.lineTo(mx - r, my    );
+        C.moveTo(mx, my - d);
+        C.lineTo(mx + d, my);
+        C.lineTo(mx, my + d);
+        C.lineTo(mx - d, my);
         C.closePath();
-        C.fillStyle = `rgba(219,39,119,${0.18 + 0.12 * pulse})`;
+        C.fillStyle = T.event.replace(/[\d.]+\)$/, `${(0.18 + 0.12*pulse).toFixed(2)})`);
         C.fill();
       }
     });
     C.restore();
-  }
-
-  // ── Home-run lanes ──
-  USER_HOME_RUN.forEach(([r,c]) => {
-    C.fillStyle = '#fbcfe8'; C.strokeStyle = 'rgba(236,72,153,.15)';
-    C.fillRect(c*CELL+.5, r*CELL+.5, CELL-1, CELL-1);
-    C.strokeRect(c*CELL, r*CELL, CELL, CELL);
-  });
-  CHAR_HOME_RUN.forEach(([r,c]) => {
-    C.fillStyle = '#ddd6fe'; C.strokeStyle = 'rgba(139,92,246,.15)';
-    C.fillRect(c*CELL+.5, r*CELL+.5, CELL-1, CELL-1);
-    C.strokeRect(c*CELL, r*CELL, CELL, CELL);
-  });
-
-  // ── Home zone markers (皇冠) ──
-  const drawCrown = (cx, cy, color) => {
-    const w   = CELL * 1.5;
-    const ht  = CELL * 1.3;
-    const bh  = CELL * 0.38;
-    const top     = cy - ht / 2;
-    const bot     = cy + ht / 2;
-    const baseTop = bot - bh;
-    const sideTop = top + ht * 0.42;
-    const valley  = baseTop - ht * 0.08;
-    C.beginPath();
-    C.moveTo(cx - w,        bot);
-    C.lineTo(cx - w,        baseTop);
-    C.lineTo(cx - w * 0.60, sideTop);
-    C.lineTo(cx - w * 0.26, valley);
-    C.lineTo(cx,            top);
-    C.lineTo(cx + w * 0.26, valley);
-    C.lineTo(cx + w * 0.60, sideTop);
-    C.lineTo(cx + w,        baseTop);
-    C.lineTo(cx + w,        bot);
-    C.closePath();
-    C.fillStyle = color; C.globalAlpha = 0.68; C.fill(); C.globalAlpha = 1;
-    C.strokeStyle = 'rgba(255,255,255,0.55)'; C.lineWidth = 1.3; C.stroke();
-    [[cx - w*0.60, sideTop], [cx, top], [cx + w*0.60, sideTop]].forEach(([gx, gy]) => {
-      C.beginPath(); C.arc(gx, gy, CELL * 0.13, 0, Math.PI * 2);
-      C.fillStyle = 'rgba(255,255,255,0.9)'; C.fill();
-    });
-    [-0.55, 0, 0.55].forEach(dx => {
-      C.beginPath(); C.arc(cx + dx * w, (bot + baseTop)/2, CELL*0.08, 0, Math.PI*2);
-      C.fillStyle = 'rgba(255,255,255,0.45)'; C.fill();
-    });
-  };
-  drawCrown(2.5*CELL, 10.5*CELL, '#ec4899');
-  drawCrown(10.5*CELL, 2.5*CELL, '#7c3aed');
-
-  // ── Centre star (canvas-drawn) ──
-  {
-    const cx = 6.5*CELL, cy = 6.5*CELL, oR = CELL*0.52, iR = CELL*0.2;
-    C.beginPath();
-    for (let i = 0; i < 5; i++) {
-      const a = i * Math.PI * 2 / 5 - Math.PI / 2;
-      C.lineTo(cx + oR * Math.cos(a), cy + oR * Math.sin(a));
-      C.lineTo(cx + iR * Math.cos(a + Math.PI/5), cy + iR * Math.sin(a + Math.PI/5));
-    }
-    C.closePath();
-    C.fillStyle = 'rgba(255,255,255,0.9)';
-    C.shadowColor = 'rgba(255,255,255,0.5)'; C.shadowBlur = 5;
-    C.fill(); C.shadowBlur = 0;
   }
 
   // ── Pieces ──
@@ -17119,7 +17551,7 @@ function lgRender() {
 }
 
 function lgDrawPiece(C, player, pos, CELL) {
-  if (pos >= 54) return;
+  if (pos > LUDO_PATH_LEN) return; // already past finish
   const {x, y} = lgCoords(player, pos);
   const color = player === 'user' ? '#ec4899' : '#7c3aed';
   const ring  = player === 'user' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.85)';
@@ -17173,21 +17605,16 @@ async function lgUserRoll() {
     return;
   }
 
-  if (LG.userPos >= 53) { lgWin('user'); LG.rolling = false; return; }
+  if (LG.userPos >= LUDO_PATH_LEN) { lgWin('user'); LG.rolling = false; return; }
 
   LG.rolling = false;
   if (n === 6) {
     lgStatus('掷出6!再来一次!');
     lgMsg('sys', '掷出6,再掷一次!');
     $('#rp-dice-btn').prop('disabled', false);
-    setTimeout(() => lgCharComment(`dice_6`), 500);
   } else {
     LG.turn = 'char';
     lgStatus(`${LG.charName} 的回合...`);
-    // ~50% chance: char reacts to user's dice roll before taking their turn
-    if (Math.random() < 0.5) {
-      setTimeout(() => lgCharComment(`dice_${n}`), 400);
-    }
     setTimeout(() => lgCharTurn(), 1100 + Math.random()*500);
   }
 }
@@ -17220,7 +17647,7 @@ async function lgCharTurn() {
     return;
   }
 
-  if (LG.charPos >= 53) { lgWin('char'); return; }
+  if (LG.charPos >= LUDO_PATH_LEN) { lgWin('char'); return; }
 
   if (n === 6) {
     lgMsg('sys', `${LG.charName} 掷出6,再掷!`);
@@ -17236,14 +17663,13 @@ async function lgMove(player, steps) {
   const isUser = player === 'user';
   const cur    = isUser ? LG.userPos : LG.charPos;
 
-  let next = cur === 0 ? steps : cur + steps;
+  let next = cur === 0 ? steps + 1 : cur + steps;
 
-  // Home-run overflow: clamp to 53 (win), no bounce back
-  if (next > 53) next = 53;
+  // Phase 2: clamp to path length (= win), no bounce back
+  if (next > LUDO_PATH_LEN) next = LUDO_PATH_LEN;
   if (next < 0)  next = 0;
 
   // Animate step-by-step
-  // 出门时先在第1格停一帧,再继续
   if (cur === 0) {
     if (isUser) LG.userPos = 1; else LG.charPos = 1;
     lgRender();
@@ -17259,42 +17685,14 @@ async function lgMove(player, steps) {
   if (isUser) LG.userPos = next; else LG.charPos = next;
   lgRender();
 
-  // Home-run entry announcement
-  if (next >= 49 && cur < 49) {
-    lgMsg('sys', isUser ? '✨ 进入回家路!' : `✨ ${LG.charName}进入回家路!`);
-  }
+  // Phase 2: NO eat check (removed)
+  // Phase 2: NO home-run entry (removed)
 
-  // Eat check (only on common path 1-48)
-  if (next >= 1 && next <= 48) {
-    const myAbs  = ((isUser ? USER_ENTRY : CHAR_ENTRY) + next - 1) % LUDO_PATH_LEN;
-    const opPos  = isUser ? LG.charPos : LG.userPos;
-    if (opPos >= 1 && opPos <= 48) {
-      const opAbs = ((!isUser ? USER_ENTRY : CHAR_ENTRY) + opPos - 1) % LUDO_PATH_LEN;
-      if (myAbs === opAbs && !LUDO_SAFE.has(myAbs)) {
-        if (isUser) { LG.charPos = 0; lgMsg('sys', `💥 你吃掉了${LG.charName}的棋子!`); }
-        else        { LG.userPos = 0; lgMsg('sys', `💥 ${LG.charName}吃掉了你的棋子!`); }
-        lgRender();
-        await new Promise(r => setTimeout(r, 300));
-      }
-    }
-  }
-
-  // Trigger square event if applicable
-  // 任务格基于【绝对物理格子】,user 和 char 踩到同一个物理格都触发
-  // USER_ENTRY=0,所以 user 逻辑位 L → 绝对索引 L-1,userKey = absIdx+1
-  // char 逻辑位 M → 绝对索引 (CHAR_ENTRY+M-1)%LEN → 同一套 userKey
+  // Trigger square event if applicable (shared path, direct position)
   const finalPos = isUser ? LG.userPos : LG.charPos;
-  let _evKey = null;
-  if (finalPos >= 49 && finalPos <= 53) {
-    // 回家跑道:保持各自逻辑位
-    if (SQUARE_EVENTS[finalPos]) _evKey = finalPos;
-  } else if (finalPos >= 1 && finalPos <= 48) {
-    const _entry  = isUser ? USER_ENTRY : CHAR_ENTRY;
-    const _absIdx = (_entry + finalPos - 1) % LUDO_PATH_LEN;
-    const _userKey = _absIdx + 1; // USER_ENTRY=0 → abs+1 = user逻辑位
-    if (SQUARE_EVENTS[_userKey]) _evKey = _userKey;
+  if (finalPos >= 1 && finalPos < LUDO_PATH_LEN && SQUARE_EVENTS[finalPos]) {
+    await lgTriggerSquareEvent(player, finalPos);
   }
-  if (_evKey !== null) await lgTriggerSquareEvent(player, _evKey);
 }
 
 function lgStatus(txt) { $('#rp-game-status-text').text(txt); }
@@ -17336,7 +17734,6 @@ function lgWin(winner) {
 // ── AI commentary (calls ST generate pipeline silently) ──────────
 // ── Strip AI noise, keep only first clean dialogue line ──────────────────────
 function cleanGameReply(raw, charName) {
-  console.log('[cleanGameReply] RAW INPUT:', JSON.stringify(raw?.slice(0, 300)));
   let text = (raw || '').trim();
   if (!text) return '';
 
@@ -17345,7 +17742,8 @@ function cleanGameReply(raw, charName) {
     const escaped = charName.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&');
     text = text.replace(new RegExp('^\\s*' + escaped + '\\s*[\u8bf4\u9053\u7b54\u56de\u8868\u793a]?\\s*[\uff1a:"\u201c\u300c]?\\s*'), '');
   }
-  text = text.replace(/^[\s\u3000]*[\u4e00-\u9fa5]{1,6}(\u8bf4|\u9053|\u7b54|\u56de\u7b54|\u8f7b\u58f0\u9053)[\uff1a:\"\u201c\u300c]?\s*/, '');
+  // 只剥“某某说：/某某道“”叙述前缀，必须有冒号/引号才匹配，避免误伤“我觉得你说得对”等正常台词
+  text = text.replace(/^[\s\u3000]*[\u4e00-\u9fa5]{1,6}(\u8bf4|\u9053|\u7b54|\u56de\u7b54|\u8f7b\u58f0\u9053)[\uff1a:\"\u201c\u300c]\s*/, '');
 
   // 0b. 剥掉"（关于...）"/"(关于...)"/"（...……）"等元描述括号——这是 AI 重复任务名的典型格式
   text = text.replace(/^[（\(]\s*(关于|任务|问题)[^）\)]{0,40}[）\)]\s*/g, '').trim();
@@ -17358,18 +17756,37 @@ function cleanGameReply(raw, charName) {
     else text = inner;
   }
 
-  // 1. 删除 <think>...</think>
-  text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  // 0c. 剥掉以元描述词开头的回复（如"关于这个问题"、"我的回答是"等）
+  text = text.replace(/^\s*(关于这个问题|关于此任务|关于这个任务|我的回答是|对于这个问题|说到这个)\s*[\uff0c\uff0c\u3001\uff1a:]*\s*/g, '').trim();
+  if (!text) return '';
+
+  // 1. 删除 <think>...</think> 和 <thinking>...</thinking>
+  text = text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').trim();
+  // 1b. 删除无闭合 <think>/<thinking> 到末尾的残留
+  text = text.replace(/<think(?:ing)?>[\s\S]*/gi, '').trim();
   // 2. 删除 <PHONE>...</PHONE>
   text = text.replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '').trim();
   // 3. 删除 XML/HTML 标签
   text = text.replace(/<[^>]{1,60}>/g, '').trim();
+  // 3b. 剥离思维链：中文括号包裹的长段内心独白/分析（超过15字的括号内容大概率是思维链）
+  text = text.replace(/[（(][^）)]{15,}[）)]/g, '').trim();
+  // 3b2. 剥离未闭合的中文括号思维链（如截断的"（毕竟我是她的……"）
+  text = text.replace(/[（(][^）)]{10,}$/gm, '').trim();
+  // 3b3. 如果整段以 （ 开头且无闭合 ），整段清掉
+  if (/^[（(]/.test(text) && !/[）)]/.test(text)) text = '';
+  // 3c. 剥离含元语言关键词的思维链（角色不可能在对话中说这些词）
+  const _metaRe = /人设|角色设定|角色扮演|OOC|设定[中是里]|语气[应要]|回[应复][方风]式|应该[表保用扮回]|符合[角人设]|贴合[人角]|作为.{0,6}(?:角色|身份).{0,6}(?:应该|需要|要)|prompt|token|system|max_tokens|内心独白|心理活动|需要回应|需要表现|接下来我/;
+  text = text.split('\n').filter(l => !_metaRe.test(l)).join('\n').trim();
   // 4. 删除整行 markdown 标题(而非仅仅 # 号)，保留其他内容
   text = text.replace(/^#{1,6}\s*.{0,100}$/gm, '').trim();
-  // 4b. bold/italic 标记保留内容
-  text = text.replace(/[*_]{1,3}([^*_\n]+)[*_]{1,3}/g, '$1').trim();
-  // 4c. 删除中文/英文括号包裹的动作描写，如（指尖轻点桌面）(smiles)
-  text = text.replace(/[(（][^)）]{1,30}[)）]/g, '').trim();
+  // 4b. 删除 *动作描写* 整段（中文内容或短于30字的动作）
+  text = text.replace(/\*[^*\n]{1,50}\*/g, '').trim();
+  // 4b2. 单星号开头无闭合的动作描写
+  text = text.replace(/^\*[^*\n]{1,50}$/gm, '').trim();
+  // 4b3. bold/italic 标记（非动作，如英文强调）保留内容
+  text = text.replace(/_{1,3}([^_\n]+)_{1,3}/g, '$1').trim();
+  // 4c. 删除括号包裹的动作/思维描写（短动作保留型已在 3b 处理，这里清短括号）
+  text = text.replace(/[(（][^)）]{1,14}[)）]/g, '').trim();
   // 5. 删除标签行
   text = text.replace(/^【[^】]{1,30}】[::*]?\s*/gm, '').trim();
   text = text.replace(/^\[[A-Z][A-Z\s:_\-]{1,30}\]\s*/gm, '').trim();
@@ -17384,7 +17801,6 @@ function cleanGameReply(raw, charName) {
   if (quoteMatch) {
     const q = quoteMatch[1].trim();
     if (q.length >= 2 && q.length <= 80) {
-      console.log('[cleanGameReply] quote match:', JSON.stringify(q));
       return q;
     }
   }
@@ -17397,19 +17813,17 @@ function cleanGameReply(raw, charName) {
   const clean = lines.find(l => l.length >= 2 && l.length <= 50 && !noiseRe.test(l) && !isMetaLine(l));
   if (clean) {
     const result = clean.replace(/^["""'\u300c\u300d\u201c\u201d]+|["""'\u300c\u300d\u201c\u201d]+$/g, '').trim();
-    console.log('[cleanGameReply] clean result:', JSON.stringify(result));
     return result;
   }
-  const clean2 = lines.find(l => l.length >= 2 && l.length <= 100 && !noiseRe.test(l) && !isMetaLine(l));
+  const clean2 = lines.find(l => l.length >= 2 && l.length <= 150 && !noiseRe.test(l) && !isMetaLine(l));
   if (clean2) {
     const trimmed = clean2.replace(/^["""'\u300c\u300d\u201c\u201d]+|["""'\u300c\u300d\u201c\u201d]+$/g, '').trim();
-    const m = trimmed.match(/^[\s\S]{1,40}[\u3002\uff01\uff1f\u2026~\uff5e!?]/);
-    const result = m ? m[0] : trimmed.substring(0, 50);
-    console.log('[cleanGameReply] clean2 result:', JSON.stringify(result));
+    // 尝试在句末标点处自然断句，最多80字；没找到就取前80字
+    const m = trimmed.match(/^[\s\S]{1,80}[\u3002\uff01\uff1f\u2026~\uff5e!?]/);
+    const result = m ? m[0] : trimmed.substring(0, 80);
     return result;
   }
-  const fallback = (lines[0] || '').replace(/^[\d.、)）\u2605\u258c\u25b6\u25c6#\u3010\["'\u300c]+\s*/, '').trim().substring(0, 50);
-  console.log('[cleanGameReply] FALLBACK result:', JSON.stringify(fallback));
+  const fallback = (lines[0] || '').replace(/^[\d.、)）\u2605\u258c\u25b6\u25c6#\u3010\["'\u300c]+\s*/, '').trim().substring(0, 80);
   return fallback;
 }
 
@@ -17478,12 +17892,10 @@ function lgGetPersona() {
       return `${speaker}: ${cleaned.slice(0, 80)}`;
     };
     const chatArr = ctx.chat || ctx.messages || [];
-    console.log('[lgGetPersona] ctx.chat length:', chatArr.length);
     const recentLines = chatArr.slice(-20)
       .map(m => _extractMes(m, charName))
       .filter(Boolean)
       .slice(-6);
-    console.log('[lgGetPersona] recentLines:', recentLines);
     if (recentLines.length > 0) {
       parts.push('近期正文对话(用于判断与用户的关系/语境,勿直接复述):\n' + recentLines.join('\n'));
     }
@@ -17517,7 +17929,12 @@ function lgGetPersona() {
 // ── 自定义 API 调用(支持 DeepSeek / 通义 / GLM 等 OpenAI 兼容格式)──
 async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
   const cfg = (() => { try { return JSON.parse(localStorage.getItem('rp_ludo_api') || '{}'); } catch(e) { return {}; } })();
-  console.log('[LudoAPI] mode:', cfg.mode, '| promptLen:', (typeof prompt === 'string' ? prompt : JSON.stringify(prompt)).length, '| maxTokens:', maxTokens);
+
+  // 短回复场景：不硬限 token，用 prompt 引导长度
+  // 只对 <=100 的调用加提示（游戏闲聊），任务格 150 不加
+  if (maxTokens <= 100) {
+    prompt += '\n（请用一句话简短回复）';
+  }
 
   // 用户设置了自定义 API → 只用自定义,绝不 fallback 到 ST
   if (cfg.mode === 'custom' && cfg.url && cfg.key) {
@@ -17525,21 +17942,48 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
       msgs.push({ role: 'user', content: prompt });
-      console.log('[LudoAPI] custom API → messages:', JSON.stringify(msgs).slice(0, 300));
       const res = await fetch(`${cfg.url.replace(/\/+$/, '')}/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
         body: JSON.stringify({
           model: cfg.model || 'deepseek-chat',
           messages: msgs,
-          max_tokens: maxTokens,
           temperature: 0.9
         })
       });
       const data = await res.json();
-      const text = data.choices?.[0]?.message?.content?.trim();
-      console.log('[LudoAPI] custom API raw response:', JSON.stringify(data).slice(0, 400));
-      console.log('[LudoAPI] custom API extracted text:', JSON.stringify(text));
+      const _msg = data.choices?.[0]?.message;
+      // 优先用 content；若 content 为空且 reasoning_content 存在，
+      // 尝试从 reasoning_content 提取 </think> 之后的正文部分
+      let text = (_msg?.content != null ? String(_msg.content) : '').trim();
+      // content 自身可能包含 <think>/<thinking> 思维链（DeepSeek v4 等模型）
+      if (text) {
+        // 处理 </think> 或 </thinking>
+        const contentThinkEnd = Math.max(text.lastIndexOf('</think>'), text.lastIndexOf('</thinking>'));
+        if (contentThinkEnd >= 0) {
+          const tagLen = text.substring(contentThinkEnd).startsWith('</thinking>') ? 12 : 8;
+          text = text.substring(contentThinkEnd + tagLen).trim();
+        } else if (text.includes('<think>') || text.includes('<thinking>')) {
+          // 有开标签无闭合：截断了，取开标签之前的部分
+          const thinkStart = Math.min(
+            text.includes('<think>') ? text.indexOf('<think>') : Infinity,
+            text.includes('<thinking>') ? text.indexOf('<thinking>') : Infinity
+          );
+          text = text.substring(0, thinkStart).trim();
+        }
+        text = text.replace(/<\/?think(?:ing)?>/gi, '').trim();
+      }
+      if (!text && _msg?.reasoning_content) {
+        const rc = String(_msg.reasoning_content);
+        // 取 </think> 或 </thinking> 之后的部分作为正文
+        const thinkEnd = Math.max(rc.lastIndexOf('</think>'), rc.lastIndexOf('</thinking>'));
+        if (thinkEnd >= 0) {
+          const tagLen = rc.substring(thinkEnd).startsWith('</thinking>') ? 12 : 8;
+          text = rc.substring(thinkEnd + tagLen).trim();
+        }
+        // 没有 think 标签 → reasoning_content 整段都是思维链，不提取，返回 null
+        if (text) text = text.replace(/<\/?think(?:ing)?>/gi, '').trim();
+      }
       if (text) return text;
       console.warn('[Ludo] custom API returned empty response, full data:', JSON.stringify(data));
     } catch(e) {
@@ -17555,10 +17999,14 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
       msgs.push({ role: 'user', content: prompt });
-      console.log('[LudoAPI] ST generateRaw → messages:', JSON.stringify(msgs).slice(0, 300));
-      const resp = await generateRaw({ prompt: msgs, responseLength: maxTokens });
-      console.log('[LudoAPI] ST generateRaw raw resp:', JSON.stringify(resp));
-      if (resp && resp.trim()) return resp.trim();
+      const resp = await generateRaw({ prompt: msgs });
+      if (resp && resp.trim()) {
+        // ST 路径也统一清洗 think/thinking 标签
+        let stText = resp.trim();
+        stText = stText.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').trim();
+        stText = stText.replace(/<think(?:ing)?>[\s\S]*/gi, '').trim();
+        if (stText) return stText;
+      }
       console.warn('[LudoAPI] ST generateRaw returned empty');
     } else {
       console.warn('[LudoAPI] generateRaw not available');
@@ -17569,7 +18017,8 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
   return null;
 }
 
-async function lgTriggerSquareEvent(player, pos) {
+async function lgTriggerSquareEvent(player, pos, _depth) {
+  if ((_depth || 0) >= 3) return; // 防止无限链式触发
   const ev = SQUARE_EVENTS[pos];
   if (!ev) return;
   const isUser = player === 'user';
@@ -17585,6 +18034,7 @@ async function lgTriggerSquareEvent(player, pos) {
   LG.taskChatCount = 2;
 
   // 步骤一:显示弹窗,等待点「确认」
+  LG.taskBusy = true;
   await new Promise(resolve => {
     const overlay = document.getElementById('rp-sq-event');
     const btn     = document.getElementById('rp-sq-event-done');
@@ -17592,11 +18042,12 @@ async function lgTriggerSquareEvent(player, pos) {
     const handler = () => { btn.removeEventListener('click', handler); overlay.style.display = 'none'; resolve(); };
     btn.addEventListener('click', handler);
   });
+  LG.taskBusy = false;
 
   // 特殊格:立即执行效果,不进入步骤二
   if (ev.type === 'move') {
     const curPos = isUser ? LG.userPos : LG.charPos;
-    const newPos = Math.max(1, Math.min(53, curPos + ev.delta));
+    const newPos = Math.max(1, Math.min(LUDO_PATH_LEN, curPos + ev.delta));
     const step   = ev.delta > 0 ? 1 : -1;
     // 逐格动画,与普通掷骰移动相同速度
     for (let p = curPos + step; step > 0 ? p <= newPos : p >= newPos; p += step) {
@@ -17608,15 +18059,10 @@ async function lgTriggerSquareEvent(player, pos) {
     // 落地后检查新位置有没有任务格(Bug2修复)
     await new Promise(r => setTimeout(r, 300));
     let _chainKey = null;
-    if (newPos >= 49 && newPos <= 53) {
-      if (SQUARE_EVENTS[newPos]) _chainKey = newPos;
-    } else if (newPos >= 1 && newPos <= 48) {
-      const _e2 = isUser ? USER_ENTRY : CHAR_ENTRY;
-      const _a2 = (_e2 + newPos - 1) % LUDO_PATH_LEN;
-      const _k2 = _a2 + 1;
-      if (SQUARE_EVENTS[_k2]) _chainKey = _k2;
+    if (newPos >= 1 && newPos < LUDO_PATH_LEN && SQUARE_EVENTS[newPos]) {
+      _chainKey = newPos;
     }
-    if (_chainKey !== null) await lgTriggerSquareEvent(player, _chainKey);
+    if (_chainKey !== null) await lgTriggerSquareEvent(player, _chainKey, (_depth || 0) + 1);
     return;
   }
   if (ev.type === 'skip') {
@@ -17629,8 +18075,97 @@ async function lgTriggerSquareEvent(player, pos) {
     lgMsg('sys', `🎲 ${moverName}获得额外一次掷骰!`);
     return;
   }
+  if (ev.type === 'skip_opponent') {
+    if (isUser) LG.charSkip = true; else LG.userSkip = true;
+    lgMsg('sys', `⏸️ ${isUser ? LG.charName : '你'}下一轮停留`);
+    return;
+  }
+  if (ev.type === 'swap') {
+    const tmp = LG.userPos;
+    LG.userPos = LG.charPos;
+    LG.charPos = tmp;
+    lgRender();
+    lgMsg('sys', `🔄 双方交换了位置!`);
+    if (LG.userPos >= LUDO_PATH_LEN) { lgWin('user'); return; }
+    if (LG.charPos >= LUDO_PATH_LEN) { lgWin('char'); return; }
+    return;
+  }
+  if (ev.type === 'both_move') {
+    const d = ev.delta;
+    if (LG.userPos >= 1) LG.userPos = Math.max(1, Math.min(LUDO_PATH_LEN, LG.userPos + d));
+    if (LG.charPos >= 1) LG.charPos = Math.max(1, Math.min(LUDO_PATH_LEN, LG.charPos + d));
+    lgRender();
+    lgMsg('sys', d > 0 ? `👫 双方都前进了${d}格` : `👫 双方都后退了${Math.abs(d)}格`);
+    if (LG.userPos >= LUDO_PATH_LEN) { lgWin('user'); return; }
+    if (LG.charPos >= LUDO_PATH_LEN) { lgWin('char'); return; }
+    return;
+  }
+  if (ev.type === 'move_to') {
+    if (isUser) LG.userPos = ev.target; else LG.charPos = ev.target;
+    lgRender();
+    lgMsg('sys', `${moverName}回到了第${ev.target}格`);
+    return;
+  }
+  if (ev.type === 'move_to_opponent') {
+    const opPos = isUser ? LG.charPos : LG.userPos;
+    if (opPos < 1) { lgMsg('sys', `对方还在家，无法跳过去`); return; }
+    if (isUser) LG.userPos = opPos; else LG.charPos = opPos;
+    lgRender();
+    lgMsg('sys', `🏃 ${moverName}直接跳到了对方的位置(第${opPos}格)`);
+    return;
+  }
+  if (ev.type === 'teleport') {
+    const newPos = Math.floor(Math.random() * (LUDO_PATH_LEN - 2)) + 2; // 2 to PATH_LEN-1
+    if (isUser) LG.userPos = newPos; else LG.charPos = newPos;
+    lgRender();
+    lgMsg('sys', `🌀 ${moverName}被传送到了第${newPos}格!`);
+    return;
+  }
+  if (ev.type === 'random_move') {
+    const roll = Math.floor(Math.random() * 6) + 1;
+    const curP = isUser ? LG.userPos : LG.charPos;
+    const newP = Math.min(LUDO_PATH_LEN, curP + roll);
+    if (isUser) LG.userPos = newP; else LG.charPos = newP;
+    lgRender();
+    lgMsg('sys', `🎡 幸运转盘转出了${roll}! ${moverName}前进到第${newP}格`);
+    if (newP >= LUDO_PATH_LEN) { lgWin(player); }
+    return;
+  }
+  if (ev.type === 'both_move_to') {
+    const mid = Math.max(1, Math.floor((LG.userPos + LG.charPos) / 2) || Math.floor(LUDO_PATH_LEN / 2));
+    LG.userPos = mid;
+    LG.charPos = mid;
+    lgRender();
+    lgMsg('sys', `🎯 双方都回到了第${mid}格`);
+    return;
+  }
+  if (ev.type === 'choice') {
+    if (isUser) {
+      const chose = confirm('选择你的操作：\n\n确定 → 自己前进3格\n取消 → 让对方后退3格');
+      if (chose) {
+        LG.userPos = Math.min(LUDO_PATH_LEN, LG.userPos + 3);
+        lgMsg('sys', '你选择了前进3格!');
+      } else {
+        LG.charPos = Math.max(1, LG.charPos - 3);
+        lgMsg('sys', `你选择了让${LG.charName}后退3格!`);
+      }
+    } else {
+      if (Math.random() < 0.5) {
+        LG.charPos = Math.min(LUDO_PATH_LEN, LG.charPos + 3);
+        lgMsg('sys', `${LG.charName}选择了前进3格!`);
+      } else {
+        LG.userPos = Math.max(1, LG.userPos - 3);
+        lgMsg('sys', `${LG.charName}选择了让你后退3格!`);
+      }
+    }
+    lgRender();
+    if (isUser && LG.userPos >= LUDO_PATH_LEN) { lgWin('user'); return; }
+    if (!isUser && LG.charPos >= LUDO_PATH_LEN) { lgWin('char'); return; }
+    return;
+  }
 
   // 步骤二:对话/动作类任务
+  LG.taskBusy = true;
   const bar = document.getElementById('rp-sq-task-bar');
   const btn = document.getElementById('rp-sq-task-done-btn');
   const txt = document.getElementById('rp-sq-task-text');
@@ -17664,12 +18199,22 @@ async function lgTriggerSquareEvent(player, pos) {
     else {
       // 兜底：用更简短直接的 prompt 再试一次
       const _fallbackPrompt = `${persona}\n你正在玩飞行棋，踩到任务格，任务是：${ev.text}。请直接说出你的回答，不超过15字，不要重复任务内容，直接开口。`;
-      const _fb = await lgCallAPI(_fallbackPrompt, 80);
+      const _fb = await lgCallAPI(_fallbackPrompt, 150);
       const _fbClean = _fb && _fb.trim() ? cleanGameReply(_fb, LG.charName) : '';
       if (_fbClean && _fbClean.length > 1 && !_fbClean.includes(ev.text.slice(0, 8))) {
         lgMsg('char', _fbClean);
       } else {
-        lgMsg('char', ev.type === 'action' ? `*完成${ev.text}*` : `嗯……这个问题让我想一想。`);
+        // 兆底回复池：根据任务类型给出实质性内容，不许规避
+        const _talkFallbacks = [
+          '你啊……就是看你笑起来的时候，会想多看两眼。',
+          '这种话要我说几遍才够？',
+          '你猜。',
+          '……我心里有答案，但我不想让你太得意。',
+          '反正不是你想的那样……也不是不是。'
+        ];
+        const _actionFallbacks = [`*完成${ev.text}*`];
+        const _pool = ev.type === 'action' ? _actionFallbacks : _talkFallbacks;
+        lgMsg('char', _pool[Math.floor(Math.random() * _pool.length)]);
       }
     }
 
@@ -17690,11 +18235,18 @@ async function lgTriggerSquareEvent(player, pos) {
     btn.addEventListener('click', handler);
   });
   LG.justDidTask = true;
+  LG.lastTaskTime = Date.now();
+  LG.lastTaskText = ev.text || null; // 记住最近任务，供 lgGameChat 上下文用
+  LG.taskBusy = false;
 }
 
 function lgCharComment(event) {
   if (!LG.active && !event.endsWith('_win')) return;
-  if (LG.justDidTask) { LG.justDidTask = false; return; }
+  // 任务进行中或刚结束后 2 秒内不发评论
+  if (LG.taskBusy || LG.justDidTask || (LG.lastTaskTime && Date.now() - LG.lastTaskTime < 2000)) {
+    LG.justDidTask = false;
+    return;
+  }
 
   const n      = LG.lastDice;
   const cPos   = LG.charPos;
@@ -17758,7 +18310,7 @@ function lgCharComment(event) {
         const rawCtx = typeof getContext === 'function' ? getContext() : {};
         const userName = (rawCtx && rawCtx.name1) || '你';
         const userMsg = personaInlineStart + recentPlot + '\n[场景设定]你正在剧情场景中陪' + userName + '一起玩飞行棋。游戏刚刚开始。\n请以' + LG.charName + '的身份用中文口语说一句开场白，15字以内，纯对话台词，语气贴合角色人设，不带括号、*号、动作描写、引号。';
-        const resp = await lgCallAPI(userMsg, 80, sysMsg);
+        const resp = await lgCallAPI(userMsg, 200, sysMsg);
         const cleaned = resp && resp.trim() ? cleanGameReply(resp, LG.charName) : '';
         if (cleaned && cleaned.length > 1) lgMsg('char', g2048StripActions(cleaned));
       } catch(e) { console.warn('[Ludo] lgCharComment game_start error:', e); }
@@ -17810,14 +18362,14 @@ function lgCharComment(event) {
         avoidNote = '\n[你最近说过，严格禁止任何形式的重复或近似，包括换词说同一意思]: ' + recentCharReplies.join(' / ') + '\n[绝对禁用的词语片段(含2字以上，一个都不许出现)]: ' + Array.from(forbidSegs).slice(0, 60).join('、') + '\n[额外要求：不得使用与上面句子语义相近的表达，必须切换完全不同的话题或感受]';
       }
       const userMsg = personaInlineLudo + recentPlot + avoidNote + '\n[场景设定]你正在剧情场景中陪' + userName + '一起玩飞行棋。' + subject + '。\n请以' + LG.charName + '的身份，用中文口语说一句话(15字以内)，方向参考：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何关键词片段。';
-      const resp = await lgCallAPI(userMsg, 80, sysMsg);
+      const resp = await lgCallAPI(userMsg, 200, sysMsg);
       const cleaned = resp && resp.trim() ? cleanGameReply(resp, LG.charName) : '';
       if (cleaned && cleaned.length > 1 && !_ludoIsEcho(cleaned, LG.chatLog)) {
         lgMsg('char', g2048StripActions(cleaned));
       } else if (cleaned && _ludoIsEcho(cleaned, LG.chatLog)) {
         // 自我重复时用更严格去重 prompt 重试
         const retryMsg = personaInlineLudo + recentPlot + '\n[场景设定]你在陪' + userName + '玩飞行棋，' + subject + '。\n你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请说一句完全不同的话，可以聊聊棋局、你们的关系、或者随口一句符合你性格的感慨。15字以内，纯对话台词。不许再出现"' + recentCharReplies.map(function(t){ return t.slice(0,4); }).join('、') + '"这类内容。';
-        const resp2 = await lgCallAPI(retryMsg, 80, sysMsg);
+        const resp2 = await lgCallAPI(retryMsg, 200, sysMsg);
         const cleaned2 = resp2 && resp2.trim() ? cleanGameReply(resp2, LG.charName) : '';
         if (cleaned2 && cleaned2.length > 1) lgMsg('char', g2048StripActions(cleaned2));
       }
@@ -17833,7 +18385,11 @@ async function lgGameChat(text) {
   const cName  = LG.charName;
   const userName = (ctx && ctx.name1) || '你';
   const persona = g2048GetPersona();
-  const taskNote = LG.taskActive ? `\n[当前待完成任务:「${LG.taskActive}」--必须直接完成,不许回避]` : '';
+  const taskNote = LG.taskActive
+    ? `\n[当前待完成任务:「${LG.taskActive}」--必须直接完成,不许回避]`
+    : (LG.lastTaskText && LG.lastTaskTime && Date.now() - LG.lastTaskTime < 60000)
+      ? `\n[刚才完成的任务:「${LG.lastTaskText}」--用户可能在追问这个任务的内容]`
+      : '';
 
   // 游戏内完整对话上下文（user+char 交替，和 2048 对齐）
   const recentLog = (LG.chatLog || []).slice(-10);
@@ -17869,16 +18425,19 @@ async function lgGameChat(text) {
   } else if (isEchoUser || isEchoSelf) {
     const echoReason = isEchoSelf ? `你刚才已经说过「${recentCharReplies[recentCharReplies.length-1]}」了，请给出完全不同的回应` : '请换一个角度回应用户';
     const retryPrompt = `${persona}\n${historyNote}[游戏聊天场景]${echoReason}。${userName}说:「${text}」\n请以${cName}的身份给出一句新鲜的回应，15字以内，纯对话台词。`;
-    const retryResp = await lgCallAPI(retryPrompt, 120);
+    const retryResp = await lgCallAPI(retryPrompt, 150);
     const retryCleaned = retryResp && retryResp.trim() ? cleanGameReply(retryResp, cName) : '';
     const isRetryEcho = retryCleaned && recentCharReplies.some(r => r === retryCleaned.trim());
     if (retryCleaned && retryCleaned.length > 1 && !isRetryEcho) {
       lgMsg('char', g2048StripActions(retryCleaned));
     } else {
-      console.warn('[Ludo] lgGameChat: retry also echoed or empty, suppressing');
+      const fallbacks2 = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
+      lgMsg('char', fallbacks2[Math.floor(Math.random() * fallbacks2.length)]);
     }
   } else {
-    console.warn('[Ludo] lgGameChat: API returned empty or too short, suppressing');
+    // API 返回空,兜底用简短回复
+    const fallbacks = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
+    lgMsg('char', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
   }
 }
 
