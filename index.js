@@ -9987,7 +9987,7 @@ function sendSMS() {
       ? `所有标签里的FROM字段必须严格使用以下原样名字之一:${allowedGroupNames.join(' / ')}。禁止翻译名字、禁止改写成中文译名、禁止使用别名、昵称、姓氏单独称呼。`
       : '所有标签里的FROM字段必须严格使用当前已有联系人/群成员的原样名字,禁止翻译名字、禁止使用别名或中文译名。';
     const momentHint = (shouldTriggerMoment && momentNPCs.length > 0)
-      ? `同时,在PHONE块里为角色「${momentNPCs.join('、')}」各追加1条朋友圈动态。硬性规则:你必须输出真正的XML手机标签,标签名必须原样写成 PHONE / MOMENTS / COMMENT。每个角色都必须先写1条MOMENTS动态,然后立刻连续写2到3条属于这条动态的COMMENT评论,评论写完后才能开始下一条动态。严禁只写动态不写评论,严禁把评论拖到别的动态后面,严禁漏掉任何一个角色的评论。每条评论的MOMENT_ID必须填写该动态作者名,不要写时间戳,不要写别的ID,不要写别名;评论者只能从已有联系人中选,不能是发帖者本人,COMMENT的FROM绝对不能等于这条MOMENTS的FROM,也禁止发帖人对自己这条动态自评或自回复;每条动态至少2条评论。所有COMMENT必须紧跟在对应MOMENTS后面,中间禁止插入SMS/GMSG/旁白/解释。若少了任意一条COMMENT,整段PHONE输出都算失败。禁止输出“等等再评论”“稍后评论”“先发动态”之类说法。输出顺序必须严格是:一条MOMENTS + 两到三条COMMENT,然后再写下一条MOMENTS。`
+      ? `同时,在PHONE块里为角色「${momentNPCs.join('、')}」各追加1条朋友圈动态。硬性规则:你必须输出真正的XML手机标签,标签名必须原样写成 PHONE / MOMENTS / COMMENT。每个角色都必须先写1条MOMENTS动态,然后立刻连续写2到3条属于这条动态的COMMENT评论,评论写完后才能开始下一条动态。严禁只写动态不写评论,严禁把评论拖到别的动态后面,严禁漏掉任何一个角色的评论。每条评论的MOMENT_ID必须填写该动态作者名,不要写时间戳,不要写别的ID,不要写别名;评论者只能从已有联系人中选,不能是发帖者本人,COMMENT的FROM绝对不能等于这条MOMENTS的FROM,也禁止发帖人对自己这条动态自评或自回复;COMMENT正文只能写评论内容本身,禁止括号动作、心理描写、叙事描写、打字过程、引号外说明,不要写“轻笑/挑眉/打字回复/删掉又留下”等动作;每条动态至少2条评论。所有COMMENT必须紧跟在对应MOMENTS后面,中间禁止插入SMS/GMSG/旁白/解释。若少了任意一条COMMENT,整段PHONE输出都算失败。禁止输出“等等再评论”“稍后评论”“先发动态”之类说法。输出顺序必须严格是:一条MOMENTS + 两到三条COMMENT,然后再写下一条MOMENTS。`
       : '';
     oocText = `[手机群聊提示:{{user}}在群聊「${groupName}」发了消息,当前时间${ts}。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<GMSG FROM="角色名" GROUP="${groupName}" TIME="${ts}">内容</GMSG>。${exactNameRule}${momentHint}]`;
   } else {
@@ -10004,7 +10004,7 @@ function sendSMS() {
       ? (momentNPCs.length > 0 ? momentNPCs.join('、') : th.name)
       : null;
     const momentHint = momentCharList
-      ? `另外,在同一个PHONE块里,为角色「${momentCharList}」追加朋友圈动态。硬性规则:你必须输出真正的XML手机标签,标签名必须原样写成 PHONE / MOMENTS / COMMENT。每个角色都必须先写1条MOMENTS动态,然后立刻连续写2到3条属于这条动态的COMMENT评论,评论写完后才能开始下一条动态。严禁只写动态不写评论,严禁把评论拖到别的动态后面,严禁漏掉任何一个角色的评论。这些MOMENTS/COMMENT里的FROM必须严格沿用已有联系人原名,禁止翻译。每条评论的MOMENT_ID必须填写该动态作者名,不要写时间戳,不要写别的ID,不要写别名;评论者只能从已有联系人中选,不能是发帖者本人,COMMENT的FROM绝对不能等于这条MOMENTS的FROM,也禁止发帖人对自己这条动态自评或自回复;每条动态至少2条评论。所有COMMENT必须紧跟在对应MOMENTS后面,中间禁止插入SMS/GMSG/旁白/解释。若少了任意一条COMMENT,整段PHONE输出都算失败。禁止输出“等等再评论”“稍后评论”“先发动态”之类说法。输出顺序必须严格是:一条MOMENTS + 两到三条COMMENT,然后再写下一条MOMENTS。`
+      ? `另外,在同一个PHONE块里,为角色「${momentCharList}」追加朋友圈动态。硬性规则:你必须输出真正的XML手机标签,标签名必须原样写成 PHONE / MOMENTS / COMMENT。每个角色都必须先写1条MOMENTS动态,然后立刻连续写2到3条属于这条动态的COMMENT评论,评论写完后才能开始下一条动态。严禁只写动态不写评论,严禁把评论拖到别的动态后面,严禁漏掉任何一个角色的评论。这些MOMENTS/COMMENT里的FROM必须严格沿用已有联系人原名,禁止翻译。每条评论的MOMENT_ID必须填写该动态作者名,不要写时间戳,不要写别的ID,不要写别名;评论者只能从已有联系人中选,不能是发帖者本人,COMMENT的FROM绝对不能等于这条MOMENTS的FROM,也禁止发帖人对自己这条动态自评或自回复;COMMENT正文只能写评论内容本身,禁止括号动作、心理描写、叙事描写、打字过程、引号外说明,不要写“轻笑/挑眉/打字回复/删掉又留下”等动作;每条动态至少2条评论。所有COMMENT必须紧跟在对应MOMENTS后面,中间禁止插入SMS/GMSG/旁白/解释。若少了任意一条COMMENT,整段PHONE输出都算失败。禁止输出“等等再评论”“稍后评论”“先发动态”之类说法。输出顺序必须严格是:一条MOMENTS + 两到三条COMMENT,然后再写下一条MOMENTS。`
       : '';
 
     if (isMainChar) {
@@ -10571,18 +10571,27 @@ function sanitizeMomentCommentText(text) {
   let t = String(text || '').trim();
   if (!t) return '';
 
-  // 朋友圈评论只保留“说出来的话”，剥掉常见动作/叙事括号。
-  // 例：(轻笑)听错了? → 听错了?；挑眉笑了笑，打字回复：“放心...” → 放心...
-  t = t.replace(/[（(][^（）()]{1,24}[）)]/g, ' ');
-  t = t.replace(/^[\s，,。.!！?？、;；:：-]*(?:回复\s*[^:：，,。]{1,30}\s*)?[，,。:：]?\s*/u, '');
-  t = t.replace(/^[\s，,。.!！?？、;；:：-]*(?:轻笑|笑了笑|挑眉|低笑|叹气|皱眉|沉默|停顿|看了看|顿了顿|打字|敲字|输入|回复|评论|发出|发来|说道|说|问|反问|吐槽|补充)(?:着|地|了一下|了笑|起来|道)?[\s，,。:：、-]*/u, '');
-  t = t.replace(/^[\s，,。.!！?？、;；:：-]*(?:打字\s*)?回复\s*[：:，,、-]?\s*/u, '');
+  // 朋友圈评论只保留“说出来的话”，剥掉动作/叙事包装。
+  // 例：
+  //   (轻笑)听错了? → 听错了?
+  //   挑眉笑了笑，打字回复：“放心...” → 放心...
+  //   （修长的手指在屏幕上停留片刻，打下几个字，又删掉，最终只留下—句）可总要往前走走。 → 可总要往前走走。
+  // 先抓引号内台词，避免前面动作很长时漏掉真正评论。
+  const quoted = t.match(/[“"「『]([^”"」』\n]{1,220})[”"」』]/);
+  if (quoted && quoted[1]) t = quoted[1];
 
-  const q = t.match(/[“"「『]([^”"」』\n]{1,160})[”"」』]/);
-  if (q && q[1]) t = q[1];
+  // 删除括号/星号动作描写；长度放宽，覆盖长句动作。
+  t = t.replace(/[（(][^（）()\n]{1,120}[）)]/g, ' ');
+  t = t.replace(/\*[^*\n]{1,120}\*/g, ' ');
+
+  // 删除常见“回复某人：”“打字回复：”“只留下——”这类叙事前缀。
+  t = t.replace(/^[\s，,。.!！?？、;；:：—-]*(?:回复\s*[^:：，,。]{1,30}\s*)?[，,。:：]?\s*/u, '');
+  t = t.replace(/^[\s，,。.!！?？、;；:：—-]*(?:(?:他|她|TA|ta|[\u4e00-\u9fa5A-Za-z]{1,20})?\s*)?(?:轻笑|笑了笑|挑眉|低笑|苦笑|叹气|皱眉|沉默|停顿|看了看|顿了顿|抬眼|垂眼|眨眼|偏头|摇头|点头|打字|敲字|输入|删除|删掉|回复|评论|发出|发来|说道|说|问|反问|吐槽|补充|只留下|留下)(?:着|地|了一下|了笑|起来|道|几个字|一句话|一句)?[\s，,。:：、—-]*/u, '');
+  t = t.replace(/^[\s，,。.!！?？、;；:：—-]*(?:最终|最后)?\s*(?:只)?\s*(?:留下|留下一句|留下几个字|打下几个字|打出一句)\s*[：:，,、—-]?\s*/u, '');
+  t = t.replace(/^[\s，,。.!！?？、;；:：—-]*(?:打字\s*)?回复\s*[：:，,、—-]?\s*/u, '');
 
   t = t
-    .replace(/^[\s，,。.!！?？、;；:：-]+/, '')
+    .replace(/^[\s，,。.!！?？、;；:：—-]+/, '')
     .replace(/\s+/g, ' ')
     .trim();
   return t;
@@ -11017,6 +11026,49 @@ function collectPhoneCleanupItems(block) {
   });
 
   return items.filter(function(item) { return item.variants && item.variants.length; });
+}
+
+
+function collectPhoneCleanupItemsFromRenderedEcho(textEl) {
+  const items = [];
+  if (!textEl || !textEl.querySelectorAll) return items;
+  textEl.querySelectorAll('.rp-phone-echo-block').forEach(function(blockEl) {
+    if (!blockEl) return;
+    const full = normalizePhoneCleanupText(blockEl.textContent || '');
+    if (!full) return;
+    const tagEl = blockEl.querySelector('.rp-phone-echo-moment-tag');
+    const nameEl = blockEl.querySelector('.rp-phone-echo-name');
+    const tag = normalizePhoneCleanupText(tagEl ? tagEl.textContent || '' : '');
+    const from = normalizePhoneCleanupText(nameEl ? (nameEl.textContent || '').replace(/[：:]+\s*$/g, '') : '');
+    let text = full;
+    if (tag) text = normalizePhoneCleanupText(text.replace(tag, ''));
+    if (from) text = normalizePhoneCleanupText(text.replace(new RegExp('^\\s*' + escapeRegExp(from) + '\\s*[:：]?\\s*'), ''));
+    text = normalizePhoneCleanupText(text.replace(/^(?:朋友圈|评论|群聊(?:\s*·\s*[^:：]+)?|语音|红包|图片|定位|位置)\s*/i, ''));
+    if (!text || compactPhoneCleanupText(text) === compactPhoneCleanupText(from)) return;
+    const display = from ? `${from}: ${text}` : text;
+    const variants = [
+      full,
+      text,
+      display,
+      tag && from ? `${tag} ${from}: ${text}` : '',
+      tag && from ? `${tag}${from}: ${text}` : '',
+      tag ? `${tag} ${text}` : '',
+      from ? `${from}: ${text}` : ''
+    ].filter(Boolean);
+    items.push(makePhoneCleanupItem('rendered_echo', from, text, tag, display, variants));
+  });
+  return items.filter(function(item) { return item.variants && item.variants.length; });
+}
+
+function cleanupRenderedPhoneEchoResiduals(textEl) {
+  if (!textEl) return false;
+  const items = collectPhoneCleanupItemsFromRenderedEcho(textEl);
+  if (!items.length) return false;
+  const before = normalizePhoneCleanupText(textEl.textContent || '');
+  removePhoneLines(textEl, items);
+  cleanupPhoneResidualNoise(textEl);
+  const after = normalizePhoneCleanupText(textEl.textContent || '');
+  return before !== after;
 }
 
 function isPhoneCleanupProtectedNode(node) {
@@ -11506,7 +11558,11 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
   try {
     if (!textEl) return;
     const hasExistingPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
-    if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi) return;
+    if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi) {
+      cleanupRenderedPhoneEchoResiduals(textEl);
+      return;
+    }
+    const existingEchoCleanupItems = collectPhoneCleanupItemsFromRenderedEcho(textEl);
 
     // 先解析出所有手机 / 朋友圈内容，后面用来从正文里精确删除。
     // 支持同一楼层内多个 <PHONE> 块 + PHONE 外裸标签。
@@ -11553,7 +11609,7 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     // ── 步骤3：统一主楼清理链 ──
     // 从原始 PHONE / 裸标签块抽取 cleanup items，再按主楼可见整行/整块删除。
     // 最后才由 removePhoneLines 内部调用 removePhoneEchoFragments 做少量残渣补刀。
-    const cleanupItems = collectPhoneCleanupItems(echoSource);
+    const cleanupItems = collectPhoneCleanupItems(echoSource).concat(existingEchoCleanupItems);
     removePhoneLines(textEl, cleanupItems);
     cleanupPhoneResidualNoise(textEl);
 
@@ -11833,7 +11889,9 @@ function repairPhoneMessageByMesId(targetMesId) {
     const textHtml = textEl.innerHTML || '';
     const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
     const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
-    if (hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) return false;
+    if (hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) {
+      return cleanupRenderedPhoneEchoResiduals(textEl);
+    }
 
     if (!hasRenderedPhoneUi) {
       let parsedTotal = 0;
@@ -11901,8 +11959,11 @@ function rewriteAllHistoryPhoneBlocks() {
       const textHtml = textEl.innerHTML || '';
       const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
       const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
-      // 已处理且当前 UI 完整、也没有残余标签/纯文本残留时跳过；否则允许历史自愈
-      if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) return;
+      // 已处理且当前 UI 完整、也没有残余标签/纯文本残留时，仍先用已渲染摘要反向清一次正文残留；否则允许历史自愈。
+      if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) {
+        cleanupRenderedPhoneEchoResiduals(textEl);
+        return;
+      }
 
       if (phoneParts.blocks.length || hasBarePhoneTags) {
         if (!hasRenderedPhoneUi) {
@@ -13646,6 +13707,7 @@ function hidePhoneTagsInChat(targetMesId) {
     // 不再整体改写 innerHTML，避免把智绘姬按钮节点重建掉
     stripPhoneLiteralNodes(el);
     cleanupPhoneResidualNoise(el);
+    cleanupRenderedPhoneEchoResiduals(el);
   });
 }
 
@@ -13680,7 +13742,13 @@ function beautifySMSInChat(targetMesId) {
     const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-divider, .rp-phone-live-img-btns');
     const textHtml = textEl.innerHTML || '';
     const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
-    if (textEl.dataset.rpDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) return;
+    if (textEl.dataset.rpDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) {
+      cleanupRenderedPhoneEchoResiduals(textEl);
+      return;
+    }
+    if (hasRenderedPhoneUi && !hasResidualPhoneMarkup) {
+      cleanupRenderedPhoneEchoResiduals(textEl);
+    }
     textEl.dataset.rpDone = '1';
 
     const thread   = Object.values(STATE.threads).find(t => t.name === charName);
@@ -14567,11 +14635,19 @@ async function _doGetMomentsCtx(chatIdHint) {
   });
   (STATE.moments || []).filter(m => m.from !== 'user' && m.name !== charName).forEach(m => knownNPCs.add(m.name));
 
+  const formatStoryChatLine = function(m) {
+    const spk = m && m.is_user ? userName : ((m && m.name) || charName);
+    return spk + ': ' + (((m && m.mes) || '')
+      .replace(/<think>[\s\S]*?<\/think>/gi, ' ')
+      .replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, ' ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 220));
+  };
+
   // 近30条对话(足够捕捉 NPC 语气)
-  const recentChat = (ctx?.chat || []).slice(-30).map(m => {
-    const spk = m.is_user ? userName : (m.name || charName);
-    return spk + ': ' + ((m.mes || '').replace(/<[^>]+>/g, '').trim().slice(0, 150));
-  }).join('\n') || '(暂无对话记录)';
+  const recentChat = (ctx?.chat || []).slice(-30).map(formatStoryChatLine).join('\n') || '(暂无对话记录)';
   // 提取主角人设(description + personality + scenario)
   let charPersona = '';
   try {
@@ -14822,39 +14898,10 @@ async function _doGetMomentsCtx(chatIdHint) {
     return false;
   });
 
-  // 同步清理当前槽位里混入的跨卡人物（thread / moments / likes / comments）
-  const strictNpcKeySet = new Set(strictNPCs.map(n => normNameKey(n)));
-  Object.keys(STATE.threads || {}).forEach(function(tid) {
-    const th = STATE.threads[tid];
-    if (!th || !th.name) return;
-    if (th.type === 'group' || tid.startsWith('grp_') || (th.members && th.members.length > 1)) return;
-    const nk = normNameKey(th.name);
-    if (nk === normNameKey(charName) || strictNpcKeySet.has(nk)) return;
-    console.warn('[Phone:isolation] 移除跨卡 thread:', th.name, tid);
-    delete STATE.threads[tid];
-    if (STATE.currentThread === tid) STATE.currentThread = null;
-  });
-  (STATE.moments || []).forEach(function(m) {
-    if (!m) return;
-    if (m.from !== 'user') {
-      const mk = normNameKey(m.name || m.from || '');
-      if (mk && mk !== normNameKey(charName) && !strictNpcKeySet.has(mk)) {
-        console.warn('[Phone:isolation] 将跨卡朋友圈作者改为当前主角，原作者:', m.name || m.from);
-        m.from = charName;
-        m.name = charName;
-      }
-    }
-    m.likes = (m.likes || []).filter(function(name) {
-      const k = normNameKey(name);
-      return k === 'user' || k === normNameKey(charName) || strictNpcKeySet.has(k);
-    });
-    m.comments = (m.comments || []).filter(function(c) {
-      if (isManualUserMomentComment(c, ctx)) return true;
-      if (String(c?.from || '').trim() === 'user') return true;
-      const k = normNameKey(c?.name || c?.from || '');
-      return k === 'user' || k === normNameKey(charName) || strictNpcKeySet.has(k);
-    });
-  });
+  // 上下文读取必须是无副作用的。
+  // 旧逻辑会在 getMomentsCtx() 中按 strictNPCs 清理 thread/moments，甚至把未识别的朋友圈作者改成当前主角。
+  // 这会导致用户评论朋友圈后，Joe 这类“主楼 PHONE 标签里出现、但未进入 strictNPCs 的人物”被冠名成 char。
+  // 因此这里不再修改 STATE.threads / STATE.moments；跨卡隔离只影响本次生成候选，不反写 UI 数据。
 
   // 只保留 strictNPCs 里有的人物人设,过滤掉其他角色卡的数据
   const filteredPersonaMap = {};
@@ -15125,27 +15172,57 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
   let authorPersona = '';
   if (authorName === charName && charPersona) {
     authorPersona = charPersona;
-    sysMsg3 = '你正在扮演 ' + charName + ',人设/世界书如下:\n' + charPersona.slice(0, 320) + '\n';
+    sysMsg3 = '你正在扮演 ' + charName + ',人设/世界书如下:\n' + charPersona.slice(0, 700) + '\n';
   } else {
     const npcPersona = resolveNpcPersonaByName(authorName, npcPersonaMap) || '';
     authorPersona = npcPersona;
-    sysMsg3 = '你正在扮演 ' + authorName + ',' + (npcPersona ? ('其人设/世界书如下:\n' + npcPersona.slice(0, 320) + '\n') : '请根据其在故事中的言行推断语气。\n');
+    sysMsg3 = '你正在扮演 ' + authorName + ',' + (npcPersona ? ('其人设/世界书如下:\n' + npcPersona.slice(0, 700) + '\n') : '请根据其在故事中的言行推断语气。\n');
   }
-  const relHints = getMomentRelationHints(authorName, getContext()?.name1 || '用户', recentChat, authorPersona, '');
-  const replyContext = opts.replyToName
-    ? ('\n用户是在回复 ' + opts.replyToName + ' 的评论' + (opts.replyToText ? ('「' + String(opts.replyToText).slice(0, 80) + '」') : '') + '。你当前扮演的是 ' + authorName + '，必须承接这条评论上下文来回复用户。\n')
+
+  const recentReplyChat = String(recentChat || '')
+    .split('\n')
+    .filter(Boolean)
+    .slice(-5)
+    .join('\n');
+
+  const commentThread = (moment.comments || []).slice(-10).map(function(c, idx) {
+    const target = (c.replyTo !== null && c.replyTo !== undefined && moment.comments && moment.comments[c.replyTo])
+      ? (moment.comments[c.replyTo].name || moment.comments[c.replyTo].from || '?')
+      : '';
+    const speaker = c.name || c.from || '?';
+    const relation = target ? (speaker + ' 回复 ' + target) : speaker;
+    return (idx + 1) + '. ' + relation + ': ' + String(c.text || '').slice(0, 140);
+  }).join('\n') || '(暂无旧评论)';
+
+  const targetCommentLine = opts.replyToName
+    ? ('被用户回复的评论: ' + opts.replyToName + ':「' + String(opts.replyToText || '').slice(0, 160) + '」\n')
     : '';
-  sysMsg3 += (recentChat ? ('\n主楼近期上下文:\n' + recentChat.slice(-700) + '\n') : '')
+  const userReplyLine = '用户这次说:「' + String(userCommentText || '').slice(0, 160) + '」';
+
+  const relHints = getMomentRelationHints(authorName, getContext()?.name1 || '用户', [recentReplyChat || '', commentThread || ''].join('\n'), authorPersona, '');
+  const replyContext = opts.replyToName
+    ? ('\n用户是在回复 ' + opts.replyToName + ' 的评论。你当前扮演的是 ' + authorName + '，回复必须承接“被回复评论→用户这次评论”这条链，不能只围绕朋友圈主楼泛泛发挥。\n')
+    : '\n用户是在朋友圈下直接评论。回复必须接住用户这句评论，不要只泛泛评价朋友圈主楼。\n';
+  sysMsg3 += (recentReplyChat ? ('\n主楼最近5楼上下文:\n' + recentReplyChat + '\n') : '')
+    + '\n朋友圈主楼:\n作者:' + (moment.name || moment.from || '') + '\n内容:' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '\n'
+    + '\n当前朋友圈评论串（按时间顺序，必须读）：\n' + commentThread + '\n'
+    + targetCommentLine
+    + userReplyLine + '\n'
     + replyContext
     + (relHints ? ('\n你与评论者的关系线索:\n' + relHints + '\n') : '')
     + '硬规则:\n'
-    + '1. 回复必须符合你的人设、世界书和主楼上下文。\n'
-    + '2. 若关系里有敌对、厌恶、戒备、疏离，不得回复成过度亲昵、鼓励、暧昧。\n'
-    + '3. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
-    + '4. 用中文回复,不超过20字,只返回回复内容本身。';
-  const prompt3 = authorName + '的朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
-    + (opts.replyToName ? ('用户正在回复 ' + opts.replyToName + ' 的评论。\n') : '')
-    + '用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
+    + '1. 回复必须优先回应“用户这次说”的具体内容；如果用户是在回复某条评论，必须接住那条评论与用户评论之间的语义关系。\n'
+    + '2. 朋友圈主楼只是背景，不得忽略评论串；禁止泛泛鸡汤、禁止和用户评论错位。\n'
+    + '3. 回复必须符合人设、世界书、最近5楼剧情和当前评论串。\n'
+    + '4. 若关系里有敌对、厌恶、戒备、疏离，不得回复成过度亲昵、鼓励、暧昧。\n'
+    + '5. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
+    + '6. COMMENT回复正文只能写一句评论内容本身；禁止括号动作、心理描写、叙事描写、打字过程、引号外说明。\n'
+    + '7. 用中文回复,不超过24字,只返回回复内容本身。';
+  const prompt3 = '你要回复朋友圈评论。\n'
+    + '回复身份:「' + authorName + '」\n'
+    + targetCommentLine
+    + userReplyLine + '\n'
+    + '请基于人设/世界书/最近5楼/朋友圈主楼/评论串，写出一句贴着这条评论链的回复:';
   const resp = await lgCallAPI(prompt3, 120, sysMsg3);
   if (!resp) return;
   const ts = resolvePhoneTime();
