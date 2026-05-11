@@ -11154,6 +11154,64 @@ function removePhoneLines(textEl, cleanupItems) {
     });
   });
   removePhoneEchoFragments(textEl, residualFragments);
+  removePhoneAuthorStubs(textEl, cleanupItems);
+}
+
+function phoneCleanupLineIsAuthorStub(line, cleanupItems) {
+  if (!line || line.hasMedia || !Array.isArray(cleanupItems)) return false;
+  const raw = normalizePhoneCleanupText(line.normalizedText || line.text || '');
+  const stripped = stripPhoneCleanupDecorations(raw)
+    .replace(/^(?:回复|reply)\s+[^:：]+\s*[:：]?\s*/i, '')
+    .replace(/^[\s:：,，;；|｜\-—–_~～·•。.!！？?]+|[\s:：,，;；|｜\-—–_~～·•。.!！？?]+$/g, '')
+    .trim();
+  const compact = compactPhoneCleanupText(stripped);
+  if (!compact) return true;
+  return cleanupItems.some(function(item) {
+    const fromC = compactPhoneCleanupText(item.from || '');
+    const auxC = compactPhoneCleanupText(item.aux || '');
+    if (fromC && compact === fromC) return true;
+    if (fromC && auxC && (compact === fromC + auxC || compact === fromC + '回复' + auxC || compact === fromC + 'reply' + auxC)) return true;
+    return false;
+  });
+}
+
+function removePhoneAuthorStubs(textEl, cleanupItems) {
+  if (!textEl || !Array.isArray(cleanupItems) || !cleanupItems.length) return;
+  scanVisibleLines(textEl).forEach(function(line) {
+    if (!phoneCleanupLineIsAuthorStub(line, cleanupItems)) return;
+    removeScannedPhoneLine(line);
+  });
+  Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
+    if (el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons')) return;
+    const hasMedia = !!el.querySelector('img, video, audio, button, iframe, canvas, svg');
+    if (hasMedia) return;
+    const normalized = normalizePhoneCleanupText(el.textContent || '');
+    const line = { text: normalized, normalizedText: normalized, compactText: compactPhoneCleanupText(normalized), element: el, hasMedia: false };
+    if (phoneCleanupLineIsAuthorStub(line, cleanupItems)) el.remove();
+  });
+}
+
+function hasPhoneEchoResidualText(textEl, block) {
+  if (!textEl || !block) return false;
+  const cleanupItems = collectPhoneCleanupItems(block);
+  if (!cleanupItems.length) return false;
+  const lines = scanVisibleLines(textEl);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.element && line.element.closest && line.element.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns')) continue;
+    if (cleanupItems.some(function(item) { return phoneCleanupLineMatchesItem(line, item) || phoneCleanupBlockLikelyOnlyPhone(line, item) || phoneCleanupLineIsAuthorStub(line, cleanupItems); })) return true;
+    const n = stripPhoneCleanupDecorations(line.normalizedText || line.text || '');
+    const c = compactPhoneCleanupText(n);
+    if (!c) continue;
+    for (let j = 0; j < cleanupItems.length; j++) {
+      const item = cleanupItems[j];
+      const textC = compactPhoneCleanupText(item.text || '');
+      const fromC = compactPhoneCleanupText(item.from || '');
+      if (textC && c.indexOf(textC) >= 0) return true;
+      if (fromC && textC && c.indexOf(fromC + textC) >= 0) return true;
+    }
+  }
+  return false;
 }
 
 function removePhoneEchoFragments(textEl, fragments) {
@@ -11774,7 +11832,8 @@ function repairPhoneMessageByMesId(targetMesId) {
     const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     const textHtml = textEl.innerHTML || '';
     const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
-    if (hasRenderedPhoneUi && !hasResidualPhoneMarkup) return false;
+    const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
+    if (hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) return false;
 
     if (!hasRenderedPhoneUi) {
       let parsedTotal = 0;
@@ -11833,16 +11892,17 @@ function rewriteAllHistoryPhoneBlocks() {
 
       const textEl = domEl.querySelector('.mes_text');
       if (!textEl) return;
-      const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
-      const textHtml = textEl.innerHTML || '';
-      const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
-      // 已处理且当前 UI 完整、也没有残余标签时跳过；否则允许历史自愈
-      if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) return;
-
       const rawStripped = msg.mes.replace(/<think>[\s\S]*?<\/think>/gi, '');
       const phoneParts = getPhoneParseParts(rawStripped);
       const normalizedRaw = phoneParts.normalized;
       const hasBarePhoneTags = hasBarePhoneTagsIn(normalizedRaw);
+
+      const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
+      const textHtml = textEl.innerHTML || '';
+      const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
+      const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
+      // 已处理且当前 UI 完整、也没有残余标签/纯文本残留时跳过；否则允许历史自愈
+      if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) return;
 
       if (phoneParts.blocks.length || hasBarePhoneTags) {
         if (!hasRenderedPhoneUi) {
@@ -11887,13 +11947,6 @@ function getTagAttrs(attrText) {
 }
 
 function parsePhone(block) {
-  momentsDiag('parsePhone:start', {
-    blockLen: String(block || '').length,
-    stateChatId: STATE.chatId,
-    currentView: STATE.currentView,
-    currentThread: STATE.currentThread,
-    momentsCount: (STATE.moments || []).length,
-  });
   let parsedCount = 0;
   let parsedMomentTagCount = 0;
   let parsedCommentTagCount = 0;
@@ -12127,15 +12180,6 @@ function parsePhone(block) {
     const effectivePendingPrompt = pendingPrompt || comfyPendingPrompt;
     parsedMomentTagCount++;
     const momentId = incomingMoment(fromName, momentTime, momentCleanText.trim(), momentImg, effectivePendingPrompt, comfyPendingPrompt ? 'comfy' : 'chatu8', true);
-    momentsDiag('parsePhone:momentTag', {
-      fromName,
-      momentTime,
-      textPreview: (momentCleanText || '').trim().slice(0, 100),
-      hasImg: !!momentImg,
-      pendingPrompt: effectivePendingPrompt ? String(effectivePendingPrompt).slice(0, 100) : null,
-      pendingType: comfyPendingPrompt ? 'comfy' : (pendingPrompt ? 'chatu8' : null),
-      momentId,
-    });
     if (momentId) {
       _parsedMomentIds.push(momentId);
       _parsedMomentAuthors.push(fromName);
@@ -12194,13 +12238,6 @@ function parsePhone(block) {
       _commentMomentId = _parsedMomentFromMap[normNameKey(_commentMomentId)];
     }
     parsedCommentTagCount++;
-    momentsDiag('parsePhone:commentTag', {
-      rawMomentId: (cAttrs.MOMENT_ID || '').trim(),
-      resolvedMomentId: _commentMomentId,
-      commentFrom,
-      replyTo: _commentReplyTo,
-      textPreview: _commentText.slice(0, 100),
-    });
     incomingComment(
       _commentMomentId,
       commentFrom,
@@ -12232,12 +12269,6 @@ function parsePhone(block) {
           && normNameKey(cname) !== authorNorm;
       });
       return nonAuthorComments.length < 2;
-    });
-    momentsDiag('parsePhone:autoSocialCheck', {
-      parsedMomentIds: _parsedMomentIds.slice(),
-      parsedMomentAuthors: _parsedMomentAuthors.slice(),
-      fallbackFriends: _fallbackFriends.slice(),
-      needsAutoMomentIds: _needsAutoMomentIds.slice(),
     });
     // 本地自动社交已禁用：不再为缺失评论做本地补偿。
   }
@@ -12434,23 +12465,6 @@ function parsePhone(block) {
     if (!simgThreadId2) continue;
     routeImgToThread(simgThreadId2, src, time);
     parsedCount++;
-  }
-
-  momentsDiag('parsePhone:end', {
-    parsedCount,
-    parsedMomentTagCount,
-    parsedCommentTagCount,
-    momentsCount: (STATE.moments || []).length,
-    currentView: STATE.currentView,
-    currentThread: STATE.currentThread,
-  });
-  if (parsedMomentTagCount > 0 && parsedCommentTagCount === 0) {
-    console.warn('[Moments] parsePhone parsed MOMENTS but no COMMENT tags', {
-      parsedMomentTagCount,
-      parsedCommentTagCount,
-      stateChatId: STATE.chatId,
-      currentView: STATE.currentView,
-    });
   }
   return parsedCount;
 }
@@ -12867,7 +12881,6 @@ async function postUserDiary() {
 }
 
 async function postUserMoment() {
-  momentsDiag('postUserMoment:start', { currentView: STATE.currentView, stateChatId: STATE.chatId });
   const text = $('#rp-compose-text').val().trim();
   if (!text) return;
   const now = new Date();
@@ -12890,9 +12903,7 @@ async function postUserMoment() {
   closeCompose();
   go('moments');
   saveState();
-  momentsDiag('postUserMoment:created', { momentId, textPreview: text.slice(0, 120), momentsCount: (STATE.moments || []).length });
   // 先强制主角评论,再让 NPC 们自由互动
-  momentsDiag('postUserMoment:scheduleCharRespond', { momentId, delayMs: 800 });
   setTimeout(() => { momentsDiag('postUserMoment:runCharRespond', { momentId }); charRespondToUserMoment(momentId); }, 800);
   // 本地自动社交已禁用：用户动态不再自动触发 friendsInteractOnMoment。
 }
@@ -14514,16 +14525,7 @@ async function getMomentsCtx() {
   const now = Date.now();
   const ctx = getContext();
   const chatId = ctx?.chatId || (ctx?.characterId != null ? `char_${ctx.characterId}` : 'default');
-  momentsDiag('getMomentsCtx:start', {
-    chatId,
-    hasCache: !!_getMomentsCtxCache,
-    cacheChatId: _getMomentsCtxCacheChatId,
-    cacheAgeMs: _getMomentsCtxCacheTime ? (now - _getMomentsCtxCacheTime) : null,
-    hasInFlight: !!_getMomentsCtxPromise,
-    inFlightChatId: _getMomentsCtxPromiseChatId,
-  });
   if (_getMomentsCtxCache && _getMomentsCtxCacheChatId === chatId && (now - _getMomentsCtxCacheTime) < 30000) {
-    momentsDiag('getMomentsCtx:cacheHit', { chatId, npcs: (_getMomentsCtxCache.npcs || []).slice() });
     return _getMomentsCtxCache;
   }
   // 已有同 chatId 的进行中加载，等待它完成而不是重复发起
@@ -14541,12 +14543,6 @@ async function getMomentsCtx() {
   }
 }
 async function _doGetMomentsCtx(chatIdHint) {
-  momentsDiag('_doGetMomentsCtx:start', {
-    chatIdHint,
-    stateChatId: STATE.chatId,
-    momentsCount: (STATE.moments || []).length,
-    threadsCount: Object.keys(STATE.threads || {}).length,
-  });
   const ctx = getContext();
   const charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
   const userName = ctx?.name1 || '用户';
@@ -14891,16 +14887,6 @@ async function _doGetMomentsCtx(chatIdHint) {
   _getMomentsCtxCache = result;
   _getMomentsCtxCacheTime = Date.now();
   _getMomentsCtxCacheChatId = chatIdHint || (getContext()?.chatId || (getContext()?.characterId != null ? `char_${getContext().characterId}` : 'default'));
-  momentsDiag('_doGetMomentsCtx:end', {
-    chatId: _getMomentsCtxCacheChatId,
-    charName,
-    userName,
-    npcs: result.npcs.slice(),
-    npcPersonaKeys: Object.keys(filteredPersonaMap || {}),
-    npcDisplayNames: Object.assign({}, npcPersonaDisplayNames),
-    recentChatLen: recentChat.length,
-    charPersonaLen: charPersona.length,
-  });
   return result;
 }
 
@@ -14910,22 +14896,10 @@ function formatPhoneTimeFromDate(d) {
 }
 
 async function generateAIMoments() {
-  momentsDiag('generateAIMoments:start', {
-    stateChatId: STATE.chatId,
-    currentView: STATE.currentView,
-    momentsCount: (STATE.moments || []).length,
-  });
   const btn = document.getElementById('rp-gen-moments');
   if (btn) { btn.disabled = true; btn.classList.add('rp-spinning'); }
   try {
     const { charName, npcs, recentChat, charPersona, npcPersonaMap } = await getMomentsCtx();
-    momentsDiag('generateAIMoments:ctx', {
-      charName,
-      npcs: npcs.slice(),
-      npcPersonaKeys: Object.keys(npcPersonaMap || {}),
-      recentChatLen: recentChat.length,
-      charPersonaLen: charPersona.length,
-    });
     // 每次随机挑选:char 固定 + 从 NPC 里随机取2个,保证每次刷新都不同
     // Fisher-Yates 洗牌,保证真随机;每次最多取3个 NPC(限制 token 消耗)
     const npcPool = [...npcs];
@@ -14967,14 +14941,11 @@ async function generateAIMoments() {
       + '\n\n请为以下角色各写1条朋友圈(每人1条,不重复,与剧情相关):'
       + charList
       + '\n格式:[{"from":"角色名","text":"内容"},...]';
-    momentsDiag('generateAIMoments:callAPI', { allChars: allChars.slice(), promptLen: prompt.length, sysLen: sysMsg.length });
     const resp = await lgCallAPI(prompt, 600, sysMsg);
-    momentsDiag('generateAIMoments:resp', { hasResp: !!resp, respPreview: String(resp || '').slice(0, 240) });
     if (!resp) throw new Error('API无响应');
     const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
     if (!jsonStr) throw new Error('格式错误');
     const posts = JSON.parse(jsonStr);
-    momentsDiag('generateAIMoments:parsedPosts', { count: Array.isArray(posts) ? posts.length : null, posts });
     const generatedMomentIds = [];
     const now = new Date();
     posts.forEach((post, i) => {
@@ -14984,7 +14955,6 @@ async function generateAIMoments() {
       // 生成按钮这批动态不要只依赖 incomingMoment 内部的通用自动互动；
       // 这里显式收集 id，稍后用本批 allChars 作为评论候选触发，避免缓存/联系人时序导致无评论。
       const momentId = incomingMoment(post.from.trim(), ts, post.text.trim(), post.img || null, null, null, true);
-      momentsDiag('generateAIMoments:incomingMomentResult', { from: post.from, ts, momentId, textPreview: String(post.text || '').slice(0, 120) });
       if (momentId) generatedMomentIds.push(momentId);
     });
     if (STATE.currentView === 'moments') renderMoments();
@@ -15003,7 +14973,6 @@ async function generateAIMoments() {
 }
 
 async function charRespondToUserMoment(momentId) {
-  momentsDiag('charRespondToUserMoment:start', { momentId, doneSize: STATE._charRespondDone?.size || 0 });
   // 执行锁：同一 momentId 只执行一次
   if (!STATE._charRespondDone) STATE._charRespondDone = new Set();
   if (STATE._charRespondDone.has(momentId)) { momentsDiag('charRespondToUserMoment:skipAlreadyDone', { momentId }); return; }
@@ -15025,21 +14994,13 @@ async function charRespondToUserMoment(momentId) {
     + '字数15-40字,符合角色性格,用中文,只返回评论正文,不加引号或任何前缀。';
   const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
     + charName + '的评论(必须写,不允许只点赞):';
-  momentsDiag('charRespondToUserMoment:callAPI', {
-    momentId,
-    charName,
-    textPreview: String(moment.text || '').slice(0, 120),
-    existingComments: (moment.comments || []).map(c => ({ name: c.name, text: String(c.text || '').slice(0, 40) })),
-  });
   try {
     const resp = await lgCallAPI(prompt, 150, sysMsg);
-    momentsDiag('charRespondToUserMoment:resp', { momentId, charName, hasResp: !!resp, respPreview: String(resp || '').slice(0, 160) });
     if (resp) {
       const cleaned = resp.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
       if (cleaned) {
         const ts = resolvePhoneTime();
         if (!moment.likes.includes(charName)) moment.likes.push(charName);
-        momentsDiag('charRespondToUserMoment:addComment', { momentId, charName, cleaned });
         incomingComment(momentId, charName, ts, cleaned, null);
         if (STATE.currentView === 'moments') renderMoments();
         saveState();
@@ -15052,18 +15013,10 @@ async function charRespondToUserMoment(momentId) {
   }
   // NPC 们强制回复(逐个单独请求,避免雷同;按人数:1好友=1条,2=2条,3+取2条NPC)
   setTimeout(async function() {
-    momentsDiag('charRespondToUserMoment:npcPhaseStart', { momentId });
     const { npcs, npcPersonaMap, recentChat, userName } = await getMomentsCtx();
     const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
     const pendingNPCs = npcs.filter(n => !alreadyCommented.has(n));
     const maxNPC = Math.min(pendingNPCs.length, Math.max(0, 3 - (alreadyCommented.has(charName) ? 1 : 0)));
-    momentsDiag('charRespondToUserMoment:npcPhaseContext', {
-      momentId,
-      npcs: npcs.slice(),
-      alreadyCommented: Array.from(alreadyCommented),
-      pendingNPCs: pendingNPCs.slice(),
-      maxNPC,
-    });
     // 随机打乱,避免永远是前两个 NPC
     const shuffled = pendingNPCs.sort(() => Math.random() - 0.5);
     for (let i = 0; i < maxNPC; i++) {
@@ -15085,14 +15038,11 @@ async function charRespondToUserMoment(momentId) {
       const promptNpc = '朋友圈内容:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
         + '动态作者:「' + userName + '」\n'
         + '你的用户名是"' + npc + '",请基于人设/世界书/主楼上下文写评论，必须和其他人不同:';
-      momentsDiag('charRespondToUserMoment:npcCallAPI', { momentId, npc, index: i, maxNPC, relHintsPreview: String(relHints || '').slice(0, 120) });
       const resp = await lgCallAPI(promptNpc, 120, sysNpc);
-      momentsDiag('charRespondToUserMoment:npcResp', { momentId, npc, hasResp: !!resp, respPreview: String(resp || '').slice(0, 160) });
       if (resp) {
         const cleaned = resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
         if (cleaned && cleaned.length > 2) {
           const ts2 = resolvePhoneTime();
-          momentsDiag('charRespondToUserMoment:npcAddComment', { momentId, npc, cleaned });
           incomingComment(momentId, npc, ts2, cleaned, null);
           if (STATE.currentView === 'moments') renderMoments();
           saveState();
@@ -15104,7 +15054,6 @@ async function charRespondToUserMoment(momentId) {
 }
 
 async function momentAISocial(targetMomentId) {
-  momentsDiag('momentAISocial:start', { targetMomentId, momentsCount: (STATE.moments || []).length });
   const moments = STATE.moments || [];
   if (moments.length === 0) return;
   const { charName, npcs, charPersona, npcPersonaMap, recentChat } = await getMomentsCtx();
@@ -15138,16 +15087,13 @@ async function momentAISocial(targetMomentId) {
     + '其他情况一律以旁观者/朋友角色评论,不要把别人之间的事当成在说我。'
     + '例:user说"julian叔叔告密了"→ char以父亲视角评论julian行为,不要当成在说自己。';
   const prompt2 = '朋友圈动态列表:\n' + momentsSummary + '\n\n只为以下角色生成2-4条社交互动(like/comment),禁止使用列表外的名字:' + charList2 + '\n格式:只返回JSON数组 [{"type":"like","from":"角色名","momentId":"完整ID"},{...}],from字段必须严格使用上方列表中的名字,momentId必须与上方完全一致。';
-  momentsDiag('momentAISocial:callAPI', { targetMomentId, allChars: allChars.slice(), targets: targets.map(m => m.id), promptLen: prompt2.length });
   const resp = await lgCallAPI(prompt2, 400, sysMsg2);
-  momentsDiag('momentAISocial:resp', { targetMomentId, hasResp: !!resp, respPreview: String(resp || '').slice(0, 200) });
   if (!resp) return;
   const allowedFromSet = new Set(allChars.map(n => normNameKey(n)));
   try {
     const jsonStr2 = resp.match(/\[[\s\S]*\]/)?.[0];
     if (!jsonStr2) return;
     const actions = JSON.parse(jsonStr2);
-    momentsDiag('momentAISocial:actions', { targetMomentId, actions });
     const ts = resolvePhoneTime();
     actions.slice(0, 6).forEach(a => {
       if (!a.from || !a.momentId) return;
@@ -15170,7 +15116,6 @@ async function momentAISocial(targetMomentId) {
 
 
 async function generateAIReply(momentId, userCommentText, fromName, opts) {
-  momentsDiag('generateAIReply:start', { momentId, userCommentText: String(userCommentText || '').slice(0, 120), fromName, opts: opts || null });
   const moment = STATE.moments?.find(m => m.id === momentId);
   if (!moment) { momentsDiag('generateAIReply:skipMissingMoment', { momentId }); return; }
   opts = opts || {};
@@ -15201,9 +15146,7 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
   const prompt3 = authorName + '的朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
     + (opts.replyToName ? ('用户正在回复 ' + opts.replyToName + ' 的评论。\n') : '')
     + '用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
-  momentsDiag('generateAIReply:callAPI', { momentId, authorName, promptLen: prompt3.length, sysLen: sysMsg3.length });
   const resp = await lgCallAPI(prompt3, 120, sysMsg3);
-  momentsDiag('generateAIReply:resp', { momentId, authorName, hasResp: !!resp, respPreview: String(resp || '').slice(0, 160) });
   if (!resp) return;
   const ts = resolvePhoneTime();
   const cleaned = resp.trim().replace(/^[「"']|[」"']$/g, '');
@@ -15228,7 +15171,6 @@ function cleanMomentText(text) {
     .trim();
 }
 function renderMoments() {
-  momentsDiag('renderMoments:start', { currentView: STATE.currentView, count: (STATE.moments || []).length, snapshot: (STATE.moments || []).map(m => ({ id: m.id, from: m.from, name: m.name, likes: (m.likes || []).length, comments: (m.comments || []).length, hasImg: !!m.img, pendingImg: !!m.pendingImg })) });
   const momentImgSnap = (STATE.moments||[]).map(m=>({id:m.id,hasImg:!!m.img,pendingImg:m.pendingImg?.slice(0,20)}));
   const container = $('#rp-moments-list').empty();
   if (!STATE.moments || STATE.moments.length === 0) {
@@ -16542,20 +16484,14 @@ function rpFindByDataAttr(rootSelector, itemSelector, attrName, value) {
   return $(nodes);
 }
 
-function momentsDiag(event, payload) {
-  try {
-    console.log('[Moments:diag] ' + event, payload || {});
-  } catch (e) {}
-}
+function momentsDiag(event, payload) {}
 
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType, _skipAutoSocial) {
-  momentsDiag('incomingMoment:start', { fromRaw, time, textPreview: String(text || '').slice(0, 120), hasImg: !!img, pendingImgPrompt: pendingImgPrompt ? String(pendingImgPrompt).slice(0, 120) : null, pendingImgType, skipAutoSocial: !!_skipAutoSocial, stateChatId: STATE.chatId });
   if (isForbiddenPhoneContactName(fromRaw, getContext())) {
-    momentsDiag('incomingMoment:skipForbidden', { fromRaw });
     return null;
   }
   time = resolvePhoneTime(time);
@@ -16701,7 +16637,6 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
     likes: [],
     comments: [],
   });
-  momentsDiag('incomingMoment:created', { momentId, from: threadId || fromRaw, name: th ? th.name : fromRaw, time, hasImg: !!img, hasPending: !!pendingImgPrompt, momentsCount: STATE.moments.length });
   if (STATE.currentView === 'moments') renderMoments();
   showBanner((th ? th.name : fromRaw), '发了朋友圈:' + (text ? text.slice(0,25) + (text.length>25?'...':'') : '📷 图片'), time);
   saveState();
@@ -16711,9 +16646,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
 
 function incomingComment(momentId, fromRaw, time, text, replyTo, opts) {
   opts = opts || {};
-  momentsDiag('incomingComment:start', { momentId, fromRaw, time, textPreview: String(text || '').slice(0, 120), replyTo, opts });
   if (isForbiddenPhoneContactName(fromRaw, getContext())) {
-    momentsDiag('incomingComment:skipForbidden', { momentId, fromRaw });
     return;
   }
   if (isPhoneUserName(fromRaw, getContext()) || (replyTo && isPhoneUserName(replyTo, getContext()) && !opts.allowReplyToUser)) {
@@ -16803,7 +16736,6 @@ function incomingComment(momentId, fromRaw, time, text, replyTo, opts) {
     const targetNorm = targetComment ? normNameKey(targetComment.name || targetComment.from || '') : '';
     const isReplyingOtherComment = !!(targetComment && targetNorm && targetNorm !== authorNorm);
     if (!isReplyingOtherComment) {
-      momentsDiag('incomingComment:skipAuthorSelfComment', { momentId: moment.id, fromRaw, momentAuthor: moment.name, replyTo, replyToIdx, allowAuthorReply: !!opts.allowAuthorReply });
       return;
     }
   }
@@ -16817,13 +16749,11 @@ function incomingComment(momentId, fromRaw, time, text, replyTo, opts) {
   const isDup = moment.comments.slice(-8).some(c => c.name === name && c.text === cleanText && (!resolvedTime || !c.time || c.time === resolvedTime));
   if (isDup) { momentsDiag('incomingComment:skipDup', { momentId: moment.id, name, textPreview: String(cleanText || '').slice(0, 120), resolvedTime }); return; }
   moment.comments.push({ from: threadId || fromRaw, name, text: cleanText, time: resolvedTime, replyTo: replyToIdx });
-  momentsDiag('incomingComment:added', { momentId: moment.id, name, resolvedTime, replyToIdx, commentCount: moment.comments.length });
   if (STATE.currentView === 'moments') renderMoments();
   saveState();
 }
 
 function toggleLike(momentId) {
-  momentsDiag('toggleLike:start', { momentId });
   const moment = STATE.moments && STATE.moments.find(m => m.id === momentId);
   if (!moment) return;
   const idx = moment.likes.indexOf('user');
@@ -16834,7 +16764,6 @@ function toggleLike(momentId) {
 }
 
 async function sendMomentComment(momentId, text, replyToName) {
-  momentsDiag('sendMomentComment:start', { momentId, textPreview: String(text || '').slice(0, 120), replyToName });
   const moment = STATE.moments && STATE.moments.find(m => m.id === momentId);
   if (!moment || !text.trim()) return;
   const ts = resolvePhoneTime();
@@ -16856,7 +16785,6 @@ async function sendMomentComment(momentId, text, replyToName) {
   const userCommentIdx = moment.comments.length;
   const userCommentText = text.trim();
   moment.comments.push({ from: 'user', name: '我', text: userCommentText, time: ts, replyTo: replyToIdx, source: 'manual', manual: true });
-  momentsDiag('sendMomentComment:userCommentAdded', { momentId, userCommentIdx, replyToIdx, commentCount: moment.comments.length });
   renderMoments();
   saveState();
   // 直接调 API 生成回复,不走 ST send_textarea
