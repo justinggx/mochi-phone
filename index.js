@@ -667,7 +667,50 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 }
 .rp-thread-hd { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .rp-hd-av { width:32px; height:32px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; }
+.rp-hd-av.rp-group-members-trigger { cursor:pointer; box-shadow:0 0 0 2px rgba(255,255,255,.55); transition:transform .15s ease, box-shadow .15s ease; }
+.rp-hd-av.rp-group-members-trigger:active { transform:scale(.94); }
 .rp-hd-name { font-size:11px; color:var(--rp-hd-name); }
+
+/* ── GROUP MEMBERS MODAL ── */
+#rp-group-members-modal {
+  position:absolute; inset:0; z-index:620;
+  background:rgba(0,0,0,.28);
+  display:flex; align-items:center; justify-content:center;
+  padding:14px; box-sizing:border-box;
+}
+.rp-gm-sheet {
+  width:100%; max-height:72%; overflow:hidden;
+  background:rgba(255,255,255,.96);
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:22px;
+  box-shadow:0 18px 50px rgba(0,0,0,.24);
+  display:flex; flex-direction:column;
+}
+.rp-gm-head {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:14px 16px 10px; border-bottom:1px solid rgba(0,0,0,.06);
+}
+.rp-gm-title { min-width:0; font-size:14px; font-weight:700; color:#222; }
+.rp-gm-sub { margin-top:2px; font-size:10px; font-weight:500; color:rgba(0,0,0,.42); }
+.rp-gm-close {
+  width:28px !important; height:28px !important; border:none !important; border-radius:14px !important;
+  background:rgba(0,0,0,.06) !important; color:#555 !important; cursor:pointer !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  font-size:18px !important; line-height:1 !important; padding:0 !important; flex-shrink:0 !important;
+}
+.rp-gm-list { overflow-y:auto; padding:8px 12px 12px; scrollbar-width:none; }
+.rp-gm-list::-webkit-scrollbar { display:none; }
+.rp-gm-row { display:flex; align-items:center; gap:10px; padding:8px 4px; border-radius:14px; }
+.rp-gm-av { width:34px; height:34px; border-radius:17px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; overflow:hidden; }
+.rp-gm-av img { width:100%; height:100%; object-fit:cover; display:block; }
+.rp-gm-name { min-width:0; flex:1; font-size:13px; color:#222; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rp-gm-role { font-size:10px; color:rgba(0,0,0,.38); flex-shrink:0; }
+.rp-dark #rp-group-members-modal { background:rgba(0,0,0,.45); }
+.rp-dark .rp-gm-sheet { background:rgba(28,28,34,.96); border-color:rgba(255,255,255,.08); }
+.rp-dark .rp-gm-head { border-bottom-color:rgba(255,255,255,.07); }
+.rp-dark .rp-gm-title,.rp-dark .rp-gm-name { color:#f2f2f4; }
+.rp-dark .rp-gm-sub,.rp-dark .rp-gm-role { color:rgba(255,255,255,.42); }
+.rp-dark .rp-gm-close { background:rgba(255,255,255,.08) !important; color:#ddd !important; }
 
 /* ── ADD CONTACT MODAL ── */
 /* ✅ FIX3: modal 已移至 #rp-screen 内部,position:absolute; inset:0 现在正确覆盖手机屏幕 */
@@ -2651,6 +2694,24 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-xhs-list{scrollbar-width:none;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important;padding:8px 0 14px!important}
 #rp-xhs-detail-body{scrollbar-width:none;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important}
 #rp-xhs-list::-webkit-scrollbar,#rp-xhs-detail-body::-webkit-scrollbar{display:none}
+
+/* XHS empty state: copied from bank empty card style, text only changed */
+.rp-xhs-empty {
+  text-align: center;
+  color: var(--bank-loading-color, #c03060);
+  opacity: .88;
+  margin: 24px 12px;
+  padding: 28px 20px;
+  border-radius: 18px;
+  background: var(--bank-card-bg, rgba(255,255,255,.62));
+  border: 1px solid var(--bank-card-border, rgba(255,255,255,.72));
+  box-shadow: var(--bank-card-shadow, 0 6px 24px rgba(0,0,0,.07));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+}
 /* XHS卡片：半透明磨砂玻璃，重要区域遮罩，边缘壁纸透出 */
 .rp-xhs-card{background:rgba(255,255,255,.62)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border:none!important;border-bottom:1px solid var(--rp-xhs-border)!important;border-radius:0!important;box-shadow:none!important;padding:12px 14px!important;margin:0 8px!important;border-radius:16px!important;margin-bottom:6px!important;transition:background .12s ease!important}
 #rp-phone.rp-theme-star  .rp-xhs-card{background:rgba(14,8,40,.62)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none saturate(1.2)!important}
@@ -2685,8 +2746,15 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-xhs-comment{padding:14px 0!important;border-bottom:1px solid var(--rp-xhs-border)!important}
 .rp-xhs-comment>div:first-child{min-width:0!important}
 .rp-xhs-comment>div:first-child>div:first-child{display:flex!important;align-items:center!important;gap:6px!important;margin-bottom:5px!important}
+.rp-xhs-detail-post-body{font-size:13px!important;font-weight:400!important;line-height:1.65!important;letter-spacing:0!important;color:var(--rp-xhs-text,#222)!important}
 .rp-xhs-comment>div:first-child>div:nth-child(2){font-size:12px!important;line-height:1.74!important;color:var(--rp-xhs-text-soft)!important}
-.rp-xhs-comment [data-reply-cidx]{margin-top:7px!important;color:var(--rp-xhs-accent)!important;background:var(--rp-xhs-chip)!important;border-radius:999px!important;padding:4px 10px!important;display:inline-flex!important}
+.rp-xhs-comment [data-reply-cidx]{margin-top:0!important;color:var(--rp-xhs-accent)!important;background:var(--rp-xhs-chip)!important;border-radius:999px!important;padding:4px 10px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;height:22px!important;line-height:1!important;box-sizing:border-box!important;vertical-align:middle!important}
+.rp-xhs-comment [data-xhs-del-cidx]{margin-top:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;height:22px!important;line-height:1!important;padding:4px 0!important;box-sizing:border-box!important;vertical-align:middle!important}
+.rp-xhs-comment-waiting{display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;text-align:center!important;color:var(--rp-xhs-text-faint,#a8a8ad)!important;font-size:12px!important;font-weight:600!important;padding:24px 0!important;animation:rpXhsWaitLine 1.25s ease-in-out infinite!important;will-change:transform,opacity!important}
+.rp-xhs-comment-waiting .rp-xhs-wait-dot{width:4px!important;height:4px!important;border-radius:50%!important;background:currentColor!important;opacity:.38!important;animation:rpXhsWaitDot 1.15s ease-in-out infinite!important}
+.rp-xhs-comment-waiting .rp-xhs-wait-dot:nth-child(2){animation-delay:.16s!important}.rp-xhs-comment-waiting .rp-xhs-wait-dot:nth-child(3){animation-delay:.32s!important}
+@keyframes rpXhsWaitDot{0%,80%,100%{transform:translateY(0);opacity:.28}40%{transform:translateY(-3px);opacity:.88}}
+@keyframes rpXhsWaitLine{0%,100%{transform:translateY(0);opacity:.74}50%{transform:translateY(-2px);opacity:1}}
 #rp-xhs-detail-input-bar{flex:0 0 auto!important;background:rgba(255,255,255,.72)!important;border-top:1px solid var(--rp-xhs-border)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:8px 12px 10px!important;position:relative!important;z-index:10!important}
 #rp-phone.rp-theme-star  #rp-xhs-detail-input-bar{background:rgba(10,5,32,.72)!important;border-top-color:rgba(140,110,255,.2)!important}
 #rp-phone.rp-theme-misty #rp-xhs-detail-input-bar{background:rgba(220,240,255,.72)!important;border-top-color:rgba(100,170,220,.2)!important}
@@ -2706,13 +2774,9 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-xhs-post-body{background:var(--rp-xhs-card)!important;border:1px solid var(--rp-xhs-border)!important;border-radius:22px!important;padding:14px 14px 18px!important;min-height:180px!important;line-height:1.8!important;box-shadow:0 6px 18px rgba(0,0,0,.04)!important}
 #rp-xhs-post-title::placeholder,#rp-xhs-post-body::placeholder{color:var(--rp-xhs-text-faint)!important}
 #rp-xhs-post-title:focus,#rp-xhs-post-body:focus{border-color:var(--rp-xhs-border-strong)!important;box-shadow:0 0 0 3px var(--rp-xhs-chip),0 8px 18px rgba(0,0,0,.04)!important;outline:none!important}
-#rp-xhs-tag-row{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;margin-top:8px!important}
 #rp-xhs-detail-send,#rp-xhs-post-btn{background:linear-gradient(135deg,var(--rp-xhs-accent),var(--rp-xhs-accent-2))!important;color:#fff!important;border:none!important;box-shadow:0 8px 18px rgba(0,0,0,.15)!important}
 #rp-xhs-post-btn{border-radius:10px!important;padding:4px 12px!important;min-width:0!important;font-weight:600!important;font-size:12px!important;letter-spacing:0!important}
 #rp-xhs-detail-send{border-radius:10px!important;padding:5px 14px!important;min-width:0!important;font-weight:600!important;font-size:12px!important}
-.rp-xhs-tag-btn{background:var(--rp-xhs-chip,rgba(255,36,66,.06))!important;color:var(--rp-xhs-text,#333)!important;border:1px solid var(--rp-xhs-border)!important;border-radius:999px!important;padding:0 10px!important;height:24px!important;min-height:24px!important;font-size:10.5px!important;line-height:1.2!important;font-weight:500!important;cursor:pointer!important;transition:all .15s!important;font-family:inherit!important;box-shadow:0 3px 10px rgba(0,0,0,.03)!important;width:100%!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-.rp-xhs-tag-btn:hover{background:var(--rp-xhs-soft)!important;border-color:var(--rp-xhs-border-strong)!important;transform:translateY(-1px)!important}
-.rp-xhs-tag-selected{background:linear-gradient(135deg,var(--rp-xhs-accent),var(--rp-xhs-accent-2)) !important;color:#fff !important;border-color:transparent !important}.rp-xhs-tag-btn.rp-xhs-tag-selected{background:linear-gradient(135deg,var(--rp-xhs-accent),var(--rp-xhs-accent-2)) !important;color:#fff !important;border-color:transparent !important;outline:none !important;box-shadow:0 4px 14px rgba(0,0,0,.2)!important;transform:scale(1.04)!important;font-weight:700!important}
 #rp-xhs-loading{background:var(--rp-xhs-panel)!important;border:1px dashed var(--rp-xhs-border)!important;border-radius:16px!important;box-shadow:var(--rp-xhs-shadow)!important;position:relative;overflow:hidden!important;animation:rpXhsLoadingFloat 1.8s ease-in-out infinite}
 #rp-xhs-loading::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.10) 35%,rgba(255,255,255,.42) 50%,rgba(255,255,255,.10) 65%,transparent 100%);transform:translateX(-120%);animation:rpXhsShine 1.5s ease-in-out infinite;pointer-events:none}
 #rp-xhs-loading{color:var(--rp-xhs-accent)!important;font-weight:700!important;letter-spacing:.02em!important}
@@ -2720,10 +2784,6 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-star #rp-xhs-detail-input,
 #rp-phone.rp-theme-star #rp-xhs-post-title,
 #rp-phone.rp-theme-star #rp-xhs-post-body{color:#eee7ff!important;background:rgba(35,22,78,.96)!important;border-color:rgba(167,139,250,.25)!important}
-#rp-phone.rp-theme-star .rp-xhs-tag-btn{background:rgba(60,35,120,.85)!important;color:#d4bbff!important;border-color:rgba(167,139,250,.3)!important}
-#rp-phone.rp-theme-star .rp-xhs-tag-btn.rp-xhs-tag-selected{background:linear-gradient(135deg,#a78bfa,#c084fc)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 4px 14px rgba(167,139,250,.45)!important}
-#rp-phone.rp-theme-misty .rp-xhs-tag-btn{background:rgba(210,232,248,.7)!important;color:#16324a!important;border-color:rgba(74,127,168,.22)!important}
-#rp-phone.rp-theme-misty .rp-xhs-tag-btn.rp-xhs-tag-selected{background:linear-gradient(135deg,#4a7fa8,#7db6d9)!important;color:#fff!important;border-color:transparent!important}
 #rp-phone.rp-theme-star #rp-xhs-detail-input::placeholder,
 #rp-phone.rp-theme-star #rp-xhs-post-title::placeholder,
 #rp-phone.rp-theme-star #rp-xhs-post-body::placeholder{color:rgba(210,195,255,.55)!important}
@@ -2734,6 +2794,125 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-misty #rp-xhs-post-title::placeholder,
 #rp-phone.rp-theme-misty #rp-xhs-post-body::placeholder{color:rgba(74,127,168,.5)!important}
 @keyframes rpXhsLoadingFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+
+/* XHS compose: copy Xiaohongshu idea editor, with MochiPhone safe-area offset */
+#rp-view-xhs-compose{background:linear-gradient(138deg,#dff9f4 0%,#effbed 34%,#f7f7f7 58%,#f3f3f3 100%)!important;color:#2f3035!important;overflow:hidden!important}
+#rp-view-xhs-compose .rp-nav-bar{height:112px!important;min-height:112px!important;padding:44px 18px 0!important;background:transparent!important;border-bottom:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;display:grid!important;grid-template-columns:48px 1fr 78px!important;align-items:center!important;gap:0!important;box-sizing:border-box!important;position:relative!important;z-index:3!important}
+#rp-view-xhs-compose .rp-nav-bar .rp-back{justify-self:start!important;width:42px!important;height:42px!important;min-width:42px!important;padding:0!important;margin:0!important;background:transparent!important;border:none!important;color:#000!important;font-size:38px!important;font-weight:300!important;line-height:38px!important;border-radius:0!important;box-shadow:none!important;display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;z-index:4!important;font-family:Arial,"Helvetica Neue",sans-serif!important}
+#rp-view-xhs-compose .rp-nav-bar .rp-nav-title{position:static!important;left:auto!important;right:auto!important;display:block!important;justify-self:center!important;pointer-events:none!important;font-size:0!important;color:transparent!important}
+#rp-xhs-post-btn{justify-self:end!important;width:70px!important;height:38px!important;min-width:70px!important;padding:0!important;margin:0!important;background:#ff8796!important;color:#fff!important;border:none!important;border-radius:999px!important;font-size:15px!important;font-weight:800!important;line-height:38px!important;letter-spacing:0!important;box-shadow:none!important;position:relative!important;z-index:4!important;font-family:inherit!important}
+#rp-view-xhs-compose .rp-xhs-compose-body{padding:40px 16px 26px!important;background:transparent!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;justify-content:flex-start!important;gap:0!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important}
+#rp-view-xhs-compose .rp-xhs-compose-body::-webkit-scrollbar{display:none!important}
+.rp-xhs-idea-card{position:relative!important;width:100%!important;min-height:430px!important;height:100%!important;background:#fff!important;border-radius:34px!important;box-sizing:border-box!important;padding:164px 28px 30px!important;box-shadow:none!important;color:#303136!important;overflow:visible!important;flex:1 1 auto!important;margin:0!important}
+.rp-xhs-idea-card::before{content:""!important;position:absolute!important;left:58px!important;right:30px!important;top:-28px!important;height:72px!important;background:rgba(255,255,255,.46)!important;border-radius:22px!important;transform:rotate(4deg)!important;transform-origin:left bottom!important;z-index:-1!important}
+.rp-xhs-quote-mark{position:absolute!important;left:28px!important;top:112px!important;color:#f0f0f1!important;font-size:68px!important;font-weight:900!important;line-height:.7!important;font-family:Georgia,"Times New Roman",serif!important;pointer-events:none!important;z-index:0!important}
+.rp-xhs-idea-title-input{position:relative!important;z-index:1!important;font-size:28px!important;font-weight:900!important;line-height:1.18!important;color:#303136!important;margin:0 0 12px!important;letter-spacing:-.8px!important;display:block!important;width:100%!important;height:auto!important;min-height:34px!important;border:0!important;outline:0!important;background:transparent!important;padding:0 0 0 4px!important;font-family:inherit!important;caret-color:#ff9aaa!important;box-sizing:border-box!important;pointer-events:auto!important;box-shadow:none!important;border-radius:0!important;-webkit-appearance:none!important;appearance:none!important}
+.rp-xhs-idea-title-input::placeholder{color:#303136!important;font-size:28px!important;font-weight:900!important;opacity:1!important}
+.rp-xhs-idea-title-input:focus,.rp-xhs-idea-title-input:focus-visible,.rp-xhs-idea-title-input:active{outline:0!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important}
+#rp-xhs-post-body{position:relative!important;z-index:1!important;display:block!important;width:100%!important;height:260px!important;min-height:260px!important;max-height:none!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0 0 0 4px!important;margin:0!important;color:#303136!important;font-size:24px!important;font-weight:500!important;line-height:1.36!important;outline:0!important;box-sizing:border-box!important;font-family:inherit!important;resize:none!important;overflow:hidden!important;caret-color:#ff9aaa!important;-webkit-appearance:none!important;appearance:none!important}
+#rp-xhs-post-body::placeholder{color:#b9b9bd!important;font-size:24px!important;font-weight:500!important;opacity:1!important}
+#rp-xhs-post-body:focus,#rp-xhs-post-body:focus-visible,#rp-xhs-post-body:active{outline:0!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important}
+#rp-phone.rp-theme-star #rp-view-xhs-compose,#rp-phone.rp-theme-misty #rp-view-xhs-compose{background:linear-gradient(138deg,#dff9f4 0%,#effbed 34%,#f7f7f7 58%,#f3f3f3 100%)!important;color:#2f3035!important}
+#rp-phone.rp-theme-star .rp-xhs-idea-card,#rp-phone.rp-theme-misty .rp-xhs-idea-card{background:#fff!important;color:#303136!important;border:none!important}
+#rp-phone.rp-theme-star #rp-xhs-post-title,#rp-phone.rp-theme-misty #rp-xhs-post-title,#rp-phone.rp-theme-star #rp-xhs-post-body,#rp-phone.rp-theme-misty #rp-xhs-post-body{background:transparent!important;color:#303136!important;border:none!important;box-shadow:none!important}
+#rp-phone.rp-theme-star #rp-xhs-post-title::placeholder,#rp-phone.rp-theme-misty #rp-xhs-post-title::placeholder,#rp-phone.rp-theme-star #rp-xhs-post-body::placeholder,#rp-phone.rp-theme-misty #rp-xhs-post-body::placeholder{color:#b9b9bd!important}
+/* XHS compose title: remove all focus/input chrome; keep it visually like body text area */
+#rp-xhs-post-title.rp-xhs-idea-title-input,
+#rp-xhs-post-title.rp-xhs-idea-title-input:hover,
+#rp-xhs-post-title.rp-xhs-idea-title-input:focus,
+#rp-xhs-post-title.rp-xhs-idea-title-input:focus-visible,
+#rp-xhs-post-title.rp-xhs-idea-title-input:active{
+  background:transparent!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#rp-view-xhs-compose #rp-xhs-post-title.rp-xhs-idea-title-input{background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;border-radius:0!important;color:#303136!important;font-size:28px!important;font-weight:900!important;line-height:1.18!important;padding:0 0 0 4px!important;margin:0 0 12px!important}
+#rp-view-xhs-compose #rp-xhs-post-title.rp-xhs-idea-title-input::placeholder{color:#303136!important;font-size:28px!important;font-weight:900!important;opacity:1!important}
+#rp-view-xhs-compose #rp-xhs-post-body{background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;border-radius:0!important;color:#303136!important;font-size:24px!important;font-weight:500!important;line-height:1.36!important;padding:0 0 0 4px!important}
+#rp-view-xhs-compose #rp-xhs-post-body::placeholder{color:#b9b9bd!important;font-size:24px!important;font-weight:500!important;opacity:1!important}
+
+/* XHS image-first layout overrides */
+.rp-xhs-card img{transition:transform .18s ease!important}
+.rp-xhs-card:active img{transform:scale(.985)!important}
+#rp-xhs-list{padding:8px 0 14px!important}
+#rp-xhs-detail-body>div:first-child,
+#rp-xhs-detail-body>div:nth-child(2),
+#rp-xhs-detail-body>div:nth-child(3){border-radius:0!important;box-shadow:none!important;border-left:0!important;border-right:0!important}
+#rp-xhs-detail-body>div:first-child{padding:0!important;border:0!important;background:transparent!important}
+#rp-xhs-detail-body>div:first-child::before{display:none!important}
+#rp-xhs-detail-body>div:nth-child(2){margin:0 -14px!important;background:var(--rp-xhs-card)!important}
+#rp-xhs-detail-body>div:nth-child(3){margin:8px -14px 0!important;background:var(--rp-xhs-card)!important}
+
+/* XHS feed: real app-like two-column masonry */
+#rp-xhs-list.rp-xhs-waterfall{display:flex!important;gap:8px!important;align-items:flex-start!important;padding:10px 10px 16px!important;box-sizing:border-box!important;position:relative!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:8px}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-card{margin:0!important;width:100%!important;min-width:0!important;border-radius:12px!important;box-shadow:none!important;border:0!important;background:var(--rp-xhs-card,#fff)!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-card>div:nth-child(2)>div:first-child{color:var(--rp-xhs-text,#111827)!important;font-weight:800!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-card img,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-fallback{border-radius:12px 12px 0 0!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover{border-radius:12px 12px 0 0!important}
+#rp-xhs-list.rp-xhs-waterfall.rp-xhs-refreshing{flex-wrap:nowrap!important}
+#rp-xhs-refresh-loading{display:block!important;position:absolute!important;left:12px!important;right:12px!important;top:10px!important;width:auto!important;box-sizing:border-box!important;text-align:center!important;color:var(--bank-loading-color,#c03060)!important;opacity:.94!important;margin:0!important;padding:14px 18px!important;border-radius:18px!important;background:var(--bank-card-bg,rgba(255,255,255,.86))!important;border:1px solid var(--bank-card-border,rgba(255,255,255,.82))!important;box-shadow:var(--bank-card-shadow,0 8px 28px rgba(0,0,0,.10))!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;font-size:13px!important;font-weight:700!important;line-height:1.6!important;z-index:20!important;pointer-events:none!important}
+#rp-xhs-list.rp-xhs-waterfall.rp-xhs-refreshing .rp-xhs-col{padding-top:100px!important;transition:padding-top .16s ease!important}
+.rp-xhs-paper-cover{position:relative;width:100%;box-sizing:border-box;overflow:hidden;display:block;color:#17202a;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;isolation:isolate}
+.rp-xhs-paper-cover b,.rp-xhs-paper-cover span{position:relative;z-index:2;display:block;word-break:break-word}
+.rp-xhs-paper-cover b{font-weight:900;letter-spacing:-.02em}.rp-xhs-paper-cover span{font-weight:700}
+/* XHS detail cover: hide generated subtitle; keep only main title on cover */
+#rp-xhs-detail-body .rp-xhs-paper-cover span{display:none!important}
+#rp-xhs-detail-body .rp-xhs-paper-cover b{display:block!important;white-space:normal!important;word-break:break-all!important;overflow:visible!important;text-overflow:clip!important}
+.rp-xhs-cover-mint-quote{background:#d7f0df;padding:18% 14% 12%;color:#18251d}
+.rp-xhs-cover-mint-quote::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 12%,rgba(255,255,255,.38),transparent 30%),linear-gradient(135deg,rgba(255,255,255,.18),transparent 56%)}
+.rp-xhs-cover-mint-quote .rq{position:absolute;left:12%;top:9%;font-size:82px;line-height:1;color:#badbc4;font-family:Georgia,serif;font-weight:900;z-index:1}.rp-xhs-cover-mint-quote .rq-text{position:absolute;left:15%;right:13%;top:42%;transform:translateY(-50%)}
+.rp-xhs-cover-mint-quote b{font-size:24px;line-height:1.14}.rp-xhs-cover-mint-quote span{margin-top:8px;font-size:21px;line-height:1.18}.rp-xhs-cover-mint-quote i{position:absolute;right:14%;bottom:17%;width:52px;height:8px;background:#a8d3b3;border-radius:999px;transform:rotate(-2deg)}
+.rp-xhs-cover-blue-crayon{background:#eef7fb;color:#1f5a96;padding:18% 13%;background-image:repeating-linear-gradient(-6deg,rgba(105,177,217,.30) 0 12px,rgba(255,255,255,.12) 12px 24px),linear-gradient(180deg,#fafdff,#dbeefa)}
+.rp-xhs-cover-blue-crayon::before{content:"";position:absolute;inset:-8%;background:repeating-linear-gradient(4deg,transparent 0 9px,rgba(52,135,190,.12) 9px 17px);filter:blur(.2px);opacity:.9}.rp-xhs-cover-blue-crayon .bc-text{position:absolute;left:17%;right:10%;top:44%;transform:translateY(-50%) rotate(-2deg)}
+.rp-xhs-cover-blue-crayon b{font-size:25px;line-height:1.08;font-family:"KaiTi","STKaiti","PingFang SC",sans-serif}.rp-xhs-cover-blue-crayon span{margin-top:8px;font-size:22px;line-height:1.12;font-family:"KaiTi","STKaiti","PingFang SC",sans-serif}
+.rp-xhs-cover-blue-marker-note,.rp-xhs-cover-lime-marker-note{background:#fff;color:#171717;background-image:repeating-linear-gradient(180deg,#fff 0 25px,#dbe7f0 26px,#fff 27px);padding:16% 12%}.rp-xhs-cover-blue-marker-note .note-date{position:absolute;left:10%;top:9%;font-size:11px;color:#5f6f7b;font-family:Georgia,serif}.rp-xhs-cover-blue-marker-note .marker{position:absolute;left:13%;right:13%;height:24px;background:rgba(85,171,231,.58);border-radius:10px 18px 12px 8px;transform:rotate(-2deg);filter:saturate(1.1)}.rp-xhs-cover-blue-marker-note .m1{top:40%}.rp-xhs-cover-blue-marker-note .m2{top:51%;left:18%;right:18%;opacity:.86}.rp-xhs-cover-blue-marker-note .note-words{position:absolute;left:16%;right:14%;top:38%;transform:rotate(-2deg)}.rp-xhs-cover-blue-marker-note b{font-size:22px;line-height:1.15}.rp-xhs-cover-blue-marker-note span{margin-top:11px;font-size:20px;line-height:1.12}.rp-xhs-cover-blue-marker-note .note-sign{position:absolute;right:10%;bottom:9%;font-size:10px;color:#4f6475;font-family:Georgia,serif}
+.rp-xhs-cover-lime-marker-note .lm-marker{position:absolute;left:12%;right:12%;top:28%;height:36px;background:rgba(193,226,90,.72);border-radius:18px 24px 13px 20px;transform:rotate(-1deg)}.rp-xhs-cover-lime-marker-note .lm-text{position:absolute;left:15%;right:12%;top:29%}.rp-xhs-cover-lime-marker-note b{font-size:24px;line-height:1.12}.rp-xhs-cover-lime-marker-note span{margin-top:34px;font-size:20px;line-height:1.22;color:#242424}
+.rp-xhs-cover-wish-card{background:linear-gradient(145deg,#f7fbff,#ffffff 52%,#e9f5ff);color:#7b2e34;padding:16% 12%}.rp-xhs-cover-wish-card::before{content:"";position:absolute;inset:6%;border:1px solid rgba(160,205,230,.55);border-radius:18px}.rp-xhs-cover-wish-card .wish-top{position:absolute;left:11%;top:10%;font-size:12px;color:#f0a3b6;font-family:Georgia,serif;font-style:italic}.rp-xhs-cover-wish-card .wish-doodle{position:absolute;right:13%;top:12%;font-size:24px;color:#efa3b2}.rp-xhs-cover-wish-card .wish-text{position:absolute;left:13%;right:13%;bottom:24%}.rp-xhs-cover-wish-card b{font-size:25px;line-height:1.1;color:#783039}.rp-xhs-cover-wish-card span{font-size:18px;line-height:1.2;margin-top:8px;color:#9a5157}.rp-xhs-cover-wish-card .wish-party{position:absolute;left:13%;bottom:11%;font-size:20px;color:#ed9aa6;letter-spacing:6px}
+.rp-xhs-cover-torn-collage{background:#eeeef0;color:#5b3f31;background-image:radial-gradient(circle at 20% 18%,rgba(255,255,255,.7),transparent 20%),linear-gradient(160deg,#f6f6f6,#e5e5e8);padding:14%}.rp-xhs-cover-torn-collage .tc-green{position:absolute;right:5%;top:27%;width:42%;height:38%;background:#dbe8d1;background-image:repeating-linear-gradient(180deg,transparent 0 15px,rgba(80,120,80,.18) 16px);transform:rotate(4deg);box-shadow:0 5px 14px rgba(0,0,0,.08)}.rp-xhs-cover-torn-collage .tc-paper{position:absolute;left:10%;right:13%;top:22%;bottom:16%;background:#fffdf8;padding:31% 10% 8%;box-shadow:0 8px 18px rgba(0,0,0,.10);clip-path:polygon(2% 4%,96% 0,99% 22%,96% 44%,100% 66%,95% 97%,8% 100%,0 82%,4% 61%,0 39%)}.rp-xhs-cover-torn-collage .tc-dot{position:absolute;left:50%;top:8%;width:48px;height:18px;background:radial-gradient(circle,#ac8ad8 0 4px,transparent 5px) 0 0/16px 16px}.rp-xhs-cover-torn-collage b{font-size:21px;line-height:1.12}.rp-xhs-cover-torn-collage span{font-size:17px;line-height:1.2;margin-top:8px}.rp-xhs-cover-torn-collage .tc-star{position:absolute;right:15%;bottom:11%;font-size:28px;color:#9dc7e8}
+.rp-xhs-cover-pink-sticky{background:#f8c9d3;color:#1f1b1c;padding:13% 10%}.rp-xhs-cover-pink-sticky::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 16%,rgba(255,255,255,.25),transparent 18%)}.rp-xhs-cover-pink-sticky .ps-head{position:absolute;left:9%;right:9%;top:8%;font-size:10px;font-weight:800;color:#8b5f65;letter-spacing:.02em}.rp-xhs-cover-pink-sticky .ps-pin{position:absolute;right:15%;top:19%;font-size:20px;color:#8b5f35;letter-spacing:2px}.rp-xhs-cover-pink-sticky .ps-note{position:absolute;left:11%;right:11%;top:26%;bottom:12%;background:#fff;border-radius:16px;padding:23% 10% 10%;box-shadow:0 7px 17px rgba(135,54,75,.14);background-image:repeating-linear-gradient(180deg,#fff 0 25px,#e6e1e4 26px,#fff 27px)}.rp-xhs-cover-pink-sticky b{font-size:22px;line-height:1.14}.rp-xhs-cover-pink-sticky span{font-size:18px;line-height:1.18;margin-top:9px}
+.rp-xhs-cover-blue-capture{background:#d9eef9;color:#245b86;padding:14% 10%;background-image:radial-gradient(circle at 20% 20%,rgba(255,255,255,.6),transparent 22%),linear-gradient(150deg,#e8f8ff,#cde7f6)}.rp-xhs-cover-blue-capture .cap-head{position:absolute;left:10%;top:9%;font-size:11px;color:#4b8bb2;font-family:Georgia,serif}.rp-xhs-cover-blue-capture .cap-paper{position:absolute;left:12%;right:10%;top:25%;bottom:13%;background:#fff;padding:38% 10% 8%;box-shadow:0 10px 20px rgba(55,117,160,.16);clip-path:polygon(3% 8%,92% 0,100% 17%,95% 96%,10% 100%,0 86%)}.rp-xhs-cover-blue-capture .cap-seal{position:absolute;left:50%;top:9%;width:42px;height:42px;border-radius:50%;background:#78bde7;box-shadow:0 0 0 7px rgba(120,189,231,.18);transform:translateX(-50%)}.rp-xhs-cover-blue-capture b{font-size:22px;line-height:1.12;color:#225c8f}.rp-xhs-cover-blue-capture span{font-size:17px;line-height:1.18;margin-top:8px;color:#2f6d9e}
+/* XHS feed cover compact tuning: complete main title only; no giant pill behind text, keep tiny decorations */
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover{min-height:0!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover span{display:none!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover b{display:block!important;overflow:visible!important;text-overflow:clip!important;word-break:break-all!important;white-space:normal!important;max-width:100%!important;font-size:var(--rp-xhs-cover-title-fs,13px)!important;line-height:1.12!important;letter-spacing:-.02em!important;z-index:5!important;color:#17202a!important;text-shadow:none!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-crayon b{color:#215c8e!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note b,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note b{color:#111827!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture b{color:#225c8f!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-mint-quote .rq-text,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-crayon .bc-text,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .note-words,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note .lm-text,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-wish-card .wish-text{left:9%!important;right:9%!important;top:52%!important;transform:translateY(-50%)!important;max-width:82%!important;z-index:5!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}
+/* Only giant capsule/pill backgrounds are forbidden; decorative marks stay tiny and offset. */
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-mint-quote .rq{font-size:34px!important;left:9%!important;top:7%!important;color:rgba(134,170,142,.24)!important}.rp-xhs-cover-mint-quote i{display:block!important;width:18px!important;height:3px!important;right:12%!important;bottom:13%!important;border-radius:2px!important;opacity:.55!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-crayon .bc-text{left:8%!important;right:8%!important;max-width:84%!important;transform:translateY(-50%) rotate(-1deg)!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .note-date{font-size:8px!important;top:7%!important;color:#5f6f7b!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .marker{display:block!important;height:6px!important;width:42%!important;left:29%!important;right:auto!important;border-radius:3px!important;opacity:.45!important;z-index:1!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .m1{top:50%!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .m2{display:block!important;top:58%!important;width:30%!important;left:35%!important;opacity:.28!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .note-sign{font-size:7px!important;bottom:7%!important;color:#4f6475!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note .lm-marker{display:block!important;top:50%!important;left:28%!important;right:auto!important;width:44%!important;height:7px!important;border-radius:3px!important;opacity:.42!important;z-index:1!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note .lm-text{top:53%!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-wish-card .wish-top{font-size:7px!important;left:10%!important;right:42%!important;top:9%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#b27787!important}.rp-xhs-cover-wish-card .wish-doodle{display:block!important;font-size:12px!important;right:12%!important;top:10%!important;color:#b27787!important}.rp-xhs-cover-wish-card .wish-party{display:none!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-torn-collage .tc-green{right:5%!important;top:28%!important;width:28%!important;height:22%!important;opacity:.7!important}.rp-xhs-cover-torn-collage .tc-paper{left:8%!important;right:8%!important;top:18%!important;bottom:10%!important;padding:14% 7% 5%!important;background:#fffdf8!important;border-radius:0!important}.rp-xhs-cover-torn-collage .tc-dot{top:7%!important;width:22px!important;height:8px!important;background-size:8px 8px!important;opacity:.7!important}.rp-xhs-cover-torn-collage .tc-paper b{white-space:normal!important;word-break:break-all!important}.rp-xhs-cover-torn-collage .tc-star{font-size:14px!important;right:14%!important;bottom:9%!important;color:#7aaed0!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-head{font-size:7px!important;left:9%!important;right:9%!important;top:7%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#8b5f65!important}.rp-xhs-cover-pink-sticky .ps-pin{font-size:10px!important;top:17%!important;color:#8b5f35!important}.rp-xhs-cover-pink-sticky .ps-note{left:8%!important;right:8%!important;top:22%!important;bottom:8%!important;padding:14% 7% 5%!important;background:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important}.rp-xhs-cover-pink-sticky .ps-note b{white-space:normal!important;word-break:break-all!important;color:#17202a!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-head{font-size:7px!important;left:9%!important;right:9%!important;top:8%!important;line-height:1.05!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#4b8bb2!important}.rp-xhs-cover-blue-capture .cap-paper{left:8%!important;right:7%!important;top:21%!important;bottom:8%!important;padding:15% 7% 5%!important;background:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important;clip-path:none!important}.rp-xhs-cover-blue-capture .cap-seal{display:block!important;width:12px!important;height:12px!important;top:9%!important;left:50%!important;opacity:.5!important;box-shadow:0 0 0 3px rgba(120,189,231,.10)!important;z-index:1!important}.rp-xhs-cover-blue-capture .cap-paper b{white-space:normal!important;word-break:break-all!important;color:#225c8f!important}
+
+/* Final visual override for narrow cards: text floats cleanly over collage/sticky/capture backgrounds */
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-torn-collage .tc-paper,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-note,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper{overflow:visible!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{color:#225c8f!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-seal{width:8px!important;height:8px!important;top:8%!important;opacity:.28!important;box-shadow:0 0 0 2px rgba(120,189,231,.06)!important}
+
+/* Torn collage final safety: slightly smaller and wider to avoid last-character clipping */
+/* Pink sticky: remove red/white capsule body behind feed title */
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-note{background:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important}
+
+/* Blue capture readability: allow larger 3-4 line title instead of tiny text */
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{left:6%!important;right:6%!important;top:52%!important;max-width:88%!important;font-size:13px!important;line-height:1.14!important;letter-spacing:-.02em!important;white-space:normal!important;word-break:break-all!important}
+
+/* Blue capture: remove gray/white paper under title; keep blue background */
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper{background:transparent!important;background-image:none!important;box-shadow:none!important;clip-path:none!important}
+
+/* Unified readable titles: all feed templates allow 3-4 lines; no ant-sized per-template shrink */
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover b{font-size:var(--rp-xhs-cover-title-fs,13px)!important;line-height:1.12!important;white-space:normal!important;word-break:break-all!important;overflow:visible!important;text-overflow:clip!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-torn-collage .tc-paper b,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-note b,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{position:absolute!important;left:6%!important;right:6%!important;top:50%!important;transform:translateY(-50%)!important;width:auto!important;max-width:88%!important;font-size:var(--rp-xhs-cover-title-fs,13px)!important;line-height:1.12!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;z-index:6!important}
+#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{color:#225c8f!important}
 /* ── MOMENT IMAGE ── */
 .rp-moment-img-wrap{margin-bottom:10px;border-radius:8px;overflow:hidden;max-width:180px}
 .rp-moment-img{width:100%;display:block;border-radius:8px}
@@ -4585,6 +4764,33 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   height: 0 !important;
 }
 
+
+/* ── Game partner selector modal ── */
+.rp-game-partner-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:4px 12px 0;font-size:11px;color:var(--rp-nav-btn,#c0306a);font-weight:600;flex-shrink:0}
+.rp-game-partner-name{max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-game-partner-change{border:none;border-radius:10px;background:color-mix(in srgb,var(--rp-nav-btn,#c0306a) 16%,transparent);color:var(--rp-nav-btn,#c0306a);font-size:11px;padding:2px 8px;cursor:pointer;font-family:inherit;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.rp-game-partner-change:active{transform:scale(.96)}
+.rp-dark .rp-game-partner-bar{color:var(--rp-nav-btn,#d8b4fe)}
+.rp-dark .rp-game-partner-change{background:color-mix(in srgb,var(--rp-nav-btn,#d8b4fe) 22%,transparent);color:var(--rp-nav-btn,#d8b4fe)}
+#rp-game-partner-modal{position:absolute;inset:0;z-index:720;background:rgba(0,0,0,.30);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;backdrop-filter:none;-webkit-backdrop-filter:none}
+.rp-game-partner-sheet{width:100%;max-width:248px;border-radius:24px;background:color-mix(in srgb,var(--rp-nav-btn,#c0306a) 8%,#fff 92%);border:1px solid color-mix(in srgb,var(--rp-nav-btn,#c0306a) 22%,transparent);box-shadow:0 18px 48px rgba(0,0,0,.24);padding:16px 14px 14px;box-sizing:border-box;color:var(--rp-nav-title,#4a1060)}
+.rp-dark .rp-game-partner-sheet{background:color-mix(in srgb,var(--rp-nav-btn,#d8b4fe) 16%,#12091c 84%);border-color:color-mix(in srgb,var(--rp-nav-btn,#d8b4fe) 24%,transparent);color:var(--rp-nav-title,#ead8ff)}
+.rp-game-partner-title{font-size:15px;font-weight:800;text-align:center;margin-bottom:4px;color:var(--rp-nav-title,currentColor)}
+.rp-game-partner-sub{font-size:10.5px;text-align:center;color:var(--rp-hd-name,rgba(0,0,0,.55));margin-bottom:12px;line-height:1.35}
+.rp-game-partner-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.rp-game-partner-label{font-size:11px;font-weight:700;color:var(--rp-nav-btn,#c0306a)}
+#rp-game-partner-name-input,#rp-game-partner-note-input{width:100%;box-sizing:border-box;border:1.5px solid color-mix(in srgb,var(--rp-nav-btn,#c0306a) 24%,transparent);border-radius:15px;background:rgba(255,255,255,.94);color:var(--rp-nav-title,#3a174a);font-family:inherit;font-size:12px;outline:none;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;padding:9px 11px}
+#rp-game-partner-note-input{height:74px;resize:none;line-height:1.45}
+#rp-game-partner-name-input:focus,#rp-game-partner-note-input:focus{border-color:var(--rp-nav-btn,#c0306a);box-shadow:0 0 0 3px color-mix(in srgb,var(--rp-nav-btn,#c0306a) 18%,transparent)}
+.rp-dark #rp-game-partner-name-input,.rp-dark #rp-game-partner-note-input{background:rgba(255,255,255,.08);color:var(--rp-nav-title,#f7edff)}
+#rp-game-partner-name-input::placeholder,#rp-game-partner-note-input::placeholder{color:color-mix(in srgb,var(--rp-hd-name,rgba(0,0,0,.45)) 78%,transparent)}
+.rp-game-partner-help{font-size:10px;line-height:1.35;color:var(--rp-hd-name,rgba(0,0,0,.45));margin-top:-3px}
+.rp-game-partner-actions{display:flex;gap:8px;margin-top:12px}
+.rp-game-partner-actions button{flex:1;height:34px;border:none;border-radius:17px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+#rp-game-partner-cancel{background:color-mix(in srgb,var(--rp-nav-btn,#c0306a) 12%,transparent);color:var(--rp-nav-btn,#c0306a)}
+#rp-game-partner-save{background:var(--rp-wd-fill,linear-gradient(135deg,var(--rp-nav-btn,#c0306a),color-mix(in srgb,var(--rp-nav-btn,#c0306a) 68%,#fff 32%)));color:#fff;box-shadow:0 4px 12px color-mix(in srgb,var(--rp-nav-btn,#c0306a) 28%,transparent)}
+.rp-dark #rp-game-partner-cancel{background:color-mix(in srgb,var(--rp-nav-btn,#d8b4fe) 18%,transparent);color:var(--rp-nav-btn,#d8b4fe)}
+
 `;
 
 // ================================================================
@@ -4617,6 +4823,7 @@ const getContext = window.getContext || SillyTavern?.getContext || (() => ({}));
 let _rp_ext_settings = null;
 let _rp_save_fn = null;
 let _rp_script_mod = null;
+let _rp_slash_mods = null;
 (async function _rpLoadModules() {
   try {
     const ext = await import('../../../extensions.js');
@@ -4633,6 +4840,19 @@ let _rp_script_mod = null;
       }
     }
   } catch(e) { console.warn('[Phone] 无法加载 script.js:', e.message); }
+  try {
+    const [parserMod, commandMod] = await Promise.all([
+      import('../../../slash-commands/SlashCommandParser.js'),
+      import('../../../slash-commands/SlashCommand.js'),
+    ]);
+    _rp_slash_mods = {
+      SlashCommandParser: parserMod && parserMod.SlashCommandParser,
+      SlashCommand: commandMod && commandMod.SlashCommand,
+    };
+    registerPhoneSlashCommands();
+    injectMochiSettingsPanel();
+    applyMochiLaunchSettings();
+  } catch(e) { console.warn('[Phone] 无法加载 slash command 模块:', e.message); }
 })();
 
 const _extSettings = () =>
@@ -4652,8 +4872,216 @@ const _saveSettings = () => {
   } catch(e) {}
 };
 
+function openMochiPhoneFromExternal() {
+  const phone = $('#rp-phone');
+  if (!phone.length) {
+    try { init(); } catch(e) { console.error('[Phone] external open init failed:', e); }
+    setTimeout(openMochiPhoneFromExternal, 300);
+    return '';
+  }
+  if (!phone.is(':visible')) {
+    $('#rp-fab').trigger('click');
+  }
+  return '';
+}
+
+function closeMochiPhoneFromExternal() {
+  const phone = $('#rp-phone');
+  if (phone.is(':visible')) {
+    $('#rp-fab').trigger('click');
+  }
+  return '';
+}
+
+function toggleMochiPhoneFromExternal() {
+  $('#rp-fab').trigger('click');
+  return '';
+}
+
+function registerPhoneSlashCommands() {
+  if (window.__mochiPhoneSlashRegistered) return;
+  const SlashCommandParser = _rp_slash_mods && _rp_slash_mods.SlashCommandParser;
+  const SlashCommand = _rp_slash_mods && _rp_slash_mods.SlashCommand;
+  if (!SlashCommandParser || !SlashCommand || typeof SlashCommand.fromProps !== 'function') return;
+
+  window.__mochiPhoneSlashRegistered = true;
+  try {
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+      name: 'mochiphone',
+      aliases: ['mochi-phone', 'phone', 'mp'],
+      callback: (_args, value) => {
+        const st = getMochiLaunchSettings();
+        if (!st.qrLaunch) return '';
+        const action = String(value || '').trim().toLowerCase();
+        if (action === 'close' || action === 'hide') return closeMochiPhoneFromExternal();
+        if (action === 'toggle') return toggleMochiPhoneFromExternal();
+        return openMochiPhoneFromExternal();
+      },
+      helpString: '打开或关闭 MochiPhone 小手机。用法：/mochiphone、/mochiphone open、/mochiphone close、/mochiphone toggle。可放进 Quick Reply 按钮。',
+    }));
+  } catch(e) {
+    window.__mochiPhoneSlashRegistered = false;
+    console.error('[Phone] register slash command failed:', e);
+  }
+}
+
+
 const EXT_KEY = 'ray_phone_v1'; // extension_settings 的命名空间键
+const EXT_LAUNCH_KEY = 'mochi_phone_launch_v1'; // MochiPhone 全局启动入口设置
+const DEFAULT_LAUNCH_SETTINGS = { qrLaunch: true, fabLaunch: true };
 const SAVE_DEBOUNCE_MS = 500;
+
+function getMochiLaunchSettings() {
+  const es = _extSettings();
+  if (!es) return Object.assign({}, DEFAULT_LAUNCH_SETTINGS);
+  if (!es[EXT_LAUNCH_KEY] || typeof es[EXT_LAUNCH_KEY] !== 'object') {
+    es[EXT_LAUNCH_KEY] = Object.assign({}, DEFAULT_LAUNCH_SETTINGS);
+  }
+  const st = es[EXT_LAUNCH_KEY];
+  Object.entries(DEFAULT_LAUNCH_SETTINGS).forEach(function([k, v]) {
+    if (typeof st[k] !== 'boolean') st[k] = v;
+  });
+  return st;
+}
+
+function saveMochiLaunchSettings() {
+  _saveSettings();
+}
+
+function applyMochiLaunchSettings() {
+  const st = getMochiLaunchSettings();
+  const fab = document.getElementById('rp-fab');
+  if (fab) {
+    if (st.fabLaunch) {
+      fab.style.setProperty('display', 'flex', 'important');
+      fab.style.setProperty('visibility', 'visible', 'important');
+      fab.style.setProperty('opacity', '1', 'important');
+      fab.style.setProperty('pointer-events', 'auto', 'important');
+    } else {
+      fab.style.setProperty('display', 'none', 'important');
+      fab.style.setProperty('visibility', 'hidden', 'important');
+      fab.style.setProperty('opacity', '0', 'important');
+      fab.style.setProperty('pointer-events', 'none', 'important');
+    }
+  }
+  const qrToggle = document.getElementById('mochi-phone-qr-launch-toggle');
+  if (qrToggle) qrToggle.checked = !!st.qrLaunch;
+  const fabToggle = document.getElementById('mochi-phone-fab-launch-toggle');
+  if (fabToggle) fabToggle.checked = !!st.fabLaunch;
+}
+
+function injectMochiSettingsStyles() {
+  if (document.getElementById('mochi-phone-settings-style')) return;
+  const style = document.createElement('style');
+  style.id = 'mochi-phone-settings-style';
+  style.textContent = `
+    #mochi-phone-settings .mochi-launch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;padding:8px 12px;background:rgba(255,245,250,.58);border:1px solid rgba(190,120,150,.16);border-radius:8px}
+    #mochi-phone-settings .mochi-launch-row span{font-size:13px;font-weight:600;color:#8a5a6a}
+    #mochi-phone-settings .mochi-launch-switch{position:relative;display:inline-block;width:42px;height:22px;flex:0 0 42px;cursor:pointer}
+    #mochi-phone-settings .mochi-launch-switch input{opacity:0;width:0;height:0;position:absolute}
+    #mochi-phone-settings .mochi-launch-switch i{position:absolute;inset:0;border-radius:999px;background:rgba(120,90,110,.45);transition:.22s;box-shadow:inset 0 0 4px rgba(0,0,0,.18)}
+    #mochi-phone-settings .mochi-launch-switch i:before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;border-radius:50%;background:#fff;transition:.22s;box-shadow:0 1px 5px rgba(0,0,0,.25)}
+    #mochi-phone-settings .mochi-launch-switch input:checked+i{background:linear-gradient(135deg,#f472b6,#a855f7)}
+    #mochi-phone-settings .mochi-launch-switch input:checked+i:before{transform:translateX(20px)}
+    #mochi-phone-settings .mochi-launch-hint{font-size:12px;opacity:.72;line-height:1.45;margin:6px 12px 2px;color:#8a5a6a}
+  `;
+  document.head.appendChild(style);
+}
+
+function buildMochiSettingsHtml() {
+  const st = getMochiLaunchSettings();
+  return `
+    <div id="mochi-phone-settings">
+      <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+          <b>MochiPhone</b>
+          <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+          <div class="mochi-launch-row">
+            <span>QR启动</span>
+            <label class="mochi-launch-switch" title="勾选后 Quick Reply 中的 /mochiphone 可以打开小手机">
+              <input id="mochi-phone-qr-launch-toggle" type="checkbox" ${st.qrLaunch ? 'checked' : ''}>
+              <i></i>
+            </label>
+          </div>
+          <div class="mochi-launch-row">
+            <span>悬浮球启动</span>
+            <label class="mochi-launch-switch" title="勾选后显示右下角小手机悬浮球">
+              <input id="mochi-phone-fab-launch-toggle" type="checkbox" ${st.fabLaunch ? 'checked' : ''}>
+              <i></i>
+            </label>
+          </div>
+          <div class="mochi-launch-hint">QR 按钮内容填 <code>/mochiphone</code>；关闭 QR 启动后该命令不再打开手机。</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function injectMochiSettingsPanel() {
+  const host = document.getElementById('extensions_settings');
+  if (!host || document.getElementById('mochi-phone-settings')) return;
+  injectMochiSettingsStyles();
+  host.insertAdjacentHTML('beforeend', buildMochiSettingsHtml());
+  bindMochiSettingsEvents();
+}
+
+function bindMochiSettingsEvents() {
+  const qr = document.getElementById('mochi-phone-qr-launch-toggle');
+  const fab = document.getElementById('mochi-phone-fab-launch-toggle');
+  if (qr) qr.addEventListener('change', function() {
+    const st = getMochiLaunchSettings();
+    st.qrLaunch = !!qr.checked;
+    saveMochiLaunchSettings();
+    applyMochiLaunchSettings();
+  });
+  if (fab) fab.addEventListener('change', function() {
+    const st = getMochiLaunchSettings();
+    st.fabLaunch = !!fab.checked;
+    saveMochiLaunchSettings();
+    applyMochiLaunchSettings();
+  });
+  applyMochiLaunchSettings();
+}
+
+function safeJsonArrayFromLocalStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
+}
+
+function getThemeSettingsSnapshot() {
+  return {
+    theme: localStorage.getItem('rp_theme') || 'candy',
+    customCss: localStorage.getItem('rp_custom_css') || '',
+    customCssHistory: safeJsonArrayFromLocalStorage('rp_custom_css_history'),
+    savedThemes: safeJsonArrayFromLocalStorage('rp_saved_themes'),
+  };
+}
+
+function applyThemeSettingsSnapshot(themeSettings) {
+  if (!themeSettings || typeof themeSettings !== 'object') return;
+  try {
+    const theme = themeSettings.theme || 'candy';
+    localStorage.setItem('rp_theme', theme);
+    localStorage.setItem('rp_custom_css', themeSettings.customCss || '');
+    localStorage.setItem('rp_custom_css_history', JSON.stringify(Array.isArray(themeSettings.customCssHistory) ? themeSettings.customCssHistory : []));
+    localStorage.setItem('rp_saved_themes', JSON.stringify(Array.isArray(themeSettings.savedThemes) ? themeSettings.savedThemes : []));
+    if (typeof lgEnsureCustomStyleTag === 'function') lgEnsureCustomStyleTag();
+    const styleEl = document.getElementById('rp-custom-theme-style');
+    if (styleEl) {
+      styleEl.textContent = (theme === 'custom') ? (themeSettings.customCss || '') : '';
+      styleEl.disabled = (theme !== 'custom');
+    }
+    if (typeof lgApplyTheme === 'function') lgApplyTheme(theme, { skipSave: true });
+    if (typeof lgRenderThemePicker === 'function' && STATE.currentView === 'themes') lgRenderThemePicker();
+    if (typeof lgRenderSavedThemes === 'function') lgRenderSavedThemes();
+    if (typeof lgTsUpdateActionBar === 'function') lgTsUpdateActionBar();
+  } catch(e) { console.warn('[Phone] applyThemeSettingsSnapshot failed:', e); }
+}
 
 function makeLightweightPayload(payload) {
   const p = payload || {};
@@ -4688,6 +5116,7 @@ function makeLightweightPayload(payload) {
     momentsCount: Array.isArray(p.moments) ? p.moments.length : 0,
     diaryCount: Array.isArray(p.diary) ? p.diary.length : 0,
     darkMode: !!p.darkMode,
+    themeSettings: p.themeSettings || null,
     avatars: p.avatars || {},
     currentView: p.currentView || 'home',
     currentThread: p.currentThread || null,
@@ -4739,14 +5168,22 @@ function buildStatePayload() {
     sync: STATE.sync,
     moments,
     diary,
+    xhsFeed: Array.isArray(STATE.xhsFeed) ? STATE.xhsFeed.slice(0, 10) : [],
     darkMode: STATE.darkMode,
+    themeSettings: getThemeSettingsSnapshot(),
     nameAliases: Object.assign({}, STATE.nameAliases || {}),
-    // 头像已通过全局 avatar 存储单独持久化，这里不再按 slot 重复存整份
-    avatars: {},
+    avatars: Object.assign({}, STATE.avatars || {}),
+    wallpaper: STATE.wallpaper || null,
     currentView: STATE.currentView || 'home',
     currentThread: STATE.currentThread || null,
     bankData: STATE.bankData || null,
     blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
+    gameState: {
+      ludo: (typeof LG !== 'undefined' && LG) ? { chatLog: (LG.chatLog || []).slice(-30), active: !!LG.active } : null,
+      g2048: (typeof LG2048 !== 'undefined' && LG2048 && LG2048.chatLog) ? { chatLog: LG2048.chatLog.slice(-30) } : null,
+      gm: (typeof GM !== 'undefined' && GM && GM.chatLog) ? { chatLog: GM.chatLog.slice(-30) } : null,
+      gword: (typeof GWORD !== 'undefined' && GWORD && GWORD.chatLog) ? { chatLog: GWORD.chatLog.slice(-30) } : null,
+    },
   }, ctx);
 }
 
@@ -4755,9 +5192,16 @@ function flushStateNow() {
   try {
     const payload = buildStatePayload();
     const jsonStr = JSON.stringify(payload);
+    const es = _extSettings();
+    if (es) {
+      if (!es[EXT_KEY]) es[EXT_KEY] = {};
+      es[EXT_KEY][STATE.chatId] = payload;
+      _saveSettings();
+    }
     try {
       localStorage.setItem(`rp-phone-v1-${STATE.chatId}`, jsonStr);
     } catch(q) {
+      console.warn('[Phone] localStorage cache write failed (non-critical):', q);
       try {
         const curKey = `rp-phone-v1-${STATE.chatId}`;
         Object.keys(localStorage).forEach(k => {
@@ -4765,14 +5209,8 @@ function flushStateNow() {
         });
         localStorage.setItem(curKey, jsonStr);
       } catch(q2) {
-        console.warn('[Raymond Phone] saveState failed even after cleanup', q2);
+        console.warn('[Phone] localStorage cache write failed after cleanup (non-critical):', q2);
       }
-    }
-    const es = _extSettings();
-    if (es) {
-      if (!es[EXT_KEY]) es[EXT_KEY] = {};
-      es[EXT_KEY][STATE.chatId] = makeLightweightPayload(payload);
-      _saveSettings();
     }
     STATE._pendingSaveTimer = null;
     STATE._pendingSaveDirty = false;
@@ -4801,11 +5239,11 @@ const STATE = {
   moments: [],
   xhsFeed: [],
   xhsCurrentPost: null,
-  xhsSelectedTag: '日常',
   xhsReplyToCidx: null,
   bankData: null,          // 银行卡资产数据，按 chatId 独立
   wallpaper: null,
   darkMode: false,
+  themeSettings: null,
   avatars: {},
   _lastAiFingerprint: null,
   blocklist: [],
@@ -4927,17 +5365,24 @@ function sanitizeThreadsForContext(threads, ctx) {
     const msgs = ctx?.chat || [];
     msgs.forEach(function(m) {
       if (m?.is_user || !m?.mes) return;
-      const phoneMatch = m.mes.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
-      if (!phoneMatch) return;
+      // 剥离思维链，避免 think 内容被当成真实标签解析
+      const mesStripped = m.mes.replace(/<think>[\s\S]*?<\/think>/gi, '');
+      const phoneParts = getPhoneParseParts(mesStripped);
+      const blocks = phoneParts.blocks.length ? phoneParts.blocks.slice() : [];
+      if (hasBarePhoneTagsIn(phoneParts.outside)) blocks.push(phoneParts.outside);
+      if (!blocks.length) return;
       const re = /<(?:SMS|MOMENTS|COMMENT)[^>]+FROM="([^"]+)"/gi;
-      let ma;
-      while ((ma = re.exec(phoneMatch[1])) !== null) {
-        const fromRaw = (ma[1] || '').trim();
-        if (!fromRaw) continue;
-        const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
-        if (invalid.test(fromRaw)) continue;
-        allowed.add(fromRaw.toLowerCase());
-      }
+      blocks.forEach(function(block) {
+        let ma;
+        re.lastIndex = 0;
+        while ((ma = re.exec(block)) !== null) {
+          const fromRaw = (ma[1] || '').trim();
+          if (!fromRaw) continue;
+          const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
+          if (invalid.test(fromRaw)) continue;
+          allowed.add(fromRaw.toLowerCase());
+        }
+      });
     });
 
     if (allowed.size === 0) return all;
@@ -4984,6 +5429,15 @@ function setAvatar(key, dataUrl) {
   _AV[key] = dataUrl;
   STATE.avatars = STATE.avatars || {};
   STATE.avatars[key] = dataUrl;
+  saveGlobalAvatars();
+}
+
+async function setAvatarCompressed(key, dataUrl) {
+  const compressed = await compressAvatar(dataUrl);
+  setAvatar(key, compressed);
+  saveGlobalAvatars();
+  saveState();
+  return compressed;
 }
 
 
@@ -4995,7 +5449,7 @@ function autoAddCharContact() {
     if (!getPhoneChatSlotKey(ctx) || getPhoneRawChatId(ctx) === 'default') return;
     const charName = ctx?.name2 || (ctx?.characters && ctx?.characterId !== undefined
       ? ctx.characters[ctx.characterId]?.name : null);
-    if (!charName) return;
+    if (!charName) { STATE._charRespondDone.delete(momentId); return; }
     // 过滤无效名字:SillyTavern 本身、空白、纯数字
     const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
     if (invalid.test(charName.trim())) return;
@@ -5108,7 +5562,10 @@ function syncToCurrentChat() {
       currentThread: STATE.currentThread,
       moments:       JSON.parse(JSON.stringify(_safeMoments)),
       diary:         JSON.parse(JSON.stringify(_safeDiary)),
+      xhsFeed:       JSON.parse(JSON.stringify(STATE.xhsFeed || [])),
       avatars:       Object.assign({}, STATE.avatars || {}),
+      wallpaper:     STATE.wallpaper || null,
+      themeSettings: getThemeSettingsSnapshot(),
       bankData:      STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
       blocklist:     Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     };
@@ -5129,7 +5586,11 @@ function syncToCurrentChat() {
     STATE.sync          = Object.assign({}, s.sync);
     STATE.moments       = JSON.parse(JSON.stringify(s.moments || []));
     STATE.diary         = JSON.parse(JSON.stringify(s.diary   || []));
+    STATE.xhsFeed       = JSON.parse(JSON.stringify(s.xhsFeed || []));
     STATE.avatars       = Object.assign({}, s.avatars || {});
+    STATE.wallpaper     = s.wallpaper || null;
+    STATE.themeSettings = s.themeSettings || null;
+    if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
     STATE.currentThread = s.currentThread || null;
     STATE.bankData      = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
     STATE.blocklist     = Array.isArray(s.blocklist) ? s.blocklist.slice() : (STATE.blocklist || []);
@@ -5141,22 +5602,38 @@ function syncToCurrentChat() {
       STATE.sync          = persisted.sync || { stage: 1, progress: 0, status: '乖巧' };
       STATE.moments       = persisted.moments || [];
       STATE.diary         = persisted.diary   || [];
+      STATE.xhsFeed       = persisted.xhsFeed || [];
       STATE.avatars       = (persisted.avatars && Object.keys(persisted.avatars).length) ? persisted.avatars : (STATE.avatars || {});
+      STATE.wallpaper     = persisted.wallpaper || null;
+      STATE.themeSettings = persisted.themeSettings || null;
+      if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
       STATE.bankData      = persisted.bankData || null;
       STATE.blocklist     = Array.isArray(persisted.blocklist) ? persisted.blocklist.slice() : [];
+      try {
+        if (persisted.gameState) {
+          if (persisted.gameState.ludo && persisted.gameState.ludo.chatLog && typeof LG !== 'undefined') LG.chatLog = persisted.gameState.ludo.chatLog;
+          if (persisted.gameState.g2048 && persisted.gameState.g2048.chatLog && typeof LG2048 !== 'undefined') LG2048.chatLog = persisted.gameState.g2048.chatLog;
+          if (persisted.gameState.gm && persisted.gameState.gm.chatLog && typeof GM !== 'undefined') GM.chatLog = persisted.gameState.gm.chatLog;
+          if (persisted.gameState.gword && persisted.gameState.gword.chatLog && typeof GWORD !== 'undefined') GWORD.chatLog = persisted.gameState.gword.chatLog;
+        }
+      } catch(e) { console.warn('[Phone] gameState restore failed:', e); }
     } else {
       STATE.threads       = {};
       STATE.notifications = [];
       STATE.sync          = { stage: 1, progress: 0, status: '乖巧' };
       STATE.moments       = [];
       STATE.diary         = [];
+      STATE.xhsFeed       = [];
       STATE.avatars       = {};
+      STATE.wallpaper     = null;
+      STATE.themeSettings = null;
       STATE.bankData      = null;
       STATE.blocklist     = [];
     }
     STATE.currentThread = null;
   }
   mergeGlobalAvatars();
+  try { applyWallpaper(); } catch(e) {}
 
   cleanInvalidContacts();
   mergeDuplicateThreads();
@@ -5214,29 +5691,35 @@ function rebuildContactsFromHistory(chatId) {
     const msgs = ctx?.chat || [];
     let changed = false;
     msgs.filter(function(m) { return !m.is_user && m.mes; }).forEach(function(m) {
-      const phoneMatch = m.mes.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
-      if (!phoneMatch) return;
-      const block = phoneMatch[1];
+      // 剥离思维链，避免 think 内容被当成真实标签解析
+      const mesStripped = m.mes.replace(/<think>[\s\S]*?<\/think>/gi, '');
+      const phoneParts = getPhoneParseParts(mesStripped);
+      const blocks = phoneParts.blocks.length ? phoneParts.blocks.slice() : [];
+      if (hasBarePhoneTagsIn(phoneParts.outside)) blocks.push(phoneParts.outside);
+      if (!blocks.length) return;
       // 仅提取 FROM 字段,创建联系人(不重复添加消息内容)
       const re = /<(SMS|MOMENTS|COMMENT)[^>]+FROM="([^"]+)"/gi;
-      let ma;
-      while ((ma = re.exec(block)) !== null) {
-        const tagName = (ma[1] || '').trim().toUpperCase();
-        const fromRaw = (ma[2] || '').trim();
-        if (isForbiddenPhoneContactName(fromRaw, ctx)) continue;
-        // 只创建线程,不重复推送消息
-        const exists = Object.values(STATE.threads).some(function(t) {
-          return normalizePhonePersonName(resolveCanonicalPhoneName(t.name || '')) === normalizePhonePersonName(resolveCanonicalPhoneName(fromRaw));
-        });
-        if (!exists) {
-          let created = null;
-          if (tagName === 'SMS') {
-            created = tryResolveUnknownSenderAsMainChar(fromRaw, ctx) || null;
+      blocks.forEach(function(block) {
+        let ma;
+        re.lastIndex = 0;
+        while ((ma = re.exec(block)) !== null) {
+          const tagName = (ma[1] || '').trim().toUpperCase();
+          const fromRaw = (ma[2] || '').trim();
+          if (isForbiddenPhoneContactName(fromRaw, ctx)) continue;
+          // 只创建线程,不重复推送消息
+          const exists = Object.values(STATE.threads).some(function(t) {
+            return normalizePhonePersonName(resolveCanonicalPhoneName(t.name || '')) === normalizePhonePersonName(resolveCanonicalPhoneName(fromRaw));
+          });
+          if (!exists) {
+            let created = null;
+            if (tagName === 'SMS') {
+              created = tryResolveUnknownSenderAsMainChar(fromRaw, ctx) || null;
+            }
+            if (!created) created = findOrCreateThread(fromRaw);
+            if (created) changed = true;
           }
-          if (!created) created = findOrCreateThread(fromRaw);
-          if (created) changed = true;
         }
-      }
+      });
     });
     if (changed) { mergeDuplicateThreads(); cleanInvalidContacts(); renderThreadList(); saveState(); }
   } catch(e) { console.warn('[Phone] rebuildContacts error', e); }
@@ -5260,6 +5743,20 @@ function isPhoneUserName(nameRaw, ctx) {
   return /^(user|me|self|myself|我|自己)$/.test(name);
 }
 
+function isManualUserMomentComment(commentLike, ctx) {
+  if (!commentLike) return false;
+  // UI里用户自己发送的评论由 sendMomentComment 写入，from 固定为 'user'。
+  // AI 解析进来的 <COMMENT FROM="user/我"> 会在 incomingComment 入口被拒绝；
+  // 这里保留 source/manual 标记和 from='user' 双保险，避免把真实用户评论当成兜底伪评论隐藏。
+  const selfName = commentLike.name || commentLike.user || commentLike.from || '';
+  return isPhoneUserName(selfName, ctx) && (
+    commentLike.manual === true ||
+    commentLike.source === 'manual' ||
+    commentLike.source === 'user' ||
+    commentLike.from === 'user'
+  );
+}
+
 function shouldHideMomentCommentByName(commentLike, comments, ctx, seen) {
   if (!commentLike) return false;
   if (!seen) seen = new Set();
@@ -5267,24 +5764,23 @@ function shouldHideMomentCommentByName(commentLike, comments, ctx, seen) {
   seen.add(commentLike);
 
   const selfName = commentLike.name || commentLike.user || commentLike.from || '';
-  if (isPhoneUserName(selfName, ctx)) return true;
+  if (isPhoneUserName(selfName, ctx)) return !isManualUserMomentComment(commentLike, ctx);
 
   const replyTo = commentLike.replyTo;
   if (replyTo === null || replyTo === undefined) return false;
 
   if (typeof replyTo === 'number' && Array.isArray(comments) && comments[replyTo]) {
     const target = comments[replyTo];
-    const targetName = target?.name || target?.user || target?.from || '';
-    if (isPhoneUserName(targetName, ctx)) return true;
-    return shouldHideMomentCommentByName(target, comments, ctx, seen);
+    if (shouldHideMomentCommentByName(target, comments, ctx, seen)) return true;
+    return false;
   }
 
   if (typeof replyTo === 'string') {
-    if (isPhoneUserName(replyTo, ctx)) return true;
     if (Array.isArray(comments)) {
       const target = comments.find(c => normalizePhonePersonName(c?.name || c?.user || c?.from || '') === normalizePhonePersonName(replyTo));
       if (target) return shouldHideMomentCommentByName(target, comments, ctx, seen);
     }
+    if (isPhoneUserName(replyTo, ctx)) return true;
   }
 
   return false;
@@ -5375,9 +5871,146 @@ function tryResolveUnknownSenderAsMainChar(nameRaw, ctx) {
   const mainCharName = getCurrentCharName(realCtx);
   const mainThread = getMainCharThread(realCtx);
   if (!mainCharName || !mainThread) return null;
+
+  const mainCanonical = resolveCanonicalPhoneName(mainThread.name || mainCharName) || (mainThread.name || mainCharName);
+  const cleanedCanonical = resolveCanonicalPhoneName(cleanedName) || cleanedName;
+  const mainNorm = normalizePhonePersonName(mainCanonical);
+  const cleanedNorm = normalizePhonePersonName(cleanedCanonical);
+
+  if (!cleanedNorm || cleanedNorm !== mainNorm) return null;
   if (matchThread(cleanedName)) return null;
-  rememberPhoneNameAlias(cleanedName, mainThread.name || mainCharName);
+  if (cleanedName !== (mainThread.name || mainCharName)) {
+    rememberPhoneNameAlias(cleanedName, mainThread.name || mainCharName);
+  }
   return mainThread;
+}
+
+
+function cleanPhoneToValue(toRaw) {
+  return String(toRaw || '')
+    .replace(/[​-‍﻿]/g, '')
+    .replace(/^\s*\{\{\s*/i, '{{')
+    .replace(/\s*\}\}\s*$/i, '}}')
+    .trim();
+}
+
+function isPhoneToUser(toRaw, ctx) {
+  const to = cleanPhoneToValue(toRaw);
+  if (!to) return false;
+  if (/^\{\{\s*user\s*\}\}$/i.test(to)) return true;
+  return isPhoneUserName(to, ctx);
+}
+
+function isPhoneToNonUser(toRaw, ctx) {
+  const to = cleanPhoneToValue(toRaw);
+  return !!to && !isPhoneToUser(to, ctx);
+}
+
+function normalizeAutoGroupTargetName(toRaw, ctx) {
+  const to = cleanPhoneToValue(toRaw);
+  if (!to) return '';
+  if (/^\{\{\s*char\s*\}\}$/i.test(to)) return getCurrentCharName(ctx || getContext()) || to;
+  return to;
+}
+
+function makeAutoGroupName(fromRaw, toRaw, text) {
+  const names = [String(fromRaw || '').trim(), String(toRaw || '').trim()]
+    .filter(Boolean)
+    .sort(function(a, b) { return a.localeCompare(b, 'zh-Hans-CN'); });
+  return names.length ? `${names.join('、')}现场小群` : '现场小群';
+}
+
+function ensureGroupTargetMember(groupName, toRaw, ctx) {
+  const targetName = normalizeAutoGroupTargetName(toRaw, ctx);
+  if (!groupName || !targetName || isPhoneToUser(targetName, ctx)) return false;
+  const groupId = `grp_${groupName}`;
+  const thread = STATE.threads && STATE.threads[groupId];
+  if (!thread) return false;
+  if (!thread.members) thread.members = ['user'];
+  const targetTh = findOrCreateThread(targetName);
+  if (targetTh && !thread.members.includes(targetTh.id)) {
+    thread.members.push(targetTh.id);
+    saveState();
+    return true;
+  }
+  return false;
+}
+
+function incomingAutoGroupMsg(fromRaw, toRaw, time, text, groupName) {
+  const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
+  const name = groupName || makeAutoGroupName(fromRaw, targetName, text);
+  incomingGroupMsg(fromRaw, name, time, text);
+  ensureGroupTargetMember(name, targetName, getContext());
+}
+
+function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName) {
+  const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
+  const name = groupName || makeAutoGroupName(fromRaw, targetName, text || '语音');
+  const resolvedTime = resolvePhoneTime(time);
+  const groupId = `grp_${name}`;
+  if (!STATE.threads[groupId]) {
+    const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
+    STATE.threads[groupId] = {
+      id: groupId, name,
+      initials: name.slice(0, 2),
+      avatarBg: `linear-gradient(145deg,${GROUP_COLORS[colorIdx]},${GROUP_COLORS[(colorIdx+1)%GROUP_COLORS.length]})`,
+      type: 'group', messages: [], unread: 0,
+      members: ['user']
+    };
+  }
+  const grpThread = STATE.threads[groupId];
+  if (!grpThread.members) grpThread.members = ['user'];
+  const senderTh = findOrCreateThread(fromRaw);
+  if (!senderTh) return;
+  if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
+  ensureGroupTargetMember(name, targetName, getContext());
+  const isDup = grpThread.messages.slice(-6).some(msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === text && (!duration || msg.duration === duration));
+  if (isDup) return;
+  grpThread.messages.push({
+    id: `ggv_${Date.now()}`, from: 'incoming',
+    type: 'group_voice', name: fromRaw, time: resolvedTime, duration, voiceText: text,
+    initials: senderTh.initials, avatarBg: senderTh.avatarBg
+  });
+  grpThread.unread = (grpThread.unread || 0) + 1;
+  refreshBadges(); renderThreadList();
+  if (STATE.currentThread === groupId) renderBubbles(groupId);
+  showBanner(name, `${fromRaw}: 🎤 [${duration}]`);
+  saveState();
+}
+
+function incomingAutoGroupHongbao(fromRaw, toRaw, amount, note, groupName) {
+  const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
+  const name = groupName || makeAutoGroupName(fromRaw, targetName, note || '红包');
+  const groupId = `grp_${name}`;
+  if (!STATE.threads[groupId]) {
+    const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
+    STATE.threads[groupId] = {
+      id: groupId, name,
+      initials: name.slice(0, 2),
+      avatarBg: `linear-gradient(145deg,${GROUP_COLORS[colorIdx]},${GROUP_COLORS[(colorIdx+1)%GROUP_COLORS.length]})`,
+      type: 'group', messages: [], unread: 0,
+      members: ['user']
+    };
+  }
+  const grpThread = STATE.threads[groupId];
+  if (!grpThread.members) grpThread.members = ['user'];
+  const senderTh = findOrCreateThread(fromRaw);
+  if (!senderTh) return;
+  if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
+  ensureGroupTargetMember(name, targetName, getContext());
+  const isDup = grpThread.messages.slice(-6).some(msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount && msg.note === note);
+  if (isDup) return;
+  grpThread.messages.push({
+    id: `ggh_${Date.now()}`, from: 'incoming',
+    type: 'group_hongbao', name: fromRaw, time: resolvePhoneTime(),
+    amount, note, opened: false,
+    initials: senderTh.initials, avatarBg: senderTh.avatarBg
+  });
+  grpThread.unread = (grpThread.unread || 0) + 1;
+  refreshBadges(); renderThreadList();
+  if (STATE.currentThread === groupId) renderBubbles(groupId);
+  showBanner(name, `${fromRaw} 发了一个红包`);
+  saveState();
 }
 
 /* ── HELPER: findOrCreateThread ── */
@@ -5416,28 +6049,64 @@ function findOrCreateThread(nameRaw) {
 }
 
 // ================================================================
+//  IMAGE COMPRESSION
+// ================================================================
+/**
+ * 压缩图片为指定尺寸的 JPEG base64
+ * @param {string} dataUrl - 原始 base64 data URL
+ * @param {number} maxW - 最大宽度
+ * @param {number} maxH - 最大高度
+ * @param {number} quality - JPEG 质量 0-1
+ * @returns {Promise<string>} 压缩后的 data URL
+ */
+function compressImage(dataUrl, maxW, maxH, quality) {
+  return new Promise(function(resolve) {
+    const img = new Image();
+    img.onload = function() {
+      let w = img.width, h = img.height;
+      if (w > maxW || h > maxH) {
+        const ratio = Math.min(maxW / w, maxH / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function() {
+      resolve(dataUrl);
+    };
+    img.src = dataUrl;
+  });
+}
+
+function compressAvatar(dataUrl) {
+  return compressImage(dataUrl, 128, 128, 0.55);
+}
+
+function compressWallpaper(dataUrl) {
+  return compressImage(dataUrl, 480, 960, 0.65);
+}
+
+// ================================================================
 //  PERSISTENCE (localStorage)
 // ================================================================
-// 从全局 key 合并头像(sessionStorage 优先,localStorage 兜底)
+// 从全局 key 合并头像（仅作为可丢缓存，权威数据源是 payload.avatars）
 function mergeGlobalAvatars() {
   try {
-    const raw = sessionStorage.getItem('rp-phone-avatars-global')
-             || localStorage.getItem('rp-phone-avatars-global');
+    const raw = localStorage.getItem('rp-phone-avatars-global');
     if (!raw) return;
     const parsed = JSON.parse(raw);
-    STATE.avatars = Object.assign({}, STATE.avatars || {}, parsed);
+    // payload.avatars 是权威数据源；全局缓存只补缺，不反压主数据
+    STATE.avatars = Object.assign({}, parsed || {}, STATE.avatars || {});
   } catch(e) {}
 }
 
-// 持久化头像到 sessionStorage(不受 localStorage 配额限制)
+// 持久化头像到 localStorage 全局缓存（非权威，可丢）
 function saveGlobalAvatars() {
-  try {
-    const json = JSON.stringify(STATE.avatars || {});
-    sessionStorage.setItem('rp-phone-avatars-global', json);
-  } catch(e) {
-    console.warn('[Phone:av] sessionStorage save failed:', e);
-  }
-  // 也尝试 localStorage,失败不影响
   try { localStorage.setItem('rp-phone-avatars-global', JSON.stringify(STATE.avatars || {})); } catch(e) {}
 }
 
@@ -5466,22 +6135,37 @@ function loadState(chatId) {
 
     const _normalizeLoaded = function(parsed, sourceKey) {
       if (!parsed) return null;
-      if (parsed.__light) return null;
       parsed.threads = sanitizeThreadsForContext(parsed.threads || {}, ctx);
       parsed.nameAliases = (parsed.nameAliases && typeof parsed.nameAliases === 'object') ? parsed.nameAliases : {};
+      parsed.avatars = (parsed.avatars && typeof parsed.avatars === 'object') ? parsed.avatars : {};
+      parsed.wallpaper = parsed.wallpaper || null;
+      parsed.themeSettings = (parsed.themeSettings && typeof parsed.themeSettings === 'object') ? parsed.themeSettings : null;
       parsed = enrichPayloadMeta(parsed, ctx);
       try { localStorage.setItem(`rp-phone-v1-${chatId}`, JSON.stringify(parsed)); } catch(e) {}
       if (es) {
         if (!es[EXT_KEY]) es[EXT_KEY] = {};
-        es[EXT_KEY][chatId] = makeLightweightPayload(parsed);
+        es[EXT_KEY][chatId] = parsed;
         if (sourceKey && sourceKey !== chatId) delete es[EXT_KEY][sourceKey];
         _saveSettings();
       }
       return parsed;
     };
 
-    if (es && es[EXT_KEY] && es[EXT_KEY][chatId] && !es[EXT_KEY][chatId].__light) {
-      return _normalizeLoaded(es[EXT_KEY][chatId], chatId);
+    if (es && es[EXT_KEY] && es[EXT_KEY][chatId]) {
+      const parsed = es[EXT_KEY][chatId];
+      if (parsed && parsed.__light) {
+        const localRaw = localStorage.getItem(`rp-phone-v1-${chatId}`);
+        if (localRaw) {
+          const localParsed = JSON.parse(localRaw);
+          if (localParsed && !localParsed.__light) {
+            es[EXT_KEY][chatId] = localParsed;
+            _saveSettings();
+            return _normalizeLoaded(localParsed, chatId);
+          }
+        }
+      } else {
+        return _normalizeLoaded(parsed, chatId);
+      }
     }
     const raw = localStorage.getItem(`rp-phone-v1-${chatId}`);
     if (raw) {
@@ -5491,8 +6175,21 @@ function loadState(chatId) {
     // 兼容旧版本：旧 key 只有 raw chatId，容易跨角色卡串台。
     // 迁移前按当前角色/当前历史过滤联系人，只保留安全数据。
     if (rawChatId && rawChatId !== chatId) {
-      if (es && es[EXT_KEY] && es[EXT_KEY][rawChatId] && !es[EXT_KEY][rawChatId].__light) {
-        return _normalizeLoaded(es[EXT_KEY][rawChatId], rawChatId);
+      if (es && es[EXT_KEY] && es[EXT_KEY][rawChatId]) {
+        const legacyEs = es[EXT_KEY][rawChatId];
+        if (legacyEs && legacyEs.__light) {
+          const legacyLocalRaw = localStorage.getItem(`rp-phone-v1-${rawChatId}`);
+          if (legacyLocalRaw) {
+            const legacyLocalParsed = JSON.parse(legacyLocalRaw);
+            if (legacyLocalParsed && !legacyLocalParsed.__light) {
+              es[EXT_KEY][rawChatId] = legacyLocalParsed;
+              _saveSettings();
+              return _normalizeLoaded(legacyLocalParsed, rawChatId);
+            }
+          }
+        } else {
+          return _normalizeLoaded(legacyEs, rawChatId);
+        }
       }
       const legacyRaw = localStorage.getItem(`rp-phone-v1-${rawChatId}`);
       if (legacyRaw) {
@@ -5501,6 +6198,28 @@ function loadState(chatId) {
     }
     return null;
   } catch(e) { return null; }
+}
+
+async function migrateCompressAvatars() {
+  if (!STATE.avatars || STATE._avatarsMigrated) return;
+  let changed = false;
+  for (const [key, val] of Object.entries(STATE.avatars)) {
+    if (!val || typeof val !== 'string' || !val.startsWith('data:')) continue;
+    if (val.length > 20000) {
+      STATE.avatars[key] = await compressAvatar(val);
+      changed = true;
+    }
+  }
+  if (STATE.wallpaper && typeof STATE.wallpaper === 'string' && STATE.wallpaper.length > 50000) {
+    STATE.wallpaper = await compressWallpaper(STATE.wallpaper);
+    changed = true;
+  }
+  if (changed) {
+    saveGlobalAvatars();
+    saveState();
+    try { applyWallpaper(); } catch(e) {}
+  }
+  STATE._avatarsMigrated = true;
 }
 
 // ================================================================
@@ -5840,26 +6559,15 @@ const HTML = `
         <!-- 小红书发帖 -->
         <div id="rp-view-xhs-compose" class="rp-view" style="display:none;flex-direction:column">
           <div class="rp-nav-bar">
-            <button class="rp-back" data-to="xhs" style="font-size:12px;padding:5px 14px;border-radius:10px;border:1px solid var(--rp-xhs-border,#ffe0e6);background:transparent;color:var(--rp-xhs-text,#eee);cursor:pointer;font-weight:600">取消</button>
-            <span class="rp-nav-title">发笔记</span>
-            <button id="rp-xhs-post-btn" style="font-size:12px;padding:4px 12px;border-radius:8px;border:none;background:#ff2442;color:#fff;cursor:pointer;font-weight:600">发布</button>
+            <button class="rp-back" data-to="xhs" aria-label="关闭" style="background:transparent;border:none;cursor:pointer">×</button>
+            <span class="rp-nav-title" aria-hidden="true"></span>
+            <button id="rp-xhs-post-btn" style="border:none;cursor:pointer">发帖</button>
           </div>
-          <div style="padding:16px 14px;flex:1;overflow-y:auto;background:var(--rp-xhs-bg)">
-            <input id="rp-xhs-post-title" type="text" placeholder="填写标题(选填)" maxlength="40" style="width:100%;border:none;border-bottom:1px solid var(--rp-xhs-border,#ffe4e8);padding:6px 0;font-size:14px;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box;background:transparent;color:var(--rp-xhs-text,#1a1a1a)"/>
-            <textarea id="rp-xhs-post-body" placeholder="分享一下你的故事..." rows="6" style="width:100%;border:1px solid var(--rp-xhs-border,#ffe4e8);border-radius:10px;padding:10px;font-size:13px;outline:none;resize:none;box-sizing:border-box;line-height:1.6;background:var(--rp-xhs-card,#fff);color:var(--rp-xhs-text,#1a1a1a)"></textarea>
-            <div style="margin-top:10px">
-              <div style="font-size:10px;color:var(--rp-xhs-text-faint,#bbb);margin-bottom:5px;letter-spacing:.03em">话题</div>
-              <div id="rp-xhs-tag-row" style="display:flex;flex-wrap:wrap;gap:5px">
-                <button class="rp-xhs-tag-btn" data-tag="日常">#日常</button>
-                <button class="rp-xhs-tag-btn" data-tag="随想">#随想</button>
-                <button class="rp-xhs-tag-btn" data-tag="情感">#情感</button>
-                <button class="rp-xhs-tag-btn" data-tag="碎碎念">#碎碎念</button>
-                <button class="rp-xhs-tag-btn" data-tag="求安慰">#求安慰</button>
-                <button class="rp-xhs-tag-btn" data-tag="八卦">#八卦</button>
-                <button class="rp-xhs-tag-btn" data-tag="吐槽">#吐槽</button>
-                <button class="rp-xhs-tag-btn" data-tag="记录">#记录</button>
-                <button class="rp-xhs-tag-btn" data-tag="树洞">#树洞</button>
-              </div>
+          <div class="rp-xhs-compose-body" style="flex:1;overflow-y:auto">
+            <div class="rp-xhs-idea-card">
+              <div class="rp-xhs-quote-mark">“</div>
+              <input id="rp-xhs-post-title" class="rp-xhs-idea-title-input" type="text" placeholder="写想法" maxlength="40" />
+              <textarea id="rp-xhs-post-body" placeholder="说点什么或提个问题..." rows="8" style="resize:none"></textarea>
             </div>
           </div>
         </div>
@@ -5946,6 +6654,7 @@ const HTML = `
             <span class="rp-nav-title">🎮 2048</span>
             <button id="g2048-newbtn">新局</button>
           </div>
+          <div class="rp-game-partner-bar">当前搭子：<span class="rp-game-partner-name" id="g2048-partner-name">对方</span><button class="rp-game-partner-change" type="button">更换</button></div>
           <div id="g2048-header">
             <div id="g2048-scores">
               <div class="g2048-sbox"><div class="g2048-slbl">分数</div><div id="g2048-score">0</div></div>
@@ -5996,6 +6705,7 @@ const HTML = `
             <span class="rp-nav-title">⛏️ 黄金矿工</span>
             <button id="ggold-newbtn" style="font-size:12px;font-weight:600">新局</button>
           </div>
+          <div class="rp-game-partner-bar">当前搭子：<span class="rp-game-partner-name" id="ggold-partner-name">对方</span><button class="rp-game-partner-change" type="button">更换</button></div>
           <div id="ggold-header">
             <div class="ggold-score-box"><div class="ggold-score-lbl" id="ggold-u-lbl">你</div><div class="ggold-score-val" id="ggold-u-score">0</div></div>
             <div id="ggold-round-info">第1轮 / 共3轮</div>
@@ -6035,6 +6745,7 @@ const HTML = `
             <span class="rp-nav-title">🎯 你说我猜</span>
             <button id="gword-newbtn" style="font-size:12px;font-weight:600">新局</button>
           </div>
+          <div class="rp-game-partner-bar">当前搭子：<span class="rp-game-partner-name" id="gword-partner-name">对方</span><button class="rp-game-partner-change" type="button">更换</button></div>
           <div id="gword-header">
             <div id="gword-category-badge">分类：--</div>
             <button id="gword-giveup-btn" type="button">🏳️</button>
@@ -6077,6 +6788,7 @@ const HTML = `
             <span class="rp-nav-title">🎲 飞行棋</span>
             <span></span>
           </div>
+          <div class="rp-game-partner-bar">当前搭子：<span class="rp-game-partner-name" id="rp-game-partner-name">对方</span><button class="rp-game-partner-change" type="button">更换</button></div>
           <div id="rp-game-board-wrap">
             <canvas id="rp-ludo-canvas" width="240" height="240"></canvas>
           </div>
@@ -6239,6 +6951,26 @@ const HTML = `
             </div>
           </div>
         </div>
+        <div id="rp-group-members-modal" style="display:none"></div>
+        <div id="rp-game-partner-modal" style="display:none">
+          <div class="rp-game-partner-sheet">
+            <div class="rp-game-partner-title">更换游戏搭子</div>
+            <div class="rp-game-partner-sub">当前窗口内的四个小游戏会统一使用这个角色</div>
+            <div class="rp-game-partner-field">
+              <div class="rp-game-partner-label">角色名</div>
+              <input id="rp-game-partner-name-input" type="text" maxlength="32" placeholder="请输入准确的角色名" autocomplete="off"/>
+            </div>
+            <div class="rp-game-partner-field">
+              <div class="rp-game-partner-label">人设补充（可选）</div>
+              <textarea id="rp-game-partner-note-input" maxlength="600" placeholder="会自动读取人设；如果觉得读取不准，可以在这里手动补充一小段。"></textarea>
+              <div class="rp-game-partner-help">留空则只使用自动读取的人设。</div>
+            </div>
+            <div class="rp-game-partner-actions">
+              <button id="rp-game-partner-cancel" type="button">取消</button>
+              <button id="rp-game-partner-save" type="button">保存</button>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -6270,6 +7002,8 @@ async function init() {
   // Defensive: ensure FAB visible after append
   var _f = document.getElementById('rp-fab');
   if (_f) { _f.style.cssText += ';display:flex!important;visibility:visible!important;opacity:1!important'; }
+  injectMochiSettingsPanel();
+  applyMochiLaunchSettings();
 
   // 修复:SillyTavern 给 <html> 加了 transform,导致 position:fixed 的包含块变成高度=0的html元素
   // 用 window.innerHeight 直接计算真实视口位置
@@ -6328,17 +7062,33 @@ async function init() {
     STATE.notifications = saved.notifications || [];
     STATE.sync = saved.sync || { stage: 1, progress: 0, status: '乖巧' };
     STATE.moments = saved.moments || [];
+    STATE.diary = saved.diary || [];
+    STATE.xhsFeed = saved.xhsFeed || [];
     STATE.avatars = saved.avatars || {};
+    STATE.wallpaper = saved.wallpaper || null;
     STATE.darkMode = saved.darkMode || false;
+    STATE.themeSettings = saved.themeSettings || null;
+    STATE.bankData = saved.bankData || null;
+    STATE.blocklist = Array.isArray(saved.blocklist) ? saved.blocklist.slice() : [];
+    if (saved.gameState) {
+      try {
+        if (saved.gameState.ludo && saved.gameState.ludo.chatLog && typeof LG !== 'undefined') LG.chatLog = saved.gameState.ludo.chatLog;
+        if (saved.gameState.g2048 && saved.gameState.g2048.chatLog && typeof LG2048 !== 'undefined') LG2048.chatLog = saved.gameState.g2048.chatLog;
+        if (saved.gameState.gm && saved.gameState.gm.chatLog && typeof GM !== 'undefined') GM.chatLog = saved.gameState.gm.chatLog;
+        if (saved.gameState.gword && saved.gameState.gword.chatLog && typeof GWORD !== 'undefined') GWORD.chatLog = saved.gameState.gword.chatLog;
+      } catch(e) { console.warn('[Phone] gameState restore failed:', e); }
+    }
     // 恢复上次停留的界面(仅限同一 session 内,刷新页面后回锁屏)
     STATE._savedView = saved.currentView || null;
     STATE._savedThread = saved.currentThread || null;
   }
   // 合并全局头像(优先级最高,覆盖 chatId 绑定的旧头像)
   mergeGlobalAvatars();
+  try { migrateCompressAvatars(); } catch(e) {}
   // 同步到 _AV 和 window._rpAV
   Object.assign(_AV, STATE.avatars || {});
   window._rpAV = Object.assign(window._rpAV || {}, STATE.avatars || {});
+  try { applyWallpaper(); } catch(e) {}
   // 立即同步清理无效联系人(不等延迟,防止用户看到 SillyTavern)
   cleanInvalidContacts();
 
@@ -6368,7 +7118,8 @@ async function init() {
   })();
 
   if (STATE.darkMode) { $('#rp-phone').addClass('rp-dark'); $('.rp-dm-ico').text('☀️'); $('#rp-dm-lbl').text('日间'); }
-  lgInitTheme();
+  if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
+  else lgInitTheme();
 
   updateClock();
   setInterval(updateClock, 1000);
@@ -6536,7 +7287,7 @@ async function init() {
                       if (wIdx >= 0) { window.rpImgWaitQueue.splice(wIdx, 1); ; }
                     }
                     // 双保险：直接 DOM 手术精准替换图片区域（不依赖 currentView 判断）
-                    const $momentEl = $(`#rp-moments-list .rp-moment[data-mid="${matchedMomentId}"]`);
+                    const $momentEl = rpFindByDataAttr('#rp-moments-list', '.rp-moment', 'data-mid', matchedMomentId);
                     if ($momentEl.length) {
                       $momentEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
                     }
@@ -6586,7 +7337,7 @@ async function init() {
                     moment.pendingImg = null;
                     moment.pendingImgType = null;
                     // 直接 DOM 手术精准替换图片区域
-                    const $momentEl = $(`#rp-moments-list .rp-moment[data-mid="${resolvedMomentId}"]`);
+                    const $momentEl = rpFindByDataAttr('#rp-moments-list', '.rp-moment', 'data-mid', resolvedMomentId);
                     if ($momentEl.length) {
                       $momentEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
                     }
@@ -6851,6 +7602,23 @@ async function init() {
     } catch(e) {}
   }, 800);
 
+  // ── GMSG 规则持久化注入 ──
+  // 世界书规则在长上下文中可能被模型忽略，这里通过 extension prompt 做持久提醒
+  // 四字+标点格式，最小 token 开销
+  if (setExtensionPrompt && extension_prompt_types) {
+    const promptPosition = extension_prompt_types.IN_CHAT
+      || extension_prompt_types.IN_CHAR
+      || 1;
+    try {
+      setExtensionPrompt(
+        'mochi-phone-gmsg',
+        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。',
+        promptPosition,
+        0
+      );
+    } catch(e) { console.warn('[Phone] GMSG extension prompt injection failed', e); }
+  }
+
 
 }
 
@@ -6882,7 +7650,10 @@ function onChatChanged() {
       currentThread: STATE.currentThread,
       moments: JSON.parse(JSON.stringify(_safeMoments2)),
       diary:   JSON.parse(JSON.stringify(_safeDiary2)),
+      xhsFeed: JSON.parse(JSON.stringify(STATE.xhsFeed || [])),
       avatars: Object.assign({}, STATE.avatars || {}),
+      wallpaper: STATE.wallpaper || null,
+      themeSettings: getThemeSettingsSnapshot(),
       bankData: STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
       blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     };
@@ -6904,7 +7675,11 @@ function onChatChanged() {
     STATE.sync = { ...s.sync };
     STATE.moments = JSON.parse(JSON.stringify(s.moments || []));
     STATE.diary   = JSON.parse(JSON.stringify(s.diary   || []));
+    STATE.xhsFeed = JSON.parse(JSON.stringify(s.xhsFeed || []));
     STATE.avatars = Object.assign({}, s.avatars || {});
+    STATE.wallpaper = s.wallpaper || null;
+    STATE.themeSettings = s.themeSettings || null;
+    if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
     STATE.currentThread = s.currentThread;
     STATE.bankData = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
     STATE.blocklist = Array.isArray(s.blocklist) ? s.blocklist.slice() : (STATE.blocklist || []);
@@ -6916,9 +7691,21 @@ function onChatChanged() {
       STATE.sync = persisted.sync || { stage: 1, progress: 0, status: '乖巧' };
       STATE.moments = persisted.moments || [];
       STATE.diary = persisted.diary || [];
+      STATE.xhsFeed = persisted.xhsFeed || [];
       STATE.avatars = (persisted.avatars && Object.keys(persisted.avatars).length) ? persisted.avatars : (STATE.avatars || {});
+      STATE.wallpaper = persisted.wallpaper || null;
+      STATE.themeSettings = persisted.themeSettings || null;
+      if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
       STATE.bankData = persisted.bankData || null;
       STATE.blocklist = Array.isArray(persisted.blocklist) ? persisted.blocklist.slice() : [];
+      if (persisted.gameState) {
+        try {
+          if (persisted.gameState.ludo && persisted.gameState.ludo.chatLog && typeof LG !== 'undefined') LG.chatLog = persisted.gameState.ludo.chatLog;
+          if (persisted.gameState.g2048 && persisted.gameState.g2048.chatLog && typeof LG2048 !== 'undefined') LG2048.chatLog = persisted.gameState.g2048.chatLog;
+          if (persisted.gameState.gm && persisted.gameState.gm.chatLog && typeof GM !== 'undefined') GM.chatLog = persisted.gameState.gm.chatLog;
+          if (persisted.gameState.gword && persisted.gameState.gword.chatLog && typeof GWORD !== 'undefined') GWORD.chatLog = persisted.gameState.gword.chatLog;
+        } catch(e) { console.warn('[Phone] gameState restore failed:', e); }
+      }
       STATE.currentThread = null;
     } else {
       STATE.threads = DEFAULT_THREADS();
@@ -6926,13 +7713,17 @@ function onChatChanged() {
       STATE.sync = { stage: 1, progress: 0, status: '乖巧' };
       STATE.moments = [];
       STATE.diary   = [];
+      STATE.xhsFeed = [];
       STATE.avatars = {};
+      STATE.wallpaper = null;
+      STATE.themeSettings = null;
       STATE.bankData = null;
       STATE.blocklist = [];
       STATE.currentThread = null;
     }
   }
   mergeGlobalAvatars();
+  try { applyWallpaper(); } catch(e) {}
 
   // 重置 UI(加载新状态后立即同步清理无效联系人)
   // 切换对话时重置运行时缓存，防止跨对话污染
@@ -7024,6 +7815,25 @@ function bindUI() {
     updatePreviews();
     renderBubbles(threadId);
   });
+  // 红包/语音播放：事件委托 + data 绑定，避免 threadId/msgId 含特殊字符时 inline onclick 断裂
+  $(document).on('click touchend', '#rp-bubbles .rp-hongbao-openable', function(e) {
+    e.stopPropagation(); e.preventDefault();
+    const el = $(this);
+    const threadId = el.data('threadid');
+    const msgId = el.data('msgid');
+    if (!threadId || !msgId) return;
+    openHongbao(threadId, msgId);
+  });
+
+  $(document).on('click touchend', '#rp-bubbles .rp-voice-playable', function(e) {
+    e.stopPropagation(); e.preventDefault();
+    const el = $(this);
+    const threadId = el.data('threadid');
+    const msgId = el.data('msgid');
+    if (!threadId || !msgId) return;
+    playVoice(threadId, msgId);
+  });
+
 
   // 来电:接听 / 拒绝(事件委托)
   $(document).on('click', '#rp-call-ans', () => resolveCall('answered'));
@@ -7097,7 +7907,7 @@ function bindUI() {
     // 防止 pending_image 触发主楼生图按钮时，合成 click 误关手机
     if (STATE._suppressClose && Date.now() - STATE._suppressClose < 500) return;
     // 若有任何模态/浮层打开,跳过关闭判断(防止 grp-cancel/confirm 误触)
-    if ($('#rp-add-choice, #rp-grp-create, #rp-del-picker, #rp-add-modal:visible, #rp-compose-modal:visible').length) return;
+    if ($('#rp-add-choice, #rp-grp-create, #rp-del-picker, #rp-add-modal:visible, #rp-group-members-modal:visible, #rp-compose-modal:visible').length) return;
     // 若 e.target 已被从 DOM 移除(事件传播期间被删),跳过
     if (!document.contains(e.target)) return;
     if (!$(e.target).closest('#rp-phone, #rp-fab').length) {
@@ -7163,6 +7973,14 @@ function bindUI() {
     if (e.target === this) $(this).hide();
   });
 
+  $(document).on('click', '#rp-hd-av.rp-group-members-trigger', function(e) {
+    e.stopPropagation();
+    showGroupMembersModal(STATE.currentThread);
+  });
+  $(document).on('click', '#rp-group-members-modal, #rp-gm-close', function(e) {
+    if (e.target === this || e.currentTarget.id === 'rp-gm-close') $('#rp-group-members-modal').hide().empty();
+  });
+
 
   // ── Games Folder ─────────────────────────────────────────────
   $(document).on('click', '[data-app="folder-games"]', function(e) {
@@ -7181,10 +7999,10 @@ function bindUI() {
     $('#rp-folder-modal').hide();
     if (app === 'ludo') {
       go('game');
-      try { if (!LG || !LG.active) lgInit(); else lgRender(); } catch(ex) { console.warn('[Folder]', ex); }
+      try { if (!LG || !LG.active) lgInit(); else { gameApplyPartnerToGames(gameGetCurrentPartner()); lgRender(); } } catch(ex) { console.warn('[Folder]', ex); }
     } else if (app === 'g2048') {
       go('g2048');
-      try { if (!LG2048 || !LG2048.active) g2048Init(); } catch(ex) { console.warn('[Folder]', ex); }
+      try { if (!LG2048 || !LG2048.active) g2048Init(); else gameApplyPartnerToGames(gameGetCurrentPartner()); } catch(ex) { console.warn('[Folder]', ex); }
     } else if (app === 'ggold') {
       go('ggold');
       try { ggoldOpen(); } catch(ex) { console.warn('[Folder/ggold]', ex); }
@@ -7197,8 +8015,21 @@ function bindUI() {
   $(document).on('click', '[data-app="ludo"]', function(e) {
     e.stopPropagation();
     if (!LG.active) lgInit();
-    else lgRender();
+    else { gameApplyPartnerToGames(gameGetCurrentPartner()); lgRender(); }
     go('game');
+  });
+
+  $(document).on('click', '.rp-game-partner-change', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    gameOpenPartnerModal();
+  });
+  $(document).on('click', '#rp-game-partner-cancel', function(e) { e.preventDefault(); gameClosePartnerModal(); });
+  $(document).on('click', '#rp-game-partner-save', function(e) { e.preventDefault(); gameSavePartnerFromModal(); });
+  $(document).on('click', '#rp-game-partner-modal', function(e) { if (e.target === this) gameClosePartnerModal(); });
+  $(document).on('keydown', '#rp-game-partner-name-input,#rp-game-partner-note-input', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); gameSavePartnerFromModal(); }
+    if (e.key === 'Escape') { e.preventDefault(); gameClosePartnerModal(); }
   });
 
   // ── API 面板事件 ──
@@ -7232,17 +8063,9 @@ function bindUI() {
 
   // 小红书 - 发帖按钮
   $(document).on('click', '#rp-xhs-compose', function() {
-    STATE.xhsSelectedTag = '日常';
-    $('.rp-xhs-tag-btn').removeClass('rp-xhs-tag-selected');
     go('xhs-compose');
   });
 
-  // 小红书 - 标签选择
-  $(document).on('click', '.rp-xhs-tag-btn', function() {
-    $('.rp-xhs-tag-btn').removeClass('rp-xhs-tag-selected');
-    $(this).addClass('rp-xhs-tag-selected');
-    STATE.xhsSelectedTag = $(this).data('tag');
-  });
 
   // 小红书 - 发布帖子
   $(document).on('click', '#rp-xhs-post-btn', function() {
@@ -7253,6 +8076,18 @@ function bindUI() {
   $(document).on('click', '#rp-xhs-like-btn', function() {
     const postId = $(this).data('postid') || STATE.xhsCurrentPost;
     if (postId) toggleXHSLike(postId);
+  });
+
+  // 小红书 - 详情页关注
+  $(document).on('click', '#rp-xhs-follow-btn', function() {
+    const postId = $(this).data('postid') || STATE.xhsCurrentPost;
+    if (postId) toggleXHSFollow(postId);
+  });
+
+  // 小红书 - 详情页收藏
+  $(document).on('click', '#rp-xhs-fav-btn', function() {
+    const postId = $(this).data('postid') || STATE.xhsCurrentPost;
+    if (postId) toggleXHSFavorite(postId);
   });
 
   // 小红书 - 详情页发评论
@@ -7536,6 +8371,7 @@ function bindUI() {
       if (saved[idx]) {
         saved[idx].label = newName;
         localStorage.setItem('rp_saved_themes', JSON.stringify(saved));
+        try { saveState(); } catch(e) {}
       }
       lgRenderSavedThemes();
       return;
@@ -7797,26 +8633,39 @@ function bindUI() {
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          STATE.avatars = STATE.avatars || {};
-          STATE.avatars[who] = dataUrl;
-          setAvatar(who, dataUrl);
-          saveGlobalAvatars();
+          setAvatarCompressed(who, dataUrl).then(function(finalUrl) {
+            updateAvatarPreviewSwatch(who);
+            renderMoments();
+            renderThreadList();
+            renderDiary();
+            if (STATE.currentView === 'thread' && STATE.currentThread) {
+              openThread(STATE.currentThread);
+            }
+          }).catch(function() {
+            setAvatar(who, dataUrl);
+            saveState();
+            updateAvatarPreviewSwatch(who);
+            renderMoments();
+            renderThreadList();
+            renderDiary();
+            if (STATE.currentView === 'thread' && STATE.currentThread) {
+              openThread(STATE.currentThread);
+            }
+          });
           updateAvatarPreviewSwatch(who);
-          renderMoments();
-          renderThreadList();
-          renderDiary();
-          if (STATE.currentView === 'thread' && STATE.currentThread) {
-            openThread(STATE.currentThread);
-          }
+          // 已移到异步压缩回调内刷新
         } catch(canvasErr) {
           console.error('[Phone:av] canvas error:', canvasErr);
           // Fallback: save original dataURL directly
-          STATE.avatars = STATE.avatars || {};
-          STATE.avatars[who] = ev.target.result;
-          setAvatar(who, ev.target.result);
-          saveGlobalAvatars();
-          updateAvatarPreviewSwatch(who);
-          renderMoments(); renderThreadList(); renderDiary();
+          setAvatarCompressed(who, ev.target.result).then(function() {
+            updateAvatarPreviewSwatch(who);
+            renderMoments(); renderThreadList(); renderDiary();
+          }).catch(function() {
+            setAvatar(who, ev.target.result);
+            saveState();
+            updateAvatarPreviewSwatch(who);
+            renderMoments(); renderThreadList(); renderDiary();
+          });
         }
       };
       img.src = ev.target.result;
@@ -7921,10 +8770,10 @@ function bindUI() {
   $(document).on('click', '.rp-comment-toggle', function(e) {
     e.stopPropagation();
     const id = $(this).data('moment');
-    const row = $(`#rp-ci-${id}`);
+    const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', id);
     row.toggle();
     if (row.is(':visible')) {
-      row.find('.rp-moment-cinput').removeData('reply-to').attr('placeholder','发表评论...').focus();
+      row.find('.rp-moment-cinput').removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder','发表评论...').focus();
     }
   });
 
@@ -7942,22 +8791,36 @@ function bindUI() {
     e.stopPropagation();
     const momentId = $(this).data('moment');
     const rname = $(this).data('rname');
-    const row = $(`#rp-ci-${momentId}`);
+    const oldIdxRaw = $(this).attr('data-oldidx');
+    const oldIdx = oldIdxRaw !== undefined && oldIdxRaw !== '' ? parseInt(oldIdxRaw, 10) : null;
+    const moment = STATE.moments && STATE.moments.find(m => m.id === momentId);
+    const targetComment = moment && Number.isFinite(oldIdx) ? (moment.comments || [])[oldIdx] : null;
+    const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId);
     row.show();
-    row.find('.rp-moment-cinput').data('reply-to', rname).attr('placeholder', `回复 ${rname}...`).focus();
+    row.find('.rp-moment-cinput')
+      .data('reply-to', rname)
+      .data('reply-to-idx', Number.isFinite(oldIdx) ? oldIdx : null)
+      .data('reply-to-text', targetComment ? targetComment.text : '')
+      .attr('placeholder', `回复 ${rname}...`)
+      .focus();
   });
 
   // Moments: send comment via button
   $(document).on('click', '.rp-moment-csend', function(e) {
     e.stopPropagation();
     const momentId = $(this).data('moment');
-    const row = $(`#rp-ci-${momentId}`);
+    const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId);
     const input = row.find('.rp-moment-cinput');
     const text = input.val().trim();
     const replyTo = input.data('reply-to') || null;
+    const replyMeta = replyTo ? {
+      name: replyTo,
+      idx: input.data('reply-to-idx'),
+      text: input.data('reply-to-text') || ''
+    } : null;
     if (!text) return;
-    sendMomentComment(momentId, text, replyTo);
-    input.val('').removeData('reply-to').attr('placeholder','发表评论...');
+    sendMomentComment(momentId, text, replyMeta || replyTo);
+    input.val('').removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder','发表评论...');
     row.hide();
   });
 
@@ -7968,10 +8831,15 @@ function bindUI() {
       const momentId = $(this).closest('.rp-moment').data('mid');
       const text = $(this).val().trim();
       const replyTo = $(this).data('reply-to') || null;
+      const replyMeta = replyTo ? {
+        name: replyTo,
+        idx: $(this).data('reply-to-idx'),
+        text: $(this).data('reply-to-text') || ''
+      } : null;
       if (!text) return;
-      sendMomentComment(momentId, text, replyTo);
-      $(this).val('').removeData('reply-to').attr('placeholder','发表评论...');
-      $(`#rp-ci-${momentId}`).hide();
+      sendMomentComment(momentId, text, replyMeta || replyTo);
+      $(this).val('').removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder','发表评论...');
+      rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId).hide();
     }
   });
 
@@ -8081,9 +8949,15 @@ function bindUI() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      STATE.wallpaper = e.target.result;
-      saveState();
-      applyWallpaper();
+      compressWallpaper(e.target.result).then(function(compressed) {
+        STATE.wallpaper = compressed;
+        saveState();
+        applyWallpaper();
+      }).catch(function() {
+        STATE.wallpaper = e.target.result;
+        saveState();
+        applyWallpaper();
+      });
     };
     reader.readAsDataURL(file);
     this.value = '';
@@ -8180,6 +9054,8 @@ function generateAvatarBg() {
   return `linear-gradient(145deg,${pair[0]},${pair[1]})`;
 }
 
+
+
 function addContact() {
   const name = $('#rp-add-name').val().trim();
   let initials = $('#rp-add-initials').val().trim().toUpperCase();
@@ -8212,13 +9088,42 @@ function addContact() {
 
 }
 
+
+function getThreadListActivityKey(thread, originalIndex) {
+  const last = thread && thread.messages && thread.messages.at ? thread.messages.at(-1) : null;
+  if (!last) return -1000000000 + (originalIndex || 0) * 0.000001;
+
+  // Most incoming group/media messages already carry Date.now() in id, so prefer it when present.
+  const idText = String(last.id || '');
+  const idMatch = idText.match(/(?:^|_)(\d{12,})(?:_|$)/);
+  if (idMatch) {
+    const n = Number(idMatch[1]);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+
+  // Fallback for plain SMS/user text messages that only have display time.
+  const t = String(last.time || '').trim();
+  const hm = t.match(/^(\d{1,2}):(\d{2})$/);
+  if (hm) return (Number(hm[1]) * 60 + Number(hm[2])) * 100000 + (originalIndex || 0);
+
+  return (originalIndex || 0);
+}
+
 // ================================================================
 //  RENDER THREAD LIST
 // ================================================================
 function renderThreadList() {
   const container = $('#rp-thread-list').empty();
 
-  Object.values(STATE.threads).forEach(th => {
+  Object.values(STATE.threads)
+    .map(function(th, idx) { return { th, idx }; })
+    .sort(function(a, b) {
+      const ak = getThreadListActivityKey(a.th, a.idx);
+      const bk = getThreadListActivityKey(b.th, b.idx);
+      return (bk - ak) || (a.idx - b.idx);
+    })
+    .forEach(function(item) {
+    const th = item.th;
     const lastMsg = th.messages.at(-1);
     const senderLabel = lastMsg ? (lastMsg.from === 'user' ? '我' : th.name.split(' ')[0]) : '';
     const lastText = lastMsg
@@ -8236,15 +9141,15 @@ function renderThreadList() {
     const badgeCount   = th.unread;
 
     container.append(`
-      <div class="rp-thread" data-thread="${th.id}">
-        ${(()=>{const ci=STATE.avatars&&STATE.avatars[th.name];return ci?`<div class="rp-av rp-av-img"><img class="rp-av-photo" src="${ci}" alt=""/></div>`:`<div class="rp-av" style="background:${th.avatarBg}">${th.initials}</div>`;})()}
+      <div class="rp-thread" data-thread="${escHtml(th.id)}">
+        ${(()=>{const ci=STATE.avatars&&STATE.avatars[th.name];return ci?`<div class="rp-av rp-av-img"><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-av" style="background:${escHtml(th.avatarBg)}">${escHtml(th.initials)}</div>`;})()}
         <div class="rp-ti">
-          <div class="rp-tn">${th.name}</div>
-          <div class="rp-tp" id="rp-tp-${th.id}">${preview}</div>
+          <div class="rp-tn">${escHtml(th.name)}</div>
+          <div class="rp-tp" id="rp-tp-${escHtml(th.id)}">${escHtml(preview)}</div>
         </div>
         <div class="rp-tm">
-          <div class="rp-tt" id="rp-tt-${th.id}">${time}</div>
-          <div class="rp-tbadge" id="rp-tbadge-${th.id}" style="${badgeDisplay}">${badgeCount}</div>
+          <div class="rp-tt" id="rp-tt-${escHtml(th.id)}">${escHtml(time)}</div>
+          <div class="rp-tbadge" id="rp-tbadge-${escHtml(th.id)}" style="${badgeDisplay}">${escHtml(badgeCount)}</div>
         </div>
       </div>
     `);
@@ -8256,8 +9161,8 @@ function renderThreadList() {
 // ================================================================
 function go(view) {
   if (view === 'darkmode') { toggleDarkMode(); return; }
-  if (view === 'ludo') { try { if (!LG.active) lgInit(); else lgRender(); } catch(e) { console.warn('[Ludo]', e); } view = 'game'; }
-  if (view === 'g2048') { try { if (!LG2048.active) g2048Init(); } catch(e) { console.warn('[2048]', e); } }
+  if (view === 'ludo') { try { if (!LG.active) lgInit(); else { gameApplyPartnerToGames(gameGetCurrentPartner()); lgRender(); } } catch(e) { console.warn('[Ludo]', e); } view = 'game'; }
+  if (view === 'g2048') { try { if (!LG2048.active) g2048Init(); else gameApplyPartnerToGames(gameGetCurrentPartner()); } catch(e) { console.warn('[2048]', e); } }
   if (view === 'ggold') { try { ggoldOpen(); } catch(e) { console.warn('[ggold]', e); } }
   if (view === 'gword') { try { gwordOpen(); } catch(e) { console.warn('[gword]', e); } }
   if (view === 'api-settings') { lgFillAPIView(); }
@@ -8266,9 +9171,9 @@ function go(view) {
   // 需要 flex 布局的视图
   const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword'];
   if (flexViews.includes(view)) {
-    $(`#rp-view-${view}`).css('display','flex');
+    rpFindByDataAttr(null, '.rp-view', 'id', 'rp-view-' + view).css('display','flex');
   } else {
-    $(`#rp-view-${view}`).show();
+    rpFindByDataAttr(null, '.rp-view', 'id', 'rp-view-' + view).show();
   }
   $('#rp-home-ind').toggle(view !== 'lock');
   STATE.currentView = view;
@@ -8304,10 +9209,7 @@ function go(view) {
     setTimeout(function(){ var el = document.getElementById('rp-xhs-detail-body'); if(el) el.scrollTop = 0; }, 0);
   }
   if (view === 'xhs-compose') {
-    // 默认选中第一个标签
-    if (!STATE.xhsSelectedTag) STATE.xhsSelectedTag = '日常';
-    $('.rp-xhs-tag-btn').removeClass('rp-xhs-tag-selected');
-    $(`.rp-xhs-tag-btn[data-tag="${STATE.xhsSelectedTag}"]`).addClass('rp-xhs-tag-selected');
+    $('#rp-xhs-post-body').trigger('focus');
   }
 }
 
@@ -8327,6 +9229,55 @@ function lgFillAPIView() {
   $('#rp-api-status-v').text('');
 }
 
+function getGroupMemberEntries(thread) {
+  if (!thread || thread.type !== 'group') return [];
+  const seen = new Set();
+  const entries = [];
+  function addUser() {
+    if (seen.has('user')) return;
+    seen.add('user');
+    entries.push({ id:'user', name:'我', initials:'我', avatarBg:'linear-gradient(145deg,#64748b,#475569)', role:'我' });
+  }
+  function addThreadMember(memberId) {
+    if (!memberId || seen.has(memberId)) return;
+    if (memberId === 'user') { addUser(); return; }
+    const th = STATE.threads && STATE.threads[memberId];
+    if (!th) return;
+    seen.add(memberId);
+    entries.push({ id:memberId, name:th.name || memberId, initials:th.initials || String(th.name || memberId).slice(0,2), avatarBg:th.avatarBg || 'linear-gradient(145deg,#64748b,#475569)', role:'成员' });
+  }
+  addUser();
+  (thread.members || []).forEach(addThreadMember);
+  (thread.messages || []).forEach(function(msg) {
+    if (!msg || !msg.name) return;
+    const senderTh = findOrCreateThread(msg.name);
+    if (senderTh) addThreadMember(senderTh.id);
+  });
+  return entries;
+}
+
+function showGroupMembersModal(threadId) {
+  const thread = STATE.threads && STATE.threads[threadId];
+  if (!thread || thread.type !== 'group') return;
+  const members = getGroupMemberEntries(thread);
+  const rows = members.map(function(m) {
+    const img = getAvatar(m.name);
+    const av = img
+      ? `<div class="rp-gm-av"><img src="${escHtml(img)}" alt=""/></div>`
+      : `<div class="rp-gm-av" style="background:${escHtml(m.avatarBg)}">${escHtml(m.initials || String(m.name).slice(0,2))}</div>`;
+    return `<div class="rp-gm-row">${av}<div class="rp-gm-name">${escHtml(m.name)}</div><div class="rp-gm-role">${escHtml(m.role || '成员')}</div></div>`;
+  }).join('');
+  $('#rp-group-members-modal').html(`
+    <div class="rp-gm-sheet">
+      <div class="rp-gm-head">
+        <div class="rp-gm-title">${escHtml(thread.name)}<div class="rp-gm-sub">${escHtml(members.length)} 位群成员</div></div>
+        <button id="rp-gm-close" class="rp-gm-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="rp-gm-list">${rows || '<div class="rp-gm-row"><div class="rp-gm-name">暂无成员</div></div>'}</div>
+    </div>
+  `).show();
+}
+
 function openThread(threadId) {
   STATE.currentThread = threadId;
   const th = STATE.threads[threadId];
@@ -8335,11 +9286,15 @@ function openThread(threadId) {
   th.unread = 0;
   refreshBadges();
 
+  const hdAv = $('#rp-hd-av').removeClass('rp-group-members-trigger').removeAttr('title aria-label');
   const _hdImg = getAvatar(th.name);
   if (_hdImg) {
-    $('#rp-hd-av').empty().append(`<img class="rp-av-photo" src="${_hdImg}" alt=""/>`).css('background', 'transparent');
+    hdAv.empty().append(`<img class="rp-av-photo" src="${escHtml(_hdImg)}" alt=""/>`).css('background', 'transparent');
   } else {
-    $('#rp-hd-av').empty().text(th.initials).css('background', th.avatarBg);
+    hdAv.empty().text(th.initials).css('background', th.avatarBg);
+  }
+  if (th.type === 'group') {
+    hdAv.addClass('rp-group-members-trigger').attr('title', '查看群成员').attr('aria-label', '查看群成员');
   }
   $('#rp-hd-name').text(th.name);
 
@@ -8375,7 +9330,6 @@ function renderBubbles(threadId) {
       const openedHtml = msg.opened
         ? `<div class="rp-hb-amount"><small>¥</small>${escHtml(msg.amount)}</div>` : '';
       const wrap = $(`<div class="rp-bwrap rp-in"></div>`);
-      const onclick = msg.opened ? '' : `openHongbao('${threadId}','${msg.id}')`;
       wrap.html(`
         <div class="rp-hongbao ${msg.opened?'opened':''}" ${onclick?`onclick="${onclick}"`:''}">
           <div class="rp-hb-top">
@@ -8391,9 +9345,12 @@ function renderBubbles(threadId) {
             <div class="rp-hb-tag">微信红包</div>
           </div>
         </div>
-        <div class="rp-bts">${msg.time}</div>
+        <div class="rp-bts">${escHtml(msg.time)}</div>
       `);
-      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      if (!msg.opened) {
+        wrap.find('.rp-hongbao').addClass('rp-hongbao-openable').data('threadid', threadId).data('msgid', msg.id || '').attr('data-threadid', escHtml(threadId)).attr('data-msgid', escHtml(msg.id || ''));
+      }
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
       wrap.append(delBtn);
       area.append(wrap); return;
     }
@@ -8405,53 +9362,39 @@ function renderBubbles(threadId) {
       const wrap = $(`<div class="rp-bwrap rp-in"></div>`);
       wrap.html(`
         <div class="rp-voice-wrap">
-          <div class="rp-voice-bbl ${playedCls}" onclick="playVoice('${threadId}','${msg.id}')">
+          <div class="rp-voice-bbl ${playedCls} rp-voice-playable">
             <div class="rp-voice-play">${msg.played?'✓':'▶'}</div>
             <div class="rp-wave">${bars}</div>
             <div class="rp-voice-dur">${escHtml(msg.duration)}</div>
           </div>
           <div class="rp-voice-txt">${msg.played?escHtml(msg.text):''}</div>
         </div>
-        <div class="rp-bts">${msg.time}</div>
+        <div class="rp-bts">${escHtml(msg.time)}</div>
       `);
-      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      wrap.find('.rp-voice-playable').data('threadid', threadId).data('msgid', msg.id || '').attr('data-threadid', escHtml(threadId)).attr('data-msgid', escHtml(msg.id || ''));
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
       wrap.append(delBtn);
       area.append(wrap); return;
     }
-    // ── 群聊消息 (NPC/char 发送，带编辑/删除按钮) ──
+    // ── 群聊消息：视觉样式与私聊 P1 保持一致（不再额外显示头像/发送者名，避免气泡被挤窄） ──
     if (msg.type === 'group_msg') {
-      const customImg = STATE.avatars && STATE.avatars[msg.name];
-      const avEl = customImg
-        ? $(`<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`)
-        : $(`<div class="rp-grp-av" style="background:${msg.avatarBg}">${msg.initials}</div>`);
-      const wrap = $('<div class="rp-bwrap rp-in rp-grp"></div>');
-      const inner = $('<div>');
-      inner.append($('<div>').addClass('rp-grp-sender').text(msg.name));
-      inner.append($('<div>').addClass('rp-bubble rp-recv').text(msg.text));
-      // 横排按钮组（编辑 + 删除）
+      const wrap = $('<div class="rp-bwrap rp-in"></div>');
+      wrap.append($('<div>').addClass('rp-bubble rp-recv').text(msg.text));
       const DEL_SVG_GM = `<svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><path d="M3 3.5L3.7 11.5C3.75 12.05 4.2 12.5 4.75 12.5H9.25C9.8 12.5 10.25 12.05 10.3 11.5L11 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 3.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5.5 3.5V2.5C5.5 2.22 5.72 2 6 2H8C8.28 2 8.5 2.22 8.5 2.5V3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="7" y1="6" x2="7" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="5.5" y1="6.2" x2="5.8" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8.5" y1="6.2" x2="8.2" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
-      const editBtnGM = $(`<button class="rp-edit-btn" title="编辑" data-msgidx="${msgIdx}" data-threadid="${threadId}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>`);
-      const delBtnGM = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_GM}</button>`);
+      const editBtnGM = $(`<button class="rp-edit-btn" title="编辑" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>`);
+      const delBtnGM = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_GM}</button>`);
       const btnRowGM = $('<div>').addClass('rp-btn-row');
       btnRowGM.append(editBtnGM, delBtnGM);
-      inner.append(btnRowGM);
-      inner.append($('<div>').addClass('rp-bts').text(msg.time));
-      wrap.append(avEl, inner);
+      wrap.append(btnRowGM);
+      wrap.append($('<div>').addClass('rp-bts').text(msg.time));
       area.append(wrap); return;
     }
-    // ── 群聊语音消息 (group_voice) ──
+    // ── 群聊语音消息 (group_voice)：同私聊气泡布局，不显示群头像列 ──
     if (msg.type === 'group_voice') {
-      const customImg = STATE.avatars && STATE.avatars[msg.name];
-      const avEl = customImg
-        ? $(`<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`)
-        : $(`<div class="rp-grp-av" style="background:${msg.avatarBg}">${msg.initials}</div>`);
-      const wrap = $('<div class="rp-bwrap rp-in rp-grp"></div>');
-      const inner = $('<div>');
-      inner.append($('<div>').addClass('rp-grp-sender').text(msg.name));
+      const wrap = $('<div class="rp-bwrap rp-in"></div>');
       const heights = [35,70,55,90,45,65,30];
       const bars = heights.map(h => `<div class="rp-wb" style="height:${h}%"></div>`).join('');
-      // 群聊语音默认已"播放"（直接展示文字，不需要点击）
-      inner.append($(`
+      wrap.append($(`
         <div class="rp-voice-wrap">
           <div class="rp-voice-bbl played">
             <div class="rp-voice-play">✓</div>
@@ -8462,23 +9405,16 @@ function renderBubbles(threadId) {
         </div>
       `));
       const btnRowGV = $('<div>').addClass('rp-btn-row');
-      btnRowGV.append($(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`));
-      inner.append(btnRowGV);
-      inner.append($('<div>').addClass('rp-bts').text(msg.time));
-      wrap.append(avEl, inner);
+      btnRowGV.append($(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`));
+      wrap.append(btnRowGV);
+      wrap.append($('<div>').addClass('rp-bts').text(msg.time));
       area.append(wrap); return;
     }
-    // ── 群聊红包 (group_hongbao) ──
+    // ── 群聊红包 (group_hongbao)：同私聊左侧卡片布局，不显示群头像列 ──
     if (msg.type === 'group_hongbao') {
-      const customImg = STATE.avatars && STATE.avatars[msg.name];
-      const avEl = customImg
-        ? $(`<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`)
-        : $(`<div class="rp-grp-av" style="background:${msg.avatarBg}">${msg.initials}</div>`);
-      const wrap = $('<div class="rp-bwrap rp-in rp-grp"></div>');
-      const inner = $('<div>');
-      inner.append($('<div>').addClass('rp-grp-sender').text(msg.name));
+      const wrap = $('<div class="rp-bwrap rp-in"></div>');
       const openedHtml = msg.opened ? `<div class="rp-hb-amount"><small>¥</small>${escHtml(msg.amount)}</div>` : '';
-      inner.append($(`
+      wrap.append($(`
         <div class="rp-hongbao ${msg.opened?'opened':''}">
           <div class="rp-hb-top">
             <div class="rp-hb-ico">🧧</div>
@@ -8495,10 +9431,9 @@ function renderBubbles(threadId) {
         </div>
       `));
       const btnRowGH = $('<div>').addClass('rp-btn-row');
-      btnRowGH.append($(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`));
-      inner.append(btnRowGH);
-      inner.append($('<div>').addClass('rp-bts').text(msg.time));
-      wrap.append(avEl, inner);
+      btnRowGH.append($(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`));
+      wrap.append(btnRowGH);
+      wrap.append($('<div>').addClass('rp-bts').text(msg.time));
       area.append(wrap); return;
     }
     // ── user 发的红包 ──
@@ -8519,9 +9454,9 @@ function renderBubbles(threadId) {
             <div class="rp-hb-tag">微信红包</div>
           </div>
         </div>
-        <div class="rp-bts">${msg.time}</div>
+        <div class="rp-bts">${escHtml(msg.time)}</div>
       `);
-      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
       wrap.append(delBtn);
       area.append(wrap); return;
     }
@@ -8538,15 +9473,15 @@ function renderBubbles(threadId) {
       pendingBtn.data('threadid', threadId);
       pendingBtn.data('msgid', msg.id || '');
       pendingBtn.data('prompt', msg.prompt || '');
-      pendingBtn.attr('data-threadid', threadId);
-      pendingBtn.attr('data-msgid', msg.id || '');
-      pendingBtn.attr('data-prompt', msg.prompt || '');
+      pendingBtn.attr('data-threadid', escHtml(threadId));
+      pendingBtn.attr('data-msgid', escHtml(msg.id || ''));
+      pendingBtn.attr('data-prompt', escHtml(msg.prompt || ''));
       pendingBtn.on('click', function(e) {
         e.stopPropagation();
         rpTriggerPendingImg($(this).data('threadid'), $(this).data('msgid'), $(this).data('prompt'), this);
       });
-      const timeEl = $(`<div class="rp-bts">${msg.time}</div>`);
-      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      const timeEl = $(`<div class="rp-bts">${escHtml(msg.time)}</div>`);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
       wrap.append(pendingBtn, timeEl, delBtn);
       area.append(wrap); return;
     }
@@ -8554,12 +9489,12 @@ function renderBubbles(threadId) {
     if (msg.type === 'image') {
       const isUser = msg.from === 'user';
       const wrap = $(`<div class="rp-bwrap ${isUser?'rp-out':'rp-in'}"></div>`);
-      const imgEl = $(`<div class="rp-img-bbl"><img src="${msg.src}" alt="图片"/></div>`);
+      const imgEl = $(`<div class="rp-img-bbl"><img src="${escHtml(msg.src)}" alt="图片"/></div>`);
       imgEl.find('img').on('load', function() {
         const a = this.closest('#rp-bubbles'); if (a) a.scrollTop = a.scrollHeight;
       });
-      const timeEl = $(`<div class="rp-bts">${msg.time}</div>`);
-      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      const timeEl = $(`<div class="rp-bts">${escHtml(msg.time)}</div>`);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
       wrap.append(imgEl, timeEl, delBtn);
       area.append(wrap); return;
     }
@@ -8572,9 +9507,9 @@ function renderBubbles(threadId) {
           <div class="rp-loc-ico">📍</div>
           <div class="rp-loc-txt">${escHtml(msg.place)}</div>
         </div>
-        <div class="rp-bts">${msg.time}</div>
+        <div class="rp-bts">${escHtml(msg.time)}</div>
       `);
-      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${threadId}">${DEL_SVG_EARLY}</button>`);
+      const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
       wrap.append(delBtn);
       area.append(wrap); return;
     }
@@ -8596,26 +9531,26 @@ function renderBubbles(threadId) {
             <div class="rp-hb-tag">微信红包</div>
           </div>
         </div>
-        <div class="rp-bts">${msg.time}</div>
+        <div class="rp-bts">${escHtml(msg.time)}</div>
       `);
       area.append(wrap); return;
     }
     // ── 普通消息 ──
     const isUser = msg.from === 'user';
     const isGrpThread = thread.type === 'group' || (threadId && threadId.startsWith('grp_'));
-    const wrap = $('<div>').addClass('rp-bwrap ' + (isUser ? 'rp-out' : 'rp-in') + (isGrpThread ? ' rp-grp' : ''));
+    const wrap = $('<div>').addClass('rp-bwrap ' + (isUser ? 'rp-out' : 'rp-in'));
 
     // 通用删除按钮 SVG
     const DEL_SVG = `<svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><path d="M3 3.5L3.7 11.5C3.75 12.05 4.2 12.5 4.75 12.5H9.25C9.8 12.5 10.25 12.05 10.3 11.5L11 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 3.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5.5 3.5V2.5C5.5 2.22 5.72 2 6 2H8C8.28 2 8.5 2.22 8.5 2.5V3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="7" y1="6" x2="7" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="5.5" y1="6.2" x2="5.8" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8.5" y1="6.2" x2="8.2" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
 
     // 通用编辑/删除按钮 SVG（铅笔）
-    const EDIT_SVG_BTN = (idx, tid) => $(`<button class="rp-edit-btn" title="编辑" data-msgidx="${idx}" data-threadid="${tid}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>`);
-    const DEL_BTN = (idx, tid) => $(`<button class="rp-del-btn" title="删除" data-msgidx="${idx}" data-threadid="${tid}">${DEL_SVG}</button>`);
+    const EDIT_SVG_BTN = (idx, tid) => $(`<button class="rp-edit-btn" title="编辑" data-msgidx="${idx}" data-threadid="${escHtml(tid)}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>`);
+    const DEL_BTN = (idx, tid) => $(`<button class="rp-del-btn" title="删除" data-msgidx="${idx}" data-threadid="${escHtml(tid)}">${DEL_SVG}</button>`);
 
-    if (isGrpThread && isUser) {
+    if (false && isGrpThread && isUser) {
       const uImg = getAvatar('user');
       const uAvHtml = uImg
-        ? `<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${uImg}" alt=""/></div>`
+        ? `<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${escHtml(uImg)}" alt=""/></div>`
         : `<div class="rp-grp-av" style="background:linear-gradient(145deg,#64748b,#475569)">我</div>`;
       const inner = $('<div>');
       inner.append($('<div>').addClass('rp-bubble rp-sent').text(msg.text));
@@ -8626,12 +9561,12 @@ function renderBubbles(threadId) {
       inner.append($('<div>').addClass('rp-bts').text(msg.time));
       // 头像放前面，内容放后面；配合 row-reverse CSS 头像会显示在右侧
       wrap.append($(uAvHtml), inner);
-    } else if (isGrpThread && !isUser) {
+    } else if (false && isGrpThread && !isUser) {
       // 群聊中 NPC/char 消息：同样支持编辑和删除
       const charImg = STATE.avatars && STATE.avatars[msg.name] ? STATE.avatars[msg.name] : null;
       const charAvHtml = charImg
-        ? `<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${charImg}" alt=""/></div>`
-        : `<div class="rp-grp-av" style="background:${msg.avatarBg || '#7c3aed'}">${msg.initials || (msg.name ? msg.name[0] : 'C')}</div>`;
+        ? `<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${escHtml(charImg)}" alt=""/></div>`
+        : `<div class="rp-grp-av" style="background:${escHtml(msg.avatarBg || '#7c3aed')}">${msg.initials || (msg.name ? msg.name[0] : 'C')}</div>`;
       const inner = $('<div>');
       inner.append($('<div>').addClass('rp-grp-sender').text(msg.name || ''));
       inner.append($('<div>').addClass('rp-bubble rp-recv').text(msg.text));
@@ -9052,7 +9987,7 @@ function sendSMS() {
       ? `所有标签里的FROM字段必须严格使用以下原样名字之一:${allowedGroupNames.join(' / ')}。禁止翻译名字、禁止改写成中文译名、禁止使用别名、昵称、姓氏单独称呼。`
       : '所有标签里的FROM字段必须严格使用当前已有联系人/群成员的原样名字,禁止翻译名字、禁止使用别名或中文译名。';
     const momentHint = (shouldTriggerMoment && momentNPCs.length > 0)
-      ? `同时,在PHONE块里为角色「${momentNPCs.join('、')}」各追加1条朋友圈动态,格式:<MOMENTS FROM="角色名" TIME="${ts}">内容</MOMENTS>;`
+      ? `同时,在PHONE块里为角色「${momentNPCs.join('、')}」各追加1条朋友圈动态。硬性规则:你必须输出真正的XML手机标签,标签名必须原样写成 PHONE / MOMENTS / COMMENT。每个角色都必须先写1条MOMENTS动态,然后立刻连续写2到3条属于这条动态的COMMENT评论,评论写完后才能开始下一条动态。严禁只写动态不写评论,严禁把评论拖到别的动态后面,严禁漏掉任何一个角色的评论。每条评论的MOMENT_ID必须填写该动态作者名,不要写时间戳,不要写别的ID,不要写别名;评论者只能从已有联系人中选,不能是发帖者本人,COMMENT的FROM绝对不能等于这条MOMENTS的FROM,也禁止发帖人对自己这条动态自评或自回复;每条动态至少2条评论。所有COMMENT必须紧跟在对应MOMENTS后面,中间禁止插入SMS/GMSG/旁白/解释。若少了任意一条COMMENT,整段PHONE输出都算失败。禁止输出“等等再评论”“稍后评论”“先发动态”之类说法。输出顺序必须严格是:一条MOMENTS + 两到三条COMMENT,然后再写下一条MOMENTS。`
       : '';
     oocText = `[手机群聊提示:{{user}}在群聊「${groupName}」发了消息,当前时间${ts}。请按世界书手机UI协议输出,并严格满足:仅在<PHONE>...</PHONE>内输出手机内容;至少一条<GMSG FROM="角色名" GROUP="${groupName}" TIME="${ts}">内容</GMSG>。${exactNameRule}${momentHint}]`;
   } else {
@@ -9069,7 +10004,7 @@ function sendSMS() {
       ? (momentNPCs.length > 0 ? momentNPCs.join('、') : th.name)
       : null;
     const momentHint = momentCharList
-      ? `另外,在同一个PHONE块里,为角色「${momentCharList}」追加1条朋友圈动态,格式:<MOMENTS FROM="角色名" TIME="${ts}">内容</MOMENTS>;这些MOMENTS/COMMENT里的FROM也必须严格沿用已有联系人原名,禁止翻译。`
+      ? `另外,在同一个PHONE块里,为角色「${momentCharList}」追加朋友圈动态。硬性规则:你必须输出真正的XML手机标签,标签名必须原样写成 PHONE / MOMENTS / COMMENT。每个角色都必须先写1条MOMENTS动态,然后立刻连续写2到3条属于这条动态的COMMENT评论,评论写完后才能开始下一条动态。严禁只写动态不写评论,严禁把评论拖到别的动态后面,严禁漏掉任何一个角色的评论。这些MOMENTS/COMMENT里的FROM必须严格沿用已有联系人原名,禁止翻译。每条评论的MOMENT_ID必须填写该动态作者名,不要写时间戳,不要写别的ID,不要写别名;评论者只能从已有联系人中选,不能是发帖者本人,COMMENT的FROM绝对不能等于这条MOMENTS的FROM,也禁止发帖人对自己这条动态自评或自回复;每条动态至少2条评论。所有COMMENT必须紧跟在对应MOMENTS后面,中间禁止插入SMS/GMSG/旁白/解释。若少了任意一条COMMENT,整段PHONE输出都算失败。禁止输出“等等再评论”“稍后评论”“先发动态”之类说法。输出顺序必须严格是:一条MOMENTS + 两到三条COMMENT,然后再写下一条MOMENTS。`
       : '';
 
     if (isMainChar) {
@@ -9129,6 +10064,89 @@ function normalizePhoneMarkup(raw) {
   // 全角尖括号兼容
   s = s.replace(/</g, '<').replace(/>/g, '>');
   return s;
+}
+
+
+function getPhoneParseParts(raw) {
+  const normalized = normalizePhoneMarkup(raw);
+  const blocks = [];
+  let outside = '';
+  let lastIdx = 0;
+  const phoneRe = /<PHONE\b[^>]*>([\s\S]*?)<\/PHONE>/gi;
+  let m;
+  while ((m = phoneRe.exec(normalized)) !== null) {
+    outside += normalized.slice(lastIdx, m.index);
+    blocks.push(m[1] || '');
+    lastIdx = m.index + m[0].length;
+  }
+  outside += normalized.slice(lastIdx);
+  return { normalized, blocks, outside };
+}
+
+function countPhoneTag(raw, re) {
+  const m = String(raw || '').match(re);
+  return m ? m.length : 0;
+}
+
+function hasBarePhoneTagsIn(raw) {
+  return /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|mochiLOCATION|mochiLOC)\b/i.test(String(raw || ''));
+}
+
+function hasUnclosedPhonePairedTag(raw) {
+  const s = String(raw || '');
+  const paired = ['PHONE', 'SMS', 'GMSG', 'GVOICE', 'SIMG', 'MOMENTS', 'COMMENT', 'VOICE', 'mochiLOCATION', 'mochiLOC'];
+  for (const tag of paired) {
+    const openRe = new RegExp('<' + tag + '\\b(?![^>]*\\/>)', 'gi');
+    const closeRe = new RegExp('<\\/' + tag + '>', 'gi');
+    const opens = (s.match(openRe) || []).length;
+    const closes = (s.match(closeRe) || []).length;
+    if (opens > closes) return true;
+  }
+  return false;
+}
+
+function cleanupPhoneResidualNoise(textEl) {
+  if (!textEl) return;
+  const normalizeNoise = function(s) {
+    return String(s || '')
+      .replace(/&hellip;/gi, '…')
+      .replace(/&#8230;/gi, '…')
+      .replace(/```/g, '')
+      .replace(/`/g, '')
+      .replace(/[\s\u00a0\u3000]/g, '')
+      .trim();
+  };
+  Array.from(textEl.querySelectorAll('pre, code')).forEach(function(el) {
+    if (el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns, .mes_buttons')) return;
+    const n = normalizeNoise(el.textContent || '');
+    const isOnlyEllipsis = /^(?:\.{3,}|…+|⋯+|。{3,}|·{3,}|•{3,})$/.test(n);
+    const isOnlyPhoneShell = /^(?:<\/?(?:phone|sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)[^>]*>)*$/i.test(n);
+    if (!n || isOnlyEllipsis || isOnlyPhoneShell) el.remove();
+  });
+  const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns, .mes_buttons')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = [];
+  let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(function(node) {
+    let v = String(node.nodeValue || '');
+    const before = v;
+    v = v
+      .replace(/```\s*(?:&hellip;|&#8230;|…|⋯|\.\.\.|。{3,}|·{3,}|•{3,})+\s*```/gi, '')
+      .replace(/`\s*(?:&hellip;|&#8230;|…|⋯|\.\.\.|。{3,}|·{3,}|•{3,})+\s*`/gi, '')
+      .replace(/(?:&hellip;|&#8230;)/gi, '…')
+      .replace(/^[\s\u00a0\u3000]*(?:…+|⋯+|\.\.\.|。{3,}|·{3,}|•{3,})[\s\u00a0\u3000]*$/g, '')
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n');
+    if (v !== before) node.nodeValue = v;
+  });
 }
 
 // ================================================================
@@ -9207,7 +10225,7 @@ function onMessageUpdatedForImages(messageIndex) {
         moment.pendingImg = null;
         moment.pendingImgType = null;
         // 直接 DOM 手术精准替换图片区域
-        const $mEl = $(`#rp-moments-list .rp-moment[data-mid="${momentId}"]`);
+        const $mEl = rpFindByDataAttr('#rp-moments-list', '.rp-moment', 'data-mid', momentId);
         if ($mEl.length) $mEl.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
         momentFilled = true;
       }
@@ -9276,7 +10294,7 @@ function onMessageUpdatedForImages(messageIndex) {
             if (wIdx >= 0) window.rpImgWaitQueue.splice(wIdx, 1);
           }
           // 直接 DOM 手术精准替换图片区域
-          const $mEl2 = $(`#rp-moments-list .rp-moment[data-mid="${firstMomentId}"]`);
+          const $mEl2 = rpFindByDataAttr('#rp-moments-list', '.rp-moment', 'data-mid', firstMomentId);
           if ($mEl2.length) $mEl2.find('.rp-moment-pending-img').replaceWith(`<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${src.replace(/"/g,'&quot;')}" alt=""/></div>`);
           if (STATE.currentView === 'moments') renderMoments();
           saveState();
@@ -9294,11 +10312,8 @@ function onMessageUpdatedForImages(messageIndex) {
       }
     }
 
-    // 路由到当前线程（生图的图片属于正在聊天的 char）
-    // 优先级：1) 当前打开的线程  2) 最近发送短信的线程  3) 从消息的角色名反向匹配
-    let targetThread = (STATE.currentThread && STATE.threads?.[STATE.currentThread])
-      ? STATE.currentThread
-      : (STATE._pendingPhoneReply?.threadId || null);
+    // 路由到更可信的目标线程：优先最近待回复线程，其次消息角色名反查，最后仅在单线程时兜底。
+    let targetThread = STATE._pendingPhoneReply?.threadId || null;
 
     if (!targetThread) {
       // 兜底：用消息的 name 字段（角色名）反向匹配已有线程
@@ -9307,6 +10322,14 @@ function onMessageUpdatedForImages(messageIndex) {
         targetThread = matchThread(msgCharName);
         if (targetThread) {
         }
+      }
+    }
+
+    if (!targetThread && STATE.currentThread && STATE.threads?.[STATE.currentThread]) {
+      const curTh = STATE.threads[STATE.currentThread];
+      const msgCharName2 = (msg.name || '').trim();
+      if (curTh && msgCharName2 && normalizePhonePersonName(resolveCanonicalPhoneName(curTh.name || '')) === normalizePhonePersonName(resolveCanonicalPhoneName(msgCharName2))) {
+        targetThread = STATE.currentThread;
       }
     }
 
@@ -9399,50 +10422,37 @@ function onAIMessage(_retryCount) {
     // 修复思维链冲突: 先剥离 <think>...</think> 块，避免思维链内的 <PHONE> 格式
     // 与正文末尾的 <PHONE> 标签发生正则误合并
     const rawStripped = raw.replace(/<think>[\s\S]*?<\/think>/gi, '');
-    const normalizedRaw = normalizePhoneMarkup(rawStripped);
-    const hasPhoneOpen  = /<PHONE\b/i.test(normalizedRaw);
-    const hasPhoneClose = /<\/PHONE>/i.test(normalizedRaw);
-    const hasSmsOpen    = /<SMS\b/i.test(normalizedRaw);
-    const hasSmsClose   = /<\/SMS>/i.test(normalizedRaw);
-
-    // 流式生成中间态保护
-    if (hasPhoneOpen && !hasPhoneClose) {
-      return;
-    }
-    if (hasSmsOpen && !hasSmsClose) {
+    const phoneParts = getPhoneParseParts(rawStripped);
+    const normalizedRaw = phoneParts.normalized;
+    const phoneBlocks = phoneParts.blocks;
+    const outsidePhoneBlocks = phoneParts.outside;
+    // 流式生成中间态保护：只在成对手机标签开闭不平衡时等待，避免半截裸标签被提前清理/解析
+    if (hasUnclosedPhonePairedTag(normalizedRaw)) {
       return;
     }
     // 消息完整,记录指纹防止同一完整消息被重复处理
     STATE._lastAiFingerprint = fp;
-    const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
     // 兼容:有些模型会漏掉 <PHONE> 包裹,但仍输出 <SMS>/<GMSG>
-    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(normalizedRaw);
+    const hasBarePhoneTags = hasBarePhoneTagsIn(normalizedRaw);
 
-    if (phoneMatch) {
-      const parsedCount = parsePhone(phoneMatch[1]);
-      // ── FIX: PHONE 标签外可能还有 MOMENTS/COMMENT 等裸标签 ──
-      // 把 <PHONE>...</PHONE> 替换掉后，检查剩余部分是否还有待解析的标签
-      const outsidePhone = normalizedRaw.replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '');
-      const hasOutsideTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(outsidePhone);
+    if (phoneBlocks.length > 0) {
+      let parsedTotal = 0;
+      phoneBlocks.forEach(function(phoneBlock) {
+        parsedTotal += parsePhone(phoneBlock) || 0;
+      });
+      // PHONE 标签外可能还有 MOMENTS/COMMENT/SMS/GMSG 等裸标签，统一再解析一次外部区域
+      const hasOutsideTags = hasBarePhoneTagsIn(outsidePhoneBlocks);
       if (hasOutsideTags) {
-        parsePhone(outsidePhone);
+        parsedTotal += parsePhone(outsidePhoneBlocks) || 0;
       }
-      if (parsedCount > 0 || hasOutsideTags) {
+      if (parsedTotal > 0 || hasOutsideTags) {
         STATE._pendingPhoneReply = null;
         rewritePhoneEchoInChat(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
         beautifySMSInChat(lastAiIdx);
         schedulePhonePostProcess(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
         return;
       }
-      // 极端兜底:PHONE 存在但结构不规范时,强行抽取第一条 SMS 文本落到 pending 线程
-      const looseSms = phoneMatch[1].match(/<SMS\b[^>]*>([\s\S]*?)(?:<\/SMS>|$)/i);
-      const looseText = (looseSms?.[1] || '').replace(/<[^>]+>/g, ' ').trim();
-      if (looseText && STATE._pendingPhoneReply?.threadId && STATE.threads?.[STATE._pendingPhoneReply.threadId]) {
-        incomingMsg(STATE._pendingPhoneReply.threadId, looseText.slice(0, 200), resolvePhoneTime());
-        STATE._pendingPhoneReply = null;
-        beautifySMSInChat(lastAiIdx);
-        return;
-      }
+      // 极端兜底已关闭：结构不规范时不要强塞进 pending 线程，避免串到当前/主角窗口
     }
 
     if (hasBarePhoneTags) {
@@ -9464,21 +10474,27 @@ function onAIMessage(_retryCount) {
 
     // ── 全局兜底: 扫描 <PHONE> 块之外的 <img src> (生图插件替换后残留在正文里的图片) ──
     // 把 <PHONE>...</PHONE> 和 <think>...</think> 扣掉，剩余部分如有 img 则路由到当前线程
-    const outsidePhone = normalizedRaw
-      .replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '')
-      .replace(/<think>[\s\S]*?<\/think>/gi, '');
+    const outsidePhone = outsidePhoneBlocks.replace(/<think>[\s\S]*?<\/think>/gi, '');
     const globalImgRe = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*\/?>/gi;
     let gi;
     while ((gi = globalImgRe.exec(outsidePhone)) !== null) {
       const src = gi[1];
-      // 优先当前线程，兜底用角色名匹配，再兜底单线程
-      let targetThread = (STATE.currentThread && STATE.threads?.[STATE.currentThread])
-        ? STATE.currentThread : null;
+      // 优先 pending 线程，其次严格按角色名匹配，最后仅单线程兜底
+      let targetThread = STATE._pendingPhoneReply?.threadId || null;
       if (!targetThread) {
         const ctx2 = getContext();
         const lastMsg = ctx2?.chat?.[ctx2.chat.length - 1];
         const charName = (lastMsg?.name || '').trim();
         if (charName) targetThread = matchThread(charName);
+      }
+      if (!targetThread && STATE.currentThread && STATE.threads?.[STATE.currentThread]) {
+        const ctx2b = getContext();
+        const lastMsg2 = ctx2b?.chat?.[ctx2b.chat.length - 1];
+        const charName2 = (lastMsg2?.name || '').trim();
+        const curTh2 = STATE.threads[STATE.currentThread];
+        if (curTh2 && charName2 && normalizePhonePersonName(resolveCanonicalPhoneName(curTh2.name || '')) === normalizePhonePersonName(resolveCanonicalPhoneName(charName2))) {
+          targetThread = STATE.currentThread;
+        }
       }
       if (!targetThread) {
         const ids = Object.keys(STATE.threads || {});
@@ -9551,6 +10567,27 @@ function sanitizeSmsText(text) {
   return t;
 }
 
+function sanitizeMomentCommentText(text) {
+  let t = String(text || '').trim();
+  if (!t) return '';
+
+  // 朋友圈评论只保留“说出来的话”，剥掉常见动作/叙事括号。
+  // 例：(轻笑)听错了? → 听错了?；挑眉笑了笑，打字回复：“放心...” → 放心...
+  t = t.replace(/[（(][^（）()]{1,24}[）)]/g, ' ');
+  t = t.replace(/^[\s，,。.!！?？、;；:：-]*(?:回复\s*[^:：，,。]{1,30}\s*)?[，,。:：]?\s*/u, '');
+  t = t.replace(/^[\s，,。.!！?？、;；:：-]*(?:轻笑|笑了笑|挑眉|低笑|叹气|皱眉|沉默|停顿|看了看|顿了顿|打字|敲字|输入|回复|评论|发出|发来|说道|说|问|反问|吐槽|补充)(?:着|地|了一下|了笑|起来|道)?[\s，,。:：、-]*/u, '');
+  t = t.replace(/^[\s，,。.!！?？、;；:：-]*(?:打字\s*)?回复\s*[：:，,、-]?\s*/u, '');
+
+  const q = t.match(/[“"「『]([^”"」』\n]{1,160})[”"」』]/);
+  if (q && q[1]) t = q[1];
+
+  t = t
+    .replace(/^[\s，,。.!！?？、;；:：-]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t;
+}
+
 function escapeRegExp(s) {
   return String(s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -9616,6 +10653,8 @@ function extractSmsSummaries(block) {
   while ((m = smsTagRe.exec(block)) !== null) {
     const attrs = getTagAttrs(m[1]);
     const from  = (attrs.FROM || '').trim();
+    const toRaw = (attrs.TO || '').trim();
+    if (isPhoneToNonUser(toRaw, getContext())) continue;
     const text  = sanitizeSmsText(m[2] || '');
     if (!text) continue;
     out.push({ from, text });
@@ -9647,9 +10686,50 @@ function extractCommentSummaries(block) {
 function extractGroupSummaries(block) {
   const out = [];
   if (!block) return out;
+  const _ctx = getContext();
+
+  // SMS/VOICE/HONGBAO 带 TO 且 TO!=user 时，解析层会自动拉群；
+  // echo/折叠层也必须把它们当“群聊摘要”处理，否则主楼正文会残留，
+  // 看起来像“手机内部进群了，但群聊消息没有被主楼渲染/折叠”。
+  const smsAutoGroupRe = /<SMS\b([^>]*)>([\s\S]*?)<\/SMS>/gi;
+  let m;
+  while ((m = smsAutoGroupRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const toRaw = (attrs.TO || '').trim();
+    if (!isPhoneToNonUser(toRaw, _ctx)) continue;
+    const targetName = normalizeAutoGroupTargetName(toRaw, _ctx);
+    const text = sanitizeSmsText(m[2] || '');
+    if (!text) continue;
+    out.push({ kind: 'gmsg', from, group: makeAutoGroupName(from, targetName, text), text });
+  }
+
+  const voiceAutoGroupRe = /<VOICE\b([^>]*)>([\s\S]*?)<\/VOICE>/gi;
+  while ((m = voiceAutoGroupRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const toRaw = (attrs.TO || '').trim();
+    if (!isPhoneToNonUser(toRaw, _ctx)) continue;
+    const targetName = normalizeAutoGroupTargetName(toRaw, _ctx);
+    const duration = (attrs.DURATION || '').trim();
+    const text = String(m[2] || '').replace(/<[^>]+>/g, '').trim();
+    out.push({ kind: 'gvoice', from, group: makeAutoGroupName(from, targetName, text || '语音'), duration, text });
+  }
+
+  const hongbaoAutoGroupRe = /<HONGBAO\b([^>]*)\/?\s*>/gi;
+  while ((m = hongbaoAutoGroupRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]);
+    const from = (attrs.FROM || '').trim();
+    const toRaw = (attrs.TO || '').trim();
+    if (!isPhoneToNonUser(toRaw, _ctx)) continue;
+    const targetName = normalizeAutoGroupTargetName(toRaw, _ctx);
+    const amount = (attrs.AMOUNT || '').trim();
+    const note = (attrs.NOTE || '').trim();
+    if (!from && !amount && !note) continue;
+    out.push({ kind: 'ghongbao', from, group: makeAutoGroupName(from, targetName, note || amount || '红包'), amount, note });
+  }
 
   const gmsgRe = /<GMSG\b([^>]*)>([\s\S]*?)<\/GMSG>/gi;
-  let m;
   while ((m = gmsgRe.exec(block)) !== null) {
     const attrs = getTagAttrs(m[1]);
     const from = (attrs.FROM || '').trim();
@@ -9717,6 +10797,8 @@ function extractDirectPhoneSummaries(block) {
   const voiceRe = /<VOICE\b([^>]*)>([\s\S]*?)<\/VOICE>/gi;
   while ((m = voiceRe.exec(block)) !== null) {
     const attrs = getTagAttrs(m[1]);
+    const toRaw = (attrs.TO || '').trim();
+    if (isPhoneToNonUser(toRaw, getContext())) continue;
     const from = (attrs.FROM || '').trim();
     const duration = (attrs.DURATION || '').trim();
     const text = String(m[2] || '').replace(/<[^>]+>/g, '').trim();
@@ -9726,6 +10808,8 @@ function extractDirectPhoneSummaries(block) {
   const hongbaoRe = /<HONGBAO\b([^>]*)\/?\s*>/gi;
   while ((m = hongbaoRe.exec(block)) !== null) {
     const attrs = getTagAttrs(m[1]);
+    const toRaw = (attrs.TO || '').trim();
+    if (isPhoneToNonUser(toRaw, getContext())) continue;
     const from = (attrs.FROM || '').trim();
     const amount = (attrs.AMOUNT || '').trim();
     const note = (attrs.NOTE || '').trim();
@@ -9756,7 +10840,7 @@ function extractDirectPhoneSummaries(block) {
     out.push({ kind: 'image', from, text: '', src });
   }
 
-  const locRe = /<(?:LOCATION|LOC)\b([^>]*)\/?\s*>(?:([\s\S]*?)<\/(?:LOCATION|LOC)>)?/gi;
+  const locRe = /<(?:mochiLOCATION|mochiLOC)\b([^>]*)\/?\s*>(?:([\s\S]*?)<\/(?:mochiLOCATION|mochiLOC)>)?/gi;
   while ((m = locRe.exec(block)) !== null) {
     const attrs = getTagAttrs(m[1]);
     const from = (attrs.FROM || '').trim();
@@ -9772,8 +10856,21 @@ function normalizePhoneCompareText(s) {
   return String(s || '')
     .replace(/&quot;|&#34;/gi, '"')
     .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/[“”„‟＂]/g, '"')
     .replace(/[‘’‛＇]/g, "'")
+    // 必须和 normalizePhoneCleanupText 保持同一套核心标点规范化。
+    // cleanup item 已把中文逗号/句号等转成 ASCII；若这里不转，removePhoneEchoFragments()
+    // 的 includes 预检查会在 DOM 原文仍是中文标点时直接失败，导致主楼残留完全删不掉。
+    .replace(/[：﹕︰]/g, ':')
+    .replace(/[；﹔]/g, ';')
+    .replace(/[，､]/g, ',')
+    .replace(/[。．]/g, '.')
+    .replace(/[！]/g, '!')
+    .replace(/[？]/g, '?')
+    .replace(/[（]/g, '(')
+    .replace(/[）]/g, ')')
     .replace(/(?:\.{3,}|…|⋯|·{3,}|•{3,}|。{3,})/g, '...')
     .replace(/\s+/g, ' ')
     .trim();
@@ -9782,15 +10879,281 @@ function normalizePhoneCompareText(s) {
 function buildLoosePhoneFragmentRegex(fragment) {
   const normalized = normalizePhoneCompareText(fragment);
   if (!normalized) return null;
-  const parts = normalized.split(/(\"|'|\.{3}|\s+)/).filter(Boolean).map(function(part) {
+  const looseLiteral = function(part) {
+    return escapeRegExp(part)
+      .replace(/\s\+/g, '\\s+')
+      // cleanup/compare 会把中文标点规范成 ASCII；regex 真正落到 DOM 原文时必须同时匹配两边。
+      .replace(/,/g, '[,，､]')
+      .replace(/:/g, '[:：﹕︰]')
+      .replace(/;/g, '[;；﹔]')
+      .replace(/\\\./g, '[\\.。．]')
+      .replace(/!/g, '[!！]')
+      .replace(/\\\?/g, '[\\?？]')
+      .replace(/\\\(/g, '[\\(（]')
+      .replace(/\\\)/g, '[\\)）]');
+  };
+  const parts = normalized.split(/("|'|\.{3}|\s+)/).filter(Boolean).map(function(part) {
     if (/^\s+$/.test(part)) return '\\s+';
     if (part === '...') return '(?:\\.\\.\\.|…|⋯|·{3,}|•{3,}|。{3,})';
     if (part === '"') return '(?:"|&quot;|&#34;|“|”|„|‟|＂)';
     if (part === "'") return "(?:'|&#39;|&apos;|‘|’|‛|＇)";
-    return escapeRegExp(part).replace(/\s+/g, '\\s+');
+    return looseLiteral(part);
   });
   if (!parts.length) return null;
   return new RegExp(parts.join(''), 'g');
+}
+
+function normalizePhoneCleanupText(s) {
+  return String(s || '')
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[“”„‟＂]/g, '"')
+    .replace(/[‘’‛＇]/g, "'")
+    .replace(/[：﹕︰]/g, ':')
+    .replace(/[，､]/g, ',')
+    .replace(/[。．]/g, '.')
+    .replace(/[！]/g, '!')
+    .replace(/[？]/g, '?')
+    .replace(/[（]/g, '(')
+    .replace(/[）]/g, ')')
+    .replace(/(?:\.{3,}|…|⋯|·{3,}|•{3,}|。{3,})/g, '...')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function compactPhoneCleanupText(s) {
+  return normalizePhoneCleanupText(s)
+    .replace(/["'「」『』《》〈〉【】\[\]()（）]/g, '')
+    .replace(/[\s\u00a0\u3000]/g, '')
+    .replace(/[,:;，。.!！？?、｜|\-—–_~～`·•…⋯]/g, '')
+    .replace(/^🧧/, '')
+    .trim();
+}
+
+function stripPhoneCleanupDecorations(s) {
+  return normalizePhoneCleanupText(s)
+    .replace(/^(?:📱\s*)?(?:手机(?:消息)?|群聊|朋友圈|评论|红包|语音|定位|位置|图片)(?:\s*[·:：-]\s*[^:：]*)?\s*/i, '')
+    .replace(/^群聊\s*[·:：-]\s*[^:：]+\s*/, '')
+    .replace(/^评论\s*/, '')
+    .trim();
+}
+
+function uniquePhoneCleanupVariants(parts) {
+  const out = [];
+  const seen = new Set();
+  (parts || []).forEach(function(part) {
+    const v = normalizePhoneCleanupText(part);
+    if (!v || seen.has(v)) return;
+    seen.add(v);
+    out.push(v);
+    ['"', "'", '“', '「'].forEach(function(q) {
+      const close = q === '“' ? '”' : (q === '「' ? '」' : q);
+      const qv = normalizePhoneCleanupText(q + v + close);
+      if (qv && !seen.has(qv)) { seen.add(qv); out.push(qv); }
+    });
+  });
+  return out;
+}
+
+function makePhoneCleanupItem(kind, from, text, aux, display, extraVariants) {
+  const variants = uniquePhoneCleanupVariants([display, text, aux].concat(extraVariants || []));
+  return {
+    kind: kind,
+    from: normalizePhoneCleanupText(from),
+    text: normalizePhoneCleanupText(text),
+    aux: normalizePhoneCleanupText(aux),
+    display: normalizePhoneCleanupText(display),
+    variants: variants,
+    compactVariants: variants.map(compactPhoneCleanupText).filter(Boolean),
+  };
+}
+
+function collectPhoneCleanupItems(block) {
+  const items = [];
+  if (!block) return items;
+
+  extractSmsSummaries(block).forEach(function(x) {
+    items.push(makePhoneCleanupItem('sms', x.from, x.text, '', x.text, [x.from ? `${x.from}: ${x.text}` : '']));
+  });
+
+  extractGroupSummaries(block).forEach(function(x) {
+    if (x.kind === 'gmsg') {
+      items.push(makePhoneCleanupItem('group', x.from, x.text, x.group, x.from ? `${x.from}: ${x.text}` : x.text, [x.text, x.group ? `${x.group} ${x.from}: ${x.text}` : '']));
+    } else if (x.kind === 'gvoice') {
+      const main = [x.from ? `${x.from}:` : '', x.duration ? `🎤[${x.duration}]` : '🎤', x.text || ''].filter(Boolean).join(' ');
+      items.push(makePhoneCleanupItem('voice', x.from, x.text, x.duration, main, [x.text, x.duration, `${x.from || ''}: ${x.text || ''}`, `${x.from || ''}: ${x.duration || ''} ${x.text || ''}`]));
+    } else if (x.kind === 'ghongbao') {
+      const hb = [x.amount ? `🧧${x.amount}` : '🧧红包', x.note].filter(Boolean).join(' ');
+      items.push(makePhoneCleanupItem('hongbao', x.from, x.note, x.amount, x.from ? `${x.from}: ${hb}` : hb, [hb, [x.amount, x.note].filter(Boolean).join(' '), x.note, x.amount]));
+    }
+  });
+
+  extractMomentSummaries(block).forEach(function(x) {
+    items.push(makePhoneCleanupItem('moment', x.from, x.text, x.time, x.text, [x.from ? `${x.from}: ${x.text}` : '']));
+  });
+
+  extractCommentSummaries(block).forEach(function(x) {
+    const display = x.from ? `${x.from}: ${x.text}` : x.text;
+    const vars = [x.text];
+    if (x.replyTo && x.from) vars.push(`${x.from} 回复 ${x.replyTo}: ${x.text}`, `${x.from} reply ${x.replyTo}: ${x.text}`);
+    items.push(makePhoneCleanupItem('comment', x.from, x.text, x.replyTo || '', display, vars));
+  });
+
+  extractDirectPhoneSummaries(block).forEach(function(x) {
+    if (x.kind === 'voice') {
+      const main = [x.from ? `${x.from}:` : '', x.duration ? `🎤[${x.duration}]` : '🎤', x.text || ''].filter(Boolean).join(' ');
+      items.push(makePhoneCleanupItem('voice', x.from, x.text, x.duration, main, [x.text, x.duration, `${x.from || ''}: ${x.text || ''}`, `${x.from || ''}: ${x.duration || ''} ${x.text || ''}`]));
+    } else if (x.kind === 'hongbao') {
+      const hb = [x.amount ? `🧧${x.amount}` : '🧧红包', x.note].filter(Boolean).join(' ');
+      items.push(makePhoneCleanupItem('hongbao', x.from, x.note, x.amount, x.from ? `${x.from}: ${hb}` : hb, [hb, [x.amount, x.note].filter(Boolean).join(' '), x.note, x.amount]));
+    } else if (x.kind === 'image') {
+      if (!x.text) return;
+      items.push(makePhoneCleanupItem('image', x.from, x.text, x.src || '', x.from ? `${x.from}: ${x.text}` : x.text, [x.text, `🖼️ ${x.text}`, x.from ? `${x.from}: 🖼️ ${x.text}` : '']));
+    } else if (x.kind === 'location') {
+      items.push(makePhoneCleanupItem('location', x.from, x.place, '', x.from ? `${x.from}: ${x.place}` : x.place, [x.place, `📍${x.place}`, x.from ? `${x.from}: 📍${x.place}` : '']));
+    }
+  });
+
+  return items.filter(function(item) { return item.variants && item.variants.length; });
+}
+
+function isPhoneCleanupProtectedNode(node) {
+  const el = node && (node.nodeType === 1 ? node : node.parentElement);
+  return !!(el && el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons, script, style'));
+}
+
+function hasPhoneCleanupMedia(el) {
+  return !!(el && el.querySelector && el.querySelector('img, video, audio, button, iframe, canvas, svg'));
+}
+
+function isPhoneCleanupBlockEl(el, root) {
+  if (!el || el === root || el.nodeType !== 1) return false;
+  if (isPhoneCleanupProtectedNode(el)) return false;
+  return /^(P|DIV|LI|BLOCKQUOTE|PRE|SECTION|ARTICLE)$/i.test(el.tagName || '');
+}
+
+function scanVisibleLines(textEl) {
+  const lines = [];
+  if (!textEl) return lines;
+  const seenEls = new Set();
+
+  Array.from(textEl.querySelectorAll('p, li, blockquote, pre, section, article, div')).forEach(function(el) {
+    if (!isPhoneCleanupBlockEl(el, textEl)) return;
+    if (Array.from(el.children || []).some(function(ch) { return isPhoneCleanupBlockEl(ch, textEl); })) return;
+    const text = normalizePhoneCleanupText(el.textContent || '');
+    if (!text) return;
+    seenEls.add(el);
+    lines.push({ text: text, normalizedText: text, compactText: compactPhoneCleanupText(text), element: el, nodes: null, hasMedia: hasPhoneCleanupMedia(el), kind: 'element' });
+  });
+
+  let buf = [];
+  function flush() {
+    if (!buf.length) return;
+    const text = normalizePhoneCleanupText(buf.map(function(n) { return n.textContent || ''; }).join(''));
+    if (text) {
+      lines.push({ text: text, normalizedText: text, compactText: compactPhoneCleanupText(text), element: null, nodes: buf.slice(), hasMedia: buf.some(function(n) { return n.nodeType === 1 && hasPhoneCleanupMedia(n); }), kind: 'range' });
+    }
+    buf = [];
+  }
+  Array.from(textEl.childNodes || []).forEach(function(node) {
+    if (node.nodeType === 1 && isPhoneCleanupProtectedNode(node)) { flush(); return; }
+    if (node.nodeType === 1 && /^(BR|HR)$/i.test(node.tagName || '')) { flush(); return; }
+    if (node.nodeType === 1 && seenEls.has(node)) { flush(); return; }
+    if (node.nodeType === 1 && isPhoneCleanupBlockEl(node, textEl)) { flush(); return; }
+    if (node.nodeType === 3 || node.nodeType === 1) buf.push(node);
+  });
+  flush();
+
+  return lines;
+}
+
+function phoneCleanupLineMatchesItem(line, item) {
+  if (!line || !item) return false;
+  const raw = normalizePhoneCleanupText(line.normalizedText || line.text || '');
+  const n = stripPhoneCleanupDecorations(raw);
+  const c = compactPhoneCleanupText(n);
+  const variants = item.variants || [];
+  const compactVariants = item.compactVariants || [];
+  if (!n || !c) return false;
+
+  for (let i = 0; i < variants.length; i++) {
+    if (n === variants[i]) return true;
+    if (normalizePhoneCleanupText(raw) === variants[i]) return true;
+  }
+  for (let i = 0; i < compactVariants.length; i++) {
+    const cv = compactVariants[i];
+    if (cv && c === cv) return true;
+  }
+
+  if (item.from && item.text) {
+    const fromC = compactPhoneCleanupText(item.from);
+    const textC = compactPhoneCleanupText(item.text);
+    if (fromC && textC && c === fromC + textC) return true;
+    const colonRe = new RegExp('^\\s*' + escapeRegExp(item.from).replace(/\\s+/g, '\\s*') + '\\s*[:：]\\s*' + escapeRegExp(item.text).replace(/\\s+/g, '\\s*') + '\\s*$');
+    if (colonRe.test(n)) return true;
+  }
+
+  return false;
+}
+
+function phoneCleanupBlockLikelyOnlyPhone(line, item) {
+  if (!line || !item || line.hasMedia) return false;
+  const c = line.compactText || compactPhoneCleanupText(line.text || '');
+  if (!c) return false;
+  const compactVariants = item.compactVariants || [];
+  for (let i = 0; i < compactVariants.length; i++) {
+    const v = compactVariants[i];
+    if (!v || v.length < 2) continue;
+    if (c === v) return true;
+    if (c.indexOf(v) >= 0) {
+      const residual = c.replace(v, '');
+      if (!residual || residual.length <= Math.max(4, Math.floor(v.length * 0.25))) return true;
+    }
+  }
+  return false;
+}
+
+function removeScannedPhoneLine(line) {
+  if (!line) return;
+  if (line.element && line.element.parentNode && !line.hasMedia) {
+    line.element.remove();
+    return;
+  }
+  (line.nodes || []).forEach(function(node) {
+    if (!node || !node.parentNode) return;
+    if (node.nodeType === 1 && hasPhoneCleanupMedia(node)) return;
+    node.parentNode.removeChild(node);
+  });
+}
+
+function removePhoneLines(textEl, cleanupItems) {
+  if (!textEl || !Array.isArray(cleanupItems) || cleanupItems.length === 0) return;
+  const removedElements = new Set();
+  scanVisibleLines(textEl).forEach(function(line) {
+    if (line.element && removedElements.has(line.element)) return;
+    const hit = cleanupItems.some(function(item) { return phoneCleanupLineMatchesItem(line, item); });
+    if (!hit) return;
+    removeScannedPhoneLine(line);
+    if (line.element) removedElements.add(line.element);
+  });
+
+  scanVisibleLines(textEl).forEach(function(line) {
+    if (line.element && removedElements.has(line.element)) return;
+    const hit = cleanupItems.some(function(item) { return phoneCleanupBlockLikelyOnlyPhone(line, item); });
+    if (!hit) return;
+    removeScannedPhoneLine(line);
+    if (line.element) removedElements.add(line.element);
+  });
+
+  const residualFragments = [];
+  cleanupItems.forEach(function(item) {
+    (item.variants || []).forEach(function(v) {
+      if (v && v.length >= 2) residualFragments.push(v);
+    });
+  });
+  removePhoneEchoFragments(textEl, residualFragments);
 }
 
 function removePhoneEchoFragments(textEl, fragments) {
@@ -9833,7 +11196,9 @@ function removePhoneEchoFragments(textEl, fragments) {
     matchers.forEach(function(item) {
       if (!item.fragment || !item.regex) return;
       const normalizedVal = normalizePhoneCompareText(val);
-      if (!normalizedVal || !normalizedVal.includes(item.fragment)) return;
+      // 不用 normalizedVal.includes(fragment) 做硬门禁：DOM 原文和 cleanup fragment 可能只在标点/空白/引号上等价，
+      // 真正的判断交给 loose regex。这里的预检查一旦过严，就会让清理链完全失效。
+      if (!normalizedVal) return;
       const before = val;
       val = val.replace(item.regex, '');
       if (val !== before) changed = true;
@@ -9872,18 +11237,102 @@ function stripPhoneLiteralNodes(textEl) {
   const textNodes = [];
   let n;
   while ((n = walker.nextNode())) textNodes.push(n);
-  textNodes.forEach(function(node) {
-    let val = String(node.nodeValue || '');
-    const before = val;
-    val = val
-      .replace(/<phone>[\s\S]*?<\/phone>/gi, '')
-      .replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '')
-      .replace(/<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|location|loc)\b[^>]*>/gi, '')
-      .replace(/&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|location|loc)\b[^&]*?&gt;/gi, '')
+  if (!textNodes.length) return;
+
+  // ── FIX: 聚合所有 text node 后统一跑 regex，解决 text node 碎片化导致跨节点匹配失败 ──
+  // 特殊字符（引号、破折号、省略号等）会使 ST 渲染器将文本切碎到多个 text node，
+  // 原逐 node 独立 regex 方案无法跨 node 匹配完整 <phone>...</phone> 块。
+  const combined = textNodes.map(function(nd) { return String(nd.nodeValue || ''); }).join('');
+  const MAX_LEN = 200000;
+  if (combined.length > MAX_LEN) {
+    // 退化回逐 node 处理，避免超大消息 OOM
+    textNodes.forEach(function(node) {
+      let val = String(node.nodeValue || '');
+      const before = val;
+      val = val
+        .replace(/<phone>[\s\S]*?<\/phone>/gi, '')
+        .replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '')
+        .replace(/<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b[^>]*>/gi, '')
+        .replace(/&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b(?:(?!&gt;)[\s\S])*?&gt;/gi, '')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n');
+      if (val !== before) node.nodeValue = val.trim();
+    });
+    return;
+  }
+
+  // Build char→nodeIdx map for the combined string
+  const map = new Array(combined.length);
+  let cursor = 0;
+  for (let i = 0; i < textNodes.length; i++) {
+    const len = String(textNodes[i].nodeValue || '').length;
+    for (let j = 0; j < len; j++) map[cursor + j] = i;
+    cursor += len;
+  }
+
+  // Collect all removal ranges from the combined string
+  var removeRanges = [];
+  var mm;
+  var rawPhoneRe = /<phone>[\s\S]*?<\/phone>/gi;
+  while ((mm = rawPhoneRe.exec(combined)) !== null) {
+    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
+  }
+  var encPhoneRe = /&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi;
+  while ((mm = encPhoneRe.exec(combined)) !== null) {
+    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
+  }
+  var rawTagRe = /<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b[^>]*>/gi;
+  while ((mm = rawTagRe.exec(combined)) !== null) {
+    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
+  }
+  var encTagRe = /&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b(?:(?!&gt;)[\s\S])*?&gt;/gi;
+  while ((mm = encTagRe.exec(combined)) !== null) {
+    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
+  }
+
+  if (!removeRanges.length) return;
+
+  // Merge overlapping/adjacent ranges (sort by start)
+  removeRanges.sort(function(a, b) { return a.start - b.start; });
+  var merged = [];
+  for (var ri = 0; ri < removeRanges.length; ri++) {
+    var r = removeRanges[ri];
+    if (merged.length && r.start <= merged[merged.length - 1].end) {
+      merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, r.end);
+    } else {
+      merged.push({ start: r.start, end: r.end });
+    }
+  }
+
+  // Keep mask
+  var keep = new Array(combined.length);
+  for (var ki = 0; ki < combined.length; ki++) keep[ki] = true;
+  for (var mi = 0; mi < merged.length; mi++) {
+    for (var mj = merged[mi].start; mj < merged[mi].end && mj < combined.length; mj++) {
+      keep[mj] = false;
+    }
+  }
+
+  // Collect kept chars per node
+  var nodeChars = [];
+  for (var nci = 0; nci < textNodes.length; nci++) nodeChars.push([]);
+  for (var ci = 0; ci < combined.length; ci++) {
+    if (keep[ci]) {
+      var nodeIdx = map[ci];
+      nodeChars[nodeIdx].push(combined[ci]);
+    }
+  }
+
+  // Write back
+  for (var wi = 0; wi < textNodes.length; wi++) {
+    var newVal = nodeChars[wi].join('')
       .replace(/[ \t]{2,}/g, ' ')
       .replace(/\n{3,}/g, '\n\n');
-    if (val !== before) node.nodeValue = val.trim();
-  });
+    var oldVal = String(textNodes[wi].nodeValue || '');
+    if (newVal !== oldVal) {
+      textNodes[wi].nodeValue = newVal;
+    }
+  }
 }
 
 function buildPhoneEchoContainer(block, smsList, commentList, groupList, momentsList, directPhoneList) {
@@ -10001,12 +11450,18 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     const hasExistingPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi) return;
 
-    // 先解析出所有手机 / 朋友圈内容，后面用来从正文里精确删除
-    const smsList = extractSmsSummaries(block);
-    const commentList = extractCommentSummaries(block);
-    const groupList = extractGroupSummaries(block);
-    const momentsList = extractMomentSummaries(block);
-    const directPhoneList = extractDirectPhoneSummaries(block);
+    // 先解析出所有手机 / 朋友圈内容，后面用来从正文里精确删除。
+    // 支持同一楼层内多个 <PHONE> 块 + PHONE 外裸标签。
+    const phonePartsForEcho = getPhoneParseParts(block);
+    const echoBlocks = phonePartsForEcho.blocks.length ? phonePartsForEcho.blocks.slice() : [];
+    if (hasBarePhoneTagsIn(phonePartsForEcho.outside)) echoBlocks.push(phonePartsForEcho.outside);
+    if (!echoBlocks.length) echoBlocks.push(phonePartsForEcho.normalized || String(block || ''));
+    const echoSource = echoBlocks.join('\n');
+    const smsList = extractSmsSummaries(echoSource);
+    const commentList = extractCommentSummaries(echoSource);
+    const groupList = extractGroupSummaries(echoSource);
+    const momentsList = extractMomentSummaries(echoSource);
+    const directPhoneList = extractDirectPhoneSummaries(echoSource);
 
     // ── 步骤1:DOM 清理 <phone> 及残余裸标签 ──
     // 先把 <phone> 内已渲染的智绘姬按钮（image-tag-button）提取出来，清理后贴回 mes_text
@@ -10024,7 +11479,7 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       while (phoneEl.firstChild) phoneEl.removeChild(phoneEl.firstChild);
       phoneEl.remove();
     });
-    textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment, location, loc').forEach(tag => {
+    textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment, mochilocation, mochiloc').forEach(tag => {
       Array.from(tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(collectLiveBtn);
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
@@ -10033,50 +11488,19 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     // ── 步骤2:尽量只做 DOM 级清理，不再整体重写 mes_text.innerHTML ──
     textEl.querySelectorAll('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns').forEach(function(el) { el.remove(); });
     stripPhoneLiteralNodes(textEl);
+    cleanupPhoneResidualNoise(textEl);
     // 不再删除主楼正文里的 image-tag-button，避免删掉 st-chatu8 自己渲染的 inline 生图按钮
     // savedImageBtns 收集的是 <phone> 标签内的按钮，已在上方随 phoneEl.remove() 一起删除，无需再进行二次清理
 
-    // ── 步骤3：情况D — 散落的 SMS 文字行 ──
-    if (smsList.length > 0) {
-      const smsTexts = smsList.map(function(s) { return s.text.trim(); }).filter(Boolean);
-      removePhoneEchoFragments(textEl, smsTexts);
-    }
-
-    // ── 步骤3b：清理散落的 COMMENT 正文 ──
-    if (commentList.length > 0) {
-      const commentTexts = commentList.map(function(c) { return c.text; }).filter(Boolean);
-      removePhoneEchoFragments(textEl, commentTexts);
-    }
-
-    // ── 步骤3b.5：清理散落的 GROUP 正文 ──
-    if (groupList.length > 0) {
-      const groupTexts = groupList.map(function(g) {
-        if (g.kind === 'gmsg') return g.text;
-        if (g.kind === 'gvoice') return g.text;
-        if (g.kind === 'ghongbao') return [g.amount, g.note].filter(Boolean).join(' ');
-        return '';
-      }).filter(Boolean);
-      removePhoneEchoFragments(textEl, groupTexts);
-    }
-
-    // ── 步骤3c：清理散落的朋友圈 / 语音 / 红包 / 图片 / 定位正文 ──
-    if (momentsList.length > 0) {
-      const momentTexts = momentsList.map(function(m) { return m.text; }).filter(Boolean);
-      removePhoneEchoFragments(textEl, momentTexts);
-    }
-    if (directPhoneList.length > 0) {
-      const directTexts = directPhoneList.map(function(item) {
-        if (item.kind === 'voice') return item.text;
-        if (item.kind === 'hongbao') return [item.amount ? `🧧${item.amount}` : '🧧红包', item.note].filter(Boolean).join(' ');
-        if (item.kind === 'image') return item.text;
-        if (item.kind === 'location') return item.place;
-        return '';
-      }).filter(Boolean);
-      removePhoneEchoFragments(textEl, directTexts);
-    }
+    // ── 步骤3：统一主楼清理链 ──
+    // 从原始 PHONE / 裸标签块抽取 cleanup items，再按主楼可见整行/整块删除。
+    // 最后才由 removePhoneLines 内部调用 removePhoneEchoFragments 做少量残渣补刀。
+    const cleanupItems = collectPhoneCleanupItems(echoSource);
+    removePhoneLines(textEl, cleanupItems);
+    cleanupPhoneResidualNoise(textEl);
 
     // ── 步骤4/5：单独挂载摘要容器，避免覆盖正文和按钮 ──
-    const echoWrap = buildPhoneEchoContainer(block, smsList, commentList, groupList, momentsList, directPhoneList);
+    const echoWrap = buildPhoneEchoContainer(echoSource, smsList, commentList, groupList, momentsList, directPhoneList);
     if (echoWrap.childNodes.length > 0) {
       textEl.appendChild(echoWrap);
     }
@@ -10173,7 +11597,7 @@ function rewritePhoneEchoInChat(block, fp, targetMesId) {
       const textEl = allMsgs[i]?.querySelector('.mes_text');
       if (!textEl) continue;
       const html = textEl.innerHTML || '';
-      const hasPhoneTag = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc)\b/i.test(html);
+      const hasPhoneTag = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc)\b/i.test(html);
       if (hasPhoneTag) {
         taggedTarget = textEl;
         break;
@@ -10339,21 +11763,32 @@ function repairPhoneMessageByMesId(targetMesId) {
     if (!msg || msg.is_user || !msg.mes) return false;
 
     const rawStripped = String(msg.mes).replace(/<think>[\s\S]*?<\/think>/gi, '');
-    const normalizedRaw = normalizePhoneMarkup(rawStripped);
-    const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
-    const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(normalizedRaw);
-    if (!phoneMatch && !hasBarePhoneTags) return false;
+    const phoneParts = getPhoneParseParts(rawStripped);
+    const normalizedRaw = phoneParts.normalized;
+    const hasBarePhoneTags = hasBarePhoneTagsIn(normalizedRaw);
+    if (!phoneParts.blocks.length && !hasBarePhoneTags) return false;
 
     const textEl = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"]) .mes_text`);
     if (!textEl) return false;
 
     const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     const textHtml = textEl.innerHTML || '';
-    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b/i.test(textHtml);
+    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
     if (hasRenderedPhoneUi && !hasResidualPhoneMarkup) return false;
 
-    const block = phoneMatch ? phoneMatch[1] : normalizedRaw;
-    applyPhoneCollapseToEl(textEl, block, null);
+    if (!hasRenderedPhoneUi) {
+      let parsedTotal = 0;
+      try {
+        phoneParts.blocks.forEach(function(phoneBlock) { parsedTotal += parsePhone(phoneBlock) || 0; });
+        if (hasBarePhoneTagsIn(phoneParts.outside)) parsedTotal += parsePhone(phoneParts.outside) || 0;
+        if (!phoneParts.blocks.length && hasBarePhoneTags) parsedTotal += parsePhone(normalizedRaw) || 0;
+        if (parsedTotal > 0) STATE._pendingPhoneReply = null;
+      } catch(parseErr) {
+        console.warn('[Raymond Phone] repairPhoneMessageByMesId parse failed:', parseErr);
+      }
+    }
+
+    applyPhoneCollapseToEl(textEl, normalizedRaw, null);
     beautifySMSInChat(targetMesId);
     return true;
   } catch(e) {
@@ -10400,19 +11835,27 @@ function rewriteAllHistoryPhoneBlocks() {
       if (!textEl) return;
       const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
       const textHtml = textEl.innerHTML || '';
-      const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b/i.test(textHtml);
+      const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
       // 已处理且当前 UI 完整、也没有残余标签时跳过；否则允许历史自愈
       if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) return;
 
       const rawStripped = msg.mes.replace(/<think>[\s\S]*?<\/think>/gi, '');
-      const normalizedRaw = normalizePhoneMarkup(rawStripped);
-      const phoneMatch = normalizedRaw.match(/<PHONE>([\s\S]*?)<\/PHONE>/i);
-      const hasBarePhoneTags = /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|LOCATION|LOC)\b/i.test(normalizedRaw);
+      const phoneParts = getPhoneParseParts(rawStripped);
+      const normalizedRaw = phoneParts.normalized;
+      const hasBarePhoneTags = hasBarePhoneTagsIn(normalizedRaw);
 
-      if (phoneMatch) {
-        applyPhoneCollapseToEl(textEl, phoneMatch[1], null);
-        textEl.dataset.rpHistDone = '1';
-      } else if (hasBarePhoneTags) {
+      if (phoneParts.blocks.length || hasBarePhoneTags) {
+        if (!hasRenderedPhoneUi) {
+          try {
+            let parsedTotal = 0;
+            phoneParts.blocks.forEach(function(phoneBlock) { parsedTotal += parsePhone(phoneBlock) || 0; });
+            if (hasBarePhoneTagsIn(phoneParts.outside)) parsedTotal += parsePhone(phoneParts.outside) || 0;
+            if (!phoneParts.blocks.length && hasBarePhoneTags) parsedTotal += parsePhone(normalizedRaw) || 0;
+            if (parsedTotal > 0) STATE._pendingPhoneReply = null;
+          } catch(parseErr) {
+            console.warn('[Raymond Phone] rewriteAllHistoryPhoneBlocks parse failed:', parseErr);
+          }
+        }
         applyPhoneCollapseToEl(textEl, normalizedRaw, null);
         textEl.dataset.rpHistDone = '1';
       }
@@ -10425,17 +11868,35 @@ function rewriteAllHistoryPhoneBlocks() {
 function getTagAttrs(attrText) {
   const attrs = {};
   if (!attrText) return attrs;
-  // 兼容:KEY="v" / KEY='v' / KEY="v" / KEY='v' / KEY=v(无引号)
-  const attrRe = /(\w+)\s*=\s*(?:"([^"]*)"|'([^']*)'|"([^"]*)"|'([^']*)'|([^\s>]+))/g;
+  // ── FIX: 预解码 HTML 实体，避免属性值中的 &quot;/&apos;/&#34; 等导致解析失败 ──
+  const decoded = String(attrText)
+    .replace(/&quot;/gi, '"')
+    .replace(/&#34;/gi, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&#39;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+  // 兼容:KEY="v" / KEY='v' / KEY=“v” / KEY=‘v’ / KEY=v(无引号)
+  const attrRe = /(\w+)\s*=\s*(?:"([^"]*)"|'([^']*)'|“([^”]*)”|‘([^’]*)’|([^\s>]+))/g;
   let am;
-  while ((am = attrRe.exec(attrText)) !== null) {
+  while ((am = attrRe.exec(decoded)) !== null) {
     attrs[am[1].toUpperCase()] = (am[2] ?? am[3] ?? am[4] ?? am[5] ?? am[6] ?? '').trim();
   }
   return attrs;
 }
 
 function parsePhone(block) {
+  momentsDiag('parsePhone:start', {
+    blockLen: String(block || '').length,
+    stateChatId: STATE.chatId,
+    currentView: STATE.currentView,
+    currentThread: STATE.currentThread,
+    momentsCount: (STATE.moments || []).length,
+  });
   let parsedCount = 0;
+  let parsedMomentTagCount = 0;
+  let parsedCommentTagCount = 0;
   let m;
   const ctx = getContext(); // FIX: ctx was previously undeclared, causing ReferenceError for new NPCs
 
@@ -10516,6 +11977,7 @@ function parsePhone(block) {
   while ((m = smsTagRe.exec(block)) !== null) {
     const attrs    = getTagAttrs(m[1]);
     const fromRaw0 = (attrs.FROM || '').trim();
+    const toRaw0   = (attrs.TO || '').trim();
     // 严禁 AI 替 user 发言：FROM 是 user 名字时直接跳过
     const time     = (attrs.TIME || '').trim();
     const rawContent = m[2] || '';
@@ -10523,6 +11985,13 @@ function parsePhone(block) {
     // 先从 SMS 内容里提取图片（生图插件替换后的 <img src>）和智绘姬 pending prompts
     const { imgs: smsImgs, cleanText: smsCleanText, pendingPrompts: smsPendingPrompts } = extractImgsFromText(rawContent);
     const text = sanitizeSmsText(smsCleanText);
+    if (!fromRaw0 || isPhoneUserName(fromRaw0, ctx) || _isUserFrom(fromRaw0)) {
+      parsedCount++;
+      continue;
+    }
+    const msgTime = resolvePhoneTime(time);
+    const routeAsGroup = isPhoneToNonUser(toRaw0, ctx);
+    const autoGroupName = routeAsGroup ? makeAutoGroupName(fromRaw0, normalizeAutoGroupTargetName(toRaw0, ctx), text || rawContent) : '';
 
     // 线程路由策略:
     // 1) 有明确 FROM 时，优先按 FROM 精确/模糊匹配已有线程
@@ -10539,7 +12008,9 @@ function parsePhone(block) {
     const matchedThreadId = fromRaw ? matchThread(fromRaw) : null;
     const pendingMatchesFrom = !!(fromRaw && matchedThreadId && matchedThreadId === pendingThreadId);
 
-    if (fromRaw) {
+    if (routeAsGroup) {
+      // TO 指向非 user 时直接走群聊，不先创建/匹配私聊线程
+    } else if (fromRaw) {
       // 有明确 FROM 时，优先尊重 FROM；只有 FROM 本来就指向 pending 线程时才落 pending
       threadId = pendingMatchesFrom ? pendingThreadId : matchedThreadId;
       if (!threadId) {
@@ -10549,6 +12020,7 @@ function parsePhone(block) {
         } else {
           // FROM 名字匹配失败 → 自动新建该 NPC 的线程，不要把消息误投到当前打开的线程
           const newTh = findOrCreateThread(fromRaw);
+          if (!newTh) { parsedCount++; continue; }
           threadId = newTh.id;
         }
       }
@@ -10559,18 +12031,14 @@ function parsePhone(block) {
       // 仅在没有 FROM 时，才用 pending 线程兜底
       threadId = pendingThreadId;
       fromRaw = pendingThread?.name || '';
-    } else if (STATE.currentThread && STATE.threads?.[STATE.currentThread]) {
-      threadId = STATE.currentThread;
-      fromRaw = STATE.threads[threadId]?.name || '';
     }
 
-    if (!threadId) {
+    if (!threadId && !routeAsGroup) {
       continue;
     }
-    const msgTime = resolvePhoneTime(time);
 
     // 先发已有图片（生图插件已替换完的 <img src>）
-    smsImgs.forEach(src => routeImgToThread(threadId, src, msgTime));
+    if (!routeAsGroup) smsImgs.forEach(src => routeImgToThread(threadId, src, msgTime));
 
     // ComfyUI <pic> 触发词：把 prompt → threadId 记录到 STATE._pendingComfyPics
     // Observer 模式B通过 prompt 匹配来定向路由，避免主楼正文图片误入手机
@@ -10580,7 +12048,7 @@ function parsePhone(block) {
     while ((picM2 = picTagRe2.exec(rawContent)) !== null) {
       const pa = getTagAttrs(picM2[1]);
       const pp = (pa.prompt || '').trim();
-      if (pp) {
+      if (pp && !routeAsGroup) {
         STATE._pendingComfyPics.set(pp, { threadId, time: msgTime });
       }
     }
@@ -10589,6 +12057,7 @@ function parsePhone(block) {
     // 存入线程作为占位，MutationObserver 捕捉到新图片时会来替换它
     const pendingPrompts = smsPendingPrompts;
     pendingPrompts.forEach(prompt => {
+      if (routeAsGroup) return;
       const th = STATE.threads[threadId];
       if (!th) return;
       // 避免重复添加同一 prompt 的 pending_image
@@ -10604,7 +12073,8 @@ function parsePhone(block) {
     });
 
     if (text) {
-      incomingMsg(threadId, text, msgTime);
+      if (routeAsGroup) incomingAutoGroupMsg(fromRaw, toRaw0, msgTime, text, autoGroupName);
+      else incomingMsg(threadId, text, msgTime);
       parsedCount++;
     } else if (smsImgs.length > 0 || pendingPrompts.length > 0) {
       parsedCount++; // 纯图片/pending_image SMS，无文字也计数
@@ -10624,6 +12094,9 @@ function parsePhone(block) {
     parsedCount++;
   }
 
+  const _parsedMomentIds = []; // 收集本次 parsePhone 解析出的 momentId
+  const _parsedMomentFromMap = {}; // FROM名 → momentId 映射，供 COMMENT 解析时快速关联
+  const _parsedMomentAuthors = []; // 收集本次 PHONE 块里的朋友圈作者，供自动互动兜底候选
   const momentsRe = /<MOMENTS\b([^>]*)>([\s\S]*?)<\/MOMENTS>/gi;
   while ((m = momentsRe.exec(block)) !== null) {
     const mAttrs = getTagAttrs(m[1]);
@@ -10652,7 +12125,23 @@ function parsePhone(block) {
     }
 
     const effectivePendingPrompt = pendingPrompt || comfyPendingPrompt;
+    parsedMomentTagCount++;
     const momentId = incomingMoment(fromName, momentTime, momentCleanText.trim(), momentImg, effectivePendingPrompt, comfyPendingPrompt ? 'comfy' : 'chatu8', true);
+    momentsDiag('parsePhone:momentTag', {
+      fromName,
+      momentTime,
+      textPreview: (momentCleanText || '').trim().slice(0, 100),
+      hasImg: !!momentImg,
+      pendingPrompt: effectivePendingPrompt ? String(effectivePendingPrompt).slice(0, 100) : null,
+      pendingType: comfyPendingPrompt ? 'comfy' : (pendingPrompt ? 'chatu8' : null),
+      momentId,
+    });
+    if (momentId) {
+      _parsedMomentIds.push(momentId);
+      _parsedMomentAuthors.push(fromName);
+      // 记录 FROM名 → momentId，同一作者多条动态时保留最后一条（与 COMMENT 解析顺序一致）
+      _parsedMomentFromMap[normNameKey(fromName)] = momentId;
+    }
 
     // 同步写 _pendingMomentImgs，供 Observer/MESSAGE_UPDATED 回填
     if (effectivePendingPrompt) {
@@ -10697,18 +12186,63 @@ function parsePhone(block) {
   while ((m = commentRe.exec(block)) !== null) {
     const cAttrs = getTagAttrs(m[1]);
     const commentFrom = (cAttrs.FROM || '').trim();
-    const _commentMomentId = (cAttrs.MOMENT_ID || '').trim();
+    let _commentMomentId = (cAttrs.MOMENT_ID || '').trim();
     const _commentReplyTo = cAttrs.REPLY_TO ? cAttrs.REPLY_TO.trim() : null;
     const _commentText = (m[2] || '').trim();
+    // 尝试用本次解析的 FROM→momentId 映射将 AI 给的简化 MOMENT_ID 转为真实 ID
+    if (_commentMomentId && _parsedMomentFromMap[normNameKey(_commentMomentId)]) {
+      _commentMomentId = _parsedMomentFromMap[normNameKey(_commentMomentId)];
+    }
+    parsedCommentTagCount++;
+    momentsDiag('parsePhone:commentTag', {
+      rawMomentId: (cAttrs.MOMENT_ID || '').trim(),
+      resolvedMomentId: _commentMomentId,
+      commentFrom,
+      replyTo: _commentReplyTo,
+      textPreview: _commentText.slice(0, 100),
+    });
     incomingComment(
-      (cAttrs.MOMENT_ID || '').trim(),
+      _commentMomentId,
       commentFrom,
       (cAttrs.TIME || '').trim(),
-      (m[2] || '').trim(),
-      cAttrs.REPLY_TO ? cAttrs.REPLY_TO.trim() : null
+      _commentText,
+      _commentReplyTo
     );
     parsedCount++;
   }
+
+  // 兜底：当前版本 user 回复评论修好后，主流程里 AI 生成的 MOMENTS 仍可能不带 COMMENT，
+  // 会导致“NPC/char 发朋友圈没人理”。这里仅对本次 parsePhone 新写入的动态补自动互动，
+  // 且只在现有非作者评论不足 2 条时触发，避免和模型已产出的 COMMENT 重复堆叠。
+  if (_parsedMomentIds.length > 0) {
+    const _fallbackFriends = Array.from(new Set([
+      ..._parsedMomentAuthors.filter(Boolean),
+      ...Object.values(STATE.threads || {})
+        .filter(function(t) { return t && t.type !== 'group' && t.id !== 'user' && t.name; })
+        .map(function(t) { return t.name; })
+    ]));
+    const _needsAutoMomentIds = _parsedMomentIds.filter(function(mid) {
+      const mo = STATE.moments && STATE.moments.find(function(x) { return x.id === mid; });
+      if (!mo) return false;
+      const authorNorm = normNameKey(mo.name || mo.from || '');
+      const nonAuthorComments = (mo.comments || []).filter(function(c) {
+        const cname = c?.name || c?.from || '';
+        return cname
+          && !isPhoneUserName(cname, getContext())
+          && normNameKey(cname) !== authorNorm;
+      });
+      return nonAuthorComments.length < 2;
+    });
+    momentsDiag('parsePhone:autoSocialCheck', {
+      parsedMomentIds: _parsedMomentIds.slice(),
+      parsedMomentAuthors: _parsedMomentAuthors.slice(),
+      fallbackFriends: _fallbackFriends.slice(),
+      needsAutoMomentIds: _needsAutoMomentIds.slice(),
+    });
+    // 本地自动社交已禁用：不再为缺失评论做本地补偿。
+  }
+
+
 
   const sync = block.match(/<SYNC\s+STAGE="(\d+)"\s+PROGRESS="(\d+)"\s+STATUS="([^"]+)"\/>/i);
   if (sync) {
@@ -10726,20 +12260,32 @@ function parsePhone(block) {
     parsedCount++;
   }
   // ── HONGBAO ──
-  const hongbaoRe = /<HONGBAO\s+FROM="([^"]+)"\s+AMOUNT="([^"]+)"(?:\s+NOTE="([^"]*)")?\s*\/?>/gi;
+  const hongbaoRe = /<HONGBAO\b([^>]*)\/?>/gi;
   const _userName = (typeof getContext === 'function' ? getContext()?.name1 : null) || '';
   while ((m = hongbaoRe.exec(block)) !== null) {
-    const fromName = m[1].trim();
-    // 跳过 user 自己发出的红包(AI 确认回显),只处理 char 发来的
-    if (_userName && fromName.toLowerCase() === _userName.toLowerCase()) continue;
-    incomingHongbao(fromName, m[2].trim(), m[3] ? m[3].trim() : '恭喜发财', null);
+    const hAttrs = getTagAttrs(m[1]);
+    const fromName = (hAttrs.FROM || '').trim();
+    const toRaw = (hAttrs.TO || '').trim();
+    const amount = (hAttrs.AMOUNT || '').trim();
+    const note = (hAttrs.NOTE || '').trim() || '恭喜发财';
+    // 跳过 user 自己发出的红包(AI 确认回显),只处理 char/NPC 发来的
+    if (!fromName || isPhoneUserName(fromName, ctx) || (_userName && fromName.toLowerCase() === _userName.toLowerCase())) { parsedCount++; continue; }
+    if (isPhoneToNonUser(toRaw, ctx)) incomingAutoGroupHongbao(fromName, toRaw, amount, note, null);
+    else incomingHongbao(fromName, amount, note, null);
     parsedCount++;
   }
   // ── VOICE ──
-  const voiceRe = /<VOICE\s+FROM="([^"]+)"\s+TIME="([^"]+)"\s+DURATION="([^"]+)">([\s\S]*?)<\/VOICE>/gi;
+  const voiceRe = /<VOICE\b([^>]*)>([\s\S]*?)<\/VOICE>/gi;
   while ((m = voiceRe.exec(block)) !== null) {
-    const voiceFrom = m[1].trim();
-    incomingVoice(voiceFrom, m[2].trim(), m[3].trim(), m[4].trim());
+    const vAttrs = getTagAttrs(m[1]);
+    const voiceFrom = (vAttrs.FROM || '').trim();
+    const toRaw = (vAttrs.TO || '').trim();
+    const vTime = (vAttrs.TIME || '').trim();
+    const duration = (vAttrs.DURATION || '').trim();
+    const voiceText = String(m[2] || '').trim();
+    if (!voiceFrom || isPhoneUserName(voiceFrom, ctx) || _isUserFrom(voiceFrom)) { parsedCount++; continue; }
+    if (isPhoneToNonUser(toRaw, ctx)) incomingAutoGroupVoice(voiceFrom, toRaw, vTime, duration, voiceText, null);
+    else incomingVoice(voiceFrom, vTime, duration, voiceText);
     parsedCount++;
   }
   // ── GROUP MSG ──
@@ -10747,7 +12293,9 @@ function parsePhone(block) {
   while ((m = gmsgRe.exec(block)) !== null) {
     const gAttrs = getTagAttrs(m[1]);
     const gmsgFrom = (gAttrs.FROM || '').trim();
-    incomingGroupMsg(gmsgFrom, (gAttrs.GROUP || '').trim(), (gAttrs.TIME || '').trim(), String(m[2] || '').trim());
+    const groupName = (gAttrs.GROUP || '').trim();
+    if (!gmsgFrom || !groupName || isPhoneUserName(gmsgFrom, ctx) || _isUserFrom(gmsgFrom)) { parsedCount++; continue; }
+    incomingGroupMsg(gmsgFrom, groupName, (gAttrs.TIME || '').trim(), String(m[2] || '').trim());
     parsedCount++;
   }
 
@@ -10760,6 +12308,7 @@ function parsePhone(block) {
     const groupName = (gAttrs.GROUP || '').trim();
     const time = (gAttrs.TIME || '').trim();
     // 严禁 AI 替 user 发言
+    if (!fromRaw || !groupName || isPhoneUserName(fromRaw, ctx) || _isUserFrom(fromRaw)) { parsedCount++; continue; }
     const duration = (gAttrs.DURATION || '').trim(), voiceText = String(m[2] || '').trim();
     const groupId = `grp_${groupName}`;
     if (!STATE.threads[groupId]) {
@@ -10768,20 +12317,23 @@ function parsePhone(block) {
         id: groupId, name: groupName,
         initials: groupName.slice(0, 2),
         avatarBg: `linear-gradient(145deg,${GROUP_COLORS[colorIdx]},${GROUP_COLORS[(colorIdx+1)%GROUP_COLORS.length]})`,
-        type: 'group', messages: [], unread: 0
+        type: 'group', messages: [], unread: 0,
+        members: ['user']
       };
     }
     const grpThread = STATE.threads[groupId];
+    if (!grpThread.members) grpThread.members = ['user'];
     const isDupGV = grpThread.messages.slice(-6).some(msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === voiceText && (!duration || msg.duration === duration));
     if (!isDupGV) {
       const senderTh = findOrCreateThread(fromRaw);
       if (!senderTh) continue;
+      if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
       grpThread.messages.push({
         id: `ggv_${Date.now()}`, from: 'incoming',
         type: 'group_voice', name: fromRaw, time, duration, voiceText,
         initials: senderTh.initials, avatarBg: senderTh.avatarBg
       });
-      grpThread.unread = (grpThread.unread || 0) + 1;
+          grpThread.unread = (grpThread.unread || 0) + 1;
       refreshBadges(); renderThreadList();
       if (STATE.currentThread === groupId) renderBubbles(groupId);
       showBanner(groupName, `${fromRaw}: 🎤 [${duration}]`);
@@ -10796,6 +12348,7 @@ function parsePhone(block) {
   while ((m = ghongbaoRe.exec(block)) !== null) {
     const gAttrs = getTagAttrs(m[1]);
     const fromRaw = (gAttrs.FROM || '').trim(), groupName = (gAttrs.GROUP || '').trim();
+    if (!fromRaw || !groupName || isPhoneUserName(fromRaw, ctx) || _isUserFrom(fromRaw)) { parsedCount++; continue; }
     const amount = (gAttrs.AMOUNT || '').trim(), note = (gAttrs.NOTE || '').trim() || '恭喜发财';
     const groupId = `grp_${groupName}`;
     if (!STATE.threads[groupId]) {
@@ -10804,21 +12357,24 @@ function parsePhone(block) {
         id: groupId, name: groupName,
         initials: groupName.slice(0, 2),
         avatarBg: `linear-gradient(145deg,${GROUP_COLORS[colorIdx]},${GROUP_COLORS[(colorIdx+1)%GROUP_COLORS.length]})`,
-        type: 'group', messages: [], unread: 0
+        type: 'group', messages: [], unread: 0,
+        members: ['user']
       };
     }
     const grpThread = STATE.threads[groupId];
+    if (!grpThread.members) grpThread.members = ['user'];
     const isDupGH = grpThread.messages.slice(-6).some(msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount && msg.note === note);
     if (!isDupGH) {
       const senderTh = findOrCreateThread(fromRaw);
       if (!senderTh) continue;
+      if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
       grpThread.messages.push({
         id: `ggh_${Date.now()}`, from: 'incoming',
         type: 'group_hongbao', name: fromRaw, time: resolvePhoneTime(),
         amount, note, opened: false,
         initials: senderTh.initials, avatarBg: senderTh.avatarBg
       });
-      grpThread.unread = (grpThread.unread || 0) + 1;
+          grpThread.unread = (grpThread.unread || 0) + 1;
       refreshBadges(); renderThreadList();
       if (STATE.currentThread === groupId) renderBubbles(groupId);
       showBanner(groupName, `${fromRaw} 发了一个红包`);
@@ -10846,9 +12402,8 @@ function parsePhone(block) {
     if (fromRaw) {
       simgThreadId = matchThread(fromRaw);
       if (!simgThreadId) {
-        const curTh = STATE.currentThread && STATE.threads?.[STATE.currentThread];
         const createdTh = findOrCreateThread(fromRaw);
-        simgThreadId = curTh ? STATE.currentThread : (createdTh ? createdTh.id : null);
+        simgThreadId = createdTh ? createdTh.id : null;
       }
     } else {
       simgThreadId = STATE.currentThread || null;
@@ -10866,13 +12421,37 @@ function parsePhone(block) {
     const time = (attrs.TIME || '').trim();
     const src = (attrs.SRC || '').trim();
     if (!src) continue;
-    let simgThreadId2 = fromRaw ? matchThread(fromRaw) : null;
-    if (!simgThreadId2) simgThreadId2 = STATE.currentThread || null;
+    let simgThreadId2 = null;
+    if (fromRaw) {
+      simgThreadId2 = matchThread(fromRaw);
+      if (!simgThreadId2) {
+        const createdTh2 = findOrCreateThread(fromRaw);
+        simgThreadId2 = createdTh2 ? createdTh2.id : null;
+      }
+    } else {
+      simgThreadId2 = STATE.currentThread || null;
+    }
     if (!simgThreadId2) continue;
     routeImgToThread(simgThreadId2, src, time);
     parsedCount++;
   }
 
+  momentsDiag('parsePhone:end', {
+    parsedCount,
+    parsedMomentTagCount,
+    parsedCommentTagCount,
+    momentsCount: (STATE.moments || []).length,
+    currentView: STATE.currentView,
+    currentThread: STATE.currentThread,
+  });
+  if (parsedMomentTagCount > 0 && parsedCommentTagCount === 0) {
+    console.warn('[Moments] parsePhone parsed MOMENTS but no COMMENT tags', {
+      parsedMomentTagCount,
+      parsedCommentTagCount,
+      stateChatId: STATE.chatId,
+      currentView: STATE.currentView,
+    });
+  }
   return parsedCount;
 }
 
@@ -10912,7 +12491,6 @@ function incomingMsg(threadId, text, time) {
   }
 
   th.messages.push({ from: threadId, text, time: resolvedTime });
-
   if (STATE.currentView !== 'thread' || STATE.currentThread !== threadId) {
     th.unread++;
   }
@@ -11289,6 +12867,7 @@ async function postUserDiary() {
 }
 
 async function postUserMoment() {
+  momentsDiag('postUserMoment:start', { currentView: STATE.currentView, stateChatId: STATE.chatId });
   const text = $('#rp-compose-text').val().trim();
   if (!text) return;
   const now = new Date();
@@ -11311,10 +12890,11 @@ async function postUserMoment() {
   closeCompose();
   go('moments');
   saveState();
+  momentsDiag('postUserMoment:created', { momentId, textPreview: text.slice(0, 120), momentsCount: (STATE.moments || []).length });
   // 先强制主角评论,再让 NPC 们自由互动
-  // [DISABLED]   setTimeout(() => charRespondToUserMoment(momentId), 800);
-  // 好友自动点赞+评论(user的动态)
-  // [DISABLED]   setTimeout(() => friendsInteractOnMoment(momentId), 2500);
+  momentsDiag('postUserMoment:scheduleCharRespond', { momentId, delayMs: 800 });
+  setTimeout(() => { momentsDiag('postUserMoment:runCharRespond', { momentId }); charRespondToUserMoment(momentId); }, 800);
+  // 本地自动社交已禁用：用户动态不再自动触发 friendsInteractOnMoment。
 }
 
 // ================================================================
@@ -11344,16 +12924,29 @@ function _bindAvatarUpload() {
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setAvatar(who, dataUrl);
-        updateAvatarPreviewSwatch(who);
-        renderMoments(); renderThreadList(); renderDiary();
-        if (STATE.currentView === 'thread' && STATE.currentThread) openThread(STATE.currentThread);
+        setAvatarCompressed(who, dataUrl).then(function() {
+          updateAvatarPreviewSwatch(who);
+          renderMoments(); renderThreadList(); renderDiary();
+          if (STATE.currentView === 'thread' && STATE.currentThread) openThread(STATE.currentThread);
+        }).catch(function() {
+          setAvatar(who, dataUrl);
+          saveState();
+          updateAvatarPreviewSwatch(who);
+          renderMoments(); renderThreadList(); renderDiary();
+          if (STATE.currentView === 'thread' && STATE.currentThread) openThread(STATE.currentThread);
+        });
       };
       img.onerror = function() {
         const dataUrl = ev.target.result;
-        setAvatar(who, dataUrl);
-        updateAvatarPreviewSwatch(who);
-        renderMoments(); renderThreadList(); renderDiary();
+        setAvatarCompressed(who, dataUrl).then(function() {
+          updateAvatarPreviewSwatch(who);
+          renderMoments(); renderThreadList(); renderDiary();
+        }).catch(function() {
+          setAvatar(who, dataUrl);
+          saveState();
+          updateAvatarPreviewSwatch(who);
+          renderMoments(); renderThreadList(); renderDiary();
+        });
       };
       img.src = ev.target.result;
     };
@@ -11388,7 +12981,7 @@ function updateAvatarPreviewSwatch(who) {
   const swatch = $('#rp-avatar-preview-swatch');
   const ci = STATE.avatars && STATE.avatars[who];
   if (ci) {
-    swatch.html(`<img class="rp-av-photo" src="${ci}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:19px"/>`);
+    swatch.html(`<img class="rp-av-photo" src="${escHtml(ci)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:19px"/>`);
     swatch.css('background', 'transparent');
   } else if (who === 'user') {
     swatch.text('我').css('background', 'linear-gradient(145deg,#64748b,#475569)');
@@ -11406,7 +12999,7 @@ function incomingCall(fromRaw, time) {
   if (!thread) return;
   const customImg = STATE.avatars && STATE.avatars[thread.name];
   const avHtml = customImg
-    ? `<div class="rp-call-av rp-av-img" style="background:transparent;overflow:hidden"><img class="rp-av-photo" src="${customImg}" alt=""/></div>`
+    ? `<div class="rp-call-av rp-av-img" style="background:transparent;overflow:hidden"><img class="rp-av-photo" src="${escHtml(customImg)}" alt=""/></div>`
     : `<div class="rp-call-av" style="background:${thread.avatarBg}">${thread.initials}</div>`;
   $('#rp-call-overlay').html(`
     <div style="display:flex;flex-direction:column;align-items:center">
@@ -11552,12 +13145,15 @@ function incomingGroupMsg(fromRaw, groupName, time, text) {
       id: groupId, name: groupName,
       initials: groupName.slice(0, 2),
       avatarBg: `linear-gradient(145deg,${GROUP_COLORS[colorIdx]},${GROUP_COLORS[(colorIdx+1)%GROUP_COLORS.length]})`,
-      type: 'group', messages: [], unread: 0
+      type: 'group', messages: [], unread: 0,
+      members: ['user']
     };
   }
   const thread = STATE.threads[groupId];
+  if (!thread.members) thread.members = ['user'];
   const senderTh = findOrCreateThread(fromRaw);
   if (!senderTh) return;
+  if (!thread.members.includes(senderTh.id)) thread.members.push(senderTh.id);
   // 去重只看最近几条，避免同一句群消息后续再次出现时被永久吞掉
   const isDup = thread.messages.slice(-8).some(m => m.type === 'group_msg' && m.name === fromRaw && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) return;
@@ -11650,7 +13246,7 @@ function triggerImagePick() {
       const ts  = resolvePhoneTime();
       const src = e.target.result;
       thread.messages.push({ id: `uimg_${Date.now()}`, from: 'user', type: 'image', time: ts, src });
-      renderBubbles(thread.id);
+          renderBubbles(thread.id);
       saveState();
       fi.remove();
       // Attach image to ST's #file_form_input (confirmed: used by 附加文件 button)
@@ -12032,12 +13628,13 @@ function hidePhoneTagsInChat(targetMesId) {
       phoneEl.remove();
     });
     // 残余的裸 sms/gmsg 等标签(不在 phone 内)也一并清除
-    el.querySelectorAll('sms, moments, comment, notify, sync, call, voice, gmsg, gvoice, ghongbao, simg, hongbao, location, loc').forEach(tag => {
+    el.querySelectorAll('sms, moments, comment, notify, sync, call, voice, gmsg, gvoice, ghongbao, simg, hongbao, mochilocation, mochiloc').forEach(tag => {
       while (tag.firstChild) tag.removeChild(tag.firstChild);
       tag.remove();
     });
     // 不再整体改写 innerHTML，避免把智绘姬按钮节点重建掉
     stripPhoneLiteralNodes(el);
+    cleanupPhoneResidualNoise(el);
   });
 }
 
@@ -12071,7 +13668,7 @@ function beautifySMSInChat(targetMesId) {
     if (!textEl) return;
     const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-divider, .rp-phone-live-img-btns');
     const textHtml = textEl.innerHTML || '';
-    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|location|loc|notify|sync|call)\b/i.test(textHtml);
+    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
     if (textEl.dataset.rpDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) return;
     textEl.dataset.rpDone = '1';
 
@@ -12080,7 +13677,7 @@ function beautifySMSInChat(targetMesId) {
     const initials = charName.slice(0, 2);
     const customImg = STATE.avatars?.[charName];
     const avHtml = customImg
-      ? `<div class="rp-cb-av"><img src="${customImg}" alt=""/></div>`
+      ? `<div class="rp-cb-av"><img src="${escHtml(customImg)}" alt=""/></div>`
       : `<div class="rp-cb-av" style="background:${avatarBg}">${initials}</div>`;
     const mkBubble = (text) => {
       const d = document.createElement('div');
@@ -12367,7 +13964,7 @@ function lgRenderHomeIcons() {
   });
 }
 
-function lgApplyTheme(id) {
+function lgApplyTheme(id, opts) {
   const phone = document.getElementById('rp-phone');
   // 移除所有内置主题 class（custom 不加 class，靠注入 CSS 实现）
   Object.keys(THEMES).filter(k => k !== 'custom').forEach(k => phone.classList.remove(`rp-theme-${k}`));
@@ -12392,6 +13989,7 @@ function lgApplyTheme(id) {
   } else {
     requestAnimationFrame(() => { lgRenderHomeIcons(); rpStripFrameRing(); });
   }
+  if (!(opts && opts.skipSave)) { try { saveState(); } catch(e) {} }
 }
 
 // ── 强制去除手机边框外圈 box-shadow（无论主题如何设置）──────────
@@ -12447,6 +14045,7 @@ function lgInjectCustomCSS(css) {
   // 兼容旧版撤销按钮（如果还存在）
   const undoBtn = document.getElementById('rp-ts-undo');
   if (undoBtn) undoBtn.disabled = (history.length === 0);
+  try { saveState(); } catch(e) {}
 }
 
 /** 撤销到上一步 CSS */
@@ -12467,6 +14066,7 @@ function lgUndoCustomCSS() {
   lgTsUpdateActionBar();
   // 添加撤销提示气泡
   lgTsAddBubble('ai', '↩ 已回到上一版主题效果。');
+  try { saveState(); } catch(e) {}
 }
 
 /** 更新操作栏（有 CSS 历史时显示，撤销按钮根据历史判断） */
@@ -12516,6 +14116,7 @@ function lgSaveCurrentTheme() {
   lgTsScrollBottom();
   // 刷新主题页保存区
   lgRenderSavedThemes();
+  try { saveState(); } catch(e) {}
 }
 
 /** 渲染主题选择页「已保存方案」区域 */
@@ -12572,6 +14173,7 @@ function lgDeleteSavedTheme(idx) {
   saved.forEach((s, i) => { if (/^方案 \d+$/.test(s.label)) s.label = `方案 ${i+1}`; });
   localStorage.setItem('rp_saved_themes', JSON.stringify(saved));
   lgRenderSavedThemes();
+  try { saveState(); } catch(e) {}
 }
 
 function lgRenderThemePicker() {
@@ -12912,11 +14514,20 @@ async function getMomentsCtx() {
   const now = Date.now();
   const ctx = getContext();
   const chatId = ctx?.chatId || (ctx?.characterId != null ? `char_${ctx.characterId}` : 'default');
+  momentsDiag('getMomentsCtx:start', {
+    chatId,
+    hasCache: !!_getMomentsCtxCache,
+    cacheChatId: _getMomentsCtxCacheChatId,
+    cacheAgeMs: _getMomentsCtxCacheTime ? (now - _getMomentsCtxCacheTime) : null,
+    hasInFlight: !!_getMomentsCtxPromise,
+    inFlightChatId: _getMomentsCtxPromiseChatId,
+  });
   if (_getMomentsCtxCache && _getMomentsCtxCacheChatId === chatId && (now - _getMomentsCtxCacheTime) < 30000) {
+    momentsDiag('getMomentsCtx:cacheHit', { chatId, npcs: (_getMomentsCtxCache.npcs || []).slice() });
     return _getMomentsCtxCache;
   }
   // 已有同 chatId 的进行中加载，等待它完成而不是重复发起
-  if (_getMomentsCtxPromise && _getMomentsCtxPromiseChatId === chatId) return _getMomentsCtxPromise;
+  if (_getMomentsCtxPromise && _getMomentsCtxPromiseChatId === chatId) { momentsDiag('getMomentsCtx:awaitInFlight', { chatId }); return _getMomentsCtxPromise; }
   _getMomentsCtxPromiseChatId = chatId;
   _getMomentsCtxPromise = _doGetMomentsCtx(chatId);
   try {
@@ -12930,6 +14541,12 @@ async function getMomentsCtx() {
   }
 }
 async function _doGetMomentsCtx(chatIdHint) {
+  momentsDiag('_doGetMomentsCtx:start', {
+    chatIdHint,
+    stateChatId: STATE.chatId,
+    momentsCount: (STATE.moments || []).length,
+    threadsCount: Object.keys(STATE.threads || {}).length,
+  });
   const ctx = getContext();
   const charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
   const userName = ctx?.name1 || '用户';
@@ -12976,6 +14593,13 @@ async function _doGetMomentsCtx(chatIdHint) {
 
   // 提取 NPC 人设(优先使用 ST 中已加载角色卡,兼容世界书支撑的人物)
   const npcPersonaMap = {};
+  const npcPersonaDisplayNames = {};
+  const rememberNpcPersonaName = function(nameRaw) {
+    const name = String(nameRaw || '').trim();
+    if (!name || normNameKey(name) === normNameKey(charName)) return;
+    const k = normNameKey(name);
+    if (!npcPersonaDisplayNames[k]) npcPersonaDisplayNames[k] = name;
+  };
 
   // 1. 从角色卡提取(适用于有角色卡的 NPC)
   try {
@@ -12985,12 +14609,19 @@ async function _doGetMomentsCtx(chatIdHint) {
     chars.forEach(ch => {
       const name = (ch?.name || '').trim();
       if (!name || name === charName) return;
+      // FIX: 只收集当前聊天中实际出现过的角色，或当前槽位有 thread 的角色
+      // 避免把 ST 中所有已加载角色卡的名字都当成当前卡的 NPC（串卡）
+      const nk = normNameKey(name);
+      const isInChat = chatNpcKeys.has(nk);
+      const isInThreads = Object.values(STATE.threads || {}).some(t => t && t.name && normNameKey(t.name) === nk && t.type !== 'group' && !t.id?.startsWith('grp_'));
+      const isInMoments = (STATE.moments || []).some(m => m && m.from !== 'user' && normNameKey(m.name || '') === nk);
+      if (!isInChat && !isInThreads && !isInMoments) return;
       const parts = [];
       if (ch.description) parts.push(ch.description.replace(/\s+/g, ' ').trim().slice(0, 280));
       if (ch.personality) parts.push('性格:' + ch.personality.replace(/\s+/g, ' ').trim().slice(0, 140));
       if (ch.scenario)    parts.push('背景:' + ch.scenario.replace(/\s+/g, ' ').trim().slice(0, 180));
       const persona = parts.filter(Boolean).join('\n');
-      if (persona) npcPersonaMap[normNameKey(name)] = persona;
+      if (persona) { npcPersonaMap[normNameKey(name)] = persona; rememberNpcPersonaName(name); }
     });
   } catch(e) { /* ignore */ }
 
@@ -13057,6 +14688,7 @@ async function _doGetMomentsCtx(chatIdHint) {
         const fullText = block.replace(/<[^>]+>/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
         if (fullText.length > 20) {
           npcPersonaMap[normNameKey(wName)] = fullText.slice(0, 500);
+          rememberNpcPersonaName(wName);
         }
       }
 
@@ -13098,6 +14730,7 @@ async function _doGetMomentsCtx(chatIdHint) {
         const fullText = entryText.replace(/<[^>]+>/g, '').replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
         if (fullText.length > 30) {
           npcPersonaMap[k] = fullText.slice(0, 600);
+          rememberNpcPersonaName(nameCore);
         }
       });
 
@@ -13113,12 +14746,13 @@ async function _doGetMomentsCtx(chatIdHint) {
         const bodyLines = seg.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
         if (bodyLines.length > 20) {
           npcPersonaMap[k] = bodyLines.slice(0, 350);
+          rememberNpcPersonaName(segName);
         }
       });
 
       // 额外:解析 friends_circle 块(格式:name: X\n disposition: Y)作为兜底
       // 即使个人词条未触发,friends_circle 汇总词条通常是常驻的
-      const fcMatch = allWIText.match(/friends_circle\s*:[\s\S]*?(?=<character_|<\/|\Z)/i) || allWIText.match(/friends_circle\s*:[\s\S]{0,2000}/i);
+      const fcMatch = allWIText.match(/friends_circle\s*:[\s\S]*?(?=<character_|<\/|$)/i) || allWIText.match(/friends_circle\s*:[\s\S]{0,2000}/i);
       if (fcMatch) {
         const fcText = fcMatch[0];
         const fcEntries = fcText.split(/(?=\n\s{1,4}\w+_\w+:)/);
@@ -13137,6 +14771,7 @@ async function _doGetMomentsCtx(chatIdHint) {
           ].filter(Boolean).join(';');
           if (persona) {
             npcPersonaMap[fk] = persona;
+            rememberNpcPersonaName(fcName);
           }
         });
       }
@@ -13154,7 +14789,7 @@ async function _doGetMomentsCtx(chatIdHint) {
       const k = normNameKey(spk);
       if (npcPersonaMap[k]) return; // 已有,不覆盖
       const sample = (msg.mes || '').replace(/<[^>]+>/g, '').trim().slice(0, 120);
-      if (sample) npcPersonaMap[k] = '(根据发言推断)语气样本:' + sample;
+      if (sample) { npcPersonaMap[k] = '(根据发言推断)语气样本:' + sample; rememberNpcPersonaName(spk); }
     });
   } catch(e) { /* ignore */ }
 
@@ -13166,8 +14801,18 @@ async function _doGetMomentsCtx(chatIdHint) {
   // 1) 主楼近期真实出现过；
   // 2) 当前槽位里存在该 NPC 的单聊 thread，且 thread 有消息/未读；
   // 3) 当前槽位里已经存在该 NPC 相关的朋友圈痕迹（发过动态/点过赞/评过论）。
+  // 朋友圈 roll 必须有可评论者：世界书/角色卡里已解析出人设的 NPC，即使还没有聊天痕迹，也应作为候选。
+  // 否则新卡或刚开局时 npcs 为空，主角动态无人能评论，朋友圈下方会长期没有评论。
+  Object.values(npcPersonaDisplayNames).forEach(function(n) {
+    if (n && normNameKey(n) !== normNameKey(charName) && !isPhoneBlocked(n)) knownNPCs.add(n);
+  });
+
   const strictNPCs = [...knownNPCs].filter(npcName => {
+    // 关键防线：NPC 候选里绝不能混入当前用户名。
+    if (isPhoneUserName(npcName, { name1: userName }) || isForbiddenPhoneContactName(npcName, ctx)) return false;
     const nk = normNameKey(npcName);
+    // 只承认有人设、或在聊天历史中实际出现过、或 thread 有消息的 NPC
+    if (npcPersonaDisplayNames[nk]) return true;
     if (chatNpcKeys.has(nk)) return true;
 
     const th = Object.values(STATE.threads || {}).find(t => {
@@ -13177,15 +14822,8 @@ async function _doGetMomentsCtx(chatIdHint) {
     });
     if (th && (((th.messages && th.messages.length > 0) || 0) || (th.unread > 0))) return true;
 
-    const hasMomentTrace = (STATE.moments || []).some(m => {
-      if (!m) return false;
-      const authorKey = normNameKey(m.name || m.from || '');
-      if (authorKey === nk) return true;
-      if ((m.likes || []).some(name => normNameKey(name) === nk)) return true;
-      if ((m.comments || []).some(c => normNameKey(c?.name || c?.from || '') === nk)) return true;
-      return false;
-    });
-    return hasMomentTrace;
+    // 不再仅凭 moments 里的烙印就认定为合法 NPC，避免脏数据循环污染
+    return false;
   });
 
   // 同步清理当前槽位里混入的跨卡人物（thread / moments / likes / comments）
@@ -13215,6 +14853,8 @@ async function _doGetMomentsCtx(chatIdHint) {
       return k === 'user' || k === normNameKey(charName) || strictNpcKeySet.has(k);
     });
     m.comments = (m.comments || []).filter(function(c) {
+      if (isManualUserMomentComment(c, ctx)) return true;
+      if (String(c?.from || '').trim() === 'user') return true;
       const k = normNameKey(c?.name || c?.from || '');
       return k === 'user' || k === normNameKey(charName) || strictNpcKeySet.has(k);
     });
@@ -13245,19 +14885,47 @@ async function _doGetMomentsCtx(chatIdHint) {
     recentChat,
     charPersona,
     npcPersonaMap: filteredPersonaMap,
+    npcDisplayNames: Object.assign({}, npcPersonaDisplayNames),
   };
   saveState();
   _getMomentsCtxCache = result;
   _getMomentsCtxCacheTime = Date.now();
   _getMomentsCtxCacheChatId = chatIdHint || (getContext()?.chatId || (getContext()?.characterId != null ? `char_${getContext().characterId}` : 'default'));
+  momentsDiag('_doGetMomentsCtx:end', {
+    chatId: _getMomentsCtxCacheChatId,
+    charName,
+    userName,
+    npcs: result.npcs.slice(),
+    npcPersonaKeys: Object.keys(filteredPersonaMap || {}),
+    npcDisplayNames: Object.assign({}, npcPersonaDisplayNames),
+    recentChatLen: recentChat.length,
+    charPersonaLen: charPersona.length,
+  });
   return result;
 }
 
+function formatPhoneTimeFromDate(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return resolvePhoneTime();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
 async function generateAIMoments() {
+  momentsDiag('generateAIMoments:start', {
+    stateChatId: STATE.chatId,
+    currentView: STATE.currentView,
+    momentsCount: (STATE.moments || []).length,
+  });
   const btn = document.getElementById('rp-gen-moments');
   if (btn) { btn.disabled = true; btn.classList.add('rp-spinning'); }
   try {
     const { charName, npcs, recentChat, charPersona, npcPersonaMap } = await getMomentsCtx();
+    momentsDiag('generateAIMoments:ctx', {
+      charName,
+      npcs: npcs.slice(),
+      npcPersonaKeys: Object.keys(npcPersonaMap || {}),
+      recentChatLen: recentChat.length,
+      charPersonaLen: charPersona.length,
+    });
     // 每次随机挑选:char 固定 + 从 NPC 里随机取2个,保证每次刷新都不同
     // Fisher-Yates 洗牌,保证真随机;每次最多取3个 NPC(限制 token 消耗)
     const npcPool = [...npcs];
@@ -13299,19 +14967,30 @@ async function generateAIMoments() {
       + '\n\n请为以下角色各写1条朋友圈(每人1条,不重复,与剧情相关):'
       + charList
       + '\n格式:[{"from":"角色名","text":"内容"},...]';
+    momentsDiag('generateAIMoments:callAPI', { allChars: allChars.slice(), promptLen: prompt.length, sysLen: sysMsg.length });
     const resp = await lgCallAPI(prompt, 600, sysMsg);
+    momentsDiag('generateAIMoments:resp', { hasResp: !!resp, respPreview: String(resp || '').slice(0, 240) });
     if (!resp) throw new Error('API无响应');
     const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
     if (!jsonStr) throw new Error('格式错误');
     const posts = JSON.parse(jsonStr);
+    momentsDiag('generateAIMoments:parsedPosts', { count: Array.isArray(posts) ? posts.length : null, posts });
+    const generatedMomentIds = [];
     const now = new Date();
     posts.forEach((post, i) => {
       if (!post.from || !post.text) return;
       const d = new Date(now.getTime() + i * 60000);
-      const ts = resolvePhoneTime();
-      incomingMoment(post.from.trim(), ts, post.text.trim(), post.img || null);
+      const ts = formatPhoneTimeFromDate(d);
+      // 生成按钮这批动态不要只依赖 incomingMoment 内部的通用自动互动；
+      // 这里显式收集 id，稍后用本批 allChars 作为评论候选触发，避免缓存/联系人时序导致无评论。
+      const momentId = incomingMoment(post.from.trim(), ts, post.text.trim(), post.img || null, null, null, true);
+      momentsDiag('generateAIMoments:incomingMomentResult', { from: post.from, ts, momentId, textPreview: String(post.text || '').slice(0, 120) });
+      if (momentId) generatedMomentIds.push(momentId);
     });
     if (STATE.currentView === 'moments') renderMoments();
+    if (generatedMomentIds.length) {
+      // 本地自动社交已禁用：不再为生成按钮产出的动态自动补评论。
+    }
   // [DISABLED]     setTimeout(() => momentAISocial(null), 1000);
   } catch(e) {
     console.warn('[Moments] generateAIMoments error:', e);
@@ -13324,17 +15003,18 @@ async function generateAIMoments() {
 }
 
 async function charRespondToUserMoment(momentId) {
+  momentsDiag('charRespondToUserMoment:start', { momentId, doneSize: STATE._charRespondDone?.size || 0 });
   // 执行锁：同一 momentId 只执行一次
   if (!STATE._charRespondDone) STATE._charRespondDone = new Set();
-  if (STATE._charRespondDone.has(momentId)) return;
+  if (STATE._charRespondDone.has(momentId)) { momentsDiag('charRespondToUserMoment:skipAlreadyDone', { momentId }); return; }
   STATE._charRespondDone.add(momentId);
 
   const moment = (STATE.moments || []).find(function(m) { return m.id === momentId; });
-  if (!moment) return;
+  if (!moment) { momentsDiag('charRespondToUserMoment:skipMissingMoment', { momentId }); STATE._charRespondDone.delete(momentId); return; }
   const ctx = await getMomentsCtx();
   const charName = ctx.charName;
   const charPersona = ctx.charPersona;
-  if (!charName) return;
+  if (!charName) { momentsDiag('charRespondToUserMoment:skipNoCharName', { momentId }); STATE._charRespondDone.delete(momentId); return; }
   // 强制主角写一条评论
   const { recentChat: _rc } = await getMomentsCtx();
   const sysMsg = '你正在扮演 ' + charName + '。\n'
@@ -13345,23 +15025,45 @@ async function charRespondToUserMoment(momentId) {
     + '字数15-40字,符合角色性格,用中文,只返回评论正文,不加引号或任何前缀。';
   const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
     + charName + '的评论(必须写,不允许只点赞):';
-  const resp = await lgCallAPI(prompt, 150, sysMsg);
-  if (resp) {
-    const cleaned = resp.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
-    if (cleaned) {
-      const ts = resolvePhoneTime();
-      if (!moment.likes.includes(charName)) moment.likes.push(charName);
-      incomingComment(momentId, charName, ts, cleaned, null);
-      if (STATE.currentView === 'moments') renderMoments();
-      saveState();
+  momentsDiag('charRespondToUserMoment:callAPI', {
+    momentId,
+    charName,
+    textPreview: String(moment.text || '').slice(0, 120),
+    existingComments: (moment.comments || []).map(c => ({ name: c.name, text: String(c.text || '').slice(0, 40) })),
+  });
+  try {
+    const resp = await lgCallAPI(prompt, 150, sysMsg);
+    momentsDiag('charRespondToUserMoment:resp', { momentId, charName, hasResp: !!resp, respPreview: String(resp || '').slice(0, 160) });
+    if (resp) {
+      const cleaned = resp.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
+      if (cleaned) {
+        const ts = resolvePhoneTime();
+        if (!moment.likes.includes(charName)) moment.likes.push(charName);
+        momentsDiag('charRespondToUserMoment:addComment', { momentId, charName, cleaned });
+        incomingComment(momentId, charName, ts, cleaned, null);
+        if (STATE.currentView === 'moments') renderMoments();
+        saveState();
+      }
     }
+  } catch(e) {
+    console.warn('[Moments] charRespondToUserMoment error:', e);
+    if (STATE.currentView === 'moments') renderMoments();
+    saveState();
   }
   // NPC 们强制回复(逐个单独请求,避免雷同;按人数:1好友=1条,2=2条,3+取2条NPC)
   setTimeout(async function() {
+    momentsDiag('charRespondToUserMoment:npcPhaseStart', { momentId });
     const { npcs, npcPersonaMap, recentChat, userName } = await getMomentsCtx();
     const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
     const pendingNPCs = npcs.filter(n => !alreadyCommented.has(n));
     const maxNPC = Math.min(pendingNPCs.length, Math.max(0, 3 - (alreadyCommented.has(charName) ? 1 : 0)));
+    momentsDiag('charRespondToUserMoment:npcPhaseContext', {
+      momentId,
+      npcs: npcs.slice(),
+      alreadyCommented: Array.from(alreadyCommented),
+      pendingNPCs: pendingNPCs.slice(),
+      maxNPC,
+    });
     // 随机打乱,避免永远是前两个 NPC
     const shuffled = pendingNPCs.sort(() => Math.random() - 0.5);
     for (let i = 0; i < maxNPC; i++) {
@@ -13383,11 +15085,14 @@ async function charRespondToUserMoment(momentId) {
       const promptNpc = '朋友圈内容:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
         + '动态作者:「' + userName + '」\n'
         + '你的用户名是"' + npc + '",请基于人设/世界书/主楼上下文写评论，必须和其他人不同:';
+      momentsDiag('charRespondToUserMoment:npcCallAPI', { momentId, npc, index: i, maxNPC, relHintsPreview: String(relHints || '').slice(0, 120) });
       const resp = await lgCallAPI(promptNpc, 120, sysNpc);
+      momentsDiag('charRespondToUserMoment:npcResp', { momentId, npc, hasResp: !!resp, respPreview: String(resp || '').slice(0, 160) });
       if (resp) {
         const cleaned = resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
         if (cleaned && cleaned.length > 2) {
           const ts2 = resolvePhoneTime();
+          momentsDiag('charRespondToUserMoment:npcAddComment', { momentId, npc, cleaned });
           incomingComment(momentId, npc, ts2, cleaned, null);
           if (STATE.currentView === 'moments') renderMoments();
           saveState();
@@ -13399,6 +15104,7 @@ async function charRespondToUserMoment(momentId) {
 }
 
 async function momentAISocial(targetMomentId) {
+  momentsDiag('momentAISocial:start', { targetMomentId, momentsCount: (STATE.moments || []).length });
   const moments = STATE.moments || [];
   if (moments.length === 0) return;
   const { charName, npcs, charPersona, npcPersonaMap, recentChat } = await getMomentsCtx();
@@ -13432,13 +15138,16 @@ async function momentAISocial(targetMomentId) {
     + '其他情况一律以旁观者/朋友角色评论,不要把别人之间的事当成在说我。'
     + '例:user说"julian叔叔告密了"→ char以父亲视角评论julian行为,不要当成在说自己。';
   const prompt2 = '朋友圈动态列表:\n' + momentsSummary + '\n\n只为以下角色生成2-4条社交互动(like/comment),禁止使用列表外的名字:' + charList2 + '\n格式:只返回JSON数组 [{"type":"like","from":"角色名","momentId":"完整ID"},{...}],from字段必须严格使用上方列表中的名字,momentId必须与上方完全一致。';
+  momentsDiag('momentAISocial:callAPI', { targetMomentId, allChars: allChars.slice(), targets: targets.map(m => m.id), promptLen: prompt2.length });
   const resp = await lgCallAPI(prompt2, 400, sysMsg2);
+  momentsDiag('momentAISocial:resp', { targetMomentId, hasResp: !!resp, respPreview: String(resp || '').slice(0, 200) });
   if (!resp) return;
   const allowedFromSet = new Set(allChars.map(n => normNameKey(n)));
   try {
     const jsonStr2 = resp.match(/\[[\s\S]*\]/)?.[0];
     if (!jsonStr2) return;
     const actions = JSON.parse(jsonStr2);
+    momentsDiag('momentAISocial:actions', { targetMomentId, actions });
     const ts = resolvePhoneTime();
     actions.slice(0, 6).forEach(a => {
       if (!a.from || !a.momentId) return;
@@ -13459,156 +15168,12 @@ async function momentAISocial(targetMomentId) {
   } catch(e) { console.warn('[Moments] momentAISocial error:', e); }
 }
 
-// ================================================================
-// FRIENDS INTERACT ON MOMENT
-// 好友列表里的人自动给动态点赞(随机)+ 最多3人评论(随机)
-// ================================================================
-async function friendsInteractOnMoment(momentId) {
-  // 执行锁：同一 momentId 只执行一次，防止多次调用堆叠
-  if (!STATE._friendsInteractDone) STATE._friendsInteractDone = new Set();
-  if (STATE._friendsInteractDone.has(momentId)) return;
-  STATE._friendsInteractDone.add(momentId);
 
-  const moment = (STATE.moments || []).find(m => m.id === momentId);
-  if (!moment) return;
-
-  const { charName, npcs, npcPersonaMap, recentChat, charPersona } = await getMomentsCtx();
-
-  // 所有好友(主角 + NPC),排除动态作者本人
-  const authorName = moment.name;
-  // user发的动态:char已由charRespondToUserMoment处理,这里只让NPC互动,避免char重复评论
-  const isUserMoment = moment.from === 'user';
-  const allFriends = (isUserMoment ? npcs : [charName, ...npcs]).filter(n => n && n !== authorName && !isPhoneBlocked(n));
-  if (allFriends.length === 0) return;
-
-  const ts = () => resolvePhoneTime();
-
-  // ── 点赞:每个好友随机70%概率点赞 ──
-  allFriends.forEach(name => {
-    if (Math.random() < 0.7 && !moment.likes.includes(name)) {
-      moment.likes.push(name);
-    }
-  });
-
-  // 准备评论名单前，先算出至少需要几个人参与评论
-  // 对会参与评论的人，顺手强制补一个赞，避免出现“明明评论了却一个赞都没有”的违和情况。
-  const minComments = Math.min(3, allFriends.length);
-  const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
-  const needCount = Math.max(0, minComments - alreadyCommented.size);
-  if (needCount > 0) {
-    const eligibleForComment = allFriends.filter(n => !alreadyCommented.has(n));
-    const shuffledForComment = eligibleForComment.sort(() => Math.random() - 0.5);
-    const guaranteedActors = shuffledForComment.slice(0, needCount);
-    guaranteedActors.forEach(name => {
-      if (!moment.likes.includes(name)) moment.likes.push(name);
-    });
-  }
-  if (STATE.currentView === 'moments') renderMoments();
-  saveState();
-
-  if (needCount <= 0) {
-    if (STATE.currentView === 'moments') renderMoments();
-    saveState();
-    return;
-  }
-
-  const eligible = allFriends.filter(n => !alreadyCommented.has(n));
-  const shuffled = eligible.sort(() => Math.random() - 0.5);
-  const commentors = shuffled.slice(0, needCount);
-  if (commentors.length === 0) return;
-
-  const authorPersonaText = authorName === charName
-    ? (charPersona || '')
-    : (resolveNpcPersonaByName(authorName, npcPersonaMap) || '');
-  const recentChatSnippet2 = recentChat ? recentChat.slice(-700) : '';
-
-  // 先尝试批量生成，省 token
-  const npcPersonaText = commentors.map(n => {
-    const p = npcPersonaMap?.[normNameKey(n)] || '';
-    const rel = getMomentRelationHints(n, authorName, recentChat, p, authorPersonaText);
-    return p
-      ? ('- ' + n + ':人设=' + p.replace(/\n/g, ';').slice(0, 150) + (rel ? ('；关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''))
-      : ('- ' + n + (rel ? ('：关系线索=' + rel.replace(/\n/g, ' / ').slice(0, 180)) : ''));
-  }).join('\n');
-
-  const sysMsg = '你是角色扮演社交媒体互动模拟器。\n'
-    + (authorPersonaText ? ('动态作者人设/世界书摘要:\n' + authorPersonaText.slice(0, 320) + '\n') : '')
-    + (recentChatSnippet2 ? ('主楼近期上下文:\n' + recentChatSnippet2 + '\n') : '')
-    + '硬规则:\n'
-    + '1. 每个角色评论都必须符合自己的人设、世界书、主楼上下文。\n'
-    + '2. 若角色与动态作者存在敌对、仇恨、厌恶、戒备、瞧不起、疏离关系，禁止写成鼓励、支持、撒娇、暧昧。\n'
-    + '3. 称呼必须符合性别、身份、辈分和关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
-    + '4. 不确定关系时，宁可克制、礼貌、冷淡，也不要乱认亲。\n'
-    + '5. 所有评论用中文，不超过20字，不加引号。';
-  const prompt = '朋友圈动态作者:' + authorName + '\n内容:「' + ((moment.text || '').slice(0, 80) || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n\n'
-    + '以下角色各写一条评论(语气符合各自性格、人设、世界书和主楼上下文，互相不重复):\n' + npcPersonaText
-    + '\n\n只返回JSON数组,格式:[{"from":"角色名","text":"评论内容"}, ...]';
-
-  try {
-    const resp = await lgCallAPI(prompt, 300, sysMsg);
-    const allowedSet = new Set(allFriends.map(n => normNameKey(n)));
-    const gotNames = new Set((moment.comments || []).map(c => c.name));
-
-    if (resp) {
-      const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
-      if (jsonStr) {
-        const items = JSON.parse(jsonStr);
-        items.forEach(item => {
-          if (!item.from || !item.text) return;
-          const k = normNameKey(item.from);
-          const isAllowed = allowedSet.has(k) || [...allowedSet].some(a => a.startsWith(k) || k.startsWith(a));
-          if (!isAllowed) return;
-          const cleaned = item.text.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
-          if (cleaned && cleaned.length > 1 && !gotNames.has(item.from.trim())) {
-            incomingComment(momentId, item.from.trim(), ts(), cleaned, null);
-            gotNames.add(item.from.trim());
-          }
-        });
-      }
-    }
-
-    // 批量结果不足时，逐个补齐到至少 3 条（好友数量不足除外）
-    for (const name of commentors) {
-      const currentNames = new Set((moment.comments || []).map(c => c.name));
-      if (currentNames.size >= minComments) break;
-      if (currentNames.has(name)) continue;
-
-      const p = npcPersonaMap?.[normNameKey(name)] || '';
-      const rel = getMomentRelationHints(name, authorName, recentChat, p, authorPersonaText);
-      const singleSys = '你正在扮演角色"' + name + '"。'
-        + (p ? ('\n你的人设/世界书摘要:\n' + p.slice(0, 320) + '\n') : '\n')
-        + (authorPersonaText ? ('\n动态作者人设/世界书摘要:\n' + authorPersonaText.slice(0, 320) + '\n') : '')
-        + (recentChatSnippet2 ? ('\n主楼近期上下文:\n' + recentChatSnippet2 + '\n') : '')
-        + (rel ? ('\n你与动态作者的关系线索:\n' + rel + '\n') : '')
-        + '硬规则:\n'
-        + '1. 评论必须符合你的人设、世界书和主楼上下文。\n'
-        + '2. 若关系里有敌对、厌恶、戒备、疏离，不得评论成过度亲昵、鼓励、暧昧。\n'
-        + '3. 只返回一条中文评论正文，8-20字，不加引号，不加前缀。';
-      const singlePrompt = '朋友圈动态作者:' + authorName + '\n内容:「' + ((moment.text || '').slice(0, 80) || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
-        + '你的用户名是"' + name + '",请写一条符合你身份的评论:';
-      const one = await lgCallAPI(singlePrompt, 120, singleSys);
-      if (one) {
-        const cleaned = one.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
-        if (cleaned && cleaned.length > 1) {
-          incomingComment(momentId, name, ts(), cleaned, null);
-          if (STATE.currentView === 'moments') renderMoments();
-          saveState();
-        }
-      }
-      await new Promise(r => setTimeout(r, 500));
-    }
-
-    if (STATE.currentView === 'moments') renderMoments();
-    saveState();
-  } catch(e) {
-    console.warn('[Moments] friendsInteractOnMoment error:', e);
-  }
-}
-
-
-async function generateAIReply(momentId, userCommentText, fromName) {
+async function generateAIReply(momentId, userCommentText, fromName, opts) {
+  momentsDiag('generateAIReply:start', { momentId, userCommentText: String(userCommentText || '').slice(0, 120), fromName, opts: opts || null });
   const moment = STATE.moments?.find(m => m.id === momentId);
-  if (!moment) return;
+  if (!moment) { momentsDiag('generateAIReply:skipMissingMoment', { momentId }); return; }
+  opts = opts || {};
   const authorName = fromName || moment.name;
   const { charName, charPersona, npcPersonaMap, recentChat } = await getMomentsCtx();
   let sysMsg3 = '';
@@ -13622,21 +15187,33 @@ async function generateAIReply(momentId, userCommentText, fromName) {
     sysMsg3 = '你正在扮演 ' + authorName + ',' + (npcPersona ? ('其人设/世界书如下:\n' + npcPersona.slice(0, 320) + '\n') : '请根据其在故事中的言行推断语气。\n');
   }
   const relHints = getMomentRelationHints(authorName, getContext()?.name1 || '用户', recentChat, authorPersona, '');
+  const replyContext = opts.replyToName
+    ? ('\n用户是在回复 ' + opts.replyToName + ' 的评论' + (opts.replyToText ? ('「' + String(opts.replyToText).slice(0, 80) + '」') : '') + '。你当前扮演的是 ' + authorName + '，必须承接这条评论上下文来回复用户。\n')
+    : '';
   sysMsg3 += (recentChat ? ('\n主楼近期上下文:\n' + recentChat.slice(-700) + '\n') : '')
+    + replyContext
     + (relHints ? ('\n你与评论者的关系线索:\n' + relHints + '\n') : '')
     + '硬规则:\n'
     + '1. 回复必须符合你的人设、世界书和主楼上下文。\n'
     + '2. 若关系里有敌对、厌恶、戒备、疏离，不得回复成过度亲昵、鼓励、暧昧。\n'
     + '3. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
     + '4. 用中文回复,不超过20字,只返回回复内容本身。';
-  const prompt3 = authorName + '的朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
+  const prompt3 = authorName + '的朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
+    + (opts.replyToName ? ('用户正在回复 ' + opts.replyToName + ' 的评论。\n') : '')
+    + '用户评论:「' + userCommentText + '」\n' + authorName + '回复:';
+  momentsDiag('generateAIReply:callAPI', { momentId, authorName, promptLen: prompt3.length, sysLen: sysMsg3.length });
   const resp = await lgCallAPI(prompt3, 120, sysMsg3);
+  momentsDiag('generateAIReply:resp', { momentId, authorName, hasResp: !!resp, respPreview: String(resp || '').slice(0, 160) });
   if (!resp) return;
   const ts = resolvePhoneTime();
   const cleaned = resp.trim().replace(/^[「"']|[」"']$/g, '');
-  incomingComment(momentId, authorName, ts, cleaned, null);
+  incomingComment(momentId, authorName, ts, cleaned, opts.replyToUser ? '我' : null, {
+    allowReplyToUser: !!opts.replyToUser,
+    allowAuthorReply: true,
+    replyToIndex: opts.replyToUserIndex,
+    replyToText: opts.replyToUserText || userCommentText
+  });
 }
-
 //  MOMENTS
 // ================================================================
 // 渲染前防御性清洗：剔除可能因 ComfyUI 时序 bug 残留在 text 里的生图标签
@@ -13651,6 +15228,7 @@ function cleanMomentText(text) {
     .trim();
 }
 function renderMoments() {
+  momentsDiag('renderMoments:start', { currentView: STATE.currentView, count: (STATE.moments || []).length, snapshot: (STATE.moments || []).map(m => ({ id: m.id, from: m.from, name: m.name, likes: (m.likes || []).length, comments: (m.comments || []).length, hasImg: !!m.img, pendingImg: !!m.pendingImg })) });
   const momentImgSnap = (STATE.moments||[]).map(m=>({id:m.id,hasImg:!!m.img,pendingImg:m.pendingImg?.slice(0,20)}));
   const container = $('#rp-moments-list').empty();
   if (!STATE.moments || STATE.moments.length === 0) {
@@ -13668,22 +15246,22 @@ function renderMoments() {
     if (visibleComments.length > 0) {
       const items = visibleComments.map((cm, idx) => {
         const replyPart = cm.replyTo !== null && cm.replyTo !== undefined
-          ? `回复 <span class="rp-moment-cname">${visibleComments[cm.replyTo]?.name || '?'}</span>:`
+          ? `回复 <span class="rp-moment-cname">${escHtml(visibleComments[cm.replyTo]?.name || '?')}</span>:`
           : '';
         return `<div class="rp-moment-comment">
           <span class="rp-moment-cname">${escHtml(cm.name)}</span>:${replyPart}${escHtml(cm.text)}
-          <span class="rp-moment-reply-btn" data-moment="${moment.id}" data-cidx="${idx}" data-rname="${escHtml(cm.name)}">回复</span>
+          <span class="rp-moment-reply-btn" data-moment="${escHtml(moment.id)}" data-cidx="${idx}" data-oldidx="${escHtml(cm.__oldIdx !== undefined ? cm.__oldIdx : idx)}" data-rname="${escHtml(cm.name)}">回复</span>
         </div>`;
       }).join('');
       commentsHtml = `<div class="rp-moment-comments-wrap">${items}</div>`;
     }
     container.append(`
-      <div class="rp-moment" data-mid="${moment.id}">
+      <div class="rp-moment" data-mid="${escHtml(moment.id)}">
         <div class="rp-moment-hd">
-          ${(()=>{const k=moment.from==='user'?'user':moment.name;const ci=STATE.avatars&&STATE.avatars[k];return ci?`<div class="rp-moment-av rp-av-img"><img class="rp-av-photo" src="${ci}" alt=""/></div>`:`<div class="rp-moment-av" style="background:${moment.avatarBg}">${moment.initials}</div>`;})()}
+          ${(()=>{const k=moment.from==='user'?'user':moment.name;const ci=STATE.avatars&&STATE.avatars[k];return ci?`<div class="rp-moment-av rp-av-img"><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-moment-av" style="background:${escHtml(moment.avatarBg)}">${moment.initials}</div>`;})()}
           <div class="rp-moment-meta">
             <div class="rp-moment-name">${escHtml(moment.name)}</div>
-            <div class="rp-moment-time">${moment.time}</div>
+            <div class="rp-moment-time">${escHtml(moment.time)}</div>
           </div>
         </div>
         <div class="rp-moment-text">${escHtml(cleanMomentText(moment.text))}</div>
@@ -13692,19 +15270,19 @@ function renderMoments() {
           : moment.pendingImg
             ? moment.pendingImgType === 'comfy'
               ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;"><span style="font-size:16px;">⏳</span><span style="font-size:12px;opacity:0.7;">生成中…</span></div>`
-              : `<div class="rp-moment-img-wrap rp-moment-pending-img" data-mid="${moment.id}" data-prompt="${escHtml(moment.pendingImg)}" style="min-width:90px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;" title="点击触发生图"><span style="font-size:16px;">📷</span><span style="font-size:12px;opacity:0.75;">点击生图</span></div>`
+              : `<div class="rp-moment-img-wrap rp-moment-pending-img" data-mid="${escHtml(moment.id)}" data-prompt="${escHtml(moment.pendingImg)}" style="min-width:90px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;" title="点击触发生图"><span style="font-size:16px;">📷</span><span style="font-size:12px;opacity:0.75;">点击生图</span></div>`
             : ''
         }
         <div class="rp-moment-bar">
-          <button class="rp-moment-act rp-like-btn${liked ? ' rp-liked' : ''}" data-moment="${moment.id}">${liked ? '❤️' : '🤍'} ${likeCount > 0 ? likeCount : '点赞'}</button>
-          <button class="rp-moment-act rp-comment-toggle" data-moment="${moment.id}">💬 评论</button>
-          <button class="rp-moment-act rp-moment-del-btn" data-moment="${moment.id}" style="color:rgba(200,60,60,.6)">🗑️ 删除</button>
+          <button class="rp-moment-act rp-like-btn${liked ? ' rp-liked' : ''}" data-moment="${escHtml(moment.id)}">${liked ? '❤️' : '🤍'} ${likeCount > 0 ? likeCount : '点赞'}</button>
+          <button class="rp-moment-act rp-comment-toggle" data-moment="${escHtml(moment.id)}">💬 评论</button>
+          <button class="rp-moment-act rp-moment-del-btn" data-moment="${escHtml(moment.id)}" style="color:rgba(200,60,60,.6)">🗑️ 删除</button>
         </div>
         ${likeCount > 0 ? `<div class="rp-moment-likes-row">❤️ ${likeNames.slice(0,4).join('、')}${likeCount > 4 ? ` 等${likeCount}人` : ''}</div>` : ''}
         ${commentsHtml}
-        <div class="rp-moment-input-row" id="rp-ci-${moment.id}" style="display:none">
+        <div class="rp-moment-input-row" id="rp-ci-${escHtml(moment.id)}" data-moment-row="${escHtml(moment.id)}" style="display:none">
           <input class="rp-moment-cinput" type="text" placeholder="发表评论..." autocomplete="off"/>
-          <button class="rp-moment-csend" data-moment="${moment.id}">发送</button>
+          <button class="rp-moment-csend" data-moment="${escHtml(moment.id)}">发送</button>
         </div>
       </div>
     `);
@@ -13721,26 +15299,219 @@ function renderMoments() {
 // 通用预设评论池(不写死任何卡专属剧情,仅用 charName/charLast 占位)
 // AI 生成失败时作为兜底,按 type 分组保证不同帖子评论不同
 // 渲染单条帖子卡片(单列)
+
+// 小红书封面图：用标题在 Canvas 上生成一张类小红书文字主图
+function _xhsHashText(s) {
+  s = String(s || '');
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function _xhsPickBySeed(arr, seed) {
+  if (!arr || !arr.length) return null;
+  return arr[Math.abs(seed) % arr.length];
+}
+
+function _xhsCurrentThemeName() {
+  try {
+    const phone = document.getElementById('rp-phone');
+    if (phone && phone.classList.contains('rp-theme-star')) return 'star';
+    if (phone && phone.classList.contains('rp-theme-misty')) return 'misty';
+  } catch(e) {}
+  return 'candy';
+}
+
+function _xhsWrapCanvasText(ctx, text, maxWidth) {
+  text = String(text || '').replace(/\s+/g, ' ').trim();
+  const out = [];
+  let line = '';
+  for (const ch of text) {
+    const test = line + ch;
+    if (line && ctx.measureText(test).width > maxWidth) {
+      out.push(line);
+      line = ch;
+    } else {
+      line = test;
+    }
+  }
+  if (line) out.push(line);
+  return out; // 不截断：首图标题必须完整显示，主页/详情同步。
+}
+
+const XHS_COVER_VERSION = 19;
+const XHS_COVER_STYLE = 'paper-note-template-p2-p9-v1';
+const XHS_COVER_TEMPLATE_IDS = [
+  'mint-quote', 'blue-crayon', 'blue-marker-note', 'lime-marker-note',
+  'wish-card', 'torn-collage', 'pink-sticky', 'blue-capture'
+];
+let XHS_COVER_SESSION_POOL = null;
+let XHS_COVER_SESSION_SEED = Date.now();
+
+function _xhsShuffleBySeed(arr, seed) {
+  const out = (arr || []).slice();
+  let x = (Number(seed) || 1) >>> 0;
+  for (let i = out.length - 1; i > 0; i--) {
+    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+    const j = Math.abs(x >>> 0) % (i + 1);
+    const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+  }
+  return out;
+}
+
+function _xhsResetCoverPool() {
+  XHS_COVER_SESSION_SEED = Date.now() ^ Math.floor(Math.random() * 0x7fffffff);
+  XHS_COVER_SESSION_POOL = null;
+}
+
+function _xhsGetCoverPool() {
+  if (!XHS_COVER_SESSION_POOL || XHS_COVER_SESSION_POOL.length !== 4) {
+    XHS_COVER_SESSION_POOL = _xhsShuffleBySeed(XHS_COVER_TEMPLATE_IDS, XHS_COVER_SESSION_SEED).slice(0, 4);
+  }
+  return XHS_COVER_SESSION_POOL;
+}
+
+function generateXHSCoverImage(title, tag, ratio) {
+  // v19 起主页封面改为 HTML/CSS 纸张模板，避免旧 base64 纯色标题图继续污染 feed。
+  return '';
+}
+
+function ensureXHSCoverImage(post, persist) {
+  if (!post) return '';
+  post.coverRatio = post.coverRatio || '3/4';
+  if (post.coverImg || post.coverVersion !== XHS_COVER_VERSION || post.coverStyle !== XHS_COVER_STYLE) {
+    post.coverImg = '';
+    post.coverVersion = XHS_COVER_VERSION;
+    post.coverStyle = XHS_COVER_STYLE;
+    if (persist !== false) { try { saveState(); } catch(e) {} }
+  }
+  return '';
+}
+
+function _xhsSplitCoverText(post) {
+  const raw = String((post && (post.title || post.body)) || '小红书笔记').replace(/\s+/g, ' ').trim() || '小红书笔记';
+  const clean = raw.replace(/[。！？!?]+$/g, '');
+  const parts = clean.split(/[，,、｜|：:；;\-—·]/).map(x => x.trim()).filter(Boolean);
+  let main = parts[0] || clean;
+  let sub = parts.slice(1).join(' ') || '';
+  if (!sub && Array.from(clean).length > 12) {
+    const arr = Array.from(clean);
+    main = arr.slice(0, 10).join('');
+    sub = arr.slice(10).join('');
+  }
+  if (!sub) sub = clean;
+  const clamp = (t, n) => {
+    const arr = Array.from(String(t || '').trim());
+    return arr.length > n ? arr.slice(0, n).join('') + '…' : arr.join('');
+  };
+  return { main: clamp(main, 12), sub: clamp(sub, 18), raw: clamp(clean, 28) };
+}
+
+function _xhsCoverTemplateId(post) {
+  const pool = _xhsGetCoverPool();
+  const key = String((post && (post.id || post.title || post.body)) || 'xhs');
+  const idText = String((post && post.id) || '');
+  const m = idText.match(/(?:^|_)(\d{12,})(?:_|$)/);
+  const base = m ? Number(m[1]) : _xhsHashText(key);
+  return pool[(Math.abs(base) + _xhsHashText(key)) % pool.length] || pool[0] || XHS_COVER_TEMPLATE_IDS[0];
+}
+
+function renderXHSCoverFallback(post, compact, ratio) {
+  post = post || {};
+  ratio = ratio || post.coverRatio || '3/4';
+  const t = _xhsSplitCoverText(post);
+  const tpl = _xhsCoverTemplateId(post);
+  const dateRaw = String(post.date || (function(){ const d = new Date(); return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })());
+  const dm = dateRaw.match(/(\d{1,2})\D+(\d{1,2})/);
+  const date = escHtml(dm ? `${String(Number(dm[1])).padStart(2,'0')}.${String(Number(dm[2])).padStart(2,'0')}` : dateRaw);
+  const mainText = t.raw || t.main || '小红书笔记';
+  const titleLen = Array.from(mainText).length;
+  const titleFs = titleLen > 44 ? 9 : (titleLen > 34 ? 10 : (titleLen > 26 ? 11 : (titleLen > 18 ? 12 : 13)));
+  const main = escHtml(mainText);
+  const sub = escHtml(t.sub);
+  const raw = escHtml(t.raw);
+  const aspect = `aspect-ratio:${ratio};--rp-xhs-cover-title-fs:${titleFs}px;`;
+  const base = `rp-xhs-cover-fallback rp-xhs-paper-cover rp-xhs-cover-${tpl}`;
+  const inner = {
+    'mint-quote': `<div class="rq">“</div><div class="rq-text"><b>${main}</b><span>${sub}</span></div><i></i>`,
+    'blue-crayon': `<div class="bc-text"><b>${main}</b><span>${sub}</span></div>`,
+    'blue-marker-note': `<div class="note-date">Date: ${date}</div><div class="marker m1"></div><div class="marker m2"></div><div class="note-words"><b>${main}</b><span>${sub}</span></div><div class="note-sign">-Text Note</div>`,
+    'lime-marker-note': `<div class="lm-marker"></div><div class="lm-text"><b>${main}</b><span>${sub}</span></div>`,
+    'wish-card': `<div class="wish-top">Best wishes for you</div><div class="wish-doodle">♡</div><div class="wish-text"><b>${main}</b><span>${sub}</span></div><div class="wish-party">△ ✦ 〰</div>`,
+    'torn-collage': `<div class="tc-green"></div><div class="tc-paper"><div class="tc-dot"></div><b>${main}</b><span>${sub}</span></div><div class="tc-star">✧</div>`,
+    'pink-sticky': `<div class="ps-head">Sticky Notes · MAY 11 2026</div><div class="ps-pin">•••</div><div class="ps-note"><b>${main}</b><span>${sub}</span></div>`,
+    'blue-capture': `<div class="cap-head">Capture words in mind</div><div class="cap-paper"><div class="cap-seal"></div><b>${main}</b><span>${sub}</span></div>`
+  }[tpl] || `<div class="rq-text"><b>${main}</b><span>${sub}</span></div>`;
+  return `<div class="${base}" data-xhs-cover-template="${escHtml(tpl)}" style="${aspect}">${inner}</div>`;
+}
+
+function _xhsEnsureFeedCovers(orderedList) {
+  const list = orderedList || STATE.xhsFeed || [];
+  let changed = false;
+  const pattern = ['3/4','4/3','4/3','3/4'];
+  list.forEach(function(post, idx) {
+    if (!post) return;
+    const desiredRatio = post.from === 'user' ? (post.coverRatio || '3/4') : pattern[idx % pattern.length];
+    if (post.coverRatio !== desiredRatio) { post.coverRatio = desiredRatio; post.coverImg = ''; changed = true; }
+    if (post.coverImg || post.coverVersion !== XHS_COVER_VERSION || post.coverStyle !== XHS_COVER_STYLE) {
+      post.coverImg = '';
+      ensureXHSCoverImage(post, false);
+      changed = true;
+    }
+  });
+  if (changed) { try { saveState(); } catch(e) {} }
+}
+
+function _xhsAvatarHtml(name, size) {
+  size = size || 20;
+  const colors = ['#ff6b6b','#ffa94d','#a9e34b','#63e6be','#74c0fc','#e599f7','#ff8fab','#f783ac'];
+  const s = String(name || 'U');
+  const bg = colors[_xhsHashText(s) % colors.length];
+  const initial = escHtml(Array.from(s.replace(/[\s🌿✨🔥💕👀☀️💭🫧🤗📝🌳]/g, '') || s)[0] || 'U');
+  return `<span style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:${Math.max(9, Math.round(size*0.5))}px;font-weight:700;flex-shrink:0;overflow:hidden">${initial}</span>`;
+}
+
+function _xhsFormatCount(n) {
+  n = Number(n || 0);
+  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(n);
+}
+
+function _xhsFeedSubtitle(post) {
+  post = post || {};
+  const title = String(post.title || '').replace(/\s+/g, ' ').trim();
+  let body = String(post.body || '').replace(/\s+/g, ' ').trim();
+  if (!body || body === title) {
+    const split = _xhsSplitCoverText(post);
+    body = split.sub || split.raw || title;
+  }
+  if (body === title) body = '';
+  const arr = Array.from(body || title || '小红书笔记');
+  return arr.length > 28 ? arr.slice(0, 28).join('') + '…' : arr.join('');
+}
+
 function renderXHSCard(p) {
-  const likeK = p.likes >= 10000 ? (p.likes/10000).toFixed(1)+'w' : p.likes >= 1000 ? (p.likes/1000).toFixed(1)+'k' : p.likes;
+  const likeK = _xhsFormatCount(p.likes);
   const commentCount = p.comments ? p.comments.length : 0;
-  const isUser = p.from === 'user';
+  p.coverRatio = p.coverRatio || '3/4';
+  const ratio = p.coverRatio;
+  const cover = ensureXHSCoverImage(p);
+  const fallbackCover = renderXHSCoverFallback(p, true, ratio);
   return `
-    <div class="rp-xhs-card" data-xhsid="${p.id}" style="cursor:pointer">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--rp-xhs-text,#333);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.user)}</div>
-          <div style="font-size:10px;color:var(--rp-xhs-text-faint,#bbb)">${p.time || ''}</div>
+    <div class="rp-xhs-card" data-xhsid="${escHtml(p.id)}" style="cursor:pointer;padding:0!important;overflow:hidden!important;border-radius:12px!important;background:var(--rp-xhs-card,#fff)!important">
+      ${cover ? `<img src="${escHtml(cover)}" alt="${escHtml(p.title || '小红书封面')}" loading="lazy" style="width:100%;display:block;aspect-ratio:${ratio};object-fit:cover;background:var(--rp-xhs-soft,#fff1f4)"/>` : fallbackCover}
+      <div style="padding:7px 7px 8px;background:var(--rp-xhs-card,#fff)">
+        <div style="font-size:13px;font-weight:800;color:var(--rp-xhs-text,#111827);line-height:1.38;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escHtml(_xhsFeedSubtitle(p))}</div>
+        <div style="display:flex;align-items:center;gap:4px;min-width:0">
+          ${_xhsAvatarHtml(p.user, 18)}
+          <div style="flex:1;min-width:0;font-size:10.5px;color:var(--rp-xhs-text-soft,#4b5563);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.user || '')}</div>
+          <div style="font-size:10.5px;color:${p.likedByUser?'var(--rp-xhs-accent,#ff2442)':'var(--rp-xhs-text-faint,#999)'};display:flex;align-items:center;gap:2px;flex-shrink:0">${p.likedByUser?'♥':'♡'} ${likeK}</div>
+          ${commentCount ? `<div style="font-size:10.5px;color:var(--rp-xhs-text-faint,#999);flex-shrink:0">💬 ${commentCount}</div>` : ''}
         </div>
-        <div style="font-size:10px;background:var(--rp-xhs-chip,rgba(255,36,66,.08));color:var(--rp-xhs-accent,#ff2442);padding:2px 8px;border-radius:10px;flex-shrink:0;font-weight:600">${escHtml(p.tag)}</div>
-      </div>
-      <div style="font-size:13px;font-weight:700;color:var(--rp-xhs-text,#1a1a1a);line-height:1.5;margin-bottom:4px">${escHtml(p.title)}</div>
-      <div style="font-size:12px;color:var(--rp-xhs-text-soft,#666);line-height:1.6;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escHtml(p.body)}</div>
-      <div style="display:flex;align-items:center;gap:14px;margin-top:10px;padding-top:8px;border-top:1px solid var(--rp-xhs-border,rgba(0,0,0,.06))">
-        <div style="font-size:11px;color:${p.likedByUser?'var(--rp-xhs-accent,#ff2442)':'var(--rp-xhs-text-faint,#bbb)'};display:flex;align-items:center;gap:3px">${p.likedByUser?'❤️':'🤍'} ${likeK}</div>
-        <div style="font-size:11px;color:var(--rp-xhs-text-faint,#bbb);display:flex;align-items:center;gap:3px">💬 ${commentCount > 0 ? commentCount+'条' : '评论'}</div>
-        <div style="flex:1"></div>
-        <div style="font-size:10px;color:var(--rp-xhs-text-faint,#ccc)">${p.date||''}</div>
       </div>
     </div>
   `;
@@ -13750,25 +15521,30 @@ function renderXHSFeed(forceRefresh) {
   const box = $('#rp-xhs-list');
   if (!box.length) return;
 
-  const hasStranger = (STATE.xhsFeed || []).some(p => p.from !== 'user');
+  const list = STATE.xhsFeed || [];
 
-  if (!hasStranger) {
-    // 首次加载:清空后显示 loading,调 API
-    box.empty();
+  if (forceRefresh) {
+    _xhsResetCoverPool();
+    // 刷新不清空旧内容：保留原页面，只在顶部显示刷新提示；新内容回来后插到最上方。
+    if ($('#rp-xhs-refresh-loading').length || $('#rp-xhs-loading').length) return;
     const xhsEst1 = _xhsGetEstSeconds();
-    box.append(`<div id="rp-xhs-loading" style="text-align:center;color:#ff2442;padding:30px;font-size:13px">正在加载最新动态...${xhsEst1 ? `<div id="rp-xhs-eta" style="font-size:11px;opacity:.72;margin-top:4px">预计还有 <span id="rp-xhs-eta-num">${xhsEst1}</span> 秒</div>` : ''}</div>`);
+    if (list.length) {
+      box.addClass('rp-xhs-refreshing');
+      box.prepend(`<div id="rp-xhs-refresh-loading" aria-label="刷新中">正在加载最新动态...${xhsEst1 ? `<div id="rp-xhs-eta" style="font-size:11px;opacity:.72;margin-top:4px">预计还有 <span id="rp-xhs-eta-num">${xhsEst1}</span> 秒</div>` : ''}</div>`);
+    } else {
+      box.removeClass('rp-xhs-masonry rp-xhs-waterfall rp-xhs-refreshing').empty();
+      box.append(`<div id="rp-xhs-loading" class="rp-xhs-empty">正在加载最新动态...${xhsEst1 ? `<div id="rp-xhs-eta" style="font-size:11px;opacity:.72;margin-top:4px">预计还有 <span id="rp-xhs-eta-num">${xhsEst1}</span> 秒</div>` : ''}</div>`);
+    }
     _xhsStartEtaTimer(xhsEst1);
-    buildXHSFeedWithAI(false);
+    buildXHSFeedWithAI(true);
     return;
   }
 
-  if (forceRefresh) {
-    // 刷新:保留现有帖子,顶部插入 loading,后台生成追加
-    if ($('#rp-xhs-loading').length) return; // 防止重复触发
-    const xhsEst2 = _xhsGetEstSeconds();
-    box.prepend(`<div id="rp-xhs-loading" style="text-align:center;color:#ff2442;padding:16px;font-size:13px">正在加载更多...${xhsEst2 ? `<div id="rp-xhs-eta" style="font-size:11px;opacity:.72;margin-top:4px">预计还有 <span id="rp-xhs-eta-num">${xhsEst2}</span> 秒</div>` : ''}</div>`);
-    _xhsStartEtaTimer(xhsEst2);
-    buildXHSFeedWithAI(true);
+  if (!list.length) {
+    // 进页面不自动刷新：学习银行卡空态，等待用户手动点刷新。
+    _xhsClearEtaTimer();
+    box.removeClass('rp-xhs-masonry rp-xhs-waterfall rp-xhs-refreshing').empty();
+    box.append('<div class="rp-xhs-empty">✦ 点击右上角刷新，读取最新小红书动态</div>');
     return;
   }
 
@@ -13778,22 +15554,27 @@ function renderXHSFeed(forceRefresh) {
 function _renderXHSList(box) {
   mergeGlobalAvatars();
   box = box || $('#rp-xhs-list');
-  box.empty();
+  box.empty().removeClass('rp-xhs-masonry rp-xhs-refreshing').addClass('rp-xhs-waterfall');
   const list = STATE.xhsFeed || [];
   if (!list.length) {
-    box.append('<div style="text-align:center;color:#ff2442;padding:40px;font-size:13px">暂无内容</div>');
+    box.removeClass('rp-xhs-waterfall').append('<div class="rp-xhs-empty">✦ 点击右上角刷新，读取最新小红书动态</div>');
     return;
   }
-  // Bug5 fix: 顺序 = 旧陌生人帖(老→新) → 用户帖(老→新) → 新陌生人帖(新→老置顶)
-  // STATE.xhsFeed 结构:[...userPosts, ...strangerPosts(新在前)]
-  const userPosts = list.filter(p => p.from === 'user');
-  const strangerPosts = list.filter(p => p.from !== 'user'); // 新的在 index 0
-  // 渲染顺序:旧stranger(末尾先) → user → 新stranger(头部先)
-  const oldStranger = strangerPosts.slice(3);  // 除最新3条外的旧帖
-  const newStranger = strangerPosts.slice(0, 3); // 最新3条
-  // 显示:旧帖(反转使旧的在上) → 用户帖 → 新帖
-  [...[...oldStranger].reverse(), ...userPosts, ...newStranger].forEach(p => box.append(renderXHSCard(p)));
+  // 按真实时间流展示：STATE.xhsFeed 最新在 index 0。
+  // 用户刚发的新帖已 unshift 到最前面，必须出现在左上角第一个位置。
+  const ordered = list.slice();
+  _xhsEnsureFeedCovers(ordered);
+
+  const left = $('<div class="rp-xhs-col"></div>');
+  const right = $('<div class="rp-xhs-col"></div>');
+  box.append(left, right);
+  // 固定视觉排布：第一列=第1长+第3短，第二列=第2短+第4长；后续也按奇偶交错
+  ordered.forEach(function(post, idx) {
+    const target = (idx % 2 === 0) ? left : right;
+    target.append(renderXHSCard(post));
+  });
 }
+
 
 // ════════════════════════════════════════════════════════════
 //  🏦 BANK CARD MODULE - 银行卡资产模块
@@ -14209,49 +15990,47 @@ async function buildXHSFeedWithAI(appendMode) {
       localStorage.setItem(XHS_TIMER_KEY, JSON.stringify(hist));
     } catch(e) {}
     _xhsClearEtaTimer();
-    const MAX_STRANGER = 10;
-    let merged = [...newPosts, ...existingStranger]; // 新的在前
-    if (merged.length > MAX_STRANGER) merged = merged.slice(0, MAX_STRANGER); // 删最旧
-    STATE.xhsFeed = [...userPosts, ...merged];
+    const MAX_TOTAL = 10;
+    // 严格时间流：无论 user 还是 NPC/陌生人，最新内容永远在最前面。
+    STATE.xhsFeed = [...newPosts, ...(STATE.xhsFeed || [])].slice(0, MAX_TOTAL); // 总内容最多保留10条，删最旧
     saveState();
     _renderXHSList();
     // 滚到顶部
     setTimeout(() => { const box = $('#rp-xhs-list'); if (box.length) box.scrollTop(0); }, 50);
   }
 
-  // 随机选3个话题方向,保证每次刷新内容不重复
+  // 随机选4个话题方向,保证每次刷新内容不重复
   const topicPool = [
-    `围绕${charName}和${userName}关系的八卦讨论(目击者/知情人视角)`,
-    `关于${charName}的个人生活/性格传闻(不涉及${userName})`,
-    `${charName}在商界/社交圈的传闻与评价`,
-    `探讨收养关系/年龄差感情的社会观察(以${charName}为例)`,
-    `${charName}的外形/品味/生活方式被路人讨论`,
-    `${userName}被目击或被讨论(陌生人视角,不知道她身份)`,
-    `某次公开活动上${charName}的行为引发讨论`,
-    `关于有钱有势的人如何对待身边年轻人的社会话题`,
-    `小道消息:${charName}圈子里的人际关系传闻`,
-    `${charName}的过去/背景被挖掘讨论`,
+    `围绕${charName}和${userName}互动细节的网友讨论(目击者/路人视角)`,
+    `关于${charName}近期状态、性格或生活方式的路人观察`,
+    `${charName}在公开场合或社交场景中的表现引发讨论`,
+    `${charName}和${userName}之间关系氛围的猜测与解读`,
+    `网友根据只言片语猜测${charName}的情绪变化`,
+    `${userName}被路人偶然看到后引发的小范围讨论`,
+    `关于${charName}外貌、穿搭、气质或行为习惯的评价`,
+    `路人分享一次和${charName}有关的偶遇或听闻`,
+    `围绕${charName}某个细节产生的吐槽、安利或争议`,
+    `网友讨论${charName}和身边人相处方式是否自然`,
+    `关于${charName}最近变化的猜测:变温柔、变冷淡、变忙或变低调`,
+    `以${charName}为例讨论某类性格的人在关系里的表现`,
   ];
-  const pick3 = (arr) => { const a=[...arr].sort(()=>Math.random()-0.5); return a.slice(0,3); };
-  const chosenTopics = pick3(topicPool);
+  const pick4 = (arr) => { const a=[...arr].sort(()=>Math.random()-0.5); return a.slice(0,4); };
+  const chosenTopics = pick4(topicPool);
 
   try {
-    const sysMsg = `你是一个小红书内容生成器。严格按要求生成3条帖子,每条各自独立,内容和评论绝对不能重复。
+    const sysMsg = `你是一个小红书内容生成器。严格按要求生成4条帖子,每条各自独立,内容不能重复。
 帖子要求:
-- 话题严格对应下方给出的3个不同方向,不要全写成同一种八卦
+- 话题严格对应下方给出的4个不同方向,不要全写成同一种八卦
 - 陌生路人/网友视角,口语化,有具体细节,正文40-60字
-
-评论要求(每条帖子各自生成5条,三条帖子的评论内容不能相同):
-- 必须包含:吐槽型(1条)、共情型(1条)、懂哥长评(1条,30-40字)、看热闹型(1条)、补料型(1条)
-- 每条评论的昵称和内容都不能跟其他帖子的评论相同
+- 只生成帖子本身,不要生成评论
 
 只返回JSON数组,格式:
-[{"user":"昵称emoji","tag":"标签","title":"标题","body":"正文","likes":数字,"comments":[{"user":"昵称emoji","text":"评论内容"}]}]
-共3条,不要有其他文字。
+[{"user":"昵称emoji","title":"标题","body":"正文","likes":数字}]
+共4条,不要有其他文字。
 重要:所有字段值内部不能出现双引号,如需引用请用「」或【】代替。`;
 
     const charInfo = charPersona ? charPersona.slice(0, 150) : `角色名:${charName}`;
-    const prompt = `角色信息:${charInfo}\n用户名:${userName}\n近期对话片段:${(recentChat||'').slice(0,100)}\n\n本次3条帖子话题方向:\n${chosenTopics.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\n生成JSON:`;
+    const prompt = `角色信息:${charInfo}\n用户名:${userName}\n近期对话片段:${(recentChat||'').slice(0,100)}\n\n本次4条帖子话题方向:\n${chosenTopics.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\n生成JSON:`;
 
     const resp = await xhsCallAPI(prompt, sysMsg);
     if (resp) {
@@ -14285,18 +16064,24 @@ async function buildXHSFeedWithAI(appendMode) {
         items = JSON.parse(jsonStr);
       } catch(e) { console.warn('[XHS] JSON parse error:', e.message, resp ? resp.slice(0,300) : ''); }
       if (Array.isArray(items) && items.length > 0) {
-        const aiPosts = items.slice(0, 3).map((p, i) => {
-          const aiComments = Array.isArray(p.comments) ? p.comments.slice(0, 5).map(c => ({
-            from: 'stranger_preset', user: c.user||'路人', text: c.text||'', time: ts(), replyTo: null
-          })) : [];
+        const aiPosts = items.slice(0, 4).map((p, i) => {
+          const coverRatio = (i === 0 || i === 3) ? '3/4' : '4/3';
           return {
             id: `xhs_ai_${Date.now()}_${i}`, from: 'stranger',
             user: p.user||`路人${i+1}🌿`, title: p.title||'', body: p.body||'',
-            tag: p.tag||'八卦', likes: typeof p.likes==='number' ? p.likes : rndInt(500,20000),
-            likedByUser: false, comments: aiComments, time: ts(), date: todayStr,
+            likes: typeof p.likes==='number' ? p.likes : rndInt(500,20000),
+            likedByUser: false, followedByUser: false, favoritedByUser: false, comments: [], time: ts(), date: todayStr,
+            coverRatio,
+            coverVersion: XHS_COVER_VERSION,
+            coverStyle: XHS_COVER_STYLE,
+            coverImg: '',
           };
         });
         mergeNewPosts(aiPosts);
+        // 方案B：首页先显示帖子，评论后台错峰生成，避免刷新卡住等 4帖+20评。
+        aiPosts.forEach((post, i) => {
+          setTimeout(() => generateXHSStrangerComments(post.id), 800 + i * 1200);
+        });
         return;
       }
     }
@@ -14304,7 +16089,8 @@ async function buildXHSFeedWithAI(appendMode) {
 
   // AI 失败 → 显示错误提示,让用户刷新重试(不用 fallback 池避免重复)
   _xhsClearEtaTimer();
-  $('#rp-xhs-loading').remove();
+  $('#rp-xhs-loading,#rp-xhs-refresh-loading').remove();
+  $('#rp-xhs-list').removeClass('rp-xhs-refreshing');
   const box = $('#rp-xhs-list');
   if (box.length && !box.find('.rp-xhs-card').length) {
     box.append('<div style="text-align:center;color:#aaa;padding:40px 20px;font-size:13px">加载失败,点右上角 ↻ 重试</div>');
@@ -14362,52 +16148,64 @@ function renderXHSDetail(post) {
   mergeGlobalAvatars();
   const body = $('#rp-xhs-detail-body');
   if (!body.length) return;
-  const likeK = post.likes >= 10000 ? (post.likes/10000).toFixed(1)+'w' : post.likes >= 1000 ? (post.likes/1000).toFixed(1)+'k' : post.likes;
-  const isUser = post.from === 'user';
-
+  const likeK = _xhsFormatCount(post.likes);
+  const cover = ensureXHSCoverImage(post);
 
   let commentsHtml = '';
   if (post.comments && post.comments.length > 0) {
     commentsHtml = post.comments.map((c, idx) => {
       const replyPart = (c.replyTo !== null && c.replyTo !== undefined && post.comments[c.replyTo])
-        ? `<span style="color:var(--rp-xhs-text-faint,#999)">回复 </span><span style="color:#ff2442">@${escHtml(post.comments[c.replyTo].user)}</span>:`
+        ? `<span style="color:var(--rp-xhs-text-faint,#999)">回复 </span><span style="color:var(--rp-xhs-accent,#ff2442)">@${escHtml(post.comments[c.replyTo].user)}</span>：`
         : '';
-      const isMe = c.from === 'user';
-      const _xhsAv3Color = (s) => { const c=['#ff6b6b','#ffa94d','#a9e34b','#63e6be','#74c0fc','#e599f7','#ff8fab','#f783ac']; let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))&0xffff; return c[h%c.length]; };
-
       return `
-        <div class="rp-xhs-comment" data-cidx="${idx}" style="padding:8px 0;border-bottom:1px solid #fff5f6">
-          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px">
-            <span style="font-size:12px;font-weight:600;color:var(--rp-xhs-text,#333)">${escHtml(c.user)}</span>
-            <span style="font-size:10px;color:var(--rp-xhs-text-faint,#ccc)">${c.time||''}</span>
-          </div>
-          <div style="font-size:12px;color:var(--rp-xhs-text-soft,#444);line-height:1.6">${replyPart}${escHtml(c.text)}</div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:3px">
-            <div style="font-size:10px;color:#ff2442;cursor:pointer" data-reply-cidx="${idx}" data-reply-uname="${escHtml(c.user)}">回复</div>
-            <div style="font-size:10px;color:rgba(200,60,60,.72);cursor:pointer" data-xhs-del-cidx="${idx}" data-postid="${post.id}">删除</div>
+        <div class="rp-xhs-comment" data-cidx="${idx}" style="display:flex;gap:9px;padding:13px 0;border-bottom:1px solid var(--rp-xhs-border,rgba(0,0,0,.06))">
+          ${_xhsAvatarHtml(c.user, 26)}
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+              <span style="font-size:12px;font-weight:600;color:var(--rp-xhs-text-soft,#666)">${escHtml(c.user)}</span>
+              <span style="font-size:10px;color:var(--rp-xhs-text-faint,#aaa)">${c.time||''}</span>
+            </div>
+            <div style="font-size:13px;color:var(--rp-xhs-text,#222);line-height:1.65">${replyPart}${escHtml(c.text)}</div>
+            <div class="rp-xhs-comment-actions" style="display:flex;align-items:center;gap:13px;margin-top:6px">
+              <div style="font-size:11px;color:var(--rp-xhs-text-faint,#999);cursor:pointer" data-reply-cidx="${idx}" data-reply-uname="${escHtml(c.user)}">回复</div>
+              <div style="font-size:11px;color:rgba(200,60,60,.72);cursor:pointer" data-xhs-del-cidx="${idx}" data-postid="${escHtml(post.id)}">删除</div>
+            </div>
           </div>
         </div>
       `;
     }).join('');
   } else {
-    commentsHtml = '<div style="text-align:center;color:#ddd;font-size:12px;padding:20px 0">暂无评论,来抢沙发~</div>';
+    commentsHtml = '<div class="rp-xhs-comment-waiting"><span>评论正在到来，请耐心等待</span><i class="rp-xhs-wait-dot"></i><i class="rp-xhs-wait-dot"></i><i class="rp-xhs-wait-dot"></i></div>';
   }
 
   body.html(`
-    <div style="margin-bottom:14px">
-      <div style="font-size:13px;font-weight:700;color:var(--rp-xhs-text,#333)">${escHtml(post.user)}</div>
-      <div style="font-size:10px;color:var(--rp-xhs-text-faint,#bbb)">${post.date||''} ${post.time||''} · ${escHtml(post.tag)}</div>
+    <div style="margin:-14px -14px 0;background:var(--rp-xhs-card,#fff)">
+      ${cover ? `<img src="${escHtml(cover)}" alt="${escHtml(post.title || '小红书封面')}" style="width:100%;display:block;aspect-ratio:${post.coverRatio || '3/4'};object-fit:cover;background:var(--rp-xhs-soft,#fff1f4)"/>` : renderXHSCoverFallback(post, false, post.coverRatio || '3/4')}
     </div>
-    <div style="font-size:15px;font-weight:800;color:var(--rp-xhs-text,#1a1a1a);line-height:1.5;margin-bottom:10px">${escHtml(post.title)}</div>
-    <div style="font-size:13px;color:var(--rp-xhs-text-soft,#444);line-height:1.8;margin-bottom:16px">${escHtml(post.body)}</div>
-    <div style="display:flex;align-items:center;gap:16px;padding:10px 0;border-top:1px solid #fff0f2;border-bottom:1px solid #fff0f2;margin-bottom:14px">
-      <button id="rp-xhs-like-btn" data-postid="${post.id}" style="background:none;border:none;cursor:pointer;font-size:13px;color:${post.likedByUser?'#ff2442':'#bbb'};display:flex;align-items:center;gap:4px">${post.likedByUser?'❤️':'🤍'} <span id="rp-xhs-like-count">${likeK}</span></button>
-      <div style="font-size:13px;color:var(--rp-xhs-text-faint,#bbb);display:flex;align-items:center;gap:4px">💬 <span>${(post.comments||[]).length}</span></div>
-      <div style="flex:1"></div>
-      <button id="rp-xhs-del-post" data-postid="${post.id}" style="background:none;border:none;cursor:pointer;font-size:12px;color:rgba(200,60,60,.78)">🗑️ 删除</button>
+    <div style="background:var(--rp-xhs-card,#fff);margin:0 -14px;padding:13px 14px 14px;border-bottom:1px solid var(--rp-xhs-border,rgba(0,0,0,.06))">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px">
+        ${_xhsAvatarHtml(post.user, 30)}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--rp-xhs-text,#222);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(post.user)}</div>
+          <div style="font-size:10.5px;color:var(--rp-xhs-text-faint,#999)">${post.date||''} ${post.time||''}</div>
+        </div>
+        <button id="rp-xhs-follow-btn" data-postid="${escHtml(post.id)}" style="border:1px solid var(--rp-xhs-accent,#ff2442);color:${post.followedByUser?'var(--rp-xhs-text-faint,#999)':'var(--rp-xhs-accent,#ff2442)'};background:${post.followedByUser?'var(--rp-xhs-chip,rgba(0,0,0,.04))':'transparent'};border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1.2">${post.followedByUser?'已关注':'关注'}</button>
+      </div>
+      <div style="font-size:17px;font-weight:800;color:var(--rp-xhs-text,#1a1a1a);line-height:1.45;margin-bottom:8px">${escHtml(post.title)}</div>
+      <div class="rp-xhs-detail-post-body" style="font-size:13px;font-weight:400;color:var(--rp-xhs-text,#222);line-height:1.65;letter-spacing:0;white-space:pre-wrap;margin-bottom:10px">${escHtml(post.body)}</div>
+      <div style="font-size:11px;color:var(--rp-xhs-text-faint,#aaa)">${post.date||''}</div>
     </div>
-    <div style="font-size:12px;font-weight:700;color:var(--rp-xhs-text,#333);margin-bottom:8px">全部评论 · ${(post.comments||[]).length}条</div>
-    <div id="rp-xhs-comments-list">${commentsHtml}</div>
+    <div style="background:var(--rp-xhs-card,#fff);margin:8px -14px 0;padding:12px 14px;border-top:1px solid var(--rp-xhs-border,rgba(0,0,0,.06));border-bottom:1px solid var(--rp-xhs-border,rgba(0,0,0,.06))">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <button id="rp-xhs-like-btn" data-postid="${escHtml(post.id)}" style="background:none;border:none;cursor:pointer;font-size:14px;color:${post.likedByUser?'var(--rp-xhs-accent,#ff2442)':'var(--rp-xhs-text,#333)'};display:flex;align-items:center;gap:5px;padding:0">${post.likedByUser?'♥':'♡'} <span id="rp-xhs-like-count">${likeK}</span></button>
+        <div style="font-size:14px;color:var(--rp-xhs-text,#333);display:flex;align-items:center;gap:5px">💬 <span>${(post.comments||[]).length}</span></div>
+        <button id="rp-xhs-fav-btn" data-postid="${escHtml(post.id)}" style="background:none;border:none;cursor:pointer;font-size:14px;color:${post.favoritedByUser?'var(--rp-xhs-accent,#ff2442)':'var(--rp-xhs-text,#333)'};display:flex;align-items:center;gap:5px;padding:0;font-family:inherit">${post.favoritedByUser?'★ 已收藏':'☆ 收藏'}</button>
+        <div style="flex:1"></div>
+        <button id="rp-xhs-del-post" data-postid="${escHtml(post.id)}" style="background:none;border:none;cursor:pointer;font-size:12px;color:rgba(200,60,60,.78);padding:0">删除</button>
+      </div>
+      <div style="font-size:13px;font-weight:800;color:var(--rp-xhs-text,#333);margin-bottom:2px">全部评论 · ${(post.comments||[]).length}</div>
+      <div id="rp-xhs-comments-list">${commentsHtml}</div>
+    </div>
   `);
 }
 
@@ -14415,23 +16213,28 @@ function renderXHSDetail(post) {
 function postUserXHS() {
   const title = $('#rp-xhs-post-title').val().trim();
   const body = $('#rp-xhs-post-body').val().trim();
-  const tag = STATE.xhsSelectedTag || '日常';
   if (!body) { alert('请输入内容'); return; }
   const ctx = getContext() || {};
   const userName = ctx?.name1 || '我';
   const now = new Date();
   const ts = resolvePhoneTime();
   const dateStr = `${now.getMonth()+1}-${now.getDate()}`;
+  const finalTitle = title || body.slice(0,20) + (body.length>20?'...':'');
   const post = {
     id: `xhs_user_${Date.now()}`,
     from: 'user',
     user: userName,
-    title: title || body.slice(0,20) + (body.length>20?'...':''),
+    title: finalTitle,
     body,
-    tag,
     likes: Math.floor(Math.random() * 90000) + 10000,
     likedByUser: false,
+    followedByUser: false,
+    favoritedByUser: false,
     comments: [],
+    coverRatio: '3/4',
+    coverVersion: XHS_COVER_VERSION,
+    coverStyle: XHS_COVER_STYLE,
+    coverImg: '',
     time: ts,
     date: dateStr,
   };
@@ -14445,11 +16248,10 @@ function postUserXHS() {
   const ts2 = () => { const h=rndInt2(8,23),m=rndInt2(0,59); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; };
   post.comments = []; // 评论由 AI 异步生成
   saveState();
+  _xhsResetCoverPool();
   // 清空表单
   $('#rp-xhs-post-title').val('');
   $('#rp-xhs-post-body').val('');
-  $('.rp-xhs-tag-btn').removeClass('rp-xhs-tag-selected');
-  STATE.xhsSelectedTag = '日常';
   go('xhs');
   renderXHSFeed(false);
   // 延迟触发AI追加评论(API可用时)
@@ -14459,11 +16261,15 @@ function postUserXHS() {
 // AI 生成陌生网友评论(多性格)
 async function generateXHSStrangerComments(postId) {
   const post = (STATE.xhsFeed || []).find(p => p.id === postId);
-  if (!post || post.from !== 'user') return;
+  if (!post) return;
+  // 已有评论则不重复补评论：AI 刷新帖后台生成、user 发帖延迟生成都共用这里。
+  if (Array.isArray(post.comments) && post.comments.length > 0) return;
   const ctx = getContext() || {};
   const charName = ctx?.name2 || ctx?.name || 'TA';
   const charLast = charName.split(/\s+/).pop() || charName;
   const userName = ctx?.name1 || '楼主';
+  const posterName = post.from === 'user' ? userName : (post.user || '楼主');
+  const posterDesc = post.from === 'user' ? `用户${userName}本人` : `网友${posterName}`;
 
   // 从角色卡提取关系背景
   let charPersonaSnippet = '';
@@ -14490,13 +16296,13 @@ async function generateXHSStrangerComments(postId) {
     recentChat         ? `【近期对话片段】\n${recentChat}`  : '',
   ].filter(Boolean).join('\n');
 
-  const sysMsg = `你是一个小红书评论模拟器。以下帖子是由用户${userName}本人发的,模拟5位性格各异的陌生网友评论。
+  const sysMsg = `你是一个小红书评论模拟器。以下帖子是由${posterDesc}发的,模拟5位性格各异的陌生网友评论。
 
 人物关系说明(严格遵守,不能混淆):
-- 帖子里的"我"表示发帖人${userName}自己
-- ${charName}(姓${charLast})是帖子中涉及到的另一个人物,不是发帖人
+- 帖子里的"我"表示发帖人${posterName}自己
+- ${charName}(姓${charLast})和${userName}可能是帖子中涉及到的人物,请根据帖子内容、角色背景和近期对话判断,不要把发帖人和被提到的人混淆
 - 请根据下方【角色背景】和【近期对话片段】判断帖子中出现的亲属/关系称谓(如"我爸""我父亲""我男友"等)究竟对应谁;如果背景已明确说明${charName}与${userName}的关系,则以该关系为准,不得臆造第三人
-- 评论者是不认识${userName}的陌生网友,他们通过帖子内容来理解人物关系
+- 评论者是不认识发帖人的陌生网友,他们通过帖子内容来理解人物关系
 
 ${relationCtx ? relationCtx + '\n' : ''}
 评论要求:
@@ -14653,8 +16459,34 @@ function toggleXHSLike(postId) {
   post.likes = post.likedByUser ? post.likes + 1 : Math.max(0, post.likes - 1);
   saveState();
   // 更新详情页按钮(如果在详情页)
-  const likeK = post.likes >= 10000 ? (post.likes/10000).toFixed(1)+'w' : post.likes >= 1000 ? (post.likes/1000).toFixed(1)+'k' : post.likes;
-  $('#rp-xhs-like-btn').css('color', post.likedByUser ? '#ff2442' : '#bbb').html(`${post.likedByUser?'❤️':'🤍'} <span id="rp-xhs-like-count">${likeK}</span>`);
+  const likeK = _xhsFormatCount(post.likes);
+  $('#rp-xhs-like-btn')
+    .css('color', post.likedByUser ? 'var(--rp-xhs-accent,#ff2442)' : 'var(--rp-xhs-text,#333)')
+    .html(`${post.likedByUser?'♥':'♡'} <span id="rp-xhs-like-count">${likeK}</span>`);
+  if (STATE.currentView === 'xhs') _renderXHSList();
+}
+
+function toggleXHSFollow(postId) {
+  const post = (STATE.xhsFeed || []).find(p => p.id === postId);
+  if (!post) return;
+  post.followedByUser = !post.followedByUser;
+  saveState();
+  const btn = $('#rp-xhs-follow-btn');
+  btn.text(post.followedByUser ? '已关注' : '关注')
+    .css({
+      color: post.followedByUser ? 'var(--rp-xhs-text-faint,#999)' : 'var(--rp-xhs-accent,#ff2442)',
+      background: post.followedByUser ? 'var(--rp-xhs-chip,rgba(0,0,0,.04))' : 'transparent'
+    });
+}
+
+function toggleXHSFavorite(postId) {
+  const post = (STATE.xhsFeed || []).find(p => p.id === postId);
+  if (!post) return;
+  post.favoritedByUser = !post.favoritedByUser;
+  saveState();
+  $('#rp-xhs-fav-btn')
+    .css('color', post.favoritedByUser ? 'var(--rp-xhs-accent,#ff2442)' : 'var(--rp-xhs-text,#333)')
+    .text(post.favoritedByUser ? '★ 已收藏' : '☆ 收藏');
 }
 
 function deleteXHSPost(postId) {
@@ -14699,12 +16531,31 @@ function deleteXHSComment(postId, commentIdx) {
   }
 }
 
+
+function rpFindByDataAttr(rootSelector, itemSelector, attrName, value) {
+  const root = rootSelector ? document.querySelector(rootSelector) : document;
+  if (!root) return $();
+  const wanted = String(value || '');
+  const nodes = Array.from(root.querySelectorAll(itemSelector || '*')).filter(function(el) {
+    return String(el.getAttribute(attrName) || '') === wanted;
+  });
+  return $(nodes);
+}
+
+function momentsDiag(event, payload) {
+  try {
+    console.log('[Moments:diag] ' + event, payload || {});
+  } catch (e) {}
+}
+
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType, _skipAutoSocial) {
+  momentsDiag('incomingMoment:start', { fromRaw, time, textPreview: String(text || '').slice(0, 120), hasImg: !!img, pendingImgPrompt: pendingImgPrompt ? String(pendingImgPrompt).slice(0, 120) : null, pendingImgType, skipAutoSocial: !!_skipAutoSocial, stateChatId: STATE.chatId });
   if (isForbiddenPhoneContactName(fromRaw, getContext())) {
+    momentsDiag('incomingMoment:skipForbidden', { fromRaw });
     return null;
   }
   time = resolvePhoneTime(time);
@@ -14738,9 +16589,17 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
         diary: [],
         darkMode: STATE.darkMode,
         avatars: Object.assign({}, _AV),
+        wallpaper: STATE.wallpaper || null,
         currentView: 'home',
         currentThread: null,
         bankData: null,
+        blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
+        gameState: (function() { try { return {
+          ludo: (typeof LG !== 'undefined' && LG && LG.chatLog) ? { chatLog: (LG.chatLog || []).slice(-30) } : null,
+          g2048: (typeof LG2048 !== 'undefined' && LG2048 && LG2048.chatLog) ? { chatLog: (LG2048.chatLog || []).slice(-30) } : null,
+          gm: (typeof GM !== 'undefined' && GM && GM.chatLog) ? { chatLog: (GM.chatLog || []).slice(-30) } : null,
+          gword: (typeof GWORD !== 'undefined' && GWORD && GWORD.chatLog) ? { chatLog: (GWORD.chatLog || []).slice(-30) } : null,
+        }; } catch(e) { return null; } })(),
       });
 
       _slot.moments = _slot.moments || [];
@@ -14777,7 +16636,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
       const _es = _extSettings();
       if (_es) {
         if (!_es[EXT_KEY]) _es[EXT_KEY] = {};
-        _es[EXT_KEY][_realChatId] = makeLightweightPayload(_slot);
+        _es[EXT_KEY][_realChatId] = _slot;
         _saveSettings();
       }
     } catch(e) { console.warn('[Phone:moment] 写入正确 slot 失败', e); }
@@ -14842,21 +16701,22 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
     likes: [],
     comments: [],
   });
+  momentsDiag('incomingMoment:created', { momentId, from: threadId || fromRaw, name: th ? th.name : fromRaw, time, hasImg: !!img, hasPending: !!pendingImgPrompt, momentsCount: STATE.moments.length });
   if (STATE.currentView === 'moments') renderMoments();
   showBanner((th ? th.name : fromRaw), '发了朋友圈:' + (text ? text.slice(0,25) + (text.length>25?'...':'') : '📷 图片'), time);
   saveState();
-  // 好友自动点赞+评论（parsePhone 调用时跳过，因为主楼已有 <COMMENT> 标签）
-  if (!_skipAutoSocial) {
-  // [DISABLED]     setTimeout(() => friendsInteractOnMoment(momentId), 1500);
-  }
+  // 主楼已负责朋友圈评论输出；本地自动社交已禁用。
   return momentId; // 供调用方（parsePhone）获取真实 ID 用于 _pendingMomentImgs 映射
 }
 
-function incomingComment(momentId, fromRaw, time, text, replyTo) {
+function incomingComment(momentId, fromRaw, time, text, replyTo, opts) {
+  opts = opts || {};
+  momentsDiag('incomingComment:start', { momentId, fromRaw, time, textPreview: String(text || '').slice(0, 120), replyTo, opts });
   if (isForbiddenPhoneContactName(fromRaw, getContext())) {
+    momentsDiag('incomingComment:skipForbidden', { momentId, fromRaw });
     return;
   }
-  if (isPhoneUserName(fromRaw, getContext()) || (replyTo && isPhoneUserName(replyTo, getContext()))) {
+  if (isPhoneUserName(fromRaw, getContext()) || (replyTo && isPhoneUserName(replyTo, getContext()) && !opts.allowReplyToUser)) {
     return;
   }
   // 优先精确匹配 → 严格模糊匹配 → 按作者 fallback
@@ -14918,26 +16778,52 @@ function incomingComment(momentId, fromRaw, time, text, replyTo) {
       }
     }
   }
-  if (!moment) return;
+  if (!moment) { momentsDiag('incomingComment:skipNoMoment', { momentId, fromRaw, knownMomentIds: (STATE.moments || []).map(m => m.id).slice(-12) }); return; }
+
+  moment.comments = moment.comments || [];
+
+  const authorNorm = normNameKey(moment.name || moment.from || '');
+  const fromNormResolved = normNameKey(fromRaw);
+  const isAuthorComment = fromNormResolved && authorNorm && fromNormResolved === authorNorm;
+  let replyToIdx = null;
+  if (replyTo) {
+    if (Number.isFinite(opts.replyToIndex) && moment.comments[opts.replyToIndex]) {
+      replyToIdx = opts.replyToIndex;
+    } else {
+      replyToIdx = moment.comments.findIndex(cm => cm.name === replyTo && (!opts.replyToText || cm.text === opts.replyToText));
+      if (replyToIdx < 0) replyToIdx = moment.comments.findIndex(cm => cm.name === replyTo);
+    }
+    if (replyToIdx < 0) replyToIdx = null;
+  }
+
+  // 拦截：动态作者不能无目标地自评；但允许作者回复别人已有评论。
+  // 规则：A发朋友圈，A自己评论自己 => 屏蔽；A回复B的评论 => 放行。
+  if (!opts.allowAuthorReply && isAuthorComment) {
+    const targetComment = replyToIdx !== null ? moment.comments[replyToIdx] : null;
+    const targetNorm = targetComment ? normNameKey(targetComment.name || targetComment.from || '') : '';
+    const isReplyingOtherComment = !!(targetComment && targetNorm && targetNorm !== authorNorm);
+    if (!isReplyingOtherComment) {
+      momentsDiag('incomingComment:skipAuthorSelfComment', { momentId: moment.id, fromRaw, momentAuthor: moment.name, replyTo, replyToIdx, allowAuthorReply: !!opts.allowAuthorReply });
+      return;
+    }
+  }
   const threadId = matchThread(fromRaw);
   const th = STATE.threads[threadId];
   const name = th ? th.name : fromRaw;
   const resolvedTime = resolvePhoneTime(time);
-  let replyToIdx = null;
-  if (replyTo) {
-    replyToIdx = moment.comments.findIndex(cm => cm.name === replyTo);
-    if (replyToIdx < 0) replyToIdx = null;
-  }
-  moment.comments = moment.comments || [];
+  const cleanText = sanitizeMomentCommentText(text);
+  if (!cleanText) { momentsDiag('incomingComment:skipEmptyAfterSanitize', { momentId: moment.id, fromRaw, rawPreview: String(text || '').slice(0, 120) }); return; }
   // 去重只看最近几条，避免同一句评论在更晚时候再次出现时被永久吞掉
-  const isDup = moment.comments.slice(-8).some(c => c.name === name && c.text === text && (!resolvedTime || !c.time || c.time === resolvedTime));
-  if (isDup) return;
-  moment.comments.push({ from: threadId || fromRaw, name, text, time: resolvedTime, replyTo: replyToIdx });
+  const isDup = moment.comments.slice(-8).some(c => c.name === name && c.text === cleanText && (!resolvedTime || !c.time || c.time === resolvedTime));
+  if (isDup) { momentsDiag('incomingComment:skipDup', { momentId: moment.id, name, textPreview: String(cleanText || '').slice(0, 120), resolvedTime }); return; }
+  moment.comments.push({ from: threadId || fromRaw, name, text: cleanText, time: resolvedTime, replyTo: replyToIdx });
+  momentsDiag('incomingComment:added', { momentId: moment.id, name, resolvedTime, replyToIdx, commentCount: moment.comments.length });
   if (STATE.currentView === 'moments') renderMoments();
   saveState();
 }
 
 function toggleLike(momentId) {
+  momentsDiag('toggleLike:start', { momentId });
   const moment = STATE.moments && STATE.moments.find(m => m.id === momentId);
   if (!moment) return;
   const idx = moment.likes.indexOf('user');
@@ -14948,22 +16834,45 @@ function toggleLike(momentId) {
 }
 
 async function sendMomentComment(momentId, text, replyToName) {
+  momentsDiag('sendMomentComment:start', { momentId, textPreview: String(text || '').slice(0, 120), replyToName });
   const moment = STATE.moments && STATE.moments.find(m => m.id === momentId);
   if (!moment || !text.trim()) return;
   const ts = resolvePhoneTime();
+  const replyMeta = (replyToName && typeof replyToName === 'object') ? replyToName : { name: replyToName };
+  const replyName = replyMeta && replyMeta.name ? replyMeta.name : null;
   let replyToIdx = null;
-  if (replyToName) {
-    replyToIdx = moment.comments.findIndex(cm => cm.name === replyToName);
+  if (replyName) {
+    const metaIdx = parseInt(replyMeta.idx, 10);
+    if (Number.isFinite(metaIdx) && moment.comments && moment.comments[metaIdx]) {
+      replyToIdx = metaIdx;
+    } else {
+      replyToIdx = moment.comments.findIndex(cm => cm.name === replyName && (!replyMeta.text || cm.text === replyMeta.text));
+      if (replyToIdx < 0) replyToIdx = moment.comments.findIndex(cm => cm.name === replyName);
+    }
     if (replyToIdx < 0) replyToIdx = null;
   }
   moment.comments = moment.comments || [];
-  moment.comments.push({ from: 'user', name: '我', text: text.trim(), time: ts, replyTo: replyToIdx });
+  const targetComment = replyToIdx !== null ? moment.comments[replyToIdx] : null;
+  const userCommentIdx = moment.comments.length;
+  const userCommentText = text.trim();
+  moment.comments.push({ from: 'user', name: '我', text: userCommentText, time: ts, replyTo: replyToIdx, source: 'manual', manual: true });
+  momentsDiag('sendMomentComment:userCommentAdded', { momentId, userCommentIdx, replyToIdx, commentCount: moment.comments.length });
   renderMoments();
   saveState();
   // 直接调 API 生成回复,不走 ST send_textarea
   if (moment.from !== 'user') {
-    // 评论的是 AI 角色的动态 → 该角色回复(用 moment.name 而不是 moment.from)
-    setTimeout(() => generateAIReply(momentId, text.trim(), moment.name), 600);
+    // 回复某个 NPC 评论时,必须优先由该 NPC 继续回复;普通评论动态时才由动态作者回复。
+    const targetName = targetComment && !isPhoneUserName(targetComment.name || targetComment.from || '', getContext())
+      ? targetComment.name
+      : null;
+    const responderName = targetName || moment.name;
+    setTimeout(() => generateAIReply(momentId, userCommentText, responderName, {
+      replyToName: targetName,
+      replyToText: targetComment ? targetComment.text : '',
+      replyToUser: true,
+      replyToUserIndex: userCommentIdx,
+      replyToUserText: userCommentText
+    }), 600);
   } else {
     // 评论的是用户自己的动态 → 触发 AI 社交互动
   // [DISABLED]     setTimeout(() => momentAISocial(momentId), 600);
@@ -15143,8 +17052,117 @@ function _collectWorldInfoText(charName) {
   return result.length > 1200 ? result.slice(0, 1200) : result;
 }
 
+// ── Unified game partner: current-chat scoped, shared by all mini games ─────
+function gameCleanPartnerName(name) {
+  return String(name || '')
+    .replace(/[<>\n\r\t]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .slice(0, 32);
+}
+
+function gameGetCardName(ctx) {
+  ctx = ctx || ((typeof getContext === 'function') ? getContext() : {});
+  return (ctx && (ctx.name2 || (ctx.characters && ctx.characterId !== undefined && ctx.characters[ctx.characterId] && ctx.characters[ctx.characterId].name) || ctx.name) || '').trim();
+}
+
+function gameGetPartnerStorageKey(ctx) {
+  ctx = ctx || ((typeof getContext === 'function') ? getContext() : {});
+  var slot = 'default';
+  try {
+    slot = (typeof getPhoneChatSlotKey === 'function' && getPhoneChatSlotKey(ctx)) || (ctx && (ctx.chatId || ctx.groupId || ctx.characterId)) || 'default';
+  } catch(e) {
+    slot = (ctx && (ctx.chatId || ctx.groupId || ctx.characterId)) || 'default';
+  }
+  return 'mochi_game_partner_' + String(slot);
+}
+
+function gameGetCurrentPartner(ctx) {
+  ctx = ctx || ((typeof getContext === 'function') ? getContext() : {});
+  var cardName = gameGetCardName(ctx) || '对方';
+  var partner = { name: cardName, cardName: cardName, note: '', manual: false };
+  try {
+    var raw = localStorage.getItem(gameGetPartnerStorageKey(ctx));
+    if (raw) {
+      var saved = JSON.parse(raw);
+      if (saved && String(saved.name || '').trim()) {
+        partner.name = gameCleanPartnerName(saved.name) || cardName;
+        partner.note = String(saved.note || '').replace(/[<>\r\t]/g, ' ').trim().slice(0, 600);
+        partner.manual = !!saved.manual;
+      }
+    }
+  } catch(e) {}
+  return partner;
+}
+
+function gameSetCurrentPartner(name, note, ctx) {
+  ctx = ctx || ((typeof getContext === 'function') ? getContext() : {});
+  var clean = gameCleanPartnerName(name);
+  if (!clean) return gameGetCurrentPartner(ctx);
+  var cardName = gameGetCardName(ctx) || '对方';
+  var cleanNote = String(note || '').replace(/[<>\r\t]/g, ' ').trim().slice(0, 600);
+  var partner = { name: clean, cardName: cardName, note: cleanNote, manual: clean !== cardName || !!cleanNote, updatedAt: Date.now() };
+  try { localStorage.setItem(gameGetPartnerStorageKey(ctx), JSON.stringify(partner)); } catch(e) {}
+  return partner;
+}
+
+function gameApplyPartnerToGames(partner) {
+  partner = partner || gameGetCurrentPartner();
+  var name = partner.name || '对方';
+  try { if (typeof LG2048 !== 'undefined') LG2048.charName = name; } catch(e) {}
+  try { if (typeof GM !== 'undefined') GM.charName = name; } catch(e) {}
+  try { if (typeof GWORD !== 'undefined') GWORD.charName = name; } catch(e) {}
+  try { if (typeof LG !== 'undefined') LG.charName = name; } catch(e) {}
+  try {
+    $('#g2048-partner-name,#ggold-partner-name,#gword-partner-name,#rp-game-partner-name').text(name);
+    $('#ggold-c-lbl').text(name);
+    $('#rp-game-char-name').text(name);
+  } catch(e) {}
+}
+
+function gameOpenPartnerModal() {
+  var ctx = (typeof getContext === 'function') ? getContext() : {};
+  var cur = gameGetCurrentPartner(ctx);
+  $('#rp-game-partner-name-input').val(cur.name || gameGetCardName(ctx) || '');
+  $('#rp-game-partner-note-input').val(cur.note || '');
+  $('#rp-game-partner-modal').css('display', 'flex');
+  setTimeout(function(){ try { document.getElementById('rp-game-partner-name-input').focus(); } catch(e) {} }, 0);
+}
+
+function gameClosePartnerModal() {
+  $('#rp-game-partner-modal').hide();
+}
+
+function gameSavePartnerFromModal() {
+  var ctx = (typeof getContext === 'function') ? getContext() : {};
+  var name = gameCleanPartnerName($('#rp-game-partner-name-input').val());
+  var note = String($('#rp-game-partner-note-input').val() || '').replace(/[<>\r\t]/g, ' ').trim().slice(0, 600);
+  if (!name) return;
+  var partner = gameSetCurrentPartner(name, note, ctx);
+  gameApplyPartnerToGames(partner);
+  try { if (typeof g2048Render === 'function') g2048Render(); } catch(e) {}
+  try { if (typeof gmUpdateRoundUI === 'function') gmUpdateRoundUI(); } catch(e) {}
+  try { if (typeof lgRender === 'function' && typeof LG !== 'undefined' && LG.active) lgRender(); } catch(e) {}
+  gameClosePartnerModal();
+}
+
+function gameExtractPartnerText(src, names, limit) {
+  src = String(src || '').trim();
+  if (!src) return '';
+  names = (names || []).map(function(n){ return String(n || '').trim().toLowerCase(); }).filter(Boolean);
+  if (!names.length) return src.slice(0, limit || 600);
+  var chunks = src.split(/\n{2,}|(?<=。)|(?<=！)|(?<=？)|(?<=\.)/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 6; });
+  var picked = chunks.filter(function(seg) {
+    var sl = seg.toLowerCase();
+    return names.some(function(n){ return sl.includes(n); });
+  }).join('\n').trim();
+  if (!picked) return '';
+  limit = limit || 900;
+  return picked.length > limit ? picked.slice(0, limit) : picked;
+}
+
 // ── Clean persona for 2048 (strip system directives) ──────────────
-function g2048GetPersona() {
+function g2048GetPersona(partnerName) {
   try {
     var ctx = (typeof getContext === 'function') ? getContext() : {};
     if (!ctx) ctx = {};
@@ -15152,28 +17170,41 @@ function g2048GetPersona() {
     if (!char && typeof this_chid !== 'undefined' && window.characters) char = window.characters[this_chid];
     if (!char) return '';
     var parts = [];
+    var partner = gameGetCurrentPartner(ctx);
+    if (partnerName && String(partnerName).trim()) partner.name = String(partnerName).trim();
     // 提取所有名字变体(支持 YAML 多语言、description 里的别名)
     var nameInfo = _extractCharNames(ctx, char);
-    var charName = nameInfo.primary;
-    if (nameInfo.allNames.length > 1) {
+    var cardName = nameInfo.primary || gameGetCardName(ctx) || '';
+    var charName = partner.name || cardName || '对方';
+    var isManualPartner = !!(charName && cardName && charName !== cardName);
+    if (isManualPartner) {
+      parts.push('卡片名:' + cardName + '(这是作品/群像卡/聊天窗口名称，不是当前游戏对象)');
+      parts.push('当前游戏对象:' + charName + '(你现在只扮演这个人，不得以卡片名自称)');
+      if (partner.note) parts.push('用户手动补充的人设(优先级最高):' + partner.note);
+    } else if (nameInfo.allNames.length > 1) {
       parts.push('角色名:' + nameInfo.primary + '(别名:' + nameInfo.aliases.join('/') + ',用户可能用任意名字称呼你)');
     } else if (charName) {
       parts.push('角色名:' + charName);
     }
-    // personality 完整
+    var partnerNames = isManualPartner ? [charName] : [charName].concat(nameInfo.aliases || []).filter(Boolean);
+    // 多人/群像卡：优先抽取包含当前搭子名的段落；单人卡保持原逻辑
     var personality = (char.personality || '').trim();
-    if (personality) parts.push('性格:' + personality);
-    // description 前 600 字
+    var personalityPicked = isManualPartner ? gameExtractPartnerText(personality, partnerNames, 900) : personality;
+    if (personalityPicked) parts.push('性格:' + personalityPicked);
     var description = (char.description || '').trim();
-    if (description) parts.push('人设:' + description.substring(0, 600));
-    // scenario 前 300 字(场景/背景)
+    var descriptionPicked = isManualPartner ? gameExtractPartnerText(description, partnerNames, 1200) : description.substring(0, 600);
+    if (descriptionPicked) parts.push('人设:' + descriptionPicked);
     var scenario = (char.scenario || '').trim();
-    if (scenario) parts.push('场景背景:' + scenario.substring(0, 300));
-    // mes_example 对话样例前 150 字(只取语气样本,过滤纯触发词内容)
+    var scenarioPicked = isManualPartner ? gameExtractPartnerText(scenario, partnerNames, 600) : scenario.substring(0, 300);
+    if (scenarioPicked) parts.push('场景背景:' + scenarioPicked);
     var example = (char.mes_example || char.first_mes || '').trim();
     var exampleClean = example.replace(/「[A-Z_a-z]+」/g, '').replace(/\s+/g, ' ').trim();
-    if (exampleClean.length > 20) parts.push('说话语气示例:' + exampleClean.substring(0, 150));
-    // World Info(已激活词条 + 全量扫描,取与角色相关部分)
+    var examplePicked = isManualPartner ? gameExtractPartnerText(exampleClean, partnerNames, 400) : exampleClean.substring(0, 150);
+    if (examplePicked && examplePicked.length > 20) parts.push('说话语气示例:' + examplePicked);
+    if (isManualPartner && !personalityPicked && !descriptionPicked && !scenarioPicked && !examplePicked && description) {
+      parts.push('群像卡原始资料摘录(未自动定位到该角色，请只提取其中与' + charName + '有关的信息):' + description.substring(0, 900));
+    }
+    // World Info(已激活词条,取与当前游戏对象相关部分)
     var wiText = _collectWorldInfoText(charName);
     if (wiText) parts.push('世界设定补充:\n' + wiText);
     // 追加正文近期对话(帮助 char 感知与 user 的关系/语境)
@@ -15209,7 +17240,9 @@ function g2048GetPersona() {
       if (/开启共演|开启扮演|开启示例/.test(l)) return false;
       return true;
     }).join('\n');
-    var header = '【严格扮演以下角色本人,只体现该角色自身的性格特征,不得受描述中其他人物性格影响,不得OOC。无论用户用哪个名字称呼你都要回应】';
+    var header = isManualPartner
+      ? '【严格扮演当前游戏对象:' + charName + '。卡片名' + cardName + '只作为作品/群像背景，不是你的身份。只体现' + charName + '本人的性格特征，不得OOC，不得混用其他角色人设。】'
+      : '【严格扮演以下角色本人,只体现该角色自身的性格特征,不得受描述中其他人物性格影响,不得OOC。无论用户用哪个名字称呼你都要回应】';
     return filtered2.trim() ? header + '\n' + filtered2.trim() : '';
   } catch(e) { return ''; }
 }
@@ -16116,7 +18149,8 @@ let _ggoldBound = false;
 function ggoldOpen() {
   if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = true; }
   const ctx = typeof getContext === 'function' ? getContext() : {};
-  GM.charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
+  GM.charName = gameGetCurrentPartner(ctx).name || '对方';
+  gameApplyPartnerToGames({ name: GM.charName });
   const clbl = document.getElementById('ggold-c-lbl');
   if (clbl) clbl.textContent = GM.charName;
   GM.towerTargets = gmBuildTower();
@@ -16293,7 +18327,8 @@ let _gwordBound = false;
 function gwordOpen() {
   if (!_gwordBound) { gwordBindEvents(); _gwordBound = true; }
   const ctx = typeof getContext === 'function' ? getContext() : {};
-  GWORD.charName = ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || '对方';
+  GWORD.charName = gameGetCurrentPartner(ctx).name || '对方';
+  gameApplyPartnerToGames({ name: GWORD.charName });
   GWORD.active = false;
   GWORD.processing = false;
   GWORD.mode = null;
@@ -16610,7 +18645,8 @@ function ggoldInit() {
 // ── Init new game ─────────────────────────────────────────────
 function g2048Init() {
   var ctx = getContext ? getContext() : {};
-  LG2048.charName = (ctx && (ctx.name2 || ctx.name)) || '\u5bf9\u65b9';
+  LG2048.charName = gameGetCurrentPartner(ctx).name || '\u5bf9\u65b9';
+  gameApplyPartnerToGames({ name: LG2048.charName });
   LG2048.board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
   LG2048.score = 0;
   LG2048.best = parseInt(localStorage.getItem('g2048_best') || '0');
@@ -17369,6 +19405,7 @@ function lgInitFabDrag() {
 }
 
 function lgInit() {
+  gameApplyPartnerToGames(gameGetCurrentPartner());
   // Show spiciness selector
   const overlay = document.getElementById('rp-ludo-spicy');
   if (overlay) overlay.style.display = 'flex';
@@ -17406,7 +19443,8 @@ function lgStartGame(spicyLevel) {
   LG.lastTaskTime  = 0;
 
   const ctx = getContext();
-  LG.charName = ctx?.name2 || ctx?.name || '对方';
+  LG.charName = gameGetCurrentPartner(ctx).name || '对方';
+  gameApplyPartnerToGames({ name: LG.charName });
   $('#rp-game-char-name').text(LG.charName);
   $('#rp-game-win').hide();
   $('#rp-game-chat').empty();
@@ -18452,6 +20490,9 @@ Object.assign(window, {
   openThread, openSettings,
   lgUserRoll,
   gameInlineEdit, diaryInlineEdit, rpInlineEdit,
+  MochiPhoneOpen: openMochiPhoneFromExternal,
+  MochiPhoneClose: closeMochiPhoneFromExternal,
+  MochiPhoneToggle: toggleMochiPhoneFromExternal,
 });
 
 // ================================================================
@@ -18460,6 +20501,9 @@ Object.assign(window, {
 jQuery(async () => {
   try {
     await init();
+    registerPhoneSlashCommands();
+    injectMochiSettingsPanel();
+    applyMochiLaunchSettings();
   } catch(e) {
     console.error('[Raymond Phone] init failed:', e);
     // 兜底:确保 FAB 可见
