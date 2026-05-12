@@ -7161,21 +7161,11 @@ async function init() {
       try {
         liveES.on(liveET['MESSAGE_UPDATED'], onMessageUpdatedForImages);
       } catch(e) {}
-      try {
-        liveES.on(liveET['MESSAGE_UPDATED'], function(mesId) {
-          // 智绘姬也会触发 MESSAGE_UPDATED：这里只在该楼 ctx.chat 里确实含 PHONE/手机标签时补一次 onAIMessage，
-          // 不跑 repair/rewrite，避免重写智绘姬主楼 DOM。
-          try {
-            const nMesId = Number(mesId);
-            const c = (typeof getContext === 'function') ? getContext() : null;
-            const m = Number.isFinite(nMesId) ? c?.chat?.[nMesId] : null;
-            const raw = String(m?.mes || '');
-            if (m && !m.is_user && /<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalizePhoneMarkup(raw))) {
-              try { scheduleOnAIMessageKick('message_updated_phone', 80); } catch(e) {}
-            }
-          } catch(e) {}
-        });
-      } catch(e) {}
+      // 不再在 MESSAGE_UPDATED 上补跑 onAIMessage。
+      // 读 st-chatu8 链路后确认：智绘姬完成生图时会通过 MESSAGE_UPDATED 把 <img src=...>
+      // 写回主楼；此时再跑 onAIMessage 会进入 rewritePhoneEchoInChat/applyPhoneCollapseToEl，
+      // 和 st-chatu8 的 placeholder/imageInserter DOM 回填争抢同一楼层。
+      // MESSAGE_UPDATED 这里只保留 onMessageUpdatedForImages 做手机内图片捕捞，不碰主楼 DOM。
     }
   }
   // FIX2: 监听聊天窗口切换
@@ -9649,18 +9639,11 @@ function installChatu8ButtonBridge() {
       const inHiddenWrap = !!btn.closest('.rp-phone-saved-img-btns');
       const isManagedBtn = inLiveWrap || inMomentWrap || inHiddenWrap;
       // 主楼原生智绘姬按钮属于 st-chatu8 自己的主链路，mochi-phone 绝不能入队或消费。
-      // 手机 pending 图会由 rpTriggerPendingImg() 在合成点击后显式写入 rpImgWaitQueue。
+      // 真实用户点击托管按钮时也不能再合成二次点击：智绘姬会收到两次触发，
+      // 第二次命中“已有任务/线程忙”，表现为控制台有生图指令但按钮不转圈、任务不落地。
+      // 手机 pending 图由 rpTriggerPendingImg() 显式合成点击并写入 rpImgWaitQueue，这里不再桥接。
       if (!isManagedBtn) return;
-
-      const now = Date.now();
-      const stampKey = e.type === 'click' ? 'rpBridgeClickTs' : 'rpBridgeTouchTs';
-      const last = Number(btn.dataset[stampKey] || 0);
-      if (now - last < 500) return;
-      btn.dataset[stampKey] = String(now);
-      const delay = e.type === 'touchend' ? 24 : 0;
-      setTimeout(function() {
-        try { dispatchSyntheticPrimaryClick(btn, { mode: e.type === 'touchend' ? 'touch' : 'mouse' }); } catch(_) {}
-      }, delay);
+      return;
     } catch(err) {
       console.warn('[Phone:chatu8:bridge] handler error', err);
     }
@@ -11594,35 +11577,9 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     if (fp) textEl.dataset.rpPhoneRewriteFp = fp;
     textEl.dataset.rpDone = '1';
     textEl.dataset.rpHistDone = '1';
-    // 只有涉及生图/图片按钮回填时，才触发 message_updated。
-    // 纯短信/朋友圈文本不再主动 emit，避免流式结束后再触发一次外部重绘，把当前楼层内容二次改写。
-    const shouldEmitMessageUpdated = !!fp;
-    const needsMessageUpdated = shouldEmitMessageUpdated && (
-      savedImageBtns.length > 0
-      || /<(SIMG|img|image)\b/i.test(String(block || ''))
-      || /image###[\s\S]*?###/i.test(String(block || ''))
-      || /<pic\b/i.test(String(block || ''))
-    );
-    try {
-      const _ctx3 = window.SillyTavern && typeof window.SillyTavern.getContext === 'function' ? window.SillyTavern.getContext() : null;
-      const _es3 = _ctx3 && _ctx3.eventSource;
-      if (needsMessageUpdated && _es3 && typeof _es3.emit === 'function') {
-        const _mesEl3 = textEl.closest('.mes');
-        const _mesId3 = _mesEl3 ? parseInt(_mesEl3.getAttribute('mesid') || '-1', 10) : -1;
-        // 只对最新一条 AI 消息触发，避免历史批量处理时风险
-        const _allAiMes3 = document.querySelectorAll('.mes:not([is_user="true"])');
-        const _lastMesId3 = _allAiMes3.length > 0 ? parseInt(_allAiMes3[_allAiMes3.length - 1].getAttribute('mesid') || '-1', 10) : -1;
-        if (_mesId3 >= 0 && _mesId3 === _lastMesId3) {
-          // 延迟 1600ms 再触发，确保 schedulePhonePostProcess 的 4 次 retry（1400ms 最巚）全部跑完再触发，避免按钮反复被销毁
-          const _triggerKey3 = 'rpMsgUpdatedPending_' + _mesId3;
-          if (window[_triggerKey3]) clearTimeout(window[_triggerKey3]);
-          window[_triggerKey3] = setTimeout(function() {
-            window[_triggerKey3] = null;
-            try { _es3.emit('message_updated', _mesId3); } catch(_e) { console.warn('[Raymond Phone] emit message_updated failed', _e); }
-          }, 1600);
-        }
-      }
-    } catch(_e3) { console.warn('[Raymond Phone] MESSAGE_UPDATED trigger failed', _e3); }
+    // 不再从 mochi-phone 折叠链路主动广播 MESSAGE_UPDATED。
+    // 主楼智绘姬按钮/图片回写必须完全交给 st-chatu8 自己；这里 emit 会再次触发
+    // Prompt Template + placeholder/imageInserter 重处理，导致主楼按钮/图片回填链路被打断。
   } catch(e) {
     console.warn('[Raymond Phone] applyPhoneCollapseToEl:', e);
   }
@@ -11776,10 +11733,17 @@ function scheduleOnAIMessageKick(reason, delay) {
 function rpMesHasChatu8Activity(mesId) {
   try {
     if (!Number.isFinite(mesId) || mesId < 0) return false;
+    const ctx = (typeof getContext === 'function') ? getContext() : null;
+    const msgMes = String(ctx?.chat?.[mesId]?.mes || '');
+    // st-chatu8 的主链路可能处于三种阶段：
+    // 1) image###prompt### 占位/按钮阶段；2) 旋转/任务容器阶段；3) <img src=...> 回填阶段。
+    // 这些阶段都不能让 mochi-phone 的 DOM repair 介入，否则会打断主楼图片回填。
+    if (/image###[\s\S]*?###/i.test(msgMes)) return true;
+    if (/<img\b[^>]*\bsrc=/i.test(msgMes)) return true;
     const mesEl = document.querySelector(`.mes[mesid="${mesId}"]`);
     const textEl = mesEl && mesEl.querySelector ? mesEl.querySelector('.mes_text') : null;
     if (!textEl) return false;
-    return !!textEl.querySelector('button.st-chatu8-image-button, button.image-tag-button, img[class*="chatu8"], img[data-task-id], img[data-request-id], [class*="chatu8"] img, [class*="image-tag"] img');
+    return !!textEl.querySelector('button.st-chatu8-image-button, button.image-tag-button, img[class*="chatu8"], img[data-task-id], img[data-request-id], [data-task-id], [data-request-id], [class*="chatu8"], [class*="image-tag"]');
   } catch(e) {
     return false;
   }
