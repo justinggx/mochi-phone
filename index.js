@@ -7144,6 +7144,9 @@ async function init() {
       const ev = liveET[k];
       if (ev) {
         try { liveES.on(ev, onAIMessage); } catch(e) { console.error('[Phone:init] register FAILED', e); }
+        if (k === 'GENERATION_ENDED') {
+          try { liveES.on(ev, function() { scheduleFinalPhoneParseSweep('generation_ended'); }); } catch(e) {}
+        }
       }
     });
     // 用户消息渲染后也清理 OOC（处理历史记录重新渲染的情况）
@@ -7160,9 +7163,17 @@ async function init() {
       } catch(e) {}
       try {
         liveES.on(liveET['MESSAGE_UPDATED'], function(mesId) {
-          const nMesId = Number(mesId);
-          try { scheduleRepairPhoneByMesId(nMesId, 'message_updated'); } catch(e) {}
-          try { scheduleOnAIMessageKick('message_updated', 220); } catch(e) {}
+          // 智绘姬也会触发 MESSAGE_UPDATED：这里只在该楼 ctx.chat 里确实含 PHONE/手机标签时补一次 onAIMessage，
+          // 不跑 repair/rewrite，避免重写智绘姬主楼 DOM。
+          try {
+            const nMesId = Number(mesId);
+            const c = (typeof getContext === 'function') ? getContext() : null;
+            const m = Number.isFinite(nMesId) ? c?.chat?.[nMesId] : null;
+            const raw = String(m?.mes || '');
+            if (m && !m.is_user && /<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalizePhoneMarkup(raw))) {
+              try { scheduleOnAIMessageKick('message_updated_phone', 80); } catch(e) {}
+            }
+          } catch(e) {}
         });
       } catch(e) {}
     }
@@ -7209,11 +7220,13 @@ async function init() {
               const isInChat = !!img.closest('.mes_block, .mes');
               if (!isInMesText && !isChatu8 && !isInChat) continue;
 
+              console.log('[Phone:diag:Observer] 图片通过过滤!', { src: src.slice(0,80), isInMesText, isChatu8, waitQueueLen: window.rpImgWaitQueue?.length||0, tagName: img.tagName, closestChatu8: !!img.closest('[class*="chatu8"]') });
+
               const ts = resolvePhoneTime();
 
               // ── 朋友圈生图优先：仅当 waitQueue 里有朋友圈条目（threadId=null）时才截图给朋友圈 ──
               // 若 waitQueue 只有线程条目（SMS生图）或为空（ComfyUI自动生图），不走此路径
-              const _hasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => !e.threadId);
+              const _hasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => e && e.source === 'mochi-phone' && !e.threadId);
               if (STATE._pendingMomentImgs && STATE._pendingMomentImgs.size > 0 && _hasMomentInQueue) {
                 // 优先检查 img 的 prompt 属性做精确匹配
                 const imgPromptAttr = (img.getAttribute('prompt') || img.getAttribute('data-prompt') || '').trim();
@@ -7234,7 +7247,7 @@ async function init() {
                 // 在 _pendingMomentImgs 里精确反查 momentId（防止多 moment 并发时顺序错配）
                 if (!matchedMomentId) {
                   const wqMomentEntries = window.rpImgWaitQueue
-                    ? window.rpImgWaitQueue.filter(e => !e.threadId)
+                    ? window.rpImgWaitQueue.filter(e => e && e.source === 'mochi-phone' && !e.threadId)
                     : [];
                   let bestEntry = null;
                   for (const entry of wqMomentEntries) {
@@ -7283,7 +7296,7 @@ async function init() {
                     moment.pendingImgType = null;
                     // 成功回填后，同步清理 waitQueue 里该 moment 的残留条目，避免下一张图误消费
                     if (window.rpImgWaitQueue && window.rpImgWaitQueue.length) {
-                      const wIdx = window.rpImgWaitQueue.findIndex(e => !e.threadId && e.pendingMsgId === matchedMomentId);
+                      const wIdx = window.rpImgWaitQueue.findIndex(e => e && e.source === 'mochi-phone' && !e.threadId && e.pendingMsgId === matchedMomentId);
                       if (wIdx >= 0) { window.rpImgWaitQueue.splice(wIdx, 1); ; }
                     }
                     // 双保险：直接 DOM 手术精准替换图片区域（不依赖 currentView 判断）
@@ -7302,9 +7315,10 @@ async function init() {
                 }
               }
 
-              if (window.rpImgWaitQueue && window.rpImgWaitQueue.length) {
-                // ── 模式A：队列有条目（智绘姬模式）── SeenSrcs 不干预此路径
-                const waitEntry = window.rpImgWaitQueue[0];
+              const mochiWaitIdx = window.rpImgWaitQueue ? window.rpImgWaitQueue.findIndex(e => e && e.source === 'mochi-phone') : -1;
+              if (mochiWaitIdx >= 0) {
+                // ── 模式A：队列有 mochi-phone 条目（手机 pending 图）── SeenSrcs 不干预此路径
+                const waitEntry = window.rpImgWaitQueue[mochiWaitIdx];
                 if (!waitEntry) continue;
                 if (now - waitEntry.addedAt < -2000) continue;
 
@@ -7332,7 +7346,7 @@ async function init() {
                   }
                   const moment = STATE.moments && STATE.moments.find(function(mo) { return mo.id === resolvedMomentId; });
                   if (moment && !moment.img) {
-                    window.rpImgWaitQueue.shift();
+                    window.rpImgWaitQueue.splice(mochiWaitIdx, 1);
                     moment.img = src;
                     moment.pendingImg = null;
                     moment.pendingImgType = null;
@@ -7344,17 +7358,17 @@ async function init() {
                     if (STATE.currentView === 'moments') renderMoments();
                     saveState();
                   } else {
-                    window.rpImgWaitQueue.shift();
+                    window.rpImgWaitQueue.splice(mochiWaitIdx, 1);
                   }
                   continue;
                 }
 
                 const th = STATE.threads && STATE.threads[targetThread];
-                if (!th) { console.warn('[Phone:obs:diag] 线程不存在，跳过', { targetThread }); window.rpImgWaitQueue.shift(); continue; }
+                if (!th) { console.warn('[Phone:obs:diag] 线程不存在，跳过', { targetThread }); window.rpImgWaitQueue.splice(mochiWaitIdx, 1); continue; }
 
                 const alreadyHas = th.messages.some(m => m.type === 'image' && m.src === src);
 
-                window.rpImgWaitQueue.shift();
+                window.rpImgWaitQueue.splice(mochiWaitIdx, 1);
                 const pidx = th.messages.findIndex(m => m.id === targetPendingId);
                 const newImgMsg = { id: `chatu8_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: targetThread, type: 'image', time: ts, src };
                 if (pidx >= 0) {
@@ -7579,19 +7593,10 @@ async function init() {
   // 某些 ST 刷新进入已打开聊天时，不会重放 MESSAGE_RECEIVED / GENERATION_ENDED，
   // 但当前 DOM 与 ctx.chat 已经就绪。这里仅补一次，不恢复轮询。
   setTimeout(function() {
-    try { installPhoneRenderObserver(); } catch(e) { console.warn('[Phone] install render observer failed', e); }
-    try { rewriteAllHistoryPhoneBlocks(); } catch(e) { console.warn('[Phone] init history rewrite failed', e); }
-    try {
-      const ctxKick = getContext();
-      const chatKick = ctxKick?.chat || [];
-      for (let i = chatKick.length - 1; i >= 0; i--) {
-        if (!chatKick[i]?.is_user && chatKick[i]?.mes) {
-          scheduleRepairPhoneByMesId(i, 'init-last-ai');
-          break;
-        }
-      }
-    } catch(e) { console.warn('[Phone] init mesId repair failed', e); }
-    try { scheduleOnAIMessageKick('init', 0); } catch(e) { console.warn('[Phone] initial onAIMessage kick failed', e); }
+    // 刷新进入旧聊天时，新消息事件不会重放；需要一次性渲染历史中真实存在的 PHONE 标签。
+    // 只做标签解析/折叠，不安装 DOM repair observer，也不跑 MESSAGE_UPDATED 自愈 repair。
+    try { rewriteAllHistoryPhoneBlocks(); } catch(e) { console.warn('[Phone] init history phone render failed', e); }
+    try { scheduleOnAIMessageKick('init_phone_parse', 0); } catch(e) { console.warn('[Phone] initial onAIMessage kick failed', e); }
   }, 900);
 
   // 延迟:等 ctx 稳定后添加当前 char 联系人 + 清理 DOM
@@ -7730,6 +7735,7 @@ function onChatChanged() {
   STATE._lastAiFingerprint = null;
   STATE._imgExtractedFps = new Set();
   STATE._pendingComfyPics = new Map();
+  STATE._pendingMomentImgs = new Map();
   STATE._friendsInteractDone = new Set();
   STATE._charRespondDone = new Set();
   if (window.rpObserverSeenSrcs) window.rpObserverSeenSrcs.clear();
@@ -7755,14 +7761,10 @@ function onChatChanged() {
       hidePhoneTagsInChat();
       hideOocInUserBubbles();
       rebuildContactsFromHistory(_expectedChatId);
-      // 历史消息折叠重建：确保刷新/切换对话后所有含 PHONE 的历史消息也显示折叠块
+      // 切聊天后一次性渲染该聊天历史中真实存在的 PHONE 标签；不安装 DOM repair observer。
       setTimeout(function() {
         try { rewriteAllHistoryPhoneBlocks(); } catch(e) {}
-        // 单次补点火：页面刷新后某些 ST 时序下，AI 消息事件不会重放，
-        // 这里仅补一次 onAIMessage，不恢复轮询，避免重新进入 P1/P2 拉扯。
-        setTimeout(function() {
-          try { onAIMessage(); } catch(e) {}
-        }, 80);
+        try { scheduleOnAIMessageKick('chat_changed_phone_parse', 0); } catch(e) {}
       }, 300);
     } catch(e) { console.warn('[Phone] onChatChanged delayed error', e); }
   }, 600);
@@ -8696,7 +8698,6 @@ function bindUI() {
 
   // Moments: like
   installChatu8ButtonBridge();
-  installChatu8ImageSyncToPhone();
 
   // Moments: like
   $(document).on('click', '.rp-like-btn', function(e) {
@@ -9478,6 +9479,7 @@ function renderBubbles(threadId) {
       pendingBtn.attr('data-prompt', escHtml(msg.prompt || ''));
       pendingBtn.on('click', function(e) {
         e.stopPropagation();
+        console.log('[Phone:diag] 🔴 CLICK HANDLER FIRED rpTriggerPendingImg about to be called', { tid: $(this).data('threadid'), mid: $(this).data('msgid'), prompt: String($(this).data('prompt')||'').slice(0,60) });
         rpTriggerPendingImg($(this).data('threadid'), $(this).data('msgid'), $(this).data('prompt'), this);
       });
       const timeEl = $(`<div class="rp-bts">${escHtml(msg.time)}</div>`);
@@ -9624,7 +9626,6 @@ function dispatchSyntheticPrimaryClick(btn, opts) {
       try { btn.dispatchEvent(new MouseEvent('mouseup', evOpts)); } catch(_) {}
     }
     try { btn.dispatchEvent(new MouseEvent('click', evOpts)); } catch(_) {}
-    try { btn.click(); } catch(_) {}
     return true;
   } catch(e) {
     console.warn('[Phone:chatu8] dispatchSyntheticPrimaryClick failed', e);
@@ -9647,29 +9648,9 @@ function installChatu8ButtonBridge() {
       const inMomentWrap = !!btn.closest('.rp-phone-moment-live-img-btns');
       const inHiddenWrap = !!btn.closest('.rp-phone-saved-img-btns');
       const isManagedBtn = inLiveWrap || inMomentWrap || inHiddenWrap;
-      // 主楼原生按钮：不干预点击，但写入 rpImgWaitQueue 让 MutationObserver 知道该路由到哪
-      if (!isManagedBtn) {
-        // 仅在 click 事件时写一次（touchend+click 会各触发一次，避免重复）
-        if (e.type === 'click') {
-          const prompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || '').trim();
-          const now2 = Date.now();
-          const lastWrite = Number(btn.dataset.rpBridgeQueueTs || 0);
-          if (now2 - lastWrite > 1000) {
-            btn.dataset.rpBridgeQueueTs = String(now2);
-            window.rpImgWaitQueue = window.rpImgWaitQueue || [];
-            // 查找当前最新的 AI 消息 id
-            let _msgId = null;
-            try {
-              const _ctx2 = window.SillyTavern && typeof window.SillyTavern.getContext === 'function' ? window.SillyTavern.getContext() : null;
-              if (_ctx2 && _ctx2.chat && _ctx2.chat.length > 0) {
-                _msgId = _ctx2.chat.length - 1;
-              }
-            } catch(_) {}
-            window.rpImgWaitQueue.push({ threadId: STATE.currentThread || null, pendingMsgId: _msgId, prompt: prompt, addedAt: now2 });
-          }
-        }
-        return;
-      }
+      // 主楼原生智绘姬按钮属于 st-chatu8 自己的主链路，mochi-phone 绝不能入队或消费。
+      // 手机 pending 图会由 rpTriggerPendingImg() 在合成点击后显式写入 rpImgWaitQueue。
+      if (!isManagedBtn) return;
 
       const now = Date.now();
       const stampKey = e.type === 'click' ? 'rpBridgeClickTs' : 'rpBridgeTouchTs';
@@ -9692,86 +9673,17 @@ function installChatu8ButtonBridge() {
 // ================================================================
 //  CHATU8 IMAGE SYNC TO PHONE
 // ================================================================
-function installChatu8ImageSyncToPhone() {
-  if (window._rpImageSyncInstalled) return;
-  window._rpImageSyncInstalled = true;
-  var ctx = window.SillyTavern && typeof window.SillyTavern.getContext === 'function' ? window.SillyTavern.getContext() : null;
-  var es = ctx && ctx.eventSource;
-  if (!es || typeof es.on !== 'function') return;
 
-  es.on('generate-image-response', function(rp) {
-    try {
-      if (!rp || !rp.success) return;
-      var imgData = rp.imageData || rp.imageUrl || null;
-      if (!imgData) return;
-      var reqId = rp.id || '';
-
-      // 按 reqId 找对应主楼按钮的 prompt
-      var matchedPrompt = null;
-      var allBtns = document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button');
-      for (var i = 0; i < allBtns.length; i++) {
-        var b = allBtns[i];
-        if ((b.dataset.requestId || '') === reqId) {
-          matchedPrompt = (b.dataset.imageTag || b.dataset.link || '').trim();
-          break;
-        }
-      }
-
-      // 找手机朋友圈里 prompt 匹配的 pending 条目，直接写入
-      if (matchedPrompt) {
-        var pendingBtns = document.querySelectorAll('.rp-moment-pending-img');
-        for (var j = 0; j < pendingBtns.length; j++) {
-          var pb = pendingBtns[j];
-          var pbPrompt = (pb.dataset.prompt || '').trim();
-          if (matchedPrompt.includes(pbPrompt.slice(0, 30)) || pbPrompt.includes(matchedPrompt.slice(0, 30))) {
-            var momentId = pb.dataset.mid;
-            // 直接写入 STATE.moments
-            try {
-              var wkeys = Object.keys(window);
-              for (var k = 0; k < wkeys.length; k++) {
-                var v = window[wkeys[k]];
-                if (v && typeof v === 'object' && Array.isArray(v.moments)) {
-                  var mom = v.moments.find(function(m) { return m.id === momentId; });
-                  if (mom) {
-                    mom.img = imgData;
-                    mom.pendingImg = null;
-                    mom.pendingImgType = null;
-                    if (typeof window.renderMoments === 'function') window.renderMoments();
-                    if (typeof window.saveState === 'function') window.saveState();
-                  }
-                  break;
-                }
-              }
-            } catch(se) { console.warn('[Phone:imageSync] state write failed', se); }
-            // 同时更新 DOM
-            var safeSrc = imgData.replace(/"/g, '&quot;');
-            pb.outerHTML = '<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="' + safeSrc + '" alt=""/></div>';
-            break;
-          }
-        }
-      }
-
-      // proxy img 备用（触发 MutationObserver 兼容旧逻辑）
-      if (!document.querySelector('img[data-chatu8-phone-bridge="' + reqId + '"]')) {
-        var proxyImg = document.createElement('img');
-        proxyImg.src = imgData;
-        proxyImg.setAttribute('data-chatu8-phone-bridge', reqId);
-        proxyImg.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;top:-9999px';
-        var chat = document.querySelector('#chat');
-        if (chat) chat.appendChild(proxyImg);
-      }
-    } catch(e) {
-      console.warn('[Phone:imageSync] error', e);
-    }
-  });
-
-}
+// mochi-phone 不再监听 st-chatu8 的 generate-image-response。
+// 主楼生图回写完全交给智绘姬本体；mochi 只在图片已经进入主楼 DOM / MESSAGE_UPDATED 后，
+// 通过下方 MutationObserver / onMessageUpdatedForImages 同步到手机 pending 图。
 
 // ================================================================
 //  PENDING IMAGE TRIGGER（点击"📷 点击生图"触发智绘姬）
 // ================================================================
 function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
   // triggerEl: 被点击的 .rp-pending-img DOM 元素（由 jQuery .on('click') 传入）
+  console.log('[Phone:diag:trigger] rpTriggerPendingImg called', { threadId, msgId, prompt: String(prompt || '').slice(0, 80), triggerEl: !!triggerEl, waitQueueLen: window.rpImgWaitQueue?.length || 0 });
   try {
   function forceTriggerImageButton(btn) {
     if (!btn) return false;
@@ -9781,6 +9693,7 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
       btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       btn.dispatchEvent(new MouseEvent('mouseup',  { bubbles: true, cancelable: true }));
       btn.dispatchEvent(new MouseEvent('click',    { bubbles: true, cancelable: true }));
+      console.log('[Phone:diag:trigger] forceTriggerImageButton SUCCESS', { btnTag: btn.tagName, btnClass: btn.className, btnDataLink: (btn.getAttribute('data-link')||'').slice(0,60), btnText: (btn.textContent||'').slice(0,30) });
       return true;
     } catch(e) {
       console.warn('[Phone:pendingImg] forceTriggerImageButton failed', e);
@@ -9788,10 +9701,35 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
     }
   }
 
-  // 1) 在主楼聊天里找包含这个 prompt 的智绘姬按钮，点击它触发生图
-  //    智绘姬按钮是 <button class="image-tag-button st-chatu8-image-button" data-link="prompt">
+  // 1) 优先找 mochi 保存/管理的智绘姬按钮；找不到时，允许“手机 pending 点击”安全触发主楼原生按钮。
+  // 关键边界：只有 rpTriggerPendingImg() 会写 rpImgWaitQueue；用户手动点主楼原生按钮仍不会入 mochi 队列。
   let triggered = false;
-  const btns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
+  let triggerSource = '';
+  const managedBtnSelector = '.rp-phone-live-img-btns button.st-chatu8-image-button, .rp-phone-live-img-btns button.image-tag-button, .rp-phone-saved-img-btns button.st-chatu8-image-button, .rp-phone-saved-img-btns button.image-tag-button, .rp-phone-moment-live-img-btns button.st-chatu8-image-button, .rp-phone-moment-live-img-btns button.image-tag-button';
+  const isMochiManagedImageBtn = function(btn) {
+    return !!(btn && btn.closest && btn.closest('.rp-phone-live-img-btns, .rp-phone-saved-img-btns, .rp-phone-moment-live-img-btns'));
+  };
+  const isNativeMainImageBtn = function(btn) {
+    if (!btn || !btn.closest) return false;
+    if (isMochiManagedImageBtn(btn)) return false;
+    if (btn.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-panel, #rp-phone, .rp-chat-view, .rp-moment-card')) return false;
+    return !!btn.closest('.mes, #chat');
+  };
+  const collectImageButtons = function(includeNative) {
+    const out = [];
+    const seen = new Set();
+    Array.from(document.querySelectorAll(managedBtnSelector)).forEach(function(btn) {
+      if (!seen.has(btn)) { seen.add(btn); out.push(btn); }
+    });
+    if (includeNative) {
+      Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(function(btn) {
+        if (!seen.has(btn) && isNativeMainImageBtn(btn)) { seen.add(btn); out.push(btn); }
+      });
+    }
+    return out.reverse();
+  };
+  const btns = collectImageButtons(false);
+  console.log('[Phone:diag:trigger] mochi托管智绘姬按钮数量:', btns.length, btns.slice(0,3).map(b=>({cls:b.className,link:(b.getAttribute('data-link')||'').slice(0,40)})));
   const normalizedPrompt = String(prompt || '').replace(/\s+/g, ' ').trim();
   const findPromptScore = function(btnPromptRaw) {
     const btnPrompt = String(btnPromptRaw || '').replace(/\s+/g, ' ').trim();
@@ -9818,15 +9756,30 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
   }
   if (bestBtn && bestScore > 0) {
     triggered = forceTriggerImageButton(bestBtn);
-    if (triggered) {
-    }
+    if (triggered) triggerSource = 'managed';
   }
 
   if (!triggered) {
-    // 2) 没找到对应按钮：点最后一条 AI 消息里的第一个智绘姬按钮
-    const allBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
-    if (allBtns.length > 0) {
-      triggered = forceTriggerImageButton(allBtns[0]);
+    const nativeBtns = collectImageButtons(true).filter(function(btn) { return isNativeMainImageBtn(btn); });
+    let nativeBestBtn = null;
+    let nativeBestScore = 0;
+    for (const btn of nativeBtns) {
+      const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
+      const score = findPromptScore(btnPrompt);
+      if (score > nativeBestScore) {
+        nativeBestScore = score;
+        nativeBestBtn = btn;
+      }
+    }
+    console.log('[Phone:diag:trigger] 主楼原生智绘姬候选:', { count: nativeBtns.length, bestScore: nativeBestScore });
+    // 优先要求 prompt 匹配；若智绘姬按钮本身没有暴露 prompt/data-link，允许唯一主楼候选作为兜底。
+    // 这里仍然只在“手机 pending 点击”入口执行，不影响用户手动点主楼按钮。
+    if (nativeBestBtn && nativeBestScore >= 40) {
+      triggered = forceTriggerImageButton(nativeBestBtn);
+      if (triggered) triggerSource = 'native-main';
+    } else if (!nativeBestBtn && nativeBtns.length === 1) {
+      triggered = forceTriggerImageButton(nativeBtns[0]);
+      if (triggered) triggerSource = 'native-main-single';
     }
   }
 
@@ -9850,23 +9803,35 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
     let _retryCount = 0;
     const _retryInterval = setInterval(function() {
       _retryCount++;
-      const _retryBtns = Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).reverse();
+      const _retryBtns = collectImageButtons(true);
       let _retryTriggered = false;
+      let _retrySource = '';
       if (normalizedPrompt) {
+        let _retryBestBtn = null;
+        let _retryBestScore = 0;
         for (const btn of _retryBtns) {
           const bp = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').replace(/\s+/g,' ').trim();
-          if (bp && (bp === normalizedPrompt || bp.includes(normalizedPrompt.slice(0,30)) || normalizedPrompt.includes(bp.slice(0,30)))) {
-            _retryTriggered = forceTriggerImageButton(btn);
+          const _score = findPromptScore(bp);
+          if (_score > _retryBestScore) {
+            _retryBestScore = _score;
+            _retryBestBtn = btn;
           }
         }
-      }
-      if (!_retryTriggered && _retryBtns.length > 0) {
-        _retryTriggered = forceTriggerImageButton(_retryBtns[0]);
+        if (_retryBestBtn && _retryBestScore >= 40) {
+          _retryTriggered = forceTriggerImageButton(_retryBestBtn);
+          _retrySource = isNativeMainImageBtn(_retryBestBtn) ? 'native-main' : 'managed';
+        } else {
+          const _nativeOnly = _retryBtns.filter(function(btn) { return isNativeMainImageBtn(btn); });
+          if (_nativeOnly.length === 1) {
+            _retryTriggered = forceTriggerImageButton(_nativeOnly[0]);
+            _retrySource = 'native-main-single';
+          }
+        }
       }
       if (_retryTriggered) {
         clearInterval(_retryInterval);
         window.rpImgWaitQueue = window.rpImgWaitQueue || [];
-        window.rpImgWaitQueue.push({ threadId, pendingMsgId: msgId, prompt, addedAt: Date.now() });
+        window.rpImgWaitQueue.push({ source: 'mochi-phone', triggerSource: _retrySource || 'managed', threadId, pendingMsgId: msgId, prompt, addedAt: Date.now() });
         if (triggerEl) {
           const _origHtml2 = triggerEl.innerHTML;
           triggerEl.innerHTML = '<span style="font-size:17px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>';
@@ -9895,7 +9860,7 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
 
   // 3) 触发成功：把这个请求加入等待队列，MutationObserver 收到图片后来消费
   window.rpImgWaitQueue = window.rpImgWaitQueue || [];
-  window.rpImgWaitQueue.push({ threadId, pendingMsgId: msgId, prompt, addedAt: Date.now() });
+  window.rpImgWaitQueue.push({ source: 'mochi-phone', triggerSource: triggerSource || 'managed', threadId, pendingMsgId: msgId, prompt, addedAt: Date.now() });
 
   // 更新气泡显示为"生成中..."
   if (triggerEl) {
@@ -10166,6 +10131,7 @@ function onMessageUpdatedForImages(messageIndex) {
     // messageIndex 可能是数字索引，也可能没传
     const idx = typeof messageIndex === 'number' ? messageIndex : ctx.chat.length - 1;
     const msg = ctx.chat[idx];
+    console.log('[Phone:diag:MESSAGE_UPDATED] onMessageUpdatedForImages', { messageIndex, idx, hasMsg: !!msg, isUser: msg?.is_user, hasMes: !!msg?.mes, mesLen: String(msg?.mes||'').length, hasImgSrc: /<img\b[^>]*src=/i.test(msg?.mes||''), hasImageHash: /image###/i.test(msg?.mes||'') });
     if (!msg || msg.is_user || !msg.mes) return;
 
     // 只处理含有 <img src="..."> 的消息（已被生图插件替换完的）
@@ -10193,7 +10159,7 @@ function onMessageUpdatedForImages(messageIndex) {
     if (newSrcs.length === 0) return;
 
     // ── 朋友圈生图回填：仅当 waitQueue 里有朋友圈条目（threadId=null）时才优先处理 ──
-    const _msgHasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => !e.threadId);
+    const _msgHasMomentInQueue = window.rpImgWaitQueue && window.rpImgWaitQueue.some(e => e && e.source === 'mochi-phone' && !e.threadId);
     if (STATE._pendingMomentImgs && STATE._pendingMomentImgs.size > 0 && _msgHasMomentInQueue) {
       // 尝试从消息文本里找 image###prompt### 来精确匹配
       const chatu8Re2 = /image###([\s\S]*?)###/gi;
@@ -10243,7 +10209,7 @@ function onMessageUpdatedForImages(messageIndex) {
       else if (STATE._pendingMomentImgs.size > 0 && newSrcs.length > 0) {
         // 优先遍历 waitQueue 朋友圈条目，通过 prompt 精确反查 momentId（防多 moment 并发错配）
         const wqMomentEntries2 = window.rpImgWaitQueue
-          ? window.rpImgWaitQueue.filter(e => !e.threadId)
+          ? window.rpImgWaitQueue.filter(e => e && e.source === 'mochi-phone' && !e.threadId)
           : [];
         let firstMomentId;
         let foundByPrompt = false;
@@ -10290,7 +10256,7 @@ function onMessageUpdatedForImages(messageIndex) {
           moment.pendingImgType = null;
           // 成功回填后，清理 waitQueue 里该 moment 的残留条目
           if (window.rpImgWaitQueue && window.rpImgWaitQueue.length) {
-            const wIdx = window.rpImgWaitQueue.findIndex(e => !e.threadId && e.pendingMsgId === firstMomentId);
+            const wIdx = window.rpImgWaitQueue.findIndex(e => e && e.source === 'mochi-phone' && !e.threadId && e.pendingMsgId === firstMomentId);
             if (wIdx >= 0) window.rpImgWaitQueue.splice(wIdx, 1);
           }
           // 直接 DOM 手术精准替换图片区域
@@ -11559,7 +11525,6 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     if (!textEl) return;
     const hasExistingPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi) {
-      cleanupRenderedPhoneEchoResiduals(textEl);
       return;
     }
     const existingEchoCleanupItems = collectPhoneCleanupItemsFromRenderedEcho(textEl);
@@ -11760,6 +11725,37 @@ function schedulePhonePostProcess(block, fp, targetMesId) {
   }
 }
 
+function scheduleFinalPhoneParseSweep(reason) {
+  try {
+    const delays = [250, 900, 1800, 3200];
+    delays.forEach(function(delay, idx) {
+      setTimeout(function() {
+        try {
+          const ctx = getContext();
+          const chat = ctx?.chat || [];
+          let lastAiIdx = -1;
+          for (let i = chat.length - 1; i >= 0; i--) {
+            if (chat[i] && !chat[i].is_user) { lastAiIdx = i; break; }
+          }
+          if (lastAiIdx < 0) return;
+          const raw = String(chat[lastAiIdx]?.mes || '');
+          const normalized = normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi, ''));
+          if (!/<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalized)) return;
+          // 旧楼层已证明 rewriteAllHistoryPhoneBlocks 能正确渲染；新楼层生成结束后也走同一路径。
+          // 这不是 repair/DOM observer，只是对 ctx.chat 中真实 PHONE 标签做一次有限历史渲染。
+          STATE._lastAiFingerprint = null;
+          try { rewriteAllHistoryPhoneBlocks(); } catch(e) { console.warn('[Phone] final history render sweep failed', e); }
+          try { onAIMessage(); } catch(e) { console.warn('[Phone] final onAIMessage sweep failed', e); }
+        } catch(e) {
+          console.warn('[Phone] final phone parse sweep failed', e);
+        }
+      }, delay);
+    });
+  } catch(e) {
+    console.warn('[Phone] scheduleFinalPhoneParseSweep outer:', e);
+  }
+}
+
 function scheduleOnAIMessageKick(reason, delay) {
   try {
     const wait = Number.isFinite(delay) ? delay : 80;
@@ -11777,9 +11773,22 @@ function scheduleOnAIMessageKick(reason, delay) {
   }
 }
 
+function rpMesHasChatu8Activity(mesId) {
+  try {
+    if (!Number.isFinite(mesId) || mesId < 0) return false;
+    const mesEl = document.querySelector(`.mes[mesid="${mesId}"]`);
+    const textEl = mesEl && mesEl.querySelector ? mesEl.querySelector('.mes_text') : null;
+    if (!textEl) return false;
+    return !!textEl.querySelector('button.st-chatu8-image-button, button.image-tag-button, img[class*="chatu8"], img[data-task-id], img[data-request-id], [class*="chatu8"] img, [class*="image-tag"] img');
+  } catch(e) {
+    return false;
+  }
+}
+
 function scheduleRepairPhoneByMesId(targetMesId, reason) {
   try {
     if (!Number.isFinite(targetMesId) || targetMesId < 0) return;
+    if (rpMesHasChatu8Activity(targetMesId)) return;
     const retryDelays = [0, 120, 320, 700, 1400];
     retryDelays.forEach(function(delay, idx) {
       setTimeout(function() {
@@ -11806,6 +11815,7 @@ function installPhoneRenderObserver() {
     const queueMesRepair = function(mesId, reason) {
       try {
         if (!Number.isFinite(mesId) || mesId < 0) return;
+        if (rpMesHasChatu8Activity(mesId)) return;
         const timers = window.__rpPhoneRenderObserverTimers;
         const oldTimer = timers.get(mesId);
         if (oldTimer) clearTimeout(oldTimer);
@@ -11871,6 +11881,7 @@ function installPhoneRenderObserver() {
 function repairPhoneMessageByMesId(targetMesId) {
   try {
     if (!Number.isFinite(targetMesId) || targetMesId < 0) return false;
+    if (rpMesHasChatu8Activity(targetMesId)) return false;
     const ctx = getContext();
     const chat = ctx?.chat || [];
     const msg = chat[targetMesId];
@@ -11890,7 +11901,7 @@ function repairPhoneMessageByMesId(targetMesId) {
     const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
     const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
     if (hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) {
-      return cleanupRenderedPhoneEchoResiduals(textEl);
+      return false;
     }
 
     if (!hasRenderedPhoneUi) {
@@ -11959,9 +11970,8 @@ function rewriteAllHistoryPhoneBlocks() {
       const textHtml = textEl.innerHTML || '';
       const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
       const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
-      // 已处理且当前 UI 完整、也没有残余标签/纯文本残留时，仍先用已渲染摘要反向清一次正文残留；否则允许历史自愈。
+      // 历史扫描只负责把真实 PHONE 标签渲染出来；不再做“已渲染摘要反向清残留”的自愈清理，避免干扰其他扩展 DOM。
       if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) {
-        cleanupRenderedPhoneEchoResiduals(textEl);
         return;
       }
 
@@ -13707,7 +13717,6 @@ function hidePhoneTagsInChat(targetMesId) {
     // 不再整体改写 innerHTML，避免把智绘姬按钮节点重建掉
     stripPhoneLiteralNodes(el);
     cleanupPhoneResidualNoise(el);
-    cleanupRenderedPhoneEchoResiduals(el);
   });
 }
 
@@ -13743,11 +13752,7 @@ function beautifySMSInChat(targetMesId) {
     const textHtml = textEl.innerHTML || '';
     const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
     if (textEl.dataset.rpDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) {
-      cleanupRenderedPhoneEchoResiduals(textEl);
       return;
-    }
-    if (hasRenderedPhoneUi && !hasResidualPhoneMarkup) {
-      cleanupRenderedPhoneEchoResiduals(textEl);
     }
     textEl.dataset.rpDone = '1';
 
