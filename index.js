@@ -10493,7 +10493,7 @@ function sendSMS() {
   }
 
   // P2 隐藏：把提示词包进 <Request: ...>，让主楼保留同一条消息，同时隐藏提示内容。
-  // 用户已实测这条链路可隐藏中间内容；注意 Request 内不能含 []【】{}<>，所以先做净化。
+  // 注意 Request 内不能含 []【】{}<> 以及单双引号/全角引号等边界字符，所以先做净化。
   const requestSafeOoc = makeRequestSafePhoneOoc(oocText);
   const requestWrappedText = mainText
     ? `${mainText}
@@ -10523,7 +10523,7 @@ function makeRequestSafePhoneOoc(raw) {
   let text = String(raw || '');
   text = text
     .replace(/\{\{user\}\}/gi, '用户')
-    .replace(/[\[\]【】\{\}<>「」『』]/g, ' ')
+    .replace(/[\[\]【】\{\}<>「」『』“”‘’＂＇"'`´]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   return text;
@@ -14104,6 +14104,8 @@ function stripPhoneOocText(raw) {
   if (raw == null) return '';
   let text = String(raw);
   text = text
+    .replace(/<Request:\s*(?:手机短信提示|叙事指令|手机群聊提示)[\s\S]*?>/gi, '')
+    .replace(/(?:手机短信提示|叙事指令|手机群聊提示)[\s\S]*?(?:输出顺序必须严格是:[\s\S]*?MOMENTS。|$)/g, '')
     .replace(/\[(?:手机短信提示|叙事指令|手机群聊提示)[\s\S]*?\]/g, '')
     .replace(/(?:<br\s*\/?>\s*){2,}/gi, '<br>')
     .replace(/^\s*(?:<br\s*\/?>\s*)+/i, '')
