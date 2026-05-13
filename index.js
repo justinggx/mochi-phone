@@ -5140,9 +5140,8 @@ function buildStatePayload() {
       th.messages = th.messages.map(m => {
         const out = Object.assign({}, m);
         if (out.type === 'image' && isCompressiblePhoneImageSrc(out.src)) schedulePhoneImageCompression();
-        if (out.type === 'image' && out.src?.startsWith('data:')) {
-          if (out.src.length > 900000) out.src = '__img_expired__';
-        }
+        // 不在同步保存阶段把大图直接过期；先保留原图，后台压缩后会再覆盖保存。
+        // 否则刷新发生在压缩完成前，会永久丢成 __img_expired__。
         // pending_image / image / voice / location 等只保留必要字段
         if (out.type !== 'pending_image') delete out.promptResolvedAt;
         delete out._renderCache;
@@ -5161,7 +5160,7 @@ function buildStatePayload() {
       avatarBg: m.avatarBg,
       time: m.time,
       text: m.text,
-      img: (m.img && String(m.img).startsWith('data:') && String(m.img).length > 900000) ? '__img_expired__' : (m.img || null),
+      img: m.img || null,
       pendingImg: m.pendingImg || null,
       pendingImgType: m.pendingImgType || null,
       likes: Array.isArray(m.likes) ? m.likes.slice(-20) : [],
@@ -5560,8 +5559,11 @@ function syncToCurrentChat() {
     };
     const _safeMoments = _safeArr(STATE.moments, _oldPersisted && _oldPersisted.moments);
     const _safeDiary   = _safeArr(STATE.diary,   _oldPersisted && _oldPersisted.diary);
+    const _safeThreads = (_oldPersisted && hasUsableThreadMessages(_oldPersisted.threads) && countThreadMessages(_oldPersisted.threads) > countThreadMessages(STATE.threads))
+      ? mergeThreadsPreserveMessages(STATE.threads, _oldPersisted.threads)
+      : STATE.threads;
     CHAT_STORE[STATE.chatId] = {
-      threads:       JSON.parse(JSON.stringify(STATE.threads)),
+      threads:       JSON.parse(JSON.stringify(_safeThreads)),
       notifications: [...STATE.notifications],
       sync:          { ...STATE.sync },
       currentThread: STATE.currentThread,
@@ -5574,10 +5576,10 @@ function syncToCurrentChat() {
       bankData:      STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
       blocklist:     Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     };
-    const _tmpM = STATE.moments, _tmpD = STATE.diary;
-    STATE.moments = _safeMoments; STATE.diary = _safeDiary;
+    const _tmpM = STATE.moments, _tmpD = STATE.diary, _tmpT = STATE.threads;
+    STATE.moments = _safeMoments; STATE.diary = _safeDiary; STATE.threads = _safeThreads;
     saveState({ immediate: true });
-    STATE.moments = _tmpM; STATE.diary = _tmpD;
+    STATE.moments = _tmpM; STATE.diary = _tmpD; STATE.threads = _tmpT;
   }
 
   // 切到新窗口
@@ -6141,6 +6143,40 @@ function isCompressiblePhoneImageSrc(src) {
   return typeof src === 'string' && src.startsWith('data:image/') && src.length > 350000 && src !== '__img_expired__';
 }
 
+function hasUsableThreadMessages(threads) {
+  try {
+    return Object.values(threads || {}).some(function(th) {
+      return th && Array.isArray(th.messages) && th.messages.length > 0;
+    });
+  } catch(e) { return false; }
+}
+
+function countThreadMessages(threads) {
+  try {
+    return Object.values(threads || {}).reduce(function(sum, th) {
+      return sum + (Array.isArray(th && th.messages) ? th.messages.length : 0);
+    }, 0);
+  } catch(e) { return 0; }
+}
+
+function mergeThreadsPreserveMessages(baseThreads, candidateThreads) {
+  const merged = JSON.parse(JSON.stringify(baseThreads || {}));
+  Object.entries(candidateThreads || {}).forEach(function(pair) {
+    const id = pair[0];
+    const th = pair[1] || {};
+    const candMsgs = Array.isArray(th.messages) ? th.messages : [];
+    if (!merged[id]) {
+      merged[id] = JSON.parse(JSON.stringify(th));
+      return;
+    }
+    const keepMsgs = Array.isArray(merged[id].messages) ? merged[id].messages : [];
+    merged[id] = Object.assign({}, merged[id], th);
+    merged[id].messages = candMsgs.length >= keepMsgs.length ? JSON.parse(JSON.stringify(candMsgs)) : keepMsgs;
+    merged[id].unread = Math.max(merged[id].unread || 0, th.unread || 0);
+  });
+  return merged;
+}
+
 function schedulePhoneImageCompression() {
   try {
     if (!STATE || STATE._imageCompressing) return;
@@ -6229,6 +6265,15 @@ function loadState(chatId) {
     const _normalizeLoaded = function(parsed, sourceKey) {
       if (!parsed) return null;
       parsed.threads = sanitizeThreadsForContext(parsed.threads || {}, ctx);
+      const localRawForMerge = localStorage.getItem(`rp-phone-v1-${chatId}`);
+      if (localRawForMerge) {
+        try {
+          const localForMerge = JSON.parse(localRawForMerge);
+          if (localForMerge && !localForMerge.__light && hasUsableThreadMessages(localForMerge.threads) && countThreadMessages(localForMerge.threads) > countThreadMessages(parsed.threads)) {
+            parsed.threads = mergeThreadsPreserveMessages(parsed.threads, sanitizeThreadsForContext(localForMerge.threads || {}, ctx));
+          }
+        } catch(e) {}
+      }
       parsed.nameAliases = (parsed.nameAliases && typeof parsed.nameAliases === 'object') ? parsed.nameAliases : {};
       parsed.avatars = (parsed.avatars && typeof parsed.avatars === 'object') ? parsed.avatars : {};
       parsed.wallpaper = parsed.wallpaper || null;
@@ -7758,8 +7803,11 @@ function onChatChanged() {
     };
     const _safeMoments2 = _safeArr2(STATE.moments, _oldPersisted2 && _oldPersisted2.moments);
     const _safeDiary2   = _safeArr2(STATE.diary,   _oldPersisted2 && _oldPersisted2.diary);
+    const _safeThreads2 = (_oldPersisted2 && hasUsableThreadMessages(_oldPersisted2.threads) && countThreadMessages(_oldPersisted2.threads) > countThreadMessages(STATE.threads))
+      ? mergeThreadsPreserveMessages(STATE.threads, _oldPersisted2.threads)
+      : STATE.threads;
     CHAT_STORE[STATE.chatId] = {
-      threads: JSON.parse(JSON.stringify(STATE.threads)),
+      threads: JSON.parse(JSON.stringify(_safeThreads2)),
       notifications: [...STATE.notifications],
       sync: { ...STATE.sync },
       currentThread: STATE.currentThread,
@@ -7772,10 +7820,10 @@ function onChatChanged() {
       bankData: STATE.bankData ? JSON.parse(JSON.stringify(STATE.bankData)) : null,
       blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     };
-    const _tmpM2 = STATE.moments, _tmpD2 = STATE.diary;
-    STATE.moments = _safeMoments2; STATE.diary = _safeDiary2;
+    const _tmpM2 = STATE.moments, _tmpD2 = STATE.diary, _tmpT2 = STATE.threads;
+    STATE.moments = _safeMoments2; STATE.diary = _safeDiary2; STATE.threads = _safeThreads2;
     saveState({ immediate: true });
-    STATE.moments = _tmpM2; STATE.diary = _tmpD2;
+    STATE.moments = _tmpM2; STATE.diary = _tmpD2; STATE.threads = _tmpT2;
   }
 
   // 切换到新窗口
