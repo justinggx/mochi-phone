@@ -4876,6 +4876,7 @@ const _saveSettings = () => {
 };
 
 function openMochiPhoneFromExternal() {
+  if (!isMochiPhoneEnabled()) return '';
   const phone = $('#rp-phone');
   if (!phone.length) {
     try { init(); } catch(e) { console.error('[Phone] external open init failed:', e); }
@@ -4897,6 +4898,7 @@ function closeMochiPhoneFromExternal() {
 }
 
 function toggleMochiPhoneFromExternal() {
+  if (!isMochiPhoneEnabled()) return '';
   $('#rp-fab').trigger('click');
   return '';
 }
@@ -4931,7 +4933,7 @@ function registerPhoneSlashCommands() {
 
 const EXT_KEY = 'ray_phone_v1'; // extension_settings 的命名空间键
 const EXT_LAUNCH_KEY = 'mochi_phone_launch_v1'; // MochiPhone 全局启动入口设置
-const DEFAULT_LAUNCH_SETTINGS = { qrLaunch: true, fabLaunch: true };
+const DEFAULT_LAUNCH_SETTINGS = { enabled: true, qrLaunch: true, fabLaunch: true };
 const SAVE_DEBOUNCE_MS = 500;
 
 function getMochiLaunchSettings() {
@@ -4951,11 +4953,45 @@ function saveMochiLaunchSettings() {
   _saveSettings();
 }
 
+// ── 总开关:停用后隐藏悬浮球与手机、清空规则提示注入、跳过所有解析入口 ──
+function isMochiPhoneEnabled() {
+  return getMochiLaunchSettings().enabled !== false;
+}
+
+// GMSG 硬规则提示:启用时注入,停用时清空(等效于停用扩展的提示注入)
+function refreshMochiPrompt() {
+  // 优先用加载期捕获的全局;缺失时运行时从 getContext() 兜底(与 Prism 同源,修复旧版捕获失败静默失效)
+  let sep = (typeof setExtensionPrompt === 'function') ? setExtensionPrompt : null;
+  let ept = extension_prompt_types || null;
+  if (!sep) {
+    try {
+      const _ctx = (typeof getContext === 'function' ? getContext() : null) || (window.SillyTavern && SillyTavern.getContext ? SillyTavern.getContext() : null) || null;
+      if (_ctx && typeof _ctx.setExtensionPrompt === 'function') sep = _ctx.setExtensionPrompt.bind(_ctx);
+      if (_ctx && (_ctx.extensionPromptTypes || _ctx.extension_prompt_types)) ept = _ctx.extensionPromptTypes || _ctx.extension_prompt_types;
+    } catch(e2) {}
+  }
+  if (typeof sep !== 'function') return;
+  const promptPosition = (ept && (ept.IN_CHAT || ept.IN_CHAR)) || 1;
+  try {
+    if (isMochiPhoneEnabled()) {
+      sep(
+        'mochi-phone-gmsg',
+        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。',
+        promptPosition,
+        0
+      );
+    } else {
+      sep('mochi-phone-gmsg', '', promptPosition, 0);
+    }
+  } catch(e) { console.warn('[Phone] GMSG extension prompt refresh failed', e); }
+}
+
 function applyMochiLaunchSettings() {
   const st = getMochiLaunchSettings();
+  const enabled = st.enabled !== false;
   const fab = document.getElementById('rp-fab');
   if (fab) {
-    if (st.fabLaunch) {
+    if (enabled && st.fabLaunch) {
       fab.style.setProperty('display', 'flex', 'important');
       fab.style.setProperty('visibility', 'visible', 'important');
       fab.style.setProperty('opacity', '1', 'important');
@@ -4967,10 +5003,22 @@ function applyMochiLaunchSettings() {
       fab.style.setProperty('pointer-events', 'none', 'important');
     }
   }
+  // 总开关停用:强制收起手机面板防止残留;重新启用时降级为普通隐藏,允许 jQuery 正常打开
+  const phone = document.getElementById('rp-phone');
+  if (phone) {
+    if (!enabled) {
+      phone.style.setProperty('display', 'none', 'important');
+    } else if (phone.style.getPropertyValue('display') === 'none' && phone.style.getPropertyPriority('display') === 'important') {
+      phone.style.setProperty('display', 'none', '');
+    }
+  }
+  const enabledToggle = document.getElementById('mochi-phone-enabled-toggle');
+  if (enabledToggle) enabledToggle.checked = enabled;
   const qrToggle = document.getElementById('mochi-phone-qr-launch-toggle');
   if (qrToggle) qrToggle.checked = !!st.qrLaunch;
   const fabToggle = document.getElementById('mochi-phone-fab-launch-toggle');
   if (fabToggle) fabToggle.checked = !!st.fabLaunch;
+  refreshMochiPrompt();
 }
 
 function injectMochiSettingsStyles() {
@@ -5001,6 +5049,13 @@ function buildMochiSettingsHtml() {
           <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
+          <div class="mochi-launch-row" style="background:rgba(255,230,240,.8);border-color:rgba(244,114,182,.35);">
+            <span>启用手机（总开关）</span>
+            <label class="mochi-launch-switch" title="关闭后停用 MochiPhone：隐藏悬浮球与手机、停止解析 PHONE 标签、清空手机规则提示注入；无需卸载扩展">
+              <input id="mochi-phone-enabled-toggle" type="checkbox" ${st.enabled !== false ? 'checked' : ''}>
+              <i></i>
+            </label>
+          </div>
           <div class="mochi-launch-row">
             <span>QR启动</span>
             <label class="mochi-launch-switch" title="勾选后 Quick Reply 中的 /mochiphone 可以打开小手机">
@@ -5015,7 +5070,7 @@ function buildMochiSettingsHtml() {
               <i></i>
             </label>
           </div>
-          <div class="mochi-launch-hint">QR 按钮内容填 <code>/mochiphone</code>；关闭 QR 启动后该命令不再打开手机。</div>
+          <div class="mochi-launch-hint">总开关关闭＝停用手机：隐藏悬浮球与手机、不再解析 PHONE 标签、清空规则提示注入，无需卸载扩展。QR 按钮内容填 <code>/mochiphone</code>；关闭 QR 启动后该命令不再打开手机。</div>
         </div>
       </div>
     </div>`;
@@ -5030,6 +5085,19 @@ function injectMochiSettingsPanel() {
 }
 
 function bindMochiSettingsEvents() {
+  const enabledToggle = document.getElementById('mochi-phone-enabled-toggle');
+  if (enabledToggle) enabledToggle.addEventListener('change', function() {
+    const st = getMochiLaunchSettings();
+    st.enabled = !!enabledToggle.checked;
+    saveMochiLaunchSettings();
+    applyMochiLaunchSettings();
+    // 重新启用时,补渲染当前聊天已存在的 PHONE 标签
+    if (st.enabled) {
+      setTimeout(function() {
+        try { rewriteAllHistoryPhoneBlocks(); } catch(e) {}
+      }, 300);
+    }
+  });
   const qr = document.getElementById('mochi-phone-qr-launch-toggle');
   const fab = document.getElementById('mochi-phone-fab-launch-toggle');
   if (qr) qr.addEventListener('change', function() {
@@ -6499,7 +6567,7 @@ const HTML = `
                   <div id="rp-about-divider"></div>
                   <div id="rp-about-notice">
                     本扩展由作者免费发布于<br>
-                    <span class="rp-about-hl">DC社区：旅程 / 类脑 / 多林国 / 堆堆</span><br>
+                    <span class="rp-about-hl">DC社区：旅程 / 类脑 / 多林国</span><br>
                     其他渠道获取均视为盗版。<br><br>
                     生图致谢：<br>
                     感谢智绘姬大佬授权接入<br>
@@ -7156,6 +7224,7 @@ async function init() {
       // screen.width 不受 viewport 初始化时序影响,比 window.innerWidth 更可靠
       function _applyFabPos() {
         if (!IS_TOUCH_DEVICE) return; // 只在真实触控设备上运行
+        if (!isMochiPhoneEnabled()) return; // 总开关停用时不强制显示 FAB
         const _fab = document.getElementById('rp-fab');
         if (!_fab) return;
         const _h = Math.max(_fab.offsetHeight, 32);
@@ -7764,20 +7833,8 @@ async function init() {
 
   // ── GMSG 规则持久化注入 ──
   // 世界书规则在长上下文中可能被模型忽略，这里通过 extension prompt 做持久提醒
-  // 四字+标点格式，最小 token 开销
-  if (setExtensionPrompt && extension_prompt_types) {
-    const promptPosition = extension_prompt_types.IN_CHAT
-      || extension_prompt_types.IN_CHAR
-      || 1;
-    try {
-      setExtensionPrompt(
-        'mochi-phone-gmsg',
-        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。',
-        promptPosition,
-        0
-      );
-    } catch(e) { console.warn('[Phone] GMSG extension prompt injection failed', e); }
-  }
+  // (v4.6.0 总开关停用时自动清空注入,统一走 refreshMochiPrompt)
+  refreshMochiPrompt();
 
 
 }
@@ -8001,6 +8058,7 @@ function bindUI() {
 
   $('#rp-fab').on('click', (e) => {
     e.stopPropagation();
+    if (!isMochiPhoneEnabled()) return;
     const phone = $('#rp-phone');
     if (phone.is(':visible')) {
       // 关闭手机前记住当前界面，下次直接恢复，不再强迫用户从锁屏/桌面重新点
@@ -9944,6 +10002,7 @@ function rpMessageNeedsPhoneEchoRepair(mesId) {
 }
 
 function rpSchedulePhoneEchoRepairAfterChatu8Update(mesId, reason) {
+  if (!isMochiPhoneEnabled()) return;
   try {
     mesId = Number(mesId);
     if (!Number.isFinite(mesId) || mesId < 0) return;
@@ -10649,6 +10708,7 @@ function rpResolveMessageUpdatedIndex(payload, ctx) {
 }
 
 function onMessageUpdatedForImages(messageIndex) {
+  if (!isMochiPhoneEnabled()) return;
   try {
     const ctx = getContext();
     const realSlotKey = getPhoneChatSlotKey(ctx);
@@ -10912,6 +10972,7 @@ function onMessageUpdatedForImages(messageIndex) {
 }
 
 function onAIMessage(_retryCount) {
+  if (!isMochiPhoneEnabled()) return;
   const retryCount = _retryCount || 0;
   try {
     const _diagCtx1 = getContext();
@@ -12274,6 +12335,7 @@ function schedulePhonePostProcess(block, fp, targetMesId) {
 }
 
 function scheduleFinalPhoneParseSweep(reason) {
+  if (!isMochiPhoneEnabled()) return;
   try {
     const delays = [250, 900, 1800, 3200];
     delays.forEach(function(delay, idx) {
@@ -12310,6 +12372,7 @@ function scheduleFinalPhoneParseSweep(reason) {
 }
 
 function scheduleOnAIMessageKick(reason, delay) {
+  if (!isMochiPhoneEnabled()) return;
   try {
     const wait = Number.isFinite(delay) ? delay : 80;
     if (window.__rpPhoneUpdateKickTimer) clearTimeout(window.__rpPhoneUpdateKickTimer);
@@ -12437,6 +12500,7 @@ function installPhoneRenderObserver() {
 }
 
 function repairPhoneMessageByMesId(targetMesId) {
+  if (!isMochiPhoneEnabled()) return false;
   try {
     if (!Number.isFinite(targetMesId) || targetMesId < 0) return false;
     if (rpMesHasChatu8Activity(targetMesId)) return false;
@@ -12486,6 +12550,7 @@ function repairPhoneMessageByMesId(targetMesId) {
 // ── 历史消息全量折叠重建 ──
 // 在 onChatChanged 延迟执行里调用，确保页面刷新/切换对话后历史消息也能正确折叠
 function rewriteAllHistoryPhoneBlocks() {
+  if (!isMochiPhoneEnabled()) return;
   try {
     const ctx = getContext();
     const chat = ctx?.chat || [];
@@ -14255,6 +14320,7 @@ function scheduleUserOocChatCleanup(opts) {
 }
 
 function hidePhoneTagsInChat(targetMesId) {
+  if (!isMochiPhoneEnabled()) return;
   // 默认只清理目标楼层；只有未指定时才全量扫历史。
   let targets = [];
   if (Number.isFinite(targetMesId) && targetMesId >= 0) {
@@ -14285,6 +14351,7 @@ function hidePhoneTagsInChat(targetMesId) {
 
 // 清理用户气泡里遗留的 OOC 括号指令（历史消息持久化清理）
 function hideOocInUserBubbles() {
+  if (!isMochiPhoneEnabled()) return;
   document.querySelectorAll('.mes[is_user="true"] .mes_text').forEach(el => {
     const before = el.innerHTML || '';
     const after = stripPhoneOocText(before);
@@ -14293,6 +14360,7 @@ function hideOocInUserBubbles() {
 }
 
 function beautifySMSInChat(targetMesId) {
+  if (!isMochiPhoneEnabled()) return;
   try {
     // 生成期只清理目标楼层，避免反复全楼扫描
     hidePhoneTagsInChat(targetMesId);
