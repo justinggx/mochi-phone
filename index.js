@@ -9717,12 +9717,33 @@ function rpPhoneApiError(code) {
     empty: 'API 未返回正文，可能只有思考内容',
     format: 'API 返回格式不正确',
     timeout: 'API 请求超时，请稍后重试',
+    auth: 'API 请求失败：密钥无效或已过期（HTTP 401），请检查 API 设置',
+    forbidden: 'API 请求失败：无权使用此接口或模型（HTTP 403），请检查权限',
+    rateLimit: 'API 请求失败：额度或速率受限（HTTP 429），请检查账户额度或稍后重试',
+    provider: 'API 请求失败：服务端暂时异常（HTTP 5xx），请稍后重试',
+    invalidRequest: 'API 请求失败：接口、模型或请求参数不被支持，请检查 API 设置',
     request: 'API 请求失败，请检查连接或稍后重试',
   };
   const error = new Error(messages[code] || messages.request);
   error.phoneApiCode = code;
   return error;
 }
+
+function rpClassifyPhoneApiError(error) {
+  if (error?.phoneApiCode) return error;
+  // Only classify our transport's fixed HTTP message; never display provider bodies.
+  const status = Number(/^HTTP (\d{3})$/.exec(error?.message || '')?.[1]);
+  const code = status === 401 ? 'auth' : status === 403 ? 'forbidden'
+    : status === 429 ? 'rateLimit' : status >= 500 && status <= 599 ? 'provider'
+    : [400, 404, 405, 422].includes(status) ? 'invalidRequest'
+    : error?.name === 'TimeoutError' || error?.name === 'AbortError'
+      || error?.message === 'Phone request timed out' ? 'timeout' : 'request';
+  return rpPhoneApiError(code);
+}
+
+// Output ceilings, not requested text lengths. Other phone apps retain their limits.
+const RP_DIARY_MAX_TOKENS = 4096;
+const RP_DIARY_TIMEOUT_MS = 180000;
 
 function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
   const body = {
@@ -14196,7 +14217,7 @@ function rpStartDiaryJob(kind, task) {
   return job;
 }
 function rpDiaryFailure(error) {
-  rpDiaryStatus('⚠️ ' + (error?.phoneApiCode ? rpPhoneApiError(error.phoneApiCode).message : '生成失败，请检查 API 设置或稍后重试；已有日记已保留。'));
+  rpDiaryStatus('⚠️ ' + rpPhoneApiError(rpClassifyPhoneApiError(error).phoneApiCode).message + '；已有日记已保留。');
 }
 async function generateAIDiary() {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
@@ -14225,7 +14246,7 @@ async function generateAIDiary() {
       + '\u6ce8\u610f\u4eba\u79f0\uff1a\u6839\u636e\u5bf9\u8bdd\u5185\u5bb9\u5224\u65ad\u7528\u6237\u89d2\u8272\u7684\u6027\u522b\uff0c\u4f7f\u7528\u6b63\u786e\u7684\u4eba\u79f0\u4ee3\u8bcd\uff08\u4ed6/\u5979/\u5b83\uff09\uff0c\u4e0d\u8981\u9ed8\u8ba4\u7528\u300c\u4ed6\u300d\u3002\n'
       + '\u4e25\u7981\uff1a\u4e0d\u5f97\u5305\u542b\u72b6\u6001\u680f\uff08\u4f53\u529b/\u7cbe\u795e/\u597d\u611f\u5ea6\u7b49\u6570\u503c\uff09\u3001\u4e16\u754c\u4e66\u7ec4\u4ef6\u3001\u7cfb\u7edf\u63d0\u793a\u683c\u5f0f\u3001Markdown\u683c\u5f0f\u3001HTML\u6807\u7b7e\u3001\u5c5e\u6027\u8868\u683c\uff0c\u76f4\u63a5\u5199\u7eaf\u6587\u5b57\u65e5\u8bb0\u5185\u5bb9\u3002';
     var prompt = '\u4eca\u65e5\u5bf9\u8bdd\uff1a\n' + recent + '\n\n' + charName + '\u7684\u4eca\u65e5\u65e5\u8bb0\uff1a';
-    var resp = await rpGuardAwait(lgCallAPI(prompt, 2048, sysMsg, { phoneDiary: true, reportErrors: true }), rpTask);
+    var resp = await rpGuardAwait(lgCallAPI(prompt, RP_DIARY_MAX_TOKENS, sysMsg, { phoneDiary: true, reportErrors: true }), rpTask, RP_DIARY_TIMEOUT_MS);
     if (typeof resp !== 'string' || !resp.trim()) throw rpPhoneApiError('empty');
     var ts = resolvePhoneTime();
     var diaryText = resp.trim();
@@ -14291,7 +14312,7 @@ async function postUserDiary() {
       + '\u8981\u6c42\uff1a50-120\u5b57\u4e2d\u6587\uff0c\u60c5\u611f\u771f\u5b9e\uff0c\u5145\u5206\u4f53\u73b0\u89d2\u8272\u6027\u683c\u3002\u53ef\u4ee5\u5305\u542b\u5173\u5fc3\u3001\u60c5\u7eea\u3001\u8f7b\u5fae\u53cd\u5dee\u6216\u76f4\u63a5\u7684\u60c5\u611f\u8868\u8fbe\uff0c\u4f46\u5fc5\u987b\u771f\u60c5\u5b9e\u611f\uff0c\u4e0d\u8981\u5754\u71e5\u5355\u8c03\u3002\n'
       + '\u4e25\u7981\uff1a\u52a8\u4f5c\u63cf\u5199\uff08\u62ec\u53f7\u5185\u5c0f\u52a8\u4f5c\uff09\u3001\u6807\u9898\u3001\u6bb5\u843d\u683c\u5f0f\u3001\u661f\u53f7\u3001\u62ec\u53f7()\uff08\uff09\uff0c\u76f4\u63a5\u8f93\u51fa\u56de\u5e94\u6b63\u6587\u3002';
     var prompt2 = '\u7528\u6237\u65e5\u8bb0\uff1a\u300c' + text + '\u300d\n\u8bf7\u4ee5' + charName2 + '\u7684\u89d2\u8272\u56de\u5e94\uff0c\u60c5\u611f\u771f\u5b9e\u81ea\u7136\uff0c\u7b26\u5408\u5176\u4e00\u8d2f\u7684\u6027\u683c\u3002' + charName2 + '\u7684\u56de\u5e94\uff1a';
-    var resp2 = await rpGuardAwait(lgCallAPI(prompt2, 2048, sysMsg2, { phoneDiary: true, reportErrors: true }), rpTask);
+    var resp2 = await rpGuardAwait(lgCallAPI(prompt2, RP_DIARY_MAX_TOKENS, sysMsg2, { phoneDiary: true, reportErrors: true }), rpTask, RP_DIARY_TIMEOUT_MS);
     if (typeof resp2 !== 'string' || !resp2.trim()) throw rpPhoneApiError('empty');
     if (resp2) {
       var cleaned2 = resp2.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
@@ -21486,6 +21507,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   /* rp-cancel-boundary */ try {
 
   const cfg = readCustomApiConfig();
+  const timeout = options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 120000;
 
   // 短回复场景：不硬限 token，用 prompt 引导长度
   // 只对 <=100 的调用加提示（游戏闲聊），任务格 150 不加
@@ -21508,7 +21530,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
         signal: rpTask.signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
         body: JSON.stringify(rpCustomApiRequestBody(cfg, msgs, maxTokens, options))
-      }), rpTask);
+      }, options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 60000), rpTask, timeout);
       if (!data || typeof data !== 'object' || data.error || !Array.isArray(data.choices)) {
         throw rpPhoneApiError('format');
       }
@@ -21558,7 +21580,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
 
       console.warn('[Ludo] custom API request failed');
       if (options.reportErrors) {
-        throw e?.phoneApiCode ? e : rpPhoneApiError(e?.name === 'TimeoutError' || e?.name === 'AbortError' ? 'timeout' : 'request');
+        throw rpClassifyPhoneApiError(e);
       }
     }
     return null; // 自定义 API 失败,不走 ST,直接返回 null(触发 fallback 文本)
@@ -21571,7 +21593,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
       msgs.push({ role: 'user', content: prompt });
-      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneTranslation || options.phoneDiary ? { trimNames: false } : {}), ...(options.gameTask || options.phoneDiary ? { responseLength: maxTokens } : {}) }), rpTask);
+      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneTranslation || options.phoneDiary ? { trimNames: false } : {}), ...(options.gameTask || options.phoneDiary ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
       if (resp && resp.trim()) {
         // ST 路径也统一清洗 think/thinking 标签
         let stText = resp.trim();
@@ -21589,7 +21611,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
     if (!rpTask.valid()) return;
 
     console.warn('[LudoAPI] ST generateRaw request failed');
-    if (options.reportErrors) throw e?.phoneApiCode ? e : rpPhoneApiError(e?.name === 'TimeoutError' || e?.name === 'AbortError' ? 'timeout' : 'request');
+    if (options.reportErrors) throw rpClassifyPhoneApiError(e);
   }
   return null;
 
