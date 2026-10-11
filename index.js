@@ -6368,10 +6368,10 @@ function ensureGroupTargetMember(groupName, toRaw, ctx) {
   return false;
 }
 
-function incomingAutoGroupMsg(fromRaw, toRaw, time, text, groupName) {
+function incomingAutoGroupMsg(fromRaw, toRaw, time, text, groupName, source) {
   const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
   const name = groupName || makeAutoGroupName(fromRaw, targetName, text);
-  incomingGroupMsg(fromRaw, name, time, text);
+  incomingGroupMsg(fromRaw, name, time, text, source);
   ensureGroupTargetMember(name, targetName, getContext());
 }
 
@@ -11708,14 +11708,9 @@ function onAIMessage(_retryCount) {
 
     if (phoneBlocks.length > 0) {
       let parsedTotal = 0;
-      phoneBlocks.forEach(function(phoneBlock) {
-        parsedTotal += parsePhone(phoneBlock) || 0;
-      });
+      parsedTotal = parsePhoneMessageParts(phoneParts, lastAiIdx);
       // PHONE 标签外可能还有 MOMENTS/COMMENT/SMS/GMSG 等裸标签，统一再解析一次外部区域
       const hasOutsideTags = hasBarePhoneTagsIn(outsidePhoneBlocks);
-      if (hasOutsideTags) {
-        parsedTotal += parsePhone(outsidePhoneBlocks) || 0;
-      }
       if (parsedTotal > 0 || hasOutsideTags) {
         STATE._pendingPhoneReply = null;
         rewritePhoneEchoInChat(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
@@ -11727,7 +11722,7 @@ function onAIMessage(_retryCount) {
     }
 
     if (hasBarePhoneTags) {
-      const parsedCount = parsePhone(normalizedRaw);
+      const parsedCount = parsePhoneMessageParts(phoneParts, lastAiIdx);
       if (parsedCount > 0) {
         STATE._pendingPhoneReply = null;
         rewritePhoneEchoInChat(normalizedRaw, STATE._lastAiFingerprint, lastAiIdx);
@@ -13206,9 +13201,7 @@ function repairPhoneMessageByMesId(targetMesId) {
     if (!hasRenderedPhoneUi) {
       let parsedTotal = 0;
       try {
-        phoneParts.blocks.forEach(function(phoneBlock) { parsedTotal += parsePhone(phoneBlock) || 0; });
-        if (hasBarePhoneTagsIn(phoneParts.outside)) parsedTotal += parsePhone(phoneParts.outside) || 0;
-        if (!phoneParts.blocks.length && hasBarePhoneTags) parsedTotal += parsePhone(normalizedRaw) || 0;
+        parsedTotal = parsePhoneMessageParts(phoneParts, targetMesId, true);
         if (parsedTotal > 0) STATE._pendingPhoneReply = null;
       } catch(parseErr) {
         console.warn('[Raymond Phone] repairPhoneMessageByMesId parse failed:', rpErrorInfo(parseErr));
@@ -13282,9 +13275,7 @@ function rewriteAllHistoryPhoneBlocks() {
         if (!hasRenderedPhoneUi) {
           try {
             let parsedTotal = 0;
-            phoneParts.blocks.forEach(function(phoneBlock) { parsedTotal += parsePhone(phoneBlock) || 0; });
-            if (hasBarePhoneTagsIn(phoneParts.outside)) parsedTotal += parsePhone(phoneParts.outside) || 0;
-            if (!phoneParts.blocks.length && hasBarePhoneTags) parsedTotal += parsePhone(normalizedRaw) || 0;
+            parsedTotal = parsePhoneMessageParts(phoneParts, chatIdx, true);
             if (parsedTotal > 0) STATE._pendingPhoneReply = null;
           } catch(parseErr) {
             console.warn('[Raymond Phone] rewriteAllHistoryPhoneBlocks parse failed:', rpErrorInfo(parseErr));
@@ -13314,12 +13305,52 @@ function getTagAttrs(attrText) {
   return attrs;
 }
 
-function parsePhone(block) {
+function parsePhoneMessageParts(parts, messageIndex, legacyReplay = false) {
+  if (!parts.blocks.length) return parsePhone(parts.normalized, { messageIndex, blockIndex: 0, legacyReplay }) || 0;
+  let count = 0;
+  parts.blocks.forEach((block, blockIndex) => {
+    count += parsePhone(block, { messageIndex, blockIndex, legacyReplay }) || 0;
+  });
+  if (hasBarePhoneTagsIn(parts.outside)) {
+    count += parsePhone(parts.outside, { messageIndex, blockIndex: 'outside', legacyReplay }) || 0;
+  }
+  return count;
+}
+
+function rpPhoneTextFingerprint(text) {
+  // Non-security identity checksum; keep provenance small, without another text copy.
+  let hash = 14695981039346656037n;
+  for (let i = 0; i < text.length; i++) hash = BigInt.asUintN(64, (hash ^ BigInt(text.charCodeAt(i))) * 1099511628211n);
+  return text.length + ':' + hash.toString(16);
+}
+
+function rpPhoneMessageAlreadyReceived(thread, source, matches, resolvedTime) {
+  if (!source) return false;
+  if (thread.messages.some(m => m.phoneSource?.key === source.key && m.phoneSource?.signature === source.signature)) return true;
+  // Upgrade old history only during a replay, not when a genuinely new floor arrives.
+  // Claim one legacy record per source occurrence; never remove existing repetitions.
+  if (source.legacyReplay) {
+    const legacy = thread.messages.find(m => !m.phoneSource && matches(m) && (!source.time || m.time === resolvedTime));
+    if (legacy) { legacy.phoneSource = { key: source.key, signature: source.signature }; saveState(); return true; }
+  }
+  return false;
+}
+
+function parsePhone(block, source = {}) {
   let parsedCount = 0;
   let parsedMomentTagCount = 0;
   let parsedCommentTagCount = 0;
   let m;
   const ctx = getContext(); // FIX: ctx was previously undeclared, causing ReferenceError for new NPCs
+  function messageSource(kind, ordinal, from, time, text) {
+    if (!Number.isInteger(source.messageIndex) || source.messageIndex < 0) return null;
+    const stamp = String(ctx?.chat?.[source.messageIndex]?.send_date || '');
+    return {
+      key: JSON.stringify([source.messageIndex, stamp, source.blockIndex ?? 0, kind, ordinal]),
+      signature: rpPhoneTextFingerprint(JSON.stringify([from, normalizeClockTime(time), text])),
+      time: normalizeClockTime(time), legacyReplay: !!source.legacyReplay,
+    };
+  }
 
   // ── 严禁 AI 替 user 发言：获取 user 名字，所有 FROM 解析处都会跳过 user 名 ──
   const _parseUserName = (ctx?.name1) || '';
@@ -13395,7 +13426,9 @@ function parsePhone(block) {
 
   // 更鲁棒:支持属性顺序变化、单引号/双引号
   const smsTagRe = /<SMS\b([^>]*)>([\s\S]*?)<\/SMS>/gi;
+  let smsOrdinal = 0;
   while ((m = smsTagRe.exec(block)) !== null) {
+    const ordinal = smsOrdinal++;
     const attrs    = getTagAttrs(m[1]);
     const fromRaw0 = (attrs.FROM || '').trim();
     const toRaw0   = (attrs.TO || '').trim();
@@ -13494,8 +13527,9 @@ function parsePhone(block) {
     });
 
     if (text) {
-      if (routeAsGroup) incomingAutoGroupMsg(fromRaw, toRaw0, msgTime, text, autoGroupName);
-      else incomingMsg(threadId, text, msgTime);
+      const origin = messageSource('SMS', ordinal, fromRaw, time, text);
+      if (routeAsGroup) incomingAutoGroupMsg(fromRaw, toRaw0, msgTime, text, autoGroupName, origin);
+      else incomingMsg(threadId, text, msgTime, origin);
       parsedCount++;
     } else if (smsImgs.length > 0 || pendingPrompts.length > 0) {
       parsedCount++; // 纯图片/pending_image SMS，无文字也计数
@@ -13689,12 +13723,15 @@ function parsePhone(block) {
   }
   // ── GROUP MSG ──
   const gmsgRe = /<GMSG\b([^>]*)>([\s\S]*?)<\/GMSG>/gi;
+  let gmsgOrdinal = 0;
   while ((m = gmsgRe.exec(block)) !== null) {
+    const ordinal = gmsgOrdinal++;
     const gAttrs = getTagAttrs(m[1]);
     const gmsgFrom = (gAttrs.FROM || '').trim();
     const groupName = (gAttrs.GROUP || '').trim();
     if (!gmsgFrom || !groupName || isPhoneUserName(gmsgFrom, ctx) || _isUserFrom(gmsgFrom)) { parsedCount++; continue; }
-    incomingGroupMsg(gmsgFrom, groupName, (gAttrs.TIME || '').trim(), String(m[2] || '').trim());
+    const time = (gAttrs.TIME || '').trim(), text = String(m[2] || '').trim();
+    incomingGroupMsg(gmsgFrom, groupName, time, text, messageSource('GMSG', ordinal, gmsgFrom, time, text));
     parsedCount++;
   }
 
@@ -13860,19 +13897,22 @@ function matchThread(fromRaw) {
 // ================================================================
 //  INCOMING MESSAGE
 // ================================================================
-function incomingMsg(threadId, text, time) {
+function incomingMsg(threadId, text, time, source) {
   const th = STATE.threads[threadId];
   if (!th) return;
   const resolvedTime = resolvePhoneTime(time);
 
   // 去重只看最近几条，避免“同一句话后来再次出现”被永久吞掉
   const recentMsgs = (th.messages || []).slice(-6);
-  const isDup = recentMsgs.some(m => m.from === threadId && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
+  const matches = m => m.from === threadId && m.text === text;
+  const isDup = source ? rpPhoneMessageAlreadyReceived(th, source, matches, resolvedTime)
+    : recentMsgs.some(m => matches(m) && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) {
     return;
   }
 
-  th.messages.push({ from: threadId, text, time: resolvedTime });
+  th.messages.push({ from: threadId, text, time: resolvedTime,
+    ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}) });
   if (STATE.currentView !== 'thread' || STATE.currentThread !== threadId) {
     th.unread++;
   }
@@ -14572,7 +14612,7 @@ function playVoice(threadId, msgId) {
 // ================================================================
 const GROUP_COLORS = ['#7c3aed','#0891b2','#0d9488','#b45309','#be185d','#1d4ed8'];
 
-function incomingGroupMsg(fromRaw, groupName, time, text) {
+function incomingGroupMsg(fromRaw, groupName, time, text, source) {
   const resolvedTime = resolvePhoneTime(time);
   const groupId = `grp_${groupName}`;
   if (!STATE.threads[groupId]) {
@@ -14591,11 +14631,14 @@ function incomingGroupMsg(fromRaw, groupName, time, text) {
   if (!senderTh) return;
   if (!thread.members.includes(senderTh.id)) thread.members.push(senderTh.id);
   // 去重只看最近几条，避免同一句群消息后续再次出现时被永久吞掉
-  const isDup = thread.messages.slice(-8).some(m => m.type === 'group_msg' && m.name === fromRaw && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
+  const matches = m => m.type === 'group_msg' && m.name === fromRaw && m.text === text;
+  const isDup = source ? rpPhoneMessageAlreadyReceived(thread, source, matches, resolvedTime)
+    : thread.messages.slice(-8).some(m => matches(m) && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) return;
   thread.messages.push({
     id: `gm_${Date.now()}`, from: 'incoming',
     type: 'group_msg', name: fromRaw, time: resolvedTime, text,
+    ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}),
     initials: senderTh.initials, avatarBg: senderTh.avatarBg
   });
   thread.unread = (thread.unread || 0) + 1;
