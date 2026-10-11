@@ -1,8 +1,8 @@
 {
   "display_name": "mochiphone",
   "author": "justinggx",
-  "version": "4.6.1-audit.20261011.2",
+  "version": "4.6.1-audit.20261011.3",
   "loading_order": 1,
   "requires": [],
-  "js": "index.js?v=20261011-audit2"
+  "js": "index.js?v=20261011-persist1"
 }
