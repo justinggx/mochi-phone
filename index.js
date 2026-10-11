@@ -8828,7 +8828,7 @@ function bindUI() {
     fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({ model: model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 5 }),
+      body: JSON.stringify(rpCustomApiRequestBody({ url, model }, [{ role: 'user', content: '只回复 OK' }], 32, { structured: true })),
       signal: AbortSignal.timeout(8000)
     }).then(rpRuntime.guard(function(r) {
       var status = r.status;
@@ -8836,24 +8836,33 @@ function bindUI() {
         var ms = Date.now() - t0;
         // HTTP 非 2xx 视为失败（401=Key错误, 403=无权限, 404=路径错误等）
         if (!r.ok) {
-          var errMsg = (d.error && (d.error.message || d.error.code)) || ('HTTP ' + status);
-          $btn.removeClass('testing').addClass('fail').text('❌ ' + String(errMsg).substring(0, 22));
+          $btn.removeClass('testing').addClass('fail').text('❌ HTTP ' + status);
           setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
           return;
         }
         // 有 error 字段也算失败（部分服务 200 返回 error body）
         if (d.error) {
-          var errMsg2 = String(d.error.message || d.error.code || '接口返回错误').substring(0, 22);
-          $btn.removeClass('testing').addClass('fail').text('❌ ' + errMsg2);
+          $btn.removeClass('testing').addClass('fail').text('❌ 接口返回错误');
+          setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
+          return;
+        }
+        var choice = d.choices && d.choices[0];
+        var content = choice && choice.message && choice.message.content;
+        var hasText = Array.isArray(content)
+          ? content.some(p => typeof p === 'string' ? p.trim() : typeof p?.text === 'string' && p.text.trim())
+          : typeof content === 'string' && content.trim();
+        if (!hasText || (choice.finish_reason && choice.finish_reason !== 'stop')) {
+          $btn.removeClass('testing').addClass('fail').text('⚠️ 接口可连接，但未完成正文生成');
           setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
           return;
         }
         var m = String(d.model || model).replace(/^.+\//, '');
         $btn.removeClass('testing').addClass('ok').text('✅ ' + m + ' ' + ms + 'ms');
+        $('#rp-api-status-v').text('连接与正文生成正常；更改配置后仍需点击「保存设置」');
         setTimeout(function(){ $btn.removeClass('ok').text('📡 测试连通性'); }, 8000);
       }));
     })).catch(rpRuntime.guard(function(e) {
-      $btn.removeClass('testing').addClass('fail').text('❌ ' + (e.message || '连接失败').substring(0, 20));
+      $btn.removeClass('testing').addClass('fail').text('❌ 请求失败或超时');
       setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
     }));
   });
@@ -9732,6 +9741,82 @@ function parseCustomApiModels(data) {
   if (!Array.isArray(items)) throw new Error('模型列表格式不正确');
   return items.map(m => typeof m === 'string' ? m : (m && (m.id || m.name)))
     .filter(m => typeof m === 'string' && m.length > 0).slice(0, 2000);
+}
+
+function rpPhoneApiError(code) {
+  const messages = {
+    config: '请先填写并保存 API 设置',
+    truncated: '模型回答被截断，未生成完整数据，请重试',
+    interrupted: '模型未完成回答，请稍后重试',
+    empty: 'API 未返回正文，可能只有思考内容',
+    format: 'API 返回格式不正确',
+    timeout: 'API 请求超时，请稍后重试',
+    request: 'API 请求失败，请检查连接或稍后重试',
+  };
+  const error = new Error(messages[code] || messages.request);
+  error.phoneApiCode = code;
+  return error;
+}
+
+function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
+  const body = {
+    model: cfg.model || 'deepseek-chat', messages,
+    max_tokens: Math.max(1, Math.min(8192, Number(maxTokens) || 150)),
+    temperature: 0.9,
+  };
+  let officialDeepSeek = false;
+  try { officialDeepSeek = new URL(cfg.url).hostname === 'api.deepseek.com'; } catch(e) {}
+  const switchable = ['deepseek-flash', 'deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-v4-flash-vision-exp', 'deepseek-chat'].includes(body.model);
+  if (officialDeepSeek && switchable && options.structured) {
+    // Only opt this provider's structured tasks out of default high-effort
+    // thinking. Other providers and ordinary game/chat requests stay compatible.
+    body.thinking = { type: 'disabled' };
+    body.temperature = 0.3;
+    body.max_tokens = Math.max(body.max_tokens, options.jsonMode === 'object' ? 4096 : 2048);
+    if (options.jsonMode === 'object') body.response_format = { type: 'json_object' };
+  }
+  return body;
+}
+
+function rpParseModelJSON(raw, kind = 'object') {
+  const text = String(raw || '').trim();
+  const accept = value => kind === 'array' ? Array.isArray(value) : value !== null && typeof value === 'object' && !Array.isArray(value);
+  const parse = value => { try { const result = JSON.parse(value); return accept(result) ? result : undefined; } catch(e) { return undefined; } };
+  const direct = parse(text);
+  if (direct !== undefined) return direct;
+  // Prefer an explicit JSON fence over explanatory braces outside it.
+  for (const match of text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)) {
+    const fenced = parse(match[1].trim());
+    if (fenced !== undefined) return fenced;
+  }
+  // Scan balanced values, respecting escapes and braces inside strings.
+  // Never manufacture missing financial fields or "repair" truncated JSON.
+  const opening = kind === 'array' ? '[' : '{';
+  for (let start = 0; start < text.length; start++) {
+    if (text[start] !== opening) continue;
+    const stack = [];
+    let quoted = false, escaped = false;
+    for (let end = start; end < text.length; end++) {
+      const ch = text[end];
+      if (quoted) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '"') quoted = false;
+      } else if (ch === '"') quoted = true;
+      else if (ch === '{' || ch === '[') stack.push(ch);
+      else if (ch === '}' || ch === ']') {
+        if (stack.pop() !== (ch === '}' ? '{' : '[')) break;
+        if (!stack.length) {
+          const result = parse(text.slice(start, end + 1));
+          if (result !== undefined) return result;
+          start = end;
+          break;
+        }
+      }
+    }
+    if (stack.length) break; // Do not salvage nested objects from a truncated root.
+  }
+  throw new Error('JSON 解析失败：模型未返回有效的完整数据');
 }
 
 // ================================================================
@@ -17206,21 +17291,18 @@ ${chatMsgs}
 
 请根据以上信息，生成 ${charName} 的完整资产JSON：`;
 
-    const resp = await rpGuardAwait(lgCallAPI(prompt, 2400, sysMsg), rpTask);
+    const resp = await rpGuardAwait(lgCallAPI(prompt, 2400, sysMsg, { structured: true, jsonMode: 'object', reportErrors: true }), rpTask);
     if (!resp) throw new Error('API 返回为空');
 
     // 解析 JSON
     let parsed = null;
     try {
-      let jsonStr = resp.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-      const m = jsonStr.match(/\{[\s\S]*\}/);
-      if (m) jsonStr = m[0];
-      parsed = JSON.parse(jsonStr);
+      parsed = rpParseModelJSON(resp, 'object');
     } catch(e) {
     if (!rpTask.valid()) return;
 
       console.warn('[Bank] JSON parse failed', { responseLength: String(resp || '').length });
-      throw new Error('JSON 解析失败');
+      throw new Error('JSON 解析失败：模型未返回有效的完整资产数据');
     }
 
     if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.assets)) throw new Error('数据结构不完整');
@@ -17247,7 +17329,7 @@ ${chatMsgs}
     if (!rpTask.valid()) return;
 
     console.warn('[Bank] generateBankData error:', rpErrorInfo(err));
-    body.innerHTML = `<div class="rp-bank-empty">⚠️ 生成失败：${escHtml(err.message || '未知错误')}<br><span style="font-size:11px;opacity:.6">请确认 API 已配置，或重试</span></div>`;
+    body.innerHTML = `<div class="rp-bank-empty">⚠️ 生成失败：${escHtml(err.message || '未知错误')}<br><span style="font-size:11px;opacity:.6">原有资产缓存仍保留；可点击右上角重试</span></div>`;
   } finally {
     if (!rpTask.valid()) return;
 
@@ -17263,7 +17345,7 @@ async function xhsCallAPI(prompt, sysMsg) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
-  return await rpGuardAwait(lgCallAPI(prompt, 3500, sysMsg), rpTask);
+  return await rpGuardAwait(lgCallAPI(prompt, 3500, sysMsg, { structured: true }), rpTask);
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
@@ -17648,7 +17730,7 @@ ${relationCtx ? relationCtx + '\n' : ''}
 只返回JSON:[{"user":"昵称","text":"评论内容"}]`;
 
   const prompt = `帖子标题:${post.title}\n帖子内容:${post.body}`;
-  const resp = await rpGuardAwait(lgCallAPI(prompt, 400, sysMsg), rpTask);
+  const resp = await rpGuardAwait(lgCallAPI(prompt, 400, sysMsg, { structured: true }), rpTask);
   if (!resp) {
     // API 失败:静默处理,不用假评论充数
     return;
@@ -17752,7 +17834,7 @@ ${relationCtx ? '\n' + relationCtx + '\n' : ''}
 
   const prompt = `帖子标题:${post.title}\n近期评论:\n${recentComments}\n用户${userName}刚说:「${userComment}」\n生成3条回复JSON:`;
 
-  const resp = await rpGuardAwait(lgCallAPI(prompt, 300, sysMsg), rpTask);
+  const resp = await rpGuardAwait(lgCallAPI(prompt, 300, sysMsg, { structured: true }), rpTask);
   if (!resp) return;
 
   let replies = [];
@@ -21395,7 +21477,7 @@ function lgGetPersona() {
 
 // ── Square event trigger (两步流程) ──────────────────────────────
 // ── 自定义 API 调用(支持 DeepSeek / 通义 / GLM 等 OpenAI 兼容格式)──
-async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
+async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
@@ -21409,7 +21491,10 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
 
   // 用户设置了自定义 API → 只用自定义,绝不 fallback 到 ST
   if (cfg.mode === 'custom') {
-    if (!cfg.url || !cfg.key) return null;
+    if (!cfg.url || !cfg.key) {
+      if (options.reportErrors) throw rpPhoneApiError('config');
+      return null;
+    }
     try {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
@@ -21417,16 +21502,14 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
       const data = await rpGuardAwait(rpRuntime.fetchJSON(buildCustomApiEndpoint(cfg.url, 'chat/completions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
-        body: JSON.stringify({
-          model: cfg.model || 'deepseek-chat',
-          messages: msgs,
-          max_tokens: Math.max(1, Math.min(8192, Number(maxTokens) || 150)),
-          temperature: 0.9
-        })
+        body: JSON.stringify(rpCustomApiRequestBody(cfg, msgs, maxTokens, options))
       }), rpTask);
       if (!data || typeof data !== 'object' || data.error || !Array.isArray(data.choices)) {
-        throw new Error('API 返回格式不正确');
+        throw rpPhoneApiError('format');
       }
+      const finishReason = data.choices[0]?.finish_reason;
+      if (finishReason === 'length') throw rpPhoneApiError('truncated');
+      if (finishReason && finishReason !== 'stop') throw rpPhoneApiError('interrupted');
       const _msg = data.choices?.[0]?.message;
       // 优先用 content；若 content 为空且 reasoning_content 存在，
       // 尝试从 reasoning_content 提取 </think> 之后的正文部分
@@ -21464,10 +21547,14 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '') {
       }
       if (text) return text;
       console.warn('[Ludo] custom API returned empty response');
+      if (options.reportErrors) throw rpPhoneApiError('empty');
     } catch(e) {
     if (!rpTask.valid()) return;
 
       console.warn('[Ludo] custom API request failed');
+      if (options.reportErrors) {
+        throw e?.phoneApiCode ? e : rpPhoneApiError(e?.name === 'TimeoutError' || e?.name === 'AbortError' ? 'timeout' : 'request');
+      }
     }
     return null; // 自定义 API 失败,不走 ST,直接返回 null(触发 fallback 文本)
   }
