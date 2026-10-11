@@ -1,6 +1,6 @@
 import { createPhoneRuntime } from './runtime.mjs?v=20261011-audit2';
 import { createPhoneArchive } from './archive.mjs?v=20261011-persist1';
-import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-xhs1';
+import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-xhs2';
 
 let rpPhoneArchive = createPhoneArchive();
 let rpArchiveAccountHandle = null;
@@ -16610,8 +16610,8 @@ function _xhsHashText(s) {
 }
 
 
-const XHS_COVER_VERSION = 20;
-const XHS_COVER_STYLE = 'deterministic-text-covers-v1';
+const XHS_COVER_VERSION = 21;
+const XHS_COVER_STYLE = 'deterministic-text-covers-v2';
 
 function ensureXHSCoverImage(post, persist) {
   if (!post) return '';
@@ -17216,9 +17216,9 @@ async function buildXHSFeedWithAI(appendMode) {
 - 只生成帖子本身,不要生成评论
 
 只返回JSON数组,格式:
-[{"user":"昵称emoji","title":"标题","body":"正文","likes":数字,"cover":{"headline":"封面短句","highlight":"强调词","template":"quote|note|question|bubble"}}]
+[{"user":"昵称emoji","title":"标题","body":"正文","likes":数字,"cover":{"headline":"封面短句","highlight":"强调词","template":"quote|note|question|bubble|poster|sticky|grid|ticket"}}]
 共4条,不要有其他文字。
-cover要求:headline提炼本帖核心，不添加新事实，8-28字；highlight取headline中连续的2-6字，无需强调则空；template只能选一个枚举值：观点吐槽quote、日常分享note、提问求助question、简短心情bubble；本批至少使用2种模板。
+cover要求:headline提炼本帖核心，不添加新事实，8-28字；highlight取headline中连续的2-6字，无需强调则空；template选一个：引语quote、手写note、提问question、猫猫气泡bubble、极简海报poster、便利贴sticky、网格手账grid、票据ticket；bubble仅竖版；本批至少使用2种模板。
 输出合法JSON，对引号进行标准转义，不要Markdown。`;
 
     const charInfo = charPersona ? charPersona.slice(0, 150) : `角色名:${charName}`;

@@ -1,6 +1,6 @@
 // Deterministic, local text covers. Models supply data, never HTML/CSS/SVG.
-export const XHS_DESIGN_VERSION = 1;
-export const XHS_TEMPLATES = ['quote', 'note', 'question', 'bubble'];
+export const XHS_DESIGN_VERSION = 2;
+export const XHS_TEMPLATES = ['quote', 'note', 'question', 'bubble', 'poster', 'sticky', 'grid', 'ticket'];
 const SANS = '"PingFang SC","Microsoft YaHei",sans-serif';
 const HAND = '"Kaiti SC","STKaiti","KaiTi","PingFang SC",serif';
 const PALETTES = {
@@ -10,9 +10,12 @@ const PALETTES = {
   cream: { bg: '#fffbed', ink: '#603b22', accent: '#8dcddc' },
   blue: { bg: '#edf6f8', ink: '#294b55', accent: '#eed06a' },
   white: { bg: '#ffffff', ink: '#191919', accent: '#161616' },
+  rose: { bg: '#f6e6e5', ink: '#774b52', accent: '#b4717d' },
+  sage: { bg: '#e9efe5', ink: '#405441', accent: '#8ca680' },
+  lemon: { bg: '#fff6c9', ink: '#675126', accent: '#ddbf71' },
 };
-const DEFAULT_PALETTE = { quote: 'cocoa', note: 'paper', question: 'cream', bubble: 'white' };
-const ALLOWED_PALETTES = { quote: ['cocoa', 'ink'], note: ['paper', 'blue'], question: ['cream', 'blue'], bubble: ['white'] };
+const DEFAULT_PALETTE = { quote: 'cocoa', note: 'paper', question: 'cream', bubble: 'white', poster: 'rose', sticky: 'lemon', grid: 'blue', ticket: 'paper' };
+const ALLOWED_PALETTES = { quote: ['cocoa', 'ink'], note: ['paper', 'blue'], question: ['cream', 'blue'], bubble: ['white'], poster: ['rose', 'sage'], sticky: ['lemon', 'cream'], grid: ['blue', 'paper'], ticket: ['paper', 'sage'] };
 const clean = (value, limit) => Array.from(typeof value === 'string' ? value.replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim() : '').slice(0, limit).join('');
 const escape = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 function hash(value) { let n = 2166136261; for (const ch of String(value)) n = Math.imul(n ^ ch.codePointAt(0), 16777619); return n >>> 0; }
@@ -25,7 +28,9 @@ export function normalizeXHSCover(post = {}) {
   const headline = clean(source.headline, 72) || clean(post.title, 72) || clean(post.body, 72) || '今日分享';
   const highlight = clean(source.highlight, 12);
   const requestedRatio = source.ratio || post.coverRatio;
-  const ratio = ['3/4', '1/1', '4/3'].includes(requestedRatio) ? requestedRatio : seed % 5 === 0 ? '1/1' : '3/4';
+  // The cat and balloon have separate vertical safe zones. Old square/landscape
+  // posts migrate here too; never rely only on the AI prompt or new-post defaults.
+  const ratio = template === 'bubble' ? '3/4' : ['3/4', '1/1', '4/3'].includes(requestedRatio) ? requestedRatio : seed % 5 === 0 ? '1/1' : '3/4';
   return { version: XHS_DESIGN_VERSION, template, palette, headline, highlight: highlight && headline.includes(highlight) ? highlight : '', ratio };
 }
 
@@ -75,31 +80,44 @@ export function wrapXHSText(text, size, maxWidth, measure = browserMeasure, fami
 }
 
 export function layoutXHSCover(design, measure = browserMeasure) {
-  const height = design.ratio === '1/1' ? 600 : design.ratio === '4/3' ? 450 : 800;
+  const height = design.template === 'bubble' ? 800 : design.ratio === '1/1' ? 600 : design.ratio === '4/3' ? 450 : 800;
   const bubble = design.template === 'bubble';
   const family = design.template === 'note' ? HAND : SANS;
-  const maxWidth = bubble ? 426 : 480;
-  const availableHeight = bubble ? height * 0.48 : height * 0.65;
+  const inset = design.template === 'ticket' ? 90 : design.template === 'sticky' ? 82 : 60;
+  const maxWidth = bubble ? 426 : 600 - inset * 2;
+  // Reserve actual decoration zones, not just the outer SVG bounds.
+  const safeTop = bubble ? 128 : design.template === 'quote' ? 176 : ['note', 'grid'].includes(design.template) ? 128 : 100;
+  const safeBottom = bubble ? height * .68 - 48 : height - (design.template === 'question' ? 155 : ['sticky', 'ticket'].includes(design.template) ? 114 : 96);
+  const availableHeight = safeBottom - safeTop;
   const preferred = design.template === 'note' ? 68 : bubble ? 70 : 80;
   let size = preferred, lines;
   for (; size >= 26; size -= 2) {
     lines = wrapXHSText(design.headline, size, maxWidth, measure, family);
-    if (lines.length * size * 1.38 <= availableHeight && lines.every(line => measure(line, size, family) <= maxWidth)) break;
+    if (size + (lines.length - 1) * size * 1.38 + size * .24 <= availableHeight && lines.every(line => measure(line, size, family) <= maxWidth)) break;
   }
   size = Math.max(26, size);
   lines = wrapXHSText(design.headline, size, maxWidth, measure, family);
   const leading = size * 1.38;
   const center = bubble ? height * 0.35 : height * 0.50;
-  const y = Math.max(size + 72, center - (lines.length - 1) * leading / 2);
-  return { width: 600, height, size, lines, leading, y, family, maxWidth, x: bubble ? 300 : 60, anchor: bubble ? 'middle' : 'start' };
+  const y = Math.max(safeTop + size, Math.min(center - (lines.length - 1) * leading / 2, safeBottom - (lines.length - 1) * leading - size * .24));
+  return { width: 600, height, size, lines, leading, y, family, maxWidth, safeTop, safeBottom, x: bubble ? 300 : inset, anchor: bubble ? 'middle' : 'start' };
 }
 
 function doodles(design, palette, height) {
   if (design.template === 'quote') return `<text x="56" y="155" fill="${palette.ink}" opacity=".35" font-family="Georgia,serif" font-size="170">“</text><path d="M490 ${height - 70}h36" stroke="${palette.ink}" opacity=".38" stroke-width="9"/>`;
   if (design.template === 'note') return `<text x="58" y="103" fill="${palette.ink}" font-size="80" font-family="Georgia,serif">“</text><text x="482" y="${height - 44}" fill="${palette.ink}" font-size="78" font-family="Georgia,serif">”</text>`;
   if (design.template === 'question') return `<text x="448" y="${height - 35}" fill="#ed786e" font-size="145" font-weight="900" transform="rotate(9 470 ${height - 100})">?</text><path d="M30 85Q200 5 325 115T590 100" fill="none" stroke="${palette.ink}" opacity=".035" stroke-width="48"/>`;
+  if (design.template === 'poster') return `<circle cx="542" cy="32" r="148" fill="${palette.accent}" opacity=".12"/><circle cx="20" cy="${height - 25}" r="100" fill="${palette.accent}" opacity=".1"/><path d="M60 79h80M60 88h45M440 ${height - 65}h100" fill="none" stroke="${palette.ink}" stroke-width="5" opacity=".45"/>`;
+  if (design.template === 'sticky') return `<rect x="38" y="38" width="530" height="${height - 68}" rx="6" fill="${palette.ink}" opacity=".08"/><path d="M30 30H570V${height - 92}L508 ${height - 38}H30Z" fill="${palette.bg}" stroke="${palette.accent}" stroke-width="2"/><path d="M508 ${height - 38}V${height - 92}H570Z" fill="${palette.accent}" opacity=".5"/><rect x="225" y="15" width="150" height="43" fill="#fefcf4" opacity=".72" transform="rotate(-4 300 36)"/>`;
+  if (design.template === 'grid') {
+    const lines = [];
+    for (let x = 0; x <= 600; x += 40) lines.push(`<path d="M${x} 0V${height}"/>`);
+    for (let y = 0; y <= height; y += 40) lines.push(`<path d="M0 ${y}H600"/>`);
+    return `<g fill="none" stroke="${palette.ink}" stroke-width="1" opacity=".09">${lines.join('')}</g><path d="M48 65l8 17 19 2-14 13 3 19-17-10-17 10 3-19-14-13 19-2Z" fill="none" stroke="${palette.ink}" stroke-width="3" opacity=".6"/><path d="M480 ${height - 55}q22-20 45 0t45 0" fill="none" stroke="${palette.accent}" stroke-width="7" stroke-linecap="round"/>`;
+  }
+  if (design.template === 'ticket') return `<rect x="32" y="32" width="536" height="${height - 64}" rx="19" fill="none" stroke="${palette.ink}" stroke-width="3"/><path d="M66 ${height - 84}H534" stroke="${palette.ink}" stroke-width="2" stroke-dasharray="9 10" opacity=".5"/><circle cx="32" cy="${height - 84}" r="15" fill="${palette.bg}"/><circle cx="568" cy="${height - 84}" r="15" fill="${palette.bg}"/><path d="M70 68h50M70 78h28" stroke="${palette.ink}" stroke-width="4" opacity=".45"/>`;
   const bottom = height * 0.68;
-  return `<path d="M62 110Q85 52 310 66Q529 61 548 144Q571 ${bottom - 85} 490 ${bottom - 25}Q302 ${bottom + 26} 176 ${bottom - 6}L66 ${bottom + 63}L93 ${bottom - 44}Q29 ${bottom - 66} 62 110Z" fill="none" stroke="${palette.ink}" stroke-width="5" stroke-linejoin="round"/><g transform="translate(78 ${height - 128})" fill="none" stroke="${palette.ink}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M0 78L2 9L22 26L46 19L63 2L67 75M4 49Q36 79 66 44M18 43l3 2M48 40l3 2M32 55l7 1M31 30l1-11M42 30l1-11"/></g>`;
+  return `<path data-cover-part="balloon" d="M62 110Q85 52 310 66Q529 61 548 144Q571 ${bottom - 85} 490 ${bottom - 25}Q302 ${bottom + 26} 176 ${bottom - 6}L66 ${bottom + 63}L93 ${bottom - 44}Q29 ${bottom - 66} 62 110Z" fill="none" stroke="${palette.ink}" stroke-width="5" stroke-linejoin="round"/><g data-cover-part="cat" transform="translate(78 ${height - 128})" fill="none" stroke="${palette.ink}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M0 78L2 9L22 26L46 19L63 2L67 75M4 49Q36 79 66 44M18 43l3 2M48 40l3 2M32 55l7 1M31 30l1-11M42 30l1-11"/></g>`;
 }
 
 export function renderXHSCover(post, options = {}) {
