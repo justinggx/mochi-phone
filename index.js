@@ -3666,14 +3666,14 @@ ${XHS_COVER_CSS}
 #rp-view-game .rp-back{color:#b060d0!important}
 /* Board */
 #rp-game-board-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 0;overflow:hidden;min-height:0;max-height:calc(100% - 140px)}
-#rp-ludo-canvas{border-radius:16px;max-width:242px;max-height:242px;display:block;box-shadow:0 4px 24px rgba(160,80,200,.18),0 1px 0 rgba(255,255,255,.9) inset,0 8px 32px rgba(0,0,0,.08)}
+#rp-ludo-canvas{border-radius:16px;width:240px;height:240px;max-width:100%;max-height:100%;min-height:0;flex:none;display:block;box-shadow:0 4px 24px rgba(160,80,200,.18),0 1px 0 rgba(255,255,255,.9) inset,0 8px 32px rgba(0,0,0,.08)}
 /* Controls */
 #rp-game-controls{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(255,255,255,.55);border-top:1px solid rgba(180,120,200,.18);flex-shrink:0;gap:10px}
 .rp-dark #rp-game-controls{background:rgba(30,10,40,.7);border-top-color:rgba(200,120,255,.1)}
 .rp-game-info{flex:1;min-width:0}
-.rp-game-players{font-size:12px;font-weight:700;color:#4a1060}
+.rp-game-players{font-size:12px;font-weight:700;color:#4a1060;overflow-wrap:anywhere}
 .rp-dark .rp-game-players{color:#e8d0ff}
-.rp-game-status{font-size:10.5px;color:#a060c0;margin-top:2px}
+.rp-game-status{font-size:10.5px;color:#a060c0;margin-top:2px;overflow-wrap:anywhere}
 .rp-dark .rp-game-status{color:rgba(220,170,255,.6)}
 /* Dice */
 #rp-dice-btn{width:50px;height:50px;border-radius:25px;background:linear-gradient(145deg,#f472b6,#a855f7);border:none;color:#fff;font-size:22px;cursor:pointer;display:flex!important;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(168,85,247,.4),0 1px 3px rgba(0,0,0,.1);transition:transform .15s,box-shadow .2s;flex-shrink:0;visibility:visible!important;opacity:1!important;pointer-events:auto!important;animation:diceGlow 2.5s ease-in-out infinite}
@@ -4893,6 +4893,7 @@ function rpUpdateViewport() {
   if (!frame || !phone) return;
   phone.classList.toggle('rp-mobile-pos', IS_TOUCH_DEVICE);
   rpApplyDesktopPhoneSize();
+  rpFitLudoBoard();
   if (!IS_TOUCH_DEVICE) return;
   const viewport = window.visualViewport;
   const width = viewport?.width || window.innerWidth;
@@ -7222,6 +7223,7 @@ const HTML = `
             <span class="rp-nav-title">日记</span>
             <button id="rp-gen-diary" title="AI生成今日日记" class="rp-diary-gen-btn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64"/><polyline points="16 8 21 3 21 8"/><polyline points="8 16 3 21 3 16"/></svg></button>
           </div>
+          <div id="rp-diary-status" role="status" aria-live="polite" style="display:none;flex-shrink:0;padding:8px 14px;font-size:12px;line-height:1.5;overflow-wrap:anywhere;color:var(--rp-nav-btn,#c0306a)"></div>
           <div id="rp-diary-list" style="flex:1;overflow-y:auto;padding:12px 14px 8px"></div>
           <div class="rp-diary-compose">
             <textarea id="rp-diary-input" class="rp-diary-input" placeholder="写下今天的心情..." rows="3"></textarea>
@@ -8465,6 +8467,7 @@ function updateClock() {
 //  UI BINDING
 // ================================================================
 function bindUI() {
+  rpInstallLudoBoardResize();
   // Click also covers native touch activation; do not double-submit touchend + click.
   $(document).on('click.mochiPhone', '#rp-phone .rp-translation-btn', function(e) {
     e.preventDefault(); e.stopPropagation();
@@ -9708,6 +9711,7 @@ function parseCustomApiModels(data) {
 function rpPhoneApiError(code) {
   const messages = {
     config: '请先填写并保存 API 设置',
+    context: '请先选择角色并打开聊天，再生成日记',
     truncated: '模型回答被截断，未生成完整数据，请重试',
     interrupted: '模型未完成回答，请稍后重试',
     empty: 'API 未返回正文，可能只有思考内容',
@@ -9729,11 +9733,11 @@ function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
   let officialDeepSeek = false;
   try { officialDeepSeek = new URL(cfg.url).hostname === 'api.deepseek.com'; } catch(e) {}
   const switchable = ['deepseek-flash', 'deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-v4-flash-vision-exp', 'deepseek-chat'].includes(body.model);
-  if (officialDeepSeek && switchable && options.structured) {
-    // Only opt this provider's structured tasks out of default high-effort
-    // thinking. Other providers and ordinary game/chat requests stay compatible.
+  if (officialDeepSeek && switchable && (options.structured || options.phoneDiary)) {
+    // Bounded structured/diary tasks use non-thinking mode on compatible models.
+    // Other providers and ordinary game/chat requests keep their existing policy.
     body.thinking = { type: 'disabled' };
-    body.temperature = 0.3;
+    body.temperature = options.phoneDiary ? 0.8 : 0.3;
     body.max_tokens = Math.max(body.max_tokens, options.jsonMode === 'object' ? 4096 : 2048);
     if (options.jsonMode === 'object') body.response_format = { type: 'json_object' };
   }
@@ -10139,7 +10143,7 @@ function openThread(threadId) {
 //  BUBBLE RENDERER
 // ================================================================
 function rpPhoneSpeechLanguageRule() {
-  return '[手机语言] 仅约束手机SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。每位发言者分别依据明确母语/常用语言；未指定语言时可参考明确国籍，英国通常英语、德国通常德语；多语言国家须按具体设定，不能凭名字猜。设定不明默认中文，不改角色国籍。只写原语言，不自动附译文，读者可点翻译；此规则替代泛化的“手机可见文字一律中文”要求。姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt不翻译；不替{{user}}发言，不改{{user}}手动输入；只约束手机内容，不改变主楼正文语言。';
+  return '[手机语言] Scope:只约束手机内容，PHONE内SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。Language:✓每位发言者使用其明确母语/常用语言；缺失时参考明确国籍，英国通常英语、德国通常德语，多语言国家按具体设定；不明默认中文；不能凭名字猜，不改国籍。Output:✓仅角色原语；中文角色仅中文；×括号译文/逐句对照/双语重复/自动附中文或英文翻译。历史手机消息即使是双语，也×模仿其译文格式；角色卡或其他提示词的翻译要求不用于手机发言，替代“手机文字一律中文”或“外语附中文翻译”的泛化规则。Translation:仅用户点译按钮后另行显示，×写进消息正文。Preserve:姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt保持原样；×替{{user}}发言/改{{user}}手动输入/改变主楼正文语言。';
 }
 
 const rpPhoneTranslationJobs = new WeakMap();
@@ -14141,7 +14145,7 @@ function renderDiary() {
   var container = $('#rp-diary-list').empty();
   var entries = (STATE.diary || []).slice().reverse();
   if (!entries.length) {
-    container.append('<div class="rp-diary-empty">\u6682\u65e0\u65e5\u8bb0\uff0c\u6309\u4e0a\u65b9\u6309\u9492\u751f\u6210\u6216\u81ea\u5df1\u5199\u4e00\u7bc7</div>');
+    container.append('<div class="rp-diary-empty">暂无日记，点击上方按钮生成，或自己写一篇。</div>');
     return;
   }
   var _ctx = getContext();
@@ -14168,15 +14172,41 @@ function renderDiary() {
   });
 }
 
+const rpDiaryJobs = new Map();
+function rpDiaryStatus(text) {
+  $('#rp-diary-status').text(text).toggle(!!text);
+}
+function rpStartDiaryJob(kind, task) {
+  if (rpDiaryJobs.has(kind) || !task.valid()) return null;
+  const button = kind === 'generate' ? $('#rp-gen-diary') : $('#rp-diary-send');
+  const job = { task };
+  const finish = () => {
+    if (rpDiaryJobs.get(kind) !== job) return;
+    rpDiaryJobs.delete(kind);
+    task.signal.removeEventListener('abort', job.abort);
+    button.removeClass('rp-spinning').prop('disabled', false);
+  };
+  job.finish = finish;
+  job.abort = () => { finish(); rpDiaryStatus(''); };
+  rpDiaryJobs.set(kind, job);
+  task.signal.addEventListener('abort', job.abort, { once: true });
+  button.prop('disabled', true);
+  if (kind === 'generate') button.addClass('rp-spinning');
+  rpDiaryStatus(kind === 'generate' ? '正在生成日记…' : '日记已保存，正在等待角色回复…');
+  return job;
+}
+function rpDiaryFailure(error) {
+  rpDiaryStatus('⚠️ ' + (error?.phoneApiCode ? rpPhoneApiError(error.phoneApiCode).message : '生成失败，请检查 API 设置或稍后重试；已有日记已保留。'));
+}
 async function generateAIDiary() {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
+  const diaryJob = rpStartDiaryJob('generate', rpTask);
+  if (!diaryJob) return;
   /* rp-cancel-boundary */ try {
 
-  var btn = $('#rp-gen-diary');
-  btn.addClass('rp-spinning').prop('disabled', true);
   try {
     var _ctx = getContext();
-    if (!_ctx) return;
+    if (!_ctx || !STATE.chatId) throw rpPhoneApiError('context');
     var charName = _ctx.name2 || 'TA';
     var charPersona = '';
     if (_ctx.characters && _ctx.characterId !== undefined) {
@@ -14195,8 +14225,8 @@ async function generateAIDiary() {
       + '\u6ce8\u610f\u4eba\u79f0\uff1a\u6839\u636e\u5bf9\u8bdd\u5185\u5bb9\u5224\u65ad\u7528\u6237\u89d2\u8272\u7684\u6027\u522b\uff0c\u4f7f\u7528\u6b63\u786e\u7684\u4eba\u79f0\u4ee3\u8bcd\uff08\u4ed6/\u5979/\u5b83\uff09\uff0c\u4e0d\u8981\u9ed8\u8ba4\u7528\u300c\u4ed6\u300d\u3002\n'
       + '\u4e25\u7981\uff1a\u4e0d\u5f97\u5305\u542b\u72b6\u6001\u680f\uff08\u4f53\u529b/\u7cbe\u795e/\u597d\u611f\u5ea6\u7b49\u6570\u503c\uff09\u3001\u4e16\u754c\u4e66\u7ec4\u4ef6\u3001\u7cfb\u7edf\u63d0\u793a\u683c\u5f0f\u3001Markdown\u683c\u5f0f\u3001HTML\u6807\u7b7e\u3001\u5c5e\u6027\u8868\u683c\uff0c\u76f4\u63a5\u5199\u7eaf\u6587\u5b57\u65e5\u8bb0\u5185\u5bb9\u3002';
     var prompt = '\u4eca\u65e5\u5bf9\u8bdd\uff1a\n' + recent + '\n\n' + charName + '\u7684\u4eca\u65e5\u65e5\u8bb0\uff1a';
-    var resp = await rpGuardAwait(lgCallAPI(prompt, 350, sysMsg), rpTask);
-    if (!resp) return;
+    var resp = await rpGuardAwait(lgCallAPI(prompt, 2048, sysMsg, { phoneDiary: true, reportErrors: true }), rpTask);
+    if (typeof resp !== 'string' || !resp.trim()) throw rpPhoneApiError('empty');
     var ts = resolvePhoneTime();
     var diaryText = resp.trim();
     // 从正文开头提取故事内日期(如「2023年11月15日」)
@@ -14206,12 +14236,13 @@ async function generateAIDiary() {
     STATE.diary.push({ id: 'diary_' + now.getTime(), date: dateStr, time: ts, author: 'ai', text: diaryText, reply: null });
     saveState();
     renderDiary();
+    rpDiaryStatus('日记已生成并保存。');
   } catch(e) {
     if (!rpTask.valid()) return;
+    rpDiaryFailure(e);
  console.warn('[Diary] generateAIDiary error:', rpErrorInfo(e)); }
   finally {
-    if (!rpTask.valid()) return;
- btn.removeClass('rp-spinning').prop('disabled', false); }
+    diaryJob.finish(); }
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
@@ -14222,7 +14253,9 @@ async function postUserDiary() {
 
   var text = $('#rp-diary-input').val().trim();
   if (!text) return;
-  $('#rp-diary-send').prop('disabled', true);
+  const diaryJob = rpStartDiaryJob('reply', rpTask);
+  if (!diaryJob) return;
+  try {
   $('#rp-diary-input').val('');
   var now = new Date();
   var dateStr = (now.getMonth()+1) + '/' + now.getDate();
@@ -14232,8 +14265,8 @@ async function postUserDiary() {
   STATE.diary.push({ id: entryId, date: dateStr, time: ts, author: 'user', text: text, reply: null, replyTime: null });
   saveState(); renderDiary();
   // char 回复(只有主角,不请求 NPC)
-  try {
     var _ctx2 = getContext();
+    if (!_ctx2 || !STATE.chatId) throw rpPhoneApiError('context');
     var charName2 = _ctx2 && _ctx2.name2 ? _ctx2.name2 : 'TA';
     var charPersona2 = '';
     if (_ctx2 && _ctx2.characters && _ctx2.characterId !== undefined) {
@@ -14258,7 +14291,8 @@ async function postUserDiary() {
       + '\u8981\u6c42\uff1a50-120\u5b57\u4e2d\u6587\uff0c\u60c5\u611f\u771f\u5b9e\uff0c\u5145\u5206\u4f53\u73b0\u89d2\u8272\u6027\u683c\u3002\u53ef\u4ee5\u5305\u542b\u5173\u5fc3\u3001\u60c5\u7eea\u3001\u8f7b\u5fae\u53cd\u5dee\u6216\u76f4\u63a5\u7684\u60c5\u611f\u8868\u8fbe\uff0c\u4f46\u5fc5\u987b\u771f\u60c5\u5b9e\u611f\uff0c\u4e0d\u8981\u5754\u71e5\u5355\u8c03\u3002\n'
       + '\u4e25\u7981\uff1a\u52a8\u4f5c\u63cf\u5199\uff08\u62ec\u53f7\u5185\u5c0f\u52a8\u4f5c\uff09\u3001\u6807\u9898\u3001\u6bb5\u843d\u683c\u5f0f\u3001\u661f\u53f7\u3001\u62ec\u53f7()\uff08\uff09\uff0c\u76f4\u63a5\u8f93\u51fa\u56de\u5e94\u6b63\u6587\u3002';
     var prompt2 = '\u7528\u6237\u65e5\u8bb0\uff1a\u300c' + text + '\u300d\n\u8bf7\u4ee5' + charName2 + '\u7684\u89d2\u8272\u56de\u5e94\uff0c\u60c5\u611f\u771f\u5b9e\u81ea\u7136\uff0c\u7b26\u5408\u5176\u4e00\u8d2f\u7684\u6027\u683c\u3002' + charName2 + '\u7684\u56de\u5e94\uff1a';
-    var resp2 = await rpGuardAwait(lgCallAPI(prompt2, 500, sysMsg2), rpTask);
+    var resp2 = await rpGuardAwait(lgCallAPI(prompt2, 2048, sysMsg2, { phoneDiary: true, reportErrors: true }), rpTask);
+    if (typeof resp2 !== 'string' || !resp2.trim()) throw rpPhoneApiError('empty');
     if (resp2) {
       var cleaned2 = resp2.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
       var now2 = new Date();
@@ -14266,13 +14300,14 @@ async function postUserDiary() {
       var entry = (STATE.diary || []).find(function(d) { return d.id === entryId; });
       if (entry) { entry.reply = cleaned2; entry.replyTime = ts2; }
       saveState(); renderDiary();
+      rpDiaryStatus('日记和角色回复已保存。');
     }
   } catch(e) {
     if (!rpTask.valid()) return;
+    rpDiaryFailure(e);
  console.warn('[Diary] postUserDiary reply error:', rpErrorInfo(e)); }
   finally {
-    if (!rpTask.valid()) return;
- $('#rp-diary-send').prop('disabled', false); }
+    diaryJob.finish(); }
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
@@ -20833,6 +20868,30 @@ function lgInitFabDrag() {
   } catch(e) {}
 }
 
+function rpFitLudoBoard() {
+  const wrap = document.getElementById('rp-game-board-wrap');
+  const canvas = document.getElementById('rp-ludo-canvas');
+  if (!wrap || !canvas || wrap.clientWidth <= 0 || wrap.clientHeight <= 0) return;
+  const style = window.getComputedStyle(wrap);
+  const size = Math.floor(Math.min(240,
+    wrap.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0),
+    wrap.clientHeight - (parseFloat(style.paddingTop) || 0) - (parseFloat(style.paddingBottom) || 0)));
+  if (size <= 0) return;
+  const value = size + 'px';
+  if (canvas.style.width !== value) canvas.style.width = value;
+  if (canvas.style.height !== value) canvas.style.height = value;
+}
+function rpInstallLudoBoardResize() {
+  const wrap = document.getElementById('rp-game-board-wrap');
+  if (!wrap) return;
+  if (typeof window.ResizeObserver === 'function') {
+    const observer = new window.ResizeObserver(() => rpFitLudoBoard());
+    observer.observe(wrap);
+    rpRuntime.own(() => observer.disconnect());
+  }
+  rpRuntime.listenDOM(window, 'resize', rpFitLudoBoard);
+  rpFitLudoBoard();
+}
 function lgInit() {
   rpBeginGame('ludo');
   LG.active = false; LG.rolling = false;
@@ -20917,6 +20976,7 @@ function lgCoords(player, pos) {
 function lgRender() {
   const canvas = document.getElementById('rp-ludo-canvas');
   if (!canvas || !LUDO_PATH.length) return;
+  rpFitLudoBoard();
   const screen = canvas.getContext('2d');
   if (!screen) return;
   let C = screen;
@@ -21511,7 +21571,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
       msgs.push({ role: 'user', content: prompt });
-      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneTranslation ? { trimNames: false } : {}), ...(options.gameTask ? { responseLength: maxTokens } : {}) }), rpTask);
+      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneTranslation || options.phoneDiary ? { trimNames: false } : {}), ...(options.gameTask || options.phoneDiary ? { responseLength: maxTokens } : {}) }), rpTask);
       if (resp && resp.trim()) {
         // ST 路径也统一清洗 think/thinking 标签
         let stText = resp.trim();
@@ -21520,13 +21580,16 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
         if (stText) return stText;
       }
       console.warn('[LudoAPI] ST generateRaw returned empty');
+      if (options.reportErrors) throw rpPhoneApiError('empty');
     } else {
       console.warn('[LudoAPI] generateRaw not available');
+      if (options.reportErrors) throw rpPhoneApiError('request');
     }
   } catch(e) {
     if (!rpTask.valid()) return;
 
     console.warn('[LudoAPI] ST generateRaw request failed');
+    if (options.reportErrors) throw e?.phoneApiCode ? e : rpPhoneApiError(e?.name === 'TimeoutError' || e?.name === 'AbortError' ? 'timeout' : 'request');
   }
   return null;
 
