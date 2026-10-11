@@ -1,5 +1,6 @@
 import { createPhoneRuntime } from './runtime.mjs?v=20261011-audit2';
 import { createPhoneArchive } from './archive.mjs?v=20261011-persist1';
+import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-xhs1';
 
 let rpPhoneArchive = createPhoneArchive();
 let rpArchiveAccountHandle = null;
@@ -2702,13 +2703,10 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 }
 #rp-view-xhs,#rp-view-xhs-detail,#rp-view-xhs-compose{flex-direction:column!important;overflow:hidden!important;background:transparent!important;min-height:0!important;height:100%!important}
 /* XHS三主题：壁纸穿透，中央区域留白透出边缘壁纸 */
-#rp-phone.rp-theme-candy #rp-view-xhs,
 #rp-phone.rp-theme-candy #rp-view-xhs-detail,
 #rp-phone.rp-theme-candy #rp-view-xhs-compose,
-#rp-phone.rp-theme-star  #rp-view-xhs,
 #rp-phone.rp-theme-star  #rp-view-xhs-detail,
 #rp-phone.rp-theme-star  #rp-view-xhs-compose,
-#rp-phone.rp-theme-misty #rp-view-xhs,
 #rp-phone.rp-theme-misty #rp-view-xhs-detail,
 #rp-phone.rp-theme-misty #rp-view-xhs-compose {
   background: var(--rp-home-wall) !important;
@@ -2716,10 +2714,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   background-position: center !important;
 }
 #rp-view-xhs .rp-nav-bar,#rp-view-xhs-detail .rp-nav-bar,#rp-view-xhs-compose .rp-nav-bar{flex:0 0 auto!important;background:rgba(255,255,255,.55)!important;border-bottom:1px solid var(--rp-xhs-border)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none saturate(1.4)!important}
-#rp-phone.rp-theme-star #rp-view-xhs .rp-nav-bar,
 #rp-phone.rp-theme-star #rp-view-xhs-detail .rp-nav-bar,
 #rp-phone.rp-theme-star #rp-view-xhs-compose .rp-nav-bar{background:rgba(10,5,32,.55)!important;border-bottom-color:rgba(140,110,255,.2)!important}
-#rp-phone.rp-theme-misty #rp-view-xhs .rp-nav-bar,
 #rp-phone.rp-theme-misty #rp-view-xhs-detail .rp-nav-bar,
 #rp-phone.rp-theme-misty #rp-view-xhs-compose .rp-nav-bar{background:rgba(220,238,255,.55)!important;border-bottom-color:rgba(100,170,220,.18)!important}
 #rp-view-xhs .rp-nav-title,#rp-view-xhs-detail .rp-nav-title,#rp-view-xhs-compose .rp-nav-title{color:var(--rp-xhs-text)!important}
@@ -2880,72 +2876,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-xhs-detail-body>div:nth-child(2){margin:0 -14px!important;background:var(--rp-xhs-card)!important}
 #rp-xhs-detail-body>div:nth-child(3){margin:8px -14px 0!important;background:var(--rp-xhs-card)!important}
 
-/* XHS feed: real app-like two-column masonry */
-#rp-xhs-list.rp-xhs-waterfall{display:flex!important;gap:8px!important;align-items:flex-start!important;padding:10px 10px 16px!important;box-sizing:border-box!important;position:relative!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:8px}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-card{margin:0!important;width:100%!important;min-width:0!important;border-radius:12px!important;box-shadow:none!important;border:0!important;background:var(--rp-xhs-card,#fff)!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-card>div:nth-child(2)>div:first-child{color:var(--rp-xhs-text,#111827)!important;font-weight:800!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-card img,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-fallback{border-radius:12px 12px 0 0!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover{border-radius:12px 12px 0 0!important}
-#rp-xhs-list.rp-xhs-waterfall.rp-xhs-refreshing{flex-wrap:nowrap!important}
-#rp-xhs-refresh-loading{display:block!important;position:absolute!important;left:12px!important;right:12px!important;top:10px!important;width:auto!important;box-sizing:border-box!important;text-align:center!important;color:var(--bank-loading-color,#c03060)!important;opacity:.94!important;margin:0!important;padding:14px 18px!important;border-radius:18px!important;background:var(--bank-card-bg,rgba(255,255,255,.86))!important;border:1px solid var(--bank-card-border,rgba(255,255,255,.82))!important;box-shadow:var(--bank-card-shadow,0 8px 28px rgba(0,0,0,.10))!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;font-size:13px!important;font-weight:700!important;line-height:1.6!important;z-index:20!important;pointer-events:none!important}
-#rp-xhs-list.rp-xhs-waterfall.rp-xhs-refreshing .rp-xhs-col{padding-top:100px!important;transition:padding-top .16s ease!important}
-.rp-xhs-paper-cover{position:relative;width:100%;box-sizing:border-box;overflow:hidden;display:block;color:#17202a;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;isolation:isolate}
-.rp-xhs-paper-cover b,.rp-xhs-paper-cover span{position:relative;z-index:2;display:block;word-break:break-word}
-.rp-xhs-paper-cover b{font-weight:900;letter-spacing:-.02em}.rp-xhs-paper-cover span{font-weight:700}
-/* XHS detail cover: hide generated subtitle; keep only main title on cover */
-#rp-xhs-detail-body .rp-xhs-paper-cover span{display:none!important}
-#rp-xhs-detail-body .rp-xhs-paper-cover b{display:block!important;white-space:normal!important;word-break:break-all!important;overflow:visible!important;text-overflow:clip!important}
-.rp-xhs-cover-mint-quote{background:#d7f0df;padding:18% 14% 12%;color:#18251d}
-.rp-xhs-cover-mint-quote::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 12%,rgba(255,255,255,.38),transparent 30%),linear-gradient(135deg,rgba(255,255,255,.18),transparent 56%)}
-.rp-xhs-cover-mint-quote .rq{position:absolute;left:12%;top:9%;font-size:82px;line-height:1;color:#badbc4;font-family:Georgia,serif;font-weight:900;z-index:1}.rp-xhs-cover-mint-quote .rq-text{position:absolute;left:15%;right:13%;top:42%;transform:translateY(-50%)}
-.rp-xhs-cover-mint-quote b{font-size:24px;line-height:1.14}.rp-xhs-cover-mint-quote span{margin-top:8px;font-size:21px;line-height:1.18}.rp-xhs-cover-mint-quote i{position:absolute;right:14%;bottom:17%;width:52px;height:8px;background:#a8d3b3;border-radius:999px;transform:rotate(-2deg)}
-.rp-xhs-cover-blue-crayon{background:#eef7fb;color:#1f5a96;padding:18% 13%;background-image:repeating-linear-gradient(-6deg,rgba(105,177,217,.30) 0 12px,rgba(255,255,255,.12) 12px 24px),linear-gradient(180deg,#fafdff,#dbeefa)}
-.rp-xhs-cover-blue-crayon::before{content:"";position:absolute;inset:-8%;background:repeating-linear-gradient(4deg,transparent 0 9px,rgba(52,135,190,.12) 9px 17px);filter:blur(.2px);opacity:.9}.rp-xhs-cover-blue-crayon .bc-text{position:absolute;left:17%;right:10%;top:44%;transform:translateY(-50%) rotate(-2deg)}
-.rp-xhs-cover-blue-crayon b{font-size:25px;line-height:1.08;font-family:"KaiTi","STKaiti","PingFang SC",sans-serif}.rp-xhs-cover-blue-crayon span{margin-top:8px;font-size:22px;line-height:1.12;font-family:"KaiTi","STKaiti","PingFang SC",sans-serif}
-.rp-xhs-cover-blue-marker-note,.rp-xhs-cover-lime-marker-note{background:#fff;color:#171717;background-image:repeating-linear-gradient(180deg,#fff 0 25px,#dbe7f0 26px,#fff 27px);padding:16% 12%}.rp-xhs-cover-blue-marker-note .note-date{position:absolute;left:10%;top:9%;font-size:11px;color:#5f6f7b;font-family:Georgia,serif}.rp-xhs-cover-blue-marker-note .marker{position:absolute;left:13%;right:13%;height:24px;background:rgba(85,171,231,.58);border-radius:10px 18px 12px 8px;transform:rotate(-2deg);filter:saturate(1.1)}.rp-xhs-cover-blue-marker-note .m1{top:40%}.rp-xhs-cover-blue-marker-note .m2{top:51%;left:18%;right:18%;opacity:.86}.rp-xhs-cover-blue-marker-note .note-words{position:absolute;left:16%;right:14%;top:38%;transform:rotate(-2deg)}.rp-xhs-cover-blue-marker-note b{font-size:22px;line-height:1.15}.rp-xhs-cover-blue-marker-note span{margin-top:11px;font-size:20px;line-height:1.12}.rp-xhs-cover-blue-marker-note .note-sign{position:absolute;right:10%;bottom:9%;font-size:10px;color:#4f6475;font-family:Georgia,serif}
-.rp-xhs-cover-lime-marker-note .lm-marker{position:absolute;left:12%;right:12%;top:28%;height:36px;background:rgba(193,226,90,.72);border-radius:18px 24px 13px 20px;transform:rotate(-1deg)}.rp-xhs-cover-lime-marker-note .lm-text{position:absolute;left:15%;right:12%;top:29%}.rp-xhs-cover-lime-marker-note b{font-size:24px;line-height:1.12}.rp-xhs-cover-lime-marker-note span{margin-top:34px;font-size:20px;line-height:1.22;color:#242424}
-.rp-xhs-cover-wish-card{background:linear-gradient(145deg,#f7fbff,#ffffff 52%,#e9f5ff);color:#7b2e34;padding:16% 12%}.rp-xhs-cover-wish-card::before{content:"";position:absolute;inset:6%;border:1px solid rgba(160,205,230,.55);border-radius:18px}.rp-xhs-cover-wish-card .wish-top{position:absolute;left:11%;top:10%;font-size:12px;color:#f0a3b6;font-family:Georgia,serif;font-style:italic}.rp-xhs-cover-wish-card .wish-doodle{position:absolute;right:13%;top:12%;font-size:24px;color:#efa3b2}.rp-xhs-cover-wish-card .wish-text{position:absolute;left:13%;right:13%;bottom:24%}.rp-xhs-cover-wish-card b{font-size:25px;line-height:1.1;color:#783039}.rp-xhs-cover-wish-card span{font-size:18px;line-height:1.2;margin-top:8px;color:#9a5157}.rp-xhs-cover-wish-card .wish-party{position:absolute;left:13%;bottom:11%;font-size:20px;color:#ed9aa6;letter-spacing:6px}
-.rp-xhs-cover-torn-collage{background:#eeeef0;color:#5b3f31;background-image:radial-gradient(circle at 20% 18%,rgba(255,255,255,.7),transparent 20%),linear-gradient(160deg,#f6f6f6,#e5e5e8);padding:14%}.rp-xhs-cover-torn-collage .tc-green{position:absolute;right:5%;top:27%;width:42%;height:38%;background:#dbe8d1;background-image:repeating-linear-gradient(180deg,transparent 0 15px,rgba(80,120,80,.18) 16px);transform:rotate(4deg);box-shadow:0 5px 14px rgba(0,0,0,.08)}.rp-xhs-cover-torn-collage .tc-paper{position:absolute;left:10%;right:13%;top:22%;bottom:16%;background:#fffdf8;padding:31% 10% 8%;box-shadow:0 8px 18px rgba(0,0,0,.10);clip-path:polygon(2% 4%,96% 0,99% 22%,96% 44%,100% 66%,95% 97%,8% 100%,0 82%,4% 61%,0 39%)}.rp-xhs-cover-torn-collage .tc-dot{position:absolute;left:50%;top:8%;width:48px;height:18px;background:radial-gradient(circle,#ac8ad8 0 4px,transparent 5px) 0 0/16px 16px}.rp-xhs-cover-torn-collage b{font-size:21px;line-height:1.12}.rp-xhs-cover-torn-collage span{font-size:17px;line-height:1.2;margin-top:8px}.rp-xhs-cover-torn-collage .tc-star{position:absolute;right:15%;bottom:11%;font-size:28px;color:#9dc7e8}
-.rp-xhs-cover-pink-sticky{background:#f8c9d3;color:#1f1b1c;padding:13% 10%}.rp-xhs-cover-pink-sticky::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 16%,rgba(255,255,255,.25),transparent 18%)}.rp-xhs-cover-pink-sticky .ps-head{position:absolute;left:9%;right:9%;top:8%;font-size:10px;font-weight:800;color:#8b5f65;letter-spacing:.02em}.rp-xhs-cover-pink-sticky .ps-pin{position:absolute;right:15%;top:19%;font-size:20px;color:#8b5f35;letter-spacing:2px}.rp-xhs-cover-pink-sticky .ps-note{position:absolute;left:11%;right:11%;top:26%;bottom:12%;background:#fff;border-radius:16px;padding:23% 10% 10%;box-shadow:0 7px 17px rgba(135,54,75,.14);background-image:repeating-linear-gradient(180deg,#fff 0 25px,#e6e1e4 26px,#fff 27px)}.rp-xhs-cover-pink-sticky b{font-size:22px;line-height:1.14}.rp-xhs-cover-pink-sticky span{font-size:18px;line-height:1.18;margin-top:9px}
-.rp-xhs-cover-blue-capture{background:#d9eef9;color:#245b86;padding:14% 10%;background-image:radial-gradient(circle at 20% 20%,rgba(255,255,255,.6),transparent 22%),linear-gradient(150deg,#e8f8ff,#cde7f6)}.rp-xhs-cover-blue-capture .cap-head{position:absolute;left:10%;top:9%;font-size:11px;color:#4b8bb2;font-family:Georgia,serif}.rp-xhs-cover-blue-capture .cap-paper{position:absolute;left:12%;right:10%;top:25%;bottom:13%;background:#fff;padding:38% 10% 8%;box-shadow:0 10px 20px rgba(55,117,160,.16);clip-path:polygon(3% 8%,92% 0,100% 17%,95% 96%,10% 100%,0 86%)}.rp-xhs-cover-blue-capture .cap-seal{position:absolute;left:50%;top:9%;width:42px;height:42px;border-radius:50%;background:#78bde7;box-shadow:0 0 0 7px rgba(120,189,231,.18);transform:translateX(-50%)}.rp-xhs-cover-blue-capture b{font-size:22px;line-height:1.12;color:#225c8f}.rp-xhs-cover-blue-capture span{font-size:17px;line-height:1.18;margin-top:8px;color:#2f6d9e}
-/* XHS feed cover compact tuning: complete main title only; no giant pill behind text, keep tiny decorations */
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover{min-height:0!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover span{display:none!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover b{display:block!important;overflow:visible!important;text-overflow:clip!important;word-break:break-all!important;white-space:normal!important;max-width:100%!important;font-size:var(--rp-xhs-cover-title-fs,13px)!important;line-height:1.12!important;letter-spacing:-.02em!important;z-index:5!important;color:#17202a!important;text-shadow:none!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-crayon b{color:#215c8e!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note b,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note b{color:#111827!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture b{color:#225c8f!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-mint-quote .rq-text,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-crayon .bc-text,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .note-words,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note .lm-text,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-wish-card .wish-text{left:9%!important;right:9%!important;top:52%!important;transform:translateY(-50%)!important;max-width:82%!important;z-index:5!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}
-/* Only giant capsule/pill backgrounds are forbidden; decorative marks stay tiny and offset. */
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-mint-quote .rq{font-size:34px!important;left:9%!important;top:7%!important;color:rgba(134,170,142,.24)!important}.rp-xhs-cover-mint-quote i{display:block!important;width:18px!important;height:3px!important;right:12%!important;bottom:13%!important;border-radius:2px!important;opacity:.55!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-crayon .bc-text{left:8%!important;right:8%!important;max-width:84%!important;transform:translateY(-50%) rotate(-1deg)!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .note-date{font-size:8px!important;top:7%!important;color:#5f6f7b!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .marker{display:block!important;height:6px!important;width:42%!important;left:29%!important;right:auto!important;border-radius:3px!important;opacity:.45!important;z-index:1!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .m1{top:50%!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .m2{display:block!important;top:58%!important;width:30%!important;left:35%!important;opacity:.28!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-marker-note .note-sign{font-size:7px!important;bottom:7%!important;color:#4f6475!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note .lm-marker{display:block!important;top:50%!important;left:28%!important;right:auto!important;width:44%!important;height:7px!important;border-radius:3px!important;opacity:.42!important;z-index:1!important}#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-lime-marker-note .lm-text{top:53%!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-wish-card .wish-top{font-size:7px!important;left:10%!important;right:42%!important;top:9%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#b27787!important}.rp-xhs-cover-wish-card .wish-doodle{display:block!important;font-size:12px!important;right:12%!important;top:10%!important;color:#b27787!important}.rp-xhs-cover-wish-card .wish-party{display:none!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-torn-collage .tc-green{right:5%!important;top:28%!important;width:28%!important;height:22%!important;opacity:.7!important}.rp-xhs-cover-torn-collage .tc-paper{left:8%!important;right:8%!important;top:18%!important;bottom:10%!important;padding:14% 7% 5%!important;background:#fffdf8!important;border-radius:0!important}.rp-xhs-cover-torn-collage .tc-dot{top:7%!important;width:22px!important;height:8px!important;background-size:8px 8px!important;opacity:.7!important}.rp-xhs-cover-torn-collage .tc-paper b{white-space:normal!important;word-break:break-all!important}.rp-xhs-cover-torn-collage .tc-star{font-size:14px!important;right:14%!important;bottom:9%!important;color:#7aaed0!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-head{font-size:7px!important;left:9%!important;right:9%!important;top:7%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#8b5f65!important}.rp-xhs-cover-pink-sticky .ps-pin{font-size:10px!important;top:17%!important;color:#8b5f35!important}.rp-xhs-cover-pink-sticky .ps-note{left:8%!important;right:8%!important;top:22%!important;bottom:8%!important;padding:14% 7% 5%!important;background:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important}.rp-xhs-cover-pink-sticky .ps-note b{white-space:normal!important;word-break:break-all!important;color:#17202a!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-head{font-size:7px!important;left:9%!important;right:9%!important;top:8%!important;line-height:1.05!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#4b8bb2!important}.rp-xhs-cover-blue-capture .cap-paper{left:8%!important;right:7%!important;top:21%!important;bottom:8%!important;padding:15% 7% 5%!important;background:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important;clip-path:none!important}.rp-xhs-cover-blue-capture .cap-seal{display:block!important;width:12px!important;height:12px!important;top:9%!important;left:50%!important;opacity:.5!important;box-shadow:0 0 0 3px rgba(120,189,231,.10)!important;z-index:1!important}.rp-xhs-cover-blue-capture .cap-paper b{white-space:normal!important;word-break:break-all!important;color:#225c8f!important}
-
-/* Final visual override for narrow cards: text floats cleanly over collage/sticky/capture backgrounds */
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-torn-collage .tc-paper,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-note,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper{overflow:visible!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{color:#225c8f!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-seal{width:8px!important;height:8px!important;top:8%!important;opacity:.28!important;box-shadow:0 0 0 2px rgba(120,189,231,.06)!important}
-
-/* Torn collage final safety: slightly smaller and wider to avoid last-character clipping */
-/* Pink sticky: remove red/white capsule body behind feed title */
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-note{background:transparent!important;background-image:none!important;border-radius:0!important;box-shadow:none!important}
-
-/* Blue capture readability: allow larger 3-4 line title instead of tiny text */
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{left:6%!important;right:6%!important;top:52%!important;max-width:88%!important;font-size:13px!important;line-height:1.14!important;letter-spacing:-.02em!important;white-space:normal!important;word-break:break-all!important}
-
-/* Blue capture: remove gray/white paper under title; keep blue background */
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper{background:transparent!important;background-image:none!important;box-shadow:none!important;clip-path:none!important}
-
-/* Unified readable titles: all feed templates allow 3-4 lines; no ant-sized per-template shrink */
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-paper-cover b{font-size:var(--rp-xhs-cover-title-fs,13px)!important;line-height:1.12!important;white-space:normal!important;word-break:break-all!important;overflow:visible!important;text-overflow:clip!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-torn-collage .tc-paper b,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-pink-sticky .ps-note b,#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{position:absolute!important;left:6%!important;right:6%!important;top:50%!important;transform:translateY(-50%)!important;width:auto!important;max-width:88%!important;font-size:var(--rp-xhs-cover-title-fs,13px)!important;line-height:1.12!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;z-index:6!important}
-#rp-xhs-list.rp-xhs-waterfall .rp-xhs-cover-blue-capture .cap-paper b{color:#225c8f!important}
+${XHS_COVER_CSS}
 /* ── MOMENT IMAGE ── */
 .rp-moment-img-wrap{margin-bottom:10px;border-radius:8px;overflow:hidden;max-width:180px}
 .rp-moment-img{width:100%;display:block;border-radius:8px}
@@ -7266,9 +7197,9 @@ const HTML = `
         <div id="rp-view-xhs" class="rp-view" style="display:none;flex-direction:column">
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
-            <span class="rp-nav-title">小红书</span>
+            <span class="rp-nav-title">发现</span>
             <div style="display:flex;gap:4px;align-items:center">
-              <button id="rp-xhs-compose" title="发笔记" style="width:28px;height:28px;border:none;background:transparent;font-size:18px;cursor:pointer;color:var(--rp-nav-btn,#c0306a)">✏️</button>
+              <button id="rp-xhs-compose" title="发笔记" aria-label="发布笔记" style="border:none;cursor:pointer">＋</button>
               <button id="rp-xhs-refresh" title="刷新" style="width:28px;height:28px;border:none;background:transparent;font-size:18px;cursor:pointer;color:var(--rp-nav-btn,#c0306a)">↻</button>
             </div>
           </div>
@@ -16678,163 +16609,41 @@ function _xhsHashText(s) {
   return h >>> 0;
 }
 
-function _xhsPickBySeed(arr, seed) {
-  if (!arr || !arr.length) return null;
-  return arr[Math.abs(seed) % arr.length];
-}
 
-function _xhsCurrentThemeName() {
-  try {
-    const phone = document.getElementById('rp-phone');
-    if (phone && phone.classList.contains('rp-theme-star')) return 'star';
-    if (phone && phone.classList.contains('rp-theme-misty')) return 'misty';
-  } catch(e) {}
-  return 'candy';
-}
-
-function _xhsWrapCanvasText(ctx, text, maxWidth) {
-  text = String(text || '').replace(/\s+/g, ' ').trim();
-  const out = [];
-  let line = '';
-  for (const ch of text) {
-    const test = line + ch;
-    if (line && ctx.measureText(test).width > maxWidth) {
-      out.push(line);
-      line = ch;
-    } else {
-      line = test;
-    }
-  }
-  if (line) out.push(line);
-  return out; // 不截断：首图标题必须完整显示，主页/详情同步。
-}
-
-const XHS_COVER_VERSION = 19;
-const XHS_COVER_STYLE = 'paper-note-template-p2-p9-v1';
-const XHS_COVER_TEMPLATE_IDS = [
-  'mint-quote', 'blue-crayon', 'blue-marker-note', 'lime-marker-note',
-  'wish-card', 'torn-collage', 'pink-sticky', 'blue-capture'
-];
-let XHS_COVER_SESSION_POOL = null;
-let XHS_COVER_SESSION_SEED = Date.now();
-
-function _xhsShuffleBySeed(arr, seed) {
-  const out = (arr || []).slice();
-  let x = (Number(seed) || 1) >>> 0;
-  for (let i = out.length - 1; i > 0; i--) {
-    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
-    const j = Math.abs(x >>> 0) % (i + 1);
-    const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
-  }
-  return out;
-}
-
-function _xhsResetCoverPool() {
-  XHS_COVER_SESSION_SEED = Date.now() ^ Math.floor(Math.random() * 0x7fffffff);
-  XHS_COVER_SESSION_POOL = null;
-}
-
-function _xhsGetCoverPool() {
-  if (!XHS_COVER_SESSION_POOL || XHS_COVER_SESSION_POOL.length !== 4) {
-    XHS_COVER_SESSION_POOL = _xhsShuffleBySeed(XHS_COVER_TEMPLATE_IDS, XHS_COVER_SESSION_SEED).slice(0, 4);
-  }
-  return XHS_COVER_SESSION_POOL;
-}
-
-function generateXHSCoverImage(title, tag, ratio) {
-  // v19 起主页封面改为 HTML/CSS 纸张模板，避免旧 base64 纯色标题图继续污染 feed。
-  return '';
-}
+const XHS_COVER_VERSION = 20;
+const XHS_COVER_STYLE = 'deterministic-text-covers-v1';
 
 function ensureXHSCoverImage(post, persist) {
   if (!post) return '';
-  post.coverRatio = post.coverRatio || '3/4';
-  if (post.coverImg || post.coverVersion !== XHS_COVER_VERSION || post.coverStyle !== XHS_COVER_STYLE) {
-    post.coverImg = '';
+  const design = normalizeXHSCover(post);
+  if (JSON.stringify(post.coverDesign) !== JSON.stringify(design) || post.coverVersion !== XHS_COVER_VERSION) {
+    post.coverDesign = design;
+    post.coverRatio = design.ratio;
     post.coverVersion = XHS_COVER_VERSION;
     post.coverStyle = XHS_COVER_STYLE;
-    if (persist !== false) { try { saveState(); } catch(e) {} }
+    if (persist !== false) saveState();
   }
+  // Legacy images are retained in storage, not deleted during migration.
   return '';
 }
 
-function _xhsSplitCoverText(post) {
-  const raw = String((post && (post.title || post.body)) || '小红书笔记').replace(/\s+/g, ' ').trim() || '小红书笔记';
-  const clean = raw.replace(/[。！？!?]+$/g, '');
-  const parts = clean.split(/[，,、｜|：:；;\-—·]/).map(x => x.trim()).filter(Boolean);
-  let main = parts[0] || clean;
-  let sub = parts.slice(1).join(' ') || '';
-  if (!sub && Array.from(clean).length > 12) {
-    const arr = Array.from(clean);
-    main = arr.slice(0, 10).join('');
-    sub = arr.slice(10).join('');
-  }
-  if (!sub) sub = clean;
-  const clamp = (t, n) => {
-    const arr = Array.from(String(t || '').trim());
-    return arr.length > n ? arr.slice(0, n).join('') + '…' : arr.join('');
-  };
-  return { main: clamp(main, 12), sub: clamp(sub, 18), raw: clamp(clean, 28) };
-}
-
-function _xhsCoverTemplateId(post) {
-  const pool = _xhsGetCoverPool();
-  const key = String((post && (post.id || post.title || post.body)) || 'xhs');
-  const idText = String((post && post.id) || '');
-  const m = idText.match(/(?:^|_)(\d{12,})(?:_|$)/);
-  const base = m ? Number(m[1]) : _xhsHashText(key);
-  return pool[(Math.abs(base) + _xhsHashText(key)) % pool.length] || pool[0] || XHS_COVER_TEMPLATE_IDS[0];
-}
-
 function safeXHSCoverRatio(value) {
-  const ratio = String(value || '');
-  return ratio === '4/3' ? '4/3' : '3/4';
+  return ['3/4', '1/1', '4/3'].includes(String(value)) ? String(value) : '3/4';
 }
 
-function renderXHSCoverFallback(post, compact, ratio) {
-  post = post || {};
-  ratio = safeXHSCoverRatio(ratio || post.coverRatio);
-  const t = _xhsSplitCoverText(post);
-  const tpl = _xhsCoverTemplateId(post);
-  const dateRaw = String(post.date || (function(){ const d = new Date(); return `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })());
-  const dm = dateRaw.match(/(\d{1,2})\D+(\d{1,2})/);
-  const date = escHtml(dm ? `${String(Number(dm[1])).padStart(2,'0')}.${String(Number(dm[2])).padStart(2,'0')}` : dateRaw);
-  const mainText = t.raw || t.main || '小红书笔记';
-  const titleLen = Array.from(mainText).length;
-  const titleFs = titleLen > 44 ? 9 : (titleLen > 34 ? 10 : (titleLen > 26 ? 11 : (titleLen > 18 ? 12 : 13)));
-  const main = escHtml(mainText);
-  const sub = escHtml(t.sub);
-  const raw = escHtml(t.raw);
-  const aspect = `aspect-ratio:${ratio};--rp-xhs-cover-title-fs:${titleFs}px;`;
-  const base = `rp-xhs-cover-fallback rp-xhs-paper-cover rp-xhs-cover-${tpl}`;
-  const inner = {
-    'mint-quote': `<div class="rq">“</div><div class="rq-text"><b>${main}</b><span>${sub}</span></div><i></i>`,
-    'blue-crayon': `<div class="bc-text"><b>${main}</b><span>${sub}</span></div>`,
-    'blue-marker-note': `<div class="note-date">Date: ${date}</div><div class="marker m1"></div><div class="marker m2"></div><div class="note-words"><b>${main}</b><span>${sub}</span></div><div class="note-sign">-Text Note</div>`,
-    'lime-marker-note': `<div class="lm-marker"></div><div class="lm-text"><b>${main}</b><span>${sub}</span></div>`,
-    'wish-card': `<div class="wish-top">Best wishes for you</div><div class="wish-doodle">♡</div><div class="wish-text"><b>${main}</b><span>${sub}</span></div><div class="wish-party">△ ✦ 〰</div>`,
-    'torn-collage': `<div class="tc-green"></div><div class="tc-paper"><div class="tc-dot"></div><b>${main}</b><span>${sub}</span></div><div class="tc-star">✧</div>`,
-    'pink-sticky': `<div class="ps-head">Sticky Notes · MAY 11 2026</div><div class="ps-pin">•••</div><div class="ps-note"><b>${main}</b><span>${sub}</span></div>`,
-    'blue-capture': `<div class="cap-head">Capture words in mind</div><div class="cap-paper"><div class="cap-seal"></div><b>${main}</b><span>${sub}</span></div>`
-  }[tpl] || `<div class="rq-text"><b>${main}</b><span>${sub}</span></div>`;
-  return `<div class="${base}" data-xhs-cover-template="${escHtml(tpl)}" style="${aspect}">${inner}</div>`;
+function renderXHSCoverFallback(post) {
+  return renderXHSCover(post || {});
 }
 
 function _xhsEnsureFeedCovers(orderedList) {
-  const list = orderedList || STATE.xhsFeed || [];
   let changed = false;
-  const pattern = ['3/4','4/3','4/3','3/4'];
-  list.forEach(function(post, idx) {
-    if (!post) return;
-    const desiredRatio = post.from === 'user' ? (post.coverRatio || '3/4') : pattern[idx % pattern.length];
-    if (post.coverRatio !== desiredRatio) { post.coverRatio = desiredRatio; post.coverImg = ''; changed = true; }
-    if (post.coverImg || post.coverVersion !== XHS_COVER_VERSION || post.coverStyle !== XHS_COVER_STYLE) {
-      post.coverImg = '';
-      ensureXHSCoverImage(post, false);
-      changed = true;
-    }
-  });
-  if (changed) { try { saveState(); } catch(e) {} }
+  for (const post of orderedList || STATE.xhsFeed || []) {
+    if (!post) continue;
+    const before = JSON.stringify([post.coverDesign, post.coverVersion, post.coverRatio]);
+    ensureXHSCoverImage(post, false);
+    if (before !== JSON.stringify([post.coverDesign, post.coverVersion, post.coverRatio])) changed = true;
+  }
+  if (changed) saveState();
 }
 
 function _xhsAvatarHtml(name, size) {
@@ -16853,39 +16662,24 @@ function _xhsFormatCount(n) {
   return String(n);
 }
 
-function _xhsFeedSubtitle(post) {
-  post = post || {};
-  const title = String(post.title || '').replace(/\s+/g, ' ').trim();
-  let body = String(post.body || '').replace(/\s+/g, ' ').trim();
-  if (!body || body === title) {
-    const split = _xhsSplitCoverText(post);
-    body = split.sub || split.raw || title;
-  }
-  if (body === title) body = '';
-  const arr = Array.from(body || title || '小红书笔记');
-  return arr.length > 28 ? arr.slice(0, 28).join('') + '…' : arr.join('');
-}
 
 function renderXHSCard(p) {
-  const likeK = _xhsFormatCount(p.likes);
-  const commentCount = p.comments ? p.comments.length : 0;
-  p.coverRatio = safeXHSCoverRatio(p.coverRatio);
-  const ratio = p.coverRatio;
-  const cover = ensureXHSCoverImage(p);
-  const fallbackCover = renderXHSCoverFallback(p, true, ratio);
+  ensureXHSCoverImage(p, false);
   return `
-    <div class="rp-xhs-card" data-xhsid="${escHtml(p.id)}" style="cursor:pointer;padding:0!important;overflow:hidden!important;border-radius:12px!important;background:var(--rp-xhs-card,#fff)!important">
-      ${cover ? `<img src="${escHtml(cover)}" alt="${escHtml(p.title || '小红书封面')}" loading="lazy" style="width:100%;display:block;aspect-ratio:${ratio};object-fit:cover;background:var(--rp-xhs-soft,#fff1f4)"/>` : fallbackCover}
-      <div style="padding:7px 7px 8px;background:var(--rp-xhs-card,#fff)">
-        <div style="font-size:13px;font-weight:800;color:var(--rp-xhs-text,#111827);line-height:1.38;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escHtml(_xhsFeedSubtitle(p))}</div>
-        <div style="display:flex;align-items:center;gap:4px;min-width:0">
-          ${_xhsAvatarHtml(p.user, 18)}
-          <div style="flex:1;min-width:0;font-size:10.5px;color:var(--rp-xhs-text-soft,#4b5563);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.user || '')}</div>
-          <div style="font-size:10.5px;color:${p.likedByUser?'var(--rp-xhs-accent,#ff2442)':'var(--rp-xhs-text-faint,#999)'};display:flex;align-items:center;gap:2px;flex-shrink:0">${p.likedByUser?'♥':'♡'} ${likeK}</div>
-          ${commentCount ? `<div style="font-size:10.5px;color:var(--rp-xhs-text-faint,#999);flex-shrink:0">💬 ${commentCount}</div>` : ''}
+    <article class="rp-xhs-card rp-xhs-note-card" data-xhsid="${escHtml(p.id)}">
+      ${renderXHSCoverFallback(p)}
+      <section class="rp-xhs-card-content">
+        <div class="rp-xhs-card-title">${escHtml(p.title || p.body || '小红书笔记')}</div>
+        <div class="rp-xhs-card-meta">
+          ${_xhsAvatarHtml(p.user, 15)}
+          <span class="rp-xhs-card-author">${escHtml(p.user || '')}</span>
+          <span class="rp-xhs-card-likes${p.likedByUser ? ' is-liked' : ''}">
+            <svg class="rp-xhs-heart" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17S2 12 2 7a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 5-8 10-8 10Z"/></svg>
+            ${_xhsFormatCount(p.likes)}
+          </span>
         </div>
-      </div>
-    </div>
+      </section>
+    </article>
   `;
 }
 
@@ -16896,7 +16690,6 @@ function renderXHSFeed(forceRefresh) {
   const list = STATE.xhsFeed || [];
 
   if (forceRefresh) {
-    _xhsResetCoverPool();
     // 刷新不清空旧内容：保留原页面，只在顶部显示刷新提示；新内容回来后插到最上方。
     if ($('#rp-xhs-refresh-loading').length || $('#rp-xhs-loading').length) return;
     const xhsEst1 = _xhsGetEstSeconds();
@@ -17423,9 +17216,10 @@ async function buildXHSFeedWithAI(appendMode) {
 - 只生成帖子本身,不要生成评论
 
 只返回JSON数组,格式:
-[{"user":"昵称emoji","title":"标题","body":"正文","likes":数字}]
+[{"user":"昵称emoji","title":"标题","body":"正文","likes":数字,"cover":{"headline":"封面短句","highlight":"强调词","template":"quote|note|question|bubble"}}]
 共4条,不要有其他文字。
-重要:所有字段值内部不能出现双引号,如需引用请用「」或【】代替。`;
+cover要求:headline提炼本帖核心，不添加新事实，8-28字；highlight取headline中连续的2-6字，无需强调则空；template只能选一个枚举值：观点吐槽quote、日常分享note、提问求助question、简短心情bubble；本批至少使用2种模板。
+输出合法JSON，对引号进行标准转义，不要Markdown。`;
 
     const charInfo = charPersona ? charPersona.slice(0, 150) : `角色名:${charName}`;
     const prompt = `角色信息:${charInfo}\n用户名:${userName}\n近期对话片段:${(recentChat||'').slice(0,100)}\n\n本次4条帖子话题方向:\n${chosenTopics.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\n生成JSON:`;
@@ -17434,44 +17228,21 @@ async function buildXHSFeedWithAI(appendMode) {
     if (resp) {
       let items = [];
       try {
-        let jsonStr = resp.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-        const m = jsonStr.match(/\[[\s\S]*\]/);
-        if (m) jsonStr = m[0];
-        // 修复 AI 在字符串值里用双引号的问题(如 "Theo")
-        // 策略:逐字符状态机,在 JSON 字符串值内遇到未转义双引号时替换为「」
-        jsonStr = (function fixInnerQuotes(s) {
-          let out = '', inStr = false, key = false, i = 0;
-          while (i < s.length) {
-            const ch = s[i];
-            if (!inStr) {
-              if (ch === '"') { inStr = true; out += ch; }
-              else out += ch;
-            } else {
-              if (ch === '\\') { out += ch + (s[i+1]||''); i += 2; continue; }
-              if (ch === '"') {
-                // 判断是结束引号还是内部引号:后面紧跟 : , } ] 或空白+这些字符
-                const rest = s.slice(i+1).trimStart();
-                if (/^[:\],}]/.test(rest)) { inStr = false; out += ch; }
-                else { out += '\u2019'; } // 替换为右单引号 '
-              } else { out += ch; }
-            }
-            i++;
-          }
-          return out;
-        })(jsonStr);
-        items = JSON.parse(jsonStr);
+        items = rpParseModelJSON(resp, 'array');
       } catch(e) {
     if (!rpTask.valid()) return;
  console.warn('[XHS] JSON parse error', { responseLength: String(resp || '').length }); }
       if (Array.isArray(items) && items.length > 0) {
         const aiPosts = items.slice(0, 4).map((p, i) => {
-          const coverRatio = (i === 0 || i === 3) ? '3/4' : '4/3';
+          const coverRatio = i === 1 ? '1/1' : '3/4';
+          const id = `xhs_ai_${Date.now()}_${i}`;
           return {
-            id: `xhs_ai_${Date.now()}_${i}`, from: 'stranger',
+            id, from: 'stranger',
             user: p.user||`路人${i+1}🌿`, title: p.title||'', body: p.body||'',
             likes: typeof p.likes==='number' ? p.likes : rndInt(500,20000),
             likedByUser: false, followedByUser: false, favoritedByUser: false, comments: [], time: ts(), date: todayStr,
             coverRatio,
+            coverDesign: normalizeXHSCover({ id, title: p.title, body: p.body, coverRatio, coverDesign: p.cover }),
             coverVersion: XHS_COVER_VERSION,
             coverStyle: XHS_COVER_STYLE,
             coverImg: '',
@@ -17652,7 +17423,6 @@ function postUserXHS() {
   const ts2 = () => { const h=rndInt2(8,23),m=rndInt2(0,59); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; };
   post.comments = []; // 评论由 AI 异步生成
   saveState();
-  _xhsResetCoverPool();
   // 清空表单
   $('#rp-xhs-post-title').val('');
   $('#rp-xhs-post-body').val('');
