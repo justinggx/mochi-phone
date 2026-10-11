@@ -130,7 +130,7 @@ export function createPhoneRuntime(host, getSlot, isEnabled = () => true) {
         };
         const abort = () => finish(reject, new host.DOMException('Phone task cancelled', 'AbortError'));
         token.signal.addEventListener('abort', abort, { once: true });
-        id = host.setTimeout(() => finish(reject, new Error('Phone request timed out')), timeout);
+        if (timeout > 0) id = host.setTimeout(() => finish(reject, new Error('Phone request timed out')), timeout);
         Promise.resolve(promise).then(result => finish(resolve, result), error => finish(reject, error));
         if (token.signal.aborted) abort();
     });

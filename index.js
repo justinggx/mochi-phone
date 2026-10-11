@@ -1,4 +1,4 @@
-import { createPhoneRuntime } from './runtime.mjs?v=20261011-audit1';
+import { createPhoneRuntime } from './runtime.mjs?v=20261011-audit2';
 
 // These aliases scope only this module's resources, never host timers/globals.
 let rpRuntime;
@@ -12,8 +12,8 @@ const requestAnimationFrame = fn => rpRuntime.frame(fn);
 const cancelAnimationFrame = id => rpRuntime.cancelFrame(id);
 let MutationObserver;
 
-async function rpGuardAwait(promise, token) {
-  const result = await rpRuntime.wait(promise, 120000, token);
+async function rpGuardAwait(promise, token, timeout = 120000) {
+  const result = await rpRuntime.wait(promise, timeout, token);
   if (!token.valid()) throw new DOMException('Phone task cancelled', 'AbortError');
   return result;
 }
@@ -6957,6 +6957,7 @@ const HTML = `
             <label class="rp-api-opt" style="margin-bottom:10px"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 使用当前 API(SillyTavern)</label>
             <label class="rp-api-opt" style="margin-bottom:12px"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 接入其他 API</label>
             <div id="rp-api-custom-fields-v" style="display:none;flex-direction:column;gap:8px">
+              <div style="font-size:11px;color:#9070b0;line-height:1.6">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
               <div class="rp-api-presets" style="margin-bottom:4px">
                 <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                 <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
@@ -7391,6 +7392,7 @@ const HTML = `
               <label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="st" id="rp-api-mode-st" checked> 使用当前 API(SillyTavern)</label>
               <label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="custom" id="rp-api-mode-custom"> 接入其他 API</label>
               <div id="rp-api-custom-fields" style="display:none">
+                <div style="font-size:11px;color:#9070b0;line-height:1.6;margin-bottom:8px">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
                 <div class="rp-api-presets">
                   <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                   <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
@@ -8873,7 +8875,7 @@ function bindUI() {
       $('#rp-api-status-v').text('请求失败:' + e.message);
     }
     $btn.text('获取模型').prop('disabled', false);
-  
+
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 });
   $(document).on("click.mochiPhone", '.rp-model-item', function() {
@@ -16221,7 +16223,7 @@ async function charRespondToUserMoment(momentId) {
       }
       await rpGuardAwait(new Promise(r => setTimeout(r, 600)), rpTask);
     }
-  
+
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }, 1200);
 
@@ -19568,7 +19570,7 @@ function ggoldBindEvents() {
         const fallbacks = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
         gmAddMsg('char', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
       }
-    
+
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 })();
   }
@@ -20934,7 +20936,7 @@ async function lgUserRoll() {
   $('#rp-dice-face').text(DICE_EMOJI[n]);
   lgMsg('sys', `你掷出 ${n} ${DICE_EMOJI[n]}`);
 
-  await rpGuardAwait(lgMove('user', n), rpTask);
+  await rpGuardAwait(lgMove('user', n), rpTask, 0);
 
   // Pending reroll from square event
   if (LG.pendingReroll === 'user') {
@@ -20982,7 +20984,7 @@ async function lgCharTurn() {
   $('#rp-dice-face').text(DICE_EMOJI[n]);
   lgMsg('sys', `${LG.charName} 掷出 ${n} ${DICE_EMOJI[n]}`);
 
-  await rpGuardAwait(lgMove('char', n), rpTask);
+  await rpGuardAwait(lgMove('char', n), rpTask, 0);
 
   // Pending reroll from square event
   if (LG.pendingReroll === 'char') {
@@ -21041,7 +21043,7 @@ async function lgMove(player, steps) {
   // Trigger square event if applicable (shared path, direct position)
   const finalPos = isUser ? LG.userPos : LG.charPos;
   if (finalPos >= 1 && finalPos < LUDO_PATH_LEN && SQUARE_EVENTS[finalPos]) {
-    await rpGuardAwait(lgTriggerSquareEvent(player, finalPos), rpTask);
+    await rpGuardAwait(lgTriggerSquareEvent(player, finalPos), rpTask, 0);
   }
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
@@ -21408,7 +21410,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
   LG.taskBusy = true;
   const overlay = document.getElementById('rp-sq-event');
   overlay.style.display = 'flex';
-  await rpGuardAwait(rpRuntime.waitForClick(document.getElementById('rp-sq-event-done'), overlay), rpTask);
+  await rpGuardAwait(rpRuntime.waitForClick(document.getElementById('rp-sq-event-done'), overlay), rpTask, 0);
   LG.taskBusy = false;
 
   // 特殊格:立即执行效果,不进入步骤二
@@ -21429,7 +21431,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
     if (newPos >= 1 && newPos < LUDO_PATH_LEN && SQUARE_EVENTS[newPos]) {
       _chainKey = newPos;
     }
-    if (_chainKey !== null) await rpGuardAwait(lgTriggerSquareEvent(player, _chainKey, (_depth || 0) + 1), rpTask);
+    if (_chainKey !== null) await rpGuardAwait(lgTriggerSquareEvent(player, _chainKey, (_depth || 0) + 1), rpTask, 0);
     return;
   }
   if (ev.type === 'skip') {
@@ -21597,7 +21599,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
   }
 
   // 等待「已完成」点击
-  await rpGuardAwait(rpRuntime.waitForClick(btn, bar), rpTask);
+  await rpGuardAwait(rpRuntime.waitForClick(btn, bar), rpTask, 0);
   LG.justDidTask = true;
   LG.lastTaskTime = Date.now();
   LG.lastTaskText = ev.text || null; // 记住最近任务，供 lgGameChat 上下文用
@@ -21685,7 +21687,7 @@ function lgCharComment(event) {
       } catch(e) {
     if (!rpTask.valid()) return;
  console.warn('[Ludo] lgCharComment game_start error:', rpErrorInfo(e)); }
-    
+
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 })();
     return;
@@ -21752,7 +21754,7 @@ function lgCharComment(event) {
     } catch(e) {
     if (!rpTask.valid()) return;
  console.warn('[Ludo] lgCharComment error:', rpErrorInfo(e)); }
-  
+
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 })();
 }
