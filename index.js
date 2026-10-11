@@ -5987,8 +5987,6 @@ function mergeDuplicateThreads() {
       STATE.avatars[keep.name] = STATE.avatars[drop.name];
     }
 
-    normalizeThreadMessageOrder(keep);
-
     delete STATE.threads[drop.id];
     if (STATE.currentThread === drop.id) STATE.currentThread = keep.id;
     changed = true;
@@ -9904,38 +9902,6 @@ function addContact() {
 }
 
 
-function rpGetMessageChronoKey(msg, originalIndex) {
-  try {
-    if (!msg) return (originalIndex || 0);
-    const explicit = Number(msg.ts || msg.timestamp || msg.createdAt || msg.created_at || msg.order || NaN);
-    if (Number.isFinite(explicit) && explicit > 0) return explicit;
-
-    const idText = String(msg.id || '');
-    const idMatch = idText.match(/(?:^|_)(\d{12,})(?:_|$)/);
-    if (idMatch) {
-      const n = Number(idMatch[1]);
-      if (Number.isFinite(n) && n > 0) return n;
-    }
-
-    const t = String(msg.time || '').trim();
-    const hm = t.match(/^(\d{1,2}):(\d{2})$/);
-    if (hm) return (Number(hm[1]) * 60 + Number(hm[2])) * 100000 + (originalIndex || 0);
-  } catch(e) {}
-  return (originalIndex || 0);
-}
-
-function normalizeThreadMessageOrder(thread) {
-  try {
-    if (!thread || !Array.isArray(thread.messages) || thread.messages.length < 2) return;
-    thread.messages = thread.messages
-      .map(function(msg, idx) { return { msg, idx, key: rpGetMessageChronoKey(msg, idx) }; })
-      .sort(function(a, b) { return (a.key - b.key) || (a.idx - b.idx); })
-      .map(function(item) { return item.msg; });
-  } catch(e) {
-    console.warn('[Phone:messages] normalizeThreadMessageOrder failed', rpErrorInfo(e));
-  }
-}
-
 function getThreadListActivityKey(thread, originalIndex) {
   const last = thread && thread.messages && thread.messages.at ? thread.messages.at(-1) : null;
   if (!last) return -1000000000 + (originalIndex || 0) * 0.000001;
@@ -9961,9 +9927,6 @@ function getThreadListActivityKey(thread, originalIndex) {
 // ================================================================
 function renderThreadList() {
   const container = $('#rp-thread-list').empty();
-
-  Object.values(STATE.threads)
-    .forEach(function(th) { normalizeThreadMessageOrder(th); });
 
   Object.values(STATE.threads)
     .map(function(th, idx) { return { th, idx }; })
@@ -10275,7 +10238,9 @@ function renderBubbles(threadId) {
   const area = $('#rp-bubbles').empty();
   const thread = STATE.threads[threadId];
   if (!thread) return;
-  normalizeThreadMessageOrder(thread);
+  // The stored array is the receive timeline. Display HH:mm and generated-image
+  // IDs use different clocks; never sort them together or rewrite history here.
+  // Async image completion replaces its placeholder in place.
 
   // DEL_SVG 提前定义，供 pending_image / image 等早期气泡使用
   const DEL_SVG_EARLY = `<svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><path d="M3 3.5L3.7 11.5C3.75 12.05 4.2 12.5 4.75 12.5H9.25C9.8 12.5 10.25 12.05 10.3 11.5L11 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 3.5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5.5 3.5V2.5C5.5 2.22 5.72 2 6 2H8C8.28 2 8.5 2.22 8.5 2.5V3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="7" y1="6" x2="7" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="5.5" y1="6.2" x2="5.8" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8.5" y1="6.2" x2="8.2" y2="10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`;
