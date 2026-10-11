@@ -144,7 +144,8 @@ export function renderXHSCover(post, options = {}) {
 export const XHS_COVER_CSS = String.raw`
 #rp-phone #rp-view-xhs{--rp-xhs-bg:#f7f7f7;--rp-xhs-card:#fff;--rp-xhs-text:#222;--rp-xhs-text-soft:#777;background:var(--rp-xhs-bg)!important}
 #rp-phone.rp-theme-star #rp-view-xhs,#rp-phone.rp-dark #rp-view-xhs{--rp-xhs-bg:#17151d;--rp-xhs-card:#24212b;--rp-xhs-text:#f4f0f7;--rp-xhs-text-soft:#b8b1c2}
-#rp-phone #rp-view-xhs .rp-nav-bar{background:var(--rp-xhs-card)!important;border:0!important;height:92px;min-height:92px;padding:46px 7px 0!important;display:grid;grid-template-columns:32px 1fr 65px}
+#rp-phone #rp-view-xhs .rp-nav-bar{background:var(--rp-xhs-card)!important;border:0!important;height:92px;min-height:92px;padding:46px 7px 0!important;display:grid;grid-template-columns:65px minmax(0,1fr) 65px}
+#rp-phone #rp-view-xhs .rp-back{justify-self:start}
 #rp-phone #rp-view-xhs .rp-nav-title{font-size:15px!important;font-weight:700!important;color:var(--rp-xhs-text)!important;position:relative;left:auto;right:auto;height:40px;display:flex;align-items:center;justify-content:center}
 #rp-phone #rp-view-xhs .rp-nav-title::after{content:"";position:absolute;bottom:3px;left:50%;width:25px;height:3px;transform:translateX(-50%);border-radius:4px;background:#ff2442}
 #rp-phone #rp-view-xhs .rp-back,#rp-phone #rp-view-xhs #rp-xhs-refresh{color:var(--rp-xhs-text)!important}
@@ -162,5 +163,6 @@ export const XHS_COVER_CSS = String.raw`
 #rp-phone #rp-xhs-list .is-liked .rp-xhs-heart{fill:currentColor}
 #rp-phone #rp-xhs-list #rp-xhs-refresh-loading{position:absolute;top:8px;left:8px;right:8px;text-align:center;padding:12px;background:var(--rp-xhs-card)!important;color:var(--rp-xhs-text)!important;border:0!important;border-radius:8px;box-shadow:0 3px 14px #0000000a!important;font-size:12px!important;z-index:2;pointer-events:none}
 #rp-phone #rp-xhs-list.rp-xhs-refreshing .rp-xhs-col{padding-top:65px}
-#rp-phone #rp-view-xhs #rp-xhs-compose{color:#fff!important;background:#ff2442!important;border-radius:7px!important;font-size:21px!important;width:28px;height:25px;line-height:21px}
+#rp-phone #rp-view-xhs #rp-xhs-compose{color:#fff!important;background:#ff2442!important;border-radius:7px!important;width:28px;height:25px;padding:0!important;line-height:1!important;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+#rp-phone #rp-view-xhs #rp-xhs-compose svg{display:block;width:20px;height:20px;flex:none;pointer-events:none}
 `;

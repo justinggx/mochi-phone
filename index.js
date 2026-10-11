@@ -1,6 +1,6 @@
 import { createPhoneRuntime } from './runtime.mjs?v=20261011-audit2';
 import { createPhoneArchive } from './archive.mjs?v=20261011-persist1';
-import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-xhs2';
+import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
 
 let rpPhoneArchive = createPhoneArchive();
 let rpArchiveAccountHandle = null;
@@ -7207,7 +7207,7 @@ const HTML = `
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title">发现</span>
             <div style="display:flex;gap:4px;align-items:center">
-              <button id="rp-xhs-compose" title="发笔记" aria-label="发布笔记" style="border:none;cursor:pointer">＋</button>
+              <button id="rp-xhs-compose" title="发笔记" aria-label="发布笔记" style="border:none;cursor:pointer"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 10h14M10 3v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
               <button id="rp-xhs-refresh" title="刷新" style="width:28px;height:28px;border:none;background:transparent;font-size:18px;cursor:pointer;color:var(--rp-nav-btn,#c0306a)">↻</button>
             </div>
           </div>
