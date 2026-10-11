@@ -4946,6 +4946,7 @@ function rpUpdateViewport() {
   const phone = document.getElementById('rp-phone');
   if (!frame || !phone) return;
   phone.classList.toggle('rp-mobile-pos', IS_TOUCH_DEVICE);
+  rpApplyDesktopPhoneSize();
   if (!IS_TOUCH_DEVICE) return;
   const viewport = window.visualViewport;
   const width = viewport?.width || window.innerWidth;
@@ -5093,6 +5094,91 @@ const EXT_KEY = 'ray_phone_v1'; // extension_settings 的命名空间键
 const EXT_LAUNCH_KEY = 'mochi_phone_launch_v1'; // MochiPhone 全局启动入口设置
 const DEFAULT_LAUNCH_SETTINGS = { enabled: true, qrLaunch: true, fabLaunch: true };
 const SAVE_DEBOUNCE_MS = 500;
+let rpDesktopPhoneScale = null;
+let rpDesktopAppliedScale = 1;
+
+function rpNormalizeDesktopScale(value) {
+  const number = (typeof value === 'number' || typeof value === 'string') ? Number(value) : NaN;
+  if (!Number.isFinite(number) || number <= 0) return 1;
+  return Math.round(Math.max(0.6, Math.min(1.5, number)) * 20) / 20;
+}
+
+function rpDesktopScaleStorageKey() {
+  return 'mochi-phone-desktop-scale-v1-' + encodeURIComponent(rpArchiveAccountHandle);
+}
+
+function rpGetDesktopPhoneScale() {
+  if (rpDesktopPhoneScale !== null) return rpDesktopPhoneScale;
+  rpDesktopPhoneScale = rpNormalizeDesktopScale(getMochiLaunchSettings().desktopScale);
+  try {
+    const local = localStorage.getItem(rpDesktopScaleStorageKey());
+    if (local !== null) rpDesktopPhoneScale = rpNormalizeDesktopScale(local);
+  } catch(e) { /* Server settings remain the fallback when local storage is unavailable. */ }
+  return rpDesktopPhoneScale;
+}
+
+function rpKeepDesktopPhoneVisible(phone) {
+  const rect = phone.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8));
+  const top = Math.max(10, Math.min(rect.top, window.innerHeight - rect.height - 10));
+  if (Math.abs(left - rect.left) < 0.5 && Math.abs(top - rect.top) < 0.5) return;
+  phone.style.setProperty('transform-origin', 'top left');
+  phone.style.left = left + 'px';
+  phone.style.top = top + 'px';
+  phone.style.right = 'auto';
+  phone.style.bottom = 'auto';
+}
+
+function rpApplyDesktopPhoneSize() {
+  const phone = document.getElementById('rp-phone');
+  const frame = document.getElementById('rp-frame');
+  if (!phone || !frame) return;
+  $('#rp-desktop-size-setting').toggle(!IS_TOUCH_DEVICE);
+  $('#rp-desktop-size').prop('disabled', IS_TOUCH_DEVICE);
+  if (IS_TOUCH_DEVICE) {
+    rpDesktopAppliedScale = 1;
+    phone.style.removeProperty('scale');
+    phone.style.removeProperty('transform-origin');
+    return;
+  }
+  const requested = rpGetDesktopPhoneScale();
+  const css = window.getComputedStyle(frame);
+  const extra = axis => css.boxSizing === 'border-box' ? 0 : axis === 'width'
+    ? (parseFloat(css.paddingLeft) || 0) + (parseFloat(css.paddingRight) || 0)
+      + (parseFloat(css.borderLeftWidth) || 0) + (parseFloat(css.borderRightWidth) || 0)
+    : (parseFloat(css.paddingTop) || 0) + (parseFloat(css.paddingBottom) || 0)
+      + (parseFloat(css.borderTopWidth) || 0) + (parseFloat(css.borderBottomWidth) || 0);
+  const width = phone.offsetWidth || frame.offsetWidth || (parseFloat(css.width) || 286) + extra('width');
+  const height = phone.offsetHeight || frame.offsetHeight || (parseFloat(css.height) || 580) + extra('height');
+  rpDesktopAppliedScale = Math.max(0.1, Math.min(requested,
+    (window.innerWidth - 16) / width, (window.innerHeight - 20) / height));
+  // Individual scale preserves theme transforms and scales the entire phone tree.
+  phone.style.setProperty('scale', String(rpDesktopAppliedScale), 'important');
+  phone.style.setProperty('transform-origin', phone.style.left && phone.style.left !== 'auto' ? 'top left' : 'bottom right');
+  $('#rp-desktop-size').val(Math.round(requested * 100));
+  $('#rp-desktop-size-value').text(Math.round(requested * 100) + '%');
+  const actual = Math.round(rpDesktopAppliedScale * 100);
+  const fitted = rpDesktopAppliedScale < requested - 0.005;
+  $('#rp-desktop-size-note').text(fitted
+    ? '为适配当前窗口，实际显示 ' + actual + '%；放大窗口可恢复所选尺寸。'
+    : '仅 PC 生效；外框与内部等比缩放，刷新后保留。');
+  $('#rp-desktop-size').attr('aria-valuetext', Math.round(requested * 100) + '%' + (fitted ? '，实际显示 ' + actual + '%' : ''));
+  rpKeepDesktopPhoneVisible(phone);
+}
+
+function rpSetDesktopPhoneScale(value) {
+  if (IS_TOUCH_DEVICE) return;
+  const next = rpNormalizeDesktopScale(value);
+  const changed = next !== rpGetDesktopPhoneScale();
+  rpDesktopPhoneScale = next;
+  if (changed) {
+    getMochiLaunchSettings().desktopScale = next;
+    try { localStorage.setItem(rpDesktopScaleStorageKey(), String(next)); } catch(e) {}
+    saveMochiLaunchSettings();
+  }
+  rpApplyDesktopPhoneSize();
+}
 
 function getMochiLaunchSettings() {
   const es = _extSettings();
@@ -7250,6 +7336,20 @@ const HTML = `
             <span></span>
           </div>
           <div style="overflow-y:auto;flex:1">
+            <div id="rp-desktop-size-setting" style="display:none">
+              <div class="rp-set-section-title">手机尺寸（PC）</div>
+              <div class="rp-set-section">
+                <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <label for="rp-desktop-size" class="rp-set-key">等比缩放</label>
+                    <output id="rp-desktop-size-value" for="rp-desktop-size">100%</output>
+                  </div>
+                  <input id="rp-desktop-size" type="range" min="60" max="150" step="5" value="100" aria-label="PC 手机尺寸" style="width:100%;min-width:0;cursor:pointer;accent-color:var(--rp-nav-btn,#e06080)">
+                  <div id="rp-desktop-size-note" class="rp-set-hint">仅 PC 生效；外框与内部等比缩放，刷新后保留。</div>
+                  <button id="rp-desktop-size-reset" type="button" class="rp-set-upload-btn rp-wall-reset-btn">恢复默认（100%）</button>
+                </div>
+              </div>
+            </div>
             <div class="rp-set-section-title">头像管理</div>
             <div class="rp-set-section">
               <div class="rp-set-row">
@@ -8222,8 +8322,8 @@ async function rpInitBody() {
     }
     function onMove(clientX, clientY) {
       if (!_dragging) return;
-      _dx = clientX - _sx;
-      var dy = clientY - _sy;
+      _dx = (clientX - _sx) / rpDesktopAppliedScale;
+      var dy = (clientY - _sy) / rpDesktopAppliedScale;
       if (Math.abs(dy) > Math.abs(_dx) + 10) { _dragging = false; return; }
       var base = -curPage * 50;
       var pct  = _dx / pages.parentElement.offsetWidth * 100;
@@ -8459,6 +8559,7 @@ function bindUI() {
     }
     rpResumeGameAnimations();
     if (IS_TOUCH_DEVICE) setTimeout(rpUpdateViewport, 0);
+    else rpApplyDesktopPhoneSize();
   });
 
   // Click outside phone → close
@@ -9532,6 +9633,11 @@ function bindUI() {
   });
 
   // ── Wallpaper upload / reset ──
+  $(document).on('input.mochiPhone change.mochiPhone', '#rp-desktop-size', function() {
+    rpSetDesktopPhoneScale(Number(this.value) / 100);
+  });
+  $(document).on('click.mochiPhone', '#rp-desktop-size-reset', () => rpSetDesktopPhoneScale(1));
+
   $(document).on("click.mochiPhone", '#rp-wall-upload', () => $('#rp-wall-file').trigger('click'));
   $(document).on("change.mochiPhone", '#rp-wall-file', function() {
     const file = this.files[0];
@@ -9859,7 +9965,7 @@ function go(view) {
   // 切换到 home 时重置到第0屏
   if (view === 'home' && window._rpHomeSwipeGoto) { window._rpHomeSwipeGoto(0, false); }
 
-  if (view === 'settings') { _bindAvatarUpload(); renderBlocklist(); }
+  if (view === 'settings') { _bindAvatarUpload(); renderBlocklist(); rpApplyDesktopPhoneSize(); }
 
   if (view === 'messages') {
     renderThreadList();
@@ -13836,6 +13942,7 @@ function makeDraggable() {
     if (!inLeft && !inRight && !inTop && !inBottom) return;
     dragging = true;
     const r = phone.getBoundingClientRect();
+    phone.style.setProperty('transform-origin', 'top left');
     phone.style.right = 'auto';
     phone.style.bottom = 'auto';
     phone.style.left = r.left + 'px';
@@ -13850,7 +13957,7 @@ function makeDraggable() {
     phone.style.left = (ox + e.clientX - ex) + 'px';
     phone.style.top  = (oy + e.clientY - ey) + 'px';
   };
-  phone._rpUpHandler = () => { dragging = false; };
+  phone._rpUpHandler = () => { if (dragging) rpKeepDesktopPhoneVisible(phone); dragging = false; };
   rpRuntime.listenDOM(document, 'mousemove', phone._rpMoveHandler);
   rpRuntime.listenDOM(document, 'mouseup',   phone._rpUpHandler);
 }
