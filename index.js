@@ -1,4 +1,4 @@
-import { createPhoneRuntime } from './runtime.mjs?v=20261011-audit2';
+import { createPhoneRuntime } from './runtime.mjs?v=20261011-games1';
 import { createPhoneArchive } from './archive.mjs?v=20261011-persist1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
 
@@ -2302,7 +2302,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 #g2048-score,#g2048-best{font-size:15px;font-weight:800;color:#4a3728}
 #g2048-turn{font-size:11.5px;font-weight:600;color:#fff;background:rgba(0,0,0,.38);padding:2px 10px;border-radius:12px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 #g2048-newbtn{background:none;border:none;color:var(--rp-nav-btn,#c0306a);font-size:13px;font-weight:600;cursor:pointer;padding:4px 6px}
-#g2048-board-wrap{display:flex;justify-content:center;padding:4px 0 2px;flex-shrink:0}
+#g2048-board-wrap{display:flex;justify-content:center;padding:4px 0 2px;flex-shrink:0;touch-action:none;overscroll-behavior:contain}
 #g2048-board{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:5px;padding:6px;background:rgba(195,95,128,.52);border-radius:9px;width:214px;height:214px;box-shadow:0 3px 12px rgba(160,40,80,.2)}
 .g2048-cell{background:rgba(235,165,185,.42);border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0;min-height:0}
 @keyframes g2048Pop{0%{transform:scale(.72)}55%{transform:scale(1.12)}100%{transform:scale(1)}}
@@ -4800,6 +4800,7 @@ const runtime = createPhoneRuntime(window,
   () => isMochiPhoneEnabled());
 MutationObserver = runtime.Observer;
 runtime.own(() => { if (rpInitialized) flushStateNow(); });
+runtime.own(rpResetGameRuntimes);
 runtime.own(() => { void rpPhoneArchive.close(); });
 runtime.own(() => $(document).off('.mochiPhone'));
 runtime.own(() => {
@@ -4852,29 +4853,37 @@ function rpResetChatTasks() {
   rpStoreAndResetGames();
 }
 function rpPauseGameAnimations() {
-  cancelAnimationFrame(LG._animFrame);
+  rpGameRuntime('ludo').cancelFrame(LG._animFrame);
   LG._animFrame = null;
-  cancelAnimationFrame(GM.rafId);
+  rpGameRuntime('gm').cancelFrame(GM.rafId);
   GM.rafId = null;
+  rpGameRuntime('gm').clearTimer(GM.timerInterval); GM.timerInterval = null;
+  rpGameRuntime('gm').clearTimer(GM._shootTimer); GM._shootTimer = null;
 }
 function rpGameVisible(view) {
   const phone = document.getElementById('rp-phone');
-  return isMochiPhoneEnabled() && STATE.currentView === view && phone && window.getComputedStyle(phone).display !== 'none';
+  if (view === 'ggold' && document.getElementById('ggold-chat-fs')?.style.display !== 'none') return false;
+  return isMochiPhoneEnabled() && !document.hidden && STATE.currentView === view && phone && window.getComputedStyle(phone).display !== 'none';
 }
 function rpResumeGameAnimations() {
+  rpResumeDeferredGameTimers();
   if (LG.active && rpGameVisible('game') && !LG._animFrame) {
-    const loop = () => {
+    let last = 0;
+    const loop = ts => {
       LG._animFrame = null;
       if (!LG.active || !rpGameVisible('game')) return;
-      lgRender();
-      LG._animFrame = requestAnimationFrame(loop);
+      if (!last || ts-last>=80) { lgRender(); last=ts; }
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      LG._animFrame = rpGameRuntime('ludo').frame(loop);
     };
-    LG._animFrame = requestAnimationFrame(loop);
+    LG._animFrame = rpGameRuntime('ludo').frame(loop);
   }
   if (GM.active && rpGameVisible('ggold') && !GM.rafId) {
     GM.lastTime = 0;
     GM.lastFrameTime = 0;
-    GM.rafId = requestAnimationFrame(gmLoop);
+    GM.rafId = rpGameRuntime('gm').frame(gmLoop);
+    if (!GM.timerInterval) gmStartTimer(false);
+    if (GM.turn === 'char') gmScheduleCharShots();
   }
 }
 function rpUpdateViewport() {
@@ -5518,11 +5527,31 @@ function recordPhoneGameMessage(key, role, text) {
   else message.role = role;
   if (!Array.isArray(game.chatLog)) game.chatLog = [];
   game.chatLog.push(message);
-  const targets = { ludo: ['rp-game-chat', 'rp-game-chat-fs-body'], g2048: ['g2048-chat', 'g2048-chat-fs-body'], gword: ['gword-chat', 'gword-chat-fs-body'], gm: ['ggold-chat'] }[key];
-  for (const target of targets) {
-    const node = document.getElementById(target)?.lastElementChild;
-    if (node && !node.dataset.rpGameMessageId) { node.dataset.rpGameKey = key; node.dataset.rpGameMessageId = message.id; }
+  saveState();
+  return message;
+}
+function rpGameMessageNode(key, role, text, message = null) {
+  const game = getPhoneGameRecordSource(key);
+  const node = document.createElement('div'); node.className='game-msg game-msg-' + role;
+  node.dataset.rpGameKey=key;
+  if(message)node.dataset.rpGameMessageId=message.id;
+  const span=document.createElement('span');span.className='game-msg-text';
+  span.textContent=(role==='char'?(message?.name || game.charName)+': ':role==='user' && key==='gm'?'你：':'')+String(text ?? '');
+  node.append(span);
+  if(key==='gm')node.style.cssText='font-size:11.5px;padding:2px 0;line-height:1.45;word-break:break-word;color:'+(role==='user'?'#f0e0ff':role==='char'?'#c8d8ff':'rgba(255,255,255,.5)');
+  if(role==='char'){
+    const edit=document.createElement('button');edit.type='button';edit.className='game-edit-btn';edit.title='编辑';edit.textContent='✎';
+    edit.setAttribute('onclick','event.stopPropagation();gameInlineEdit(this)');node.append(edit);
   }
+  return node;
+}
+function rpAppendGameMessage(key, role, text) {
+  const message = role==='user' || role==='char' || key==='gm' ? recordPhoneGameMessage(key,role,text) : null;
+  const main={ludo:'rp-game-chat',g2048:'g2048-chat',gm:'ggold-chat',gword:'gword-chat'}[key];
+  const fullscreen={ludo:'rp-game-chat-fs',g2048:'g2048-chat-fs',gm:'ggold-chat-fs',gword:'gword-chat-fs'}[key];
+  const areas=[document.getElementById(main)];
+  if(document.getElementById(fullscreen)?.style.display !== 'none')areas.push(document.getElementById(fullscreen+'-body'));
+  for(const area of areas){if(!area)continue;area.append(rpGameMessageNode(key,role,text,message));area.scrollTop=area.scrollHeight;}
   saveState();
 }
 function renderPhoneGameHistory(key) {
@@ -5535,39 +5564,36 @@ function renderPhoneGameHistory(key) {
   for (const message of game.chatLog || []) {
     if (!message || typeof message !== 'object') continue;
     if (!message.id) message.id = 'game_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const role = message.role || message.type;
-    const div = document.createElement('div');
-    div.className = 'game-msg ' + (role === 'user' ? 'game-msg-user' : role === 'char' ? 'game-msg-char' : 'game-msg-sys');
-    div.dataset.rpGameKey = key;
-    div.dataset.rpGameMessageId = message.id;
-    const text = document.createElement('span');
-    text.className = 'game-msg-text';
-    text.textContent = (role === 'char' ? (message.name || game.charName) + ': ' : '') + String(message.text || '');
-    div.append(text);
-    if (key === 'gm') div.style.cssText = 'font-size:11.5px;margin-bottom:4px;line-height:1.45;word-break:break-word;color:' + (role === 'user' ? '#f0e0ff' : role === 'char' ? '#c8d8ff' : 'rgba(255,255,255,.5)');
-    if (role === 'char' && key !== 'gm') {
-      const button = document.createElement('button');
-      button.className = 'game-edit-btn'; button.title = '编辑'; button.textContent = '✎';
-      button.setAttribute('onclick', 'event.stopPropagation();gameInlineEdit(this)');
-      div.append(button);
-    }
-    fragment.append(div);
+    fragment.append(rpGameMessageNode(key,message.role || message.type,message.text,message));
   }
   area.append(fragment);
   area.scrollTop = area.scrollHeight;
 }
 
 function getPhoneGameStateSnapshot() {
-  return JSON.parse(JSON.stringify({
-    ludo: (typeof LG !== 'undefined' && LG) ? { chatLog: (LG.chatLog || []).slice(), active: !!LG.active } : null,
-    g2048: (typeof LG2048 !== 'undefined' && LG2048) ? { chatLog: (LG2048.chatLog || []).slice() } : null,
-    gm: (typeof GM !== 'undefined' && GM) ? { chatLog: (GM.chatLog || []).slice() } : null,
-    gword: (typeof GWORD !== 'undefined' && GWORD) ? { chatLog: (GWORD.chatLog || []).slice() } : null,
-  }));
+  const snapshot = { version: 2, partner: rpGamePartner, towers: rpGameTowers };
+  for (const key of ['ludo', 'g2048', 'gm', 'gword']) {
+    const game = getPhoneGameRecordSource(key);
+    const round = { active: !!(game.active || game._paused), charName: game.charName };
+    for (const field of RP_GAME_FIELDS[key]) round[field] = game[field];
+    if (key === 'gword' && game.processing) {
+      if(game.mode === 'char-describe')round.retryHint=true;
+      else if(game.mode === 'user-describe')round.retryGuess=true;
+    }
+    if (key === 'ludo') Object.assign(round, { path: LUDO_PATH, theme: LUDO_THEME?.key, events: SQUARE_EVENTS, decos: _lgDecos });
+    snapshot[key] = { chatLog: game.chatLog || [], round };
+  }
+  return JSON.parse(JSON.stringify(snapshot));
 }
 
 function restorePhoneGameState(saved) {
   const gameState = saved || {};
+  rpPauseGameAnimations(); rpResetGameRuntimes();
+  [LG,LG2048,GM,GWORD].forEach((game,i) => {
+    Object.keys(game).forEach(key => delete game[key]);
+    Object.assign(game,JSON.parse(JSON.stringify(rpGameDefaults[i])));
+  });
+  LUDO_PATH=[]; LUDO_PATH_LEN=0; LUDO_THEME=null; SQUARE_EVENTS={}; _lgDecos=[];
   const readLog = function(key) {
     const log = gameState[key] && gameState[key].chatLog;
     return Array.isArray(log) ? JSON.parse(JSON.stringify(log)) : [];
@@ -5576,6 +5602,35 @@ function restorePhoneGameState(saved) {
   if (typeof LG2048 !== 'undefined' && LG2048) LG2048.chatLog = readLog('g2048');
   if (typeof GM !== 'undefined' && GM) GM.chatLog = readLog('gm');
   if (typeof GWORD !== 'undefined' && GWORD) GWORD.chatLog = readLog('gword');
+  rpGamePartner = gameState.version === 2 && gameState.partner?.name
+    ? { name: gameCleanPartnerName(gameState.partner.name), note: String(gameState.partner.note || '').slice(0, 600), manual: !!gameState.partner.manual } : null;
+  rpGameTowers = Object.create(null);
+  if (gameState.version === 2 && gameState.towers && typeof gameState.towers === 'object') {
+    for (const [name, level] of Object.entries(gameState.towers)) {
+      if (Number.isInteger(level) && level >= 0 && level <= 12) rpGameTowers[name] = level;
+    }
+  }
+  for (const key of ['ludo', 'g2048', 'gm', 'gword']) {
+    const game = getPhoneGameRecordSource(key);
+    const round = gameState.version === 2 ? rpValidateGameRound(key, gameState[key]?.round) : null;
+    if (!round) continue; // A damaged round must not erase its independent chat archive.
+    for (const field of RP_GAME_FIELDS[key]) if (round[field] !== undefined) game[field] = round[field];
+    game.charName = gameCleanPartnerName(round.charName) || '对方';
+    game.active = false;
+    game._paused = !!round.active;
+    game.processing = false;
+    game.rolling = false;
+    if (key === 'ludo') {
+      LUDO_PATH = round.path; LUDO_PATH_LEN = round.path.length;
+      LUDO_THEME = LUDO_THEMES.find(theme => theme.key === round.theme) || LUDO_THEMES[0];
+      SQUARE_EVENTS = round.events; _lgDecos = round.decos;
+    }
+    if (key === 'gm') {
+      GM.towerTargets = gmBuildTower(); GM.colors = {}; _gmFieldDirty = true;
+      GM._towerKey = rpGameTowerKey(GM.charName);
+      if (GM.hookedItem) GM.hookedItem = GM.items.find(item => item.id === GM.hookedItem.id) || null;
+    }
+  }
 }
 
 function flushStateNow() {
@@ -6656,7 +6711,8 @@ function installPhoneStateFlushHooks() {
   rpRuntime.listenDOM(window, 'pagehide', flushLatest, true);
   rpRuntime.listenDOM(window, 'beforeunload', flushLatest, true);
   rpRuntime.listenDOM(document, 'visibilitychange', function() {
-    if (document.visibilityState === 'hidden') flushLatest();
+    if (document.visibilityState === 'hidden') { rpPauseGameAnimations(); saveState({immediate:true}); flushLatest(); }
+    else rpResumeGameAnimations();
   }, true);
   rpRuntime.own(() => {
     if (window.__rpPhoneFlushPendingState === flushPendingPhoneState) {
@@ -7409,6 +7465,10 @@ const HTML = `
           <div id="ggold-input-row">
             <input id="ggold-input" type="text" placeholder="游戏中聊天..." autocomplete="off"/>
             <button id="ggold-send" type="button">↑</button>
+          </div>
+          <div id="ggold-chat-fs" style="display:none;position:absolute;inset:0;z-index:50;background:#1c1630;color:#fff;flex-direction:column;padding:14px;box-sizing:border-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span>💬 聊天记录</span><button id="ggold-chat-fs-close" type="button" aria-label="关闭聊天记录">✕</button></div>
+            <div id="ggold-chat-fs-body" style="flex:1;min-height:0;overflow-y:auto"></div>
           </div>
           <div id="ggold-over" style="display:none">
             <div class="ggold-over-emoji" id="ggold-over-emoji">🏆</div>
@@ -8611,26 +8671,12 @@ function bindUI() {
     e.stopPropagation();
     const app = $(this).data('folder-app');
     $('#rp-folder-modal').hide();
-    if (app === 'ludo') {
-      go('game');
-      try { if (!LG || !LG.active) lgInit(); else { gameApplyPartnerToGames(gameGetCurrentPartner()); lgRender(); } } catch(ex) { console.warn('[Folder]', rpErrorInfo(ex)); }
-    } else if (app === 'g2048') {
-      go('g2048');
-      try { if (!LG2048 || !LG2048.active) g2048Init(); else gameApplyPartnerToGames(gameGetCurrentPartner()); } catch(ex) { console.warn('[Folder]', rpErrorInfo(ex)); }
-    } else if (app === 'ggold') {
-      go('ggold');
-      try { ggoldOpen(); } catch(ex) { console.warn('[Folder/ggold]', rpErrorInfo(ex)); }
-    } else if (app === 'gword') {
-      go('gword');
-      try { gwordOpen(); } catch(ex) { console.warn('[Folder/gword]', rpErrorInfo(ex)); }
-    }
+    if (['ludo','g2048','ggold','gword'].includes(app)) go(app);
   });
   // ── Ludo game ────────────────────────────────────────────────
   $(document).on("click.mochiPhone", '[data-app="ludo"]', function(e) {
     e.stopPropagation();
-    if (!LG.active) lgInit();
-    else { gameApplyPartnerToGames(gameGetCurrentPartner()); lgRender(); }
-    go('game');
+    go('ludo');
   });
 
   $(document).on("click.mochiPhone", '.rp-game-partner-change', function(e) {
@@ -9040,6 +9086,7 @@ function bindUI() {
   // 换棋盘按钮: 重新生成路径+主题+事件格,重置位置
   $(document).on("click.mochiPhone", '#rp-newboard-btn', function() {
     if (!LG.active) return;
+    rpBeginGame('ludo');
     LUDO_PATH = lgGeneratePath();
     LUDO_PATH_LEN = LUDO_PATH.length;
     LUDO_THEME = LUDO_THEMES[Math.floor(Math.random() * LUDO_THEMES.length)];
@@ -9059,11 +9106,13 @@ function bindUI() {
   });
 
   $(document).on("click.mochiPhone", '#rp-game-send', function() {
+    if(LG._chatBusy)return;
     const t = $('#rp-game-input').val().trim();
     if (t) { lgGameChat(t); $('#rp-game-input').val(''); }
   });
 
   $(document).on("keydown.mochiPhone", '#rp-game-input', function(e) {
+    if(LG._chatBusy || e.isComposing || e.originalEvent?.isComposing)return;
     if (e.key === 'Enter') {
       const t = $(this).val().trim();
       if (t) { lgGameChat(t); $(this).val(''); }
@@ -9126,37 +9175,23 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#g2048-chat-hint', function() {
     $('#g2048-chat').trigger('click');
   });
-  $(document).on("click.mochiPhone", '#g2048-chat-fs-close', function() {
-    // 同步全屏聊天里的编辑结果回 #g2048-chat
-    var fsBody = document.getElementById('g2048-chat-fs-body');
-    var mainChat = document.getElementById('g2048-chat');
-    if (fsBody && mainChat) {
-      // 将 fs-body 里每条消息的文本同步回 main chat 对应位置
-      var fsMsgs = fsBody.querySelectorAll('.game-msg');
-      var mainMsgs = mainChat.querySelectorAll('.game-msg');
-      for (var i = 0; i < fsMsgs.length && i < mainMsgs.length; i++) {
-        var fsSpan = fsMsgs[i].querySelector('.game-msg-text');
-        var mainSpan = mainMsgs[i].querySelector('.game-msg-text');
-        if (fsSpan && mainSpan && fsSpan.textContent !== mainSpan.textContent) {
-          mainSpan.textContent = fsSpan.textContent;
-        }
-      }
-    }
-    $('#g2048-chat-fs').hide();
-  });
+  $(document).on("click.mochiPhone", '#g2048-chat-fs-close', function(e) { e.stopPropagation();e.preventDefault(); $('#g2048-chat-fs').hide(); });
   $(document).on("click.mochiPhone", '.g2048-dir', function() {
     if (!LG2048.active || LG2048.processing || LG2048.turn !== 'user') return;
     g2048UserMove($(this).data('dir'));
   });
   $(document).on("click.mochiPhone", '#g2048-send', function() {
+    if(LG2048._chatBusy)return;
     var t = $('#g2048-input').val().trim();
     if (t) { g2048Chat(t); $('#g2048-input').val(''); }
   });
   $(document).on("keydown.mochiPhone", '#g2048-input', function(e) {
+    if(LG2048._chatBusy || e.isComposing || e.originalEvent?.isComposing)return;
     if (e.key === 'Enter') { var t = $(this).val().trim(); if (t) { g2048Chat(t); $(this).val(''); } }
   });
   $(document).on("keydown.mochiPhone", function(e) {
     if (!$('#rp-view-g2048').is(':visible')) return;
+    if (e.isComposing || $(e.target).closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])').length) return;
     var m = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
     var d = m[e.key];
     if (d) {
@@ -9214,25 +9249,7 @@ function bindUI() {
     body.scrollTop = body.scrollHeight;
 
     // Bind close button directly (not via delegation)
-    jQuery('#rp-game-chat-fs-close').off('click').on('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      // 同步全屏聊天里的编辑结果回 #rp-game-chat
-      var fsBody = document.getElementById('rp-game-chat-fs-body');
-      var mainChat = document.getElementById('rp-game-chat');
-      if (fsBody && mainChat) {
-        var fsMsgs = fsBody.querySelectorAll('.game-msg');
-        var mainMsgs = mainChat.querySelectorAll('.game-msg');
-        for (var i = 0; i < fsMsgs.length && i < mainMsgs.length; i++) {
-          var fsSpan = fsMsgs[i].querySelector('.game-msg-text');
-          var mainSpan = mainMsgs[i].querySelector('.game-msg-text');
-          if (fsSpan && mainSpan && fsSpan.textContent !== mainSpan.textContent) {
-            mainSpan.textContent = fsSpan.textContent;
-          }
-        }
-      }
-      jQuery('#rp-game-chat-fs').hide();
-    });
+    jQuery('#rp-game-chat-fs-close').off('click').on('click', function(e) { if(typeof e !== 'undefined'){e.stopPropagation();e.preventDefault();} $('#rp-game-chat-fs').hide(); });
   });
 
   // ─────────────────────────────────────────────────────────────
@@ -9970,10 +9987,11 @@ function renderThreadList() {
 function go(view) {
   rpPauseGameAnimations();
   if (view === 'darkmode') { toggleDarkMode(); return; }
-  if (view === 'ludo') { try { if (!LG.active) lgInit(); else { gameApplyPartnerToGames(gameGetCurrentPartner()); lgRender(); } } catch(e) { console.warn('[Ludo]', rpErrorInfo(e)); } view = 'game'; }
-  if (view === 'g2048') { try { if (!LG2048.active) g2048Init(); else gameApplyPartnerToGames(gameGetCurrentPartner()); } catch(e) { console.warn('[2048]', rpErrorInfo(e)); } }
-  if (view === 'ggold') { try { ggoldOpen(); } catch(e) { console.warn('[ggold]', rpErrorInfo(e)); } }
-  if (view === 'gword') { try { gwordOpen(); } catch(e) { console.warn('[gword]', rpErrorInfo(e)); } }
+  if (view === 'ludo') view = 'game';
+  if (view === 'game' && !rpShowGameResume('ludo')) { if (!LG.active) lgInit(); else if (rpGameVisible('game')) lgRender(); }
+  if (view === 'g2048' && !rpShowGameResume('g2048')) { if (!LG2048.active) g2048Init(); else g2048Render(); }
+  if (view === 'ggold' && !rpShowGameResume('gm')) { if (!GM.active) ggoldOpen(); }
+  if (view === 'gword' && !rpShowGameResume('gword')) { if (!GWORD.active) gwordOpen(); }
   if (view === 'api-settings') { lgFillAPIView(); }
   if (view === 'themes') { lgRenderThemePicker(); }
   $('.rp-view').hide();
@@ -18237,7 +18255,7 @@ async function sendMomentComment(momentId, text, replyToName) {
 const LG2048 = {
   board: [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
   score: 0,
-  best: parseInt(localStorage.getItem('g2048_best') || '0'),
+  best: rpReadLegacyGameNumber('g2048_best'),
   turn: 'user',    // 'user' | 'char'
   active: false,
   processing: false,
@@ -18431,6 +18449,7 @@ function gameGetCurrentPartner(ctx) {
   ctx = ctx || ((typeof getContext === 'function') ? getContext() : {});
   var cardName = gameGetCardName(ctx) || '对方';
   var partner = { name: cardName, cardName: cardName, note: '', manual: false };
+  if (rpGamePartner?.name) return { ...partner, ...rpGamePartner };
   try {
     var raw = localStorage.getItem(gameGetPartnerStorageKey(ctx));
     if (raw) {
@@ -18452,7 +18471,8 @@ function gameSetCurrentPartner(name, note, ctx) {
   var cardName = gameGetCardName(ctx) || '对方';
   var cleanNote = String(note || '').replace(/[<>\r\t]/g, ' ').trim().slice(0, 600);
   var partner = { name: clean, cardName: cardName, note: cleanNote, manual: clean !== cardName || !!cleanNote, updatedAt: Date.now() };
-  try { localStorage.setItem(gameGetPartnerStorageKey(ctx), JSON.stringify(partner)); } catch(e) {}
+  rpGamePartner = partner;
+  saveState();
   return partner;
 }
 
@@ -18488,12 +18508,31 @@ function gameSavePartnerFromModal() {
   var name = gameCleanPartnerName($('#rp-game-partner-name-input').val());
   var note = String($('#rp-game-partner-note-input').val() || '').replace(/[<>\r\t]/g, ' ').trim().slice(0, 600);
   if (!name) return;
+  const previous = gameGetCurrentPartner(ctx);
+  if (name !== previous.name || note !== previous.note) {
+    // Keep all histories, stop the old companion's pending work and retain the board.
+    for (const key of ['ludo','g2048','gm','gword']) { rpGameRuntime(key).advance(); getPhoneGameRecordSource(key)._chatBusy=null; }
+    rpPauseGameAnimations();
+    LG2048.processing = false; LG2048.turn = 'user';
+    LG.rolling = false; LG.taskBusy = false; LG.taskActive = null;
+    LG.taskStage = null; LG.pendingMove = null; LG.turn = 'user';
+    $('#rp-sq-event,#rp-sq-task-bar').hide(); $('#rp-dice-btn').prop('disabled',false);
+    if (GWORD.processing && GWORD.active) {
+      if (GWORD.mode === 'char-describe') rpWordRetryButton(); else { GWORD.retryGuess=true; rpWordGuessRetryButton(); }
+    }
+    GWORD.processing = false;
+    // A tower belongs to its companion; switching companions ends only this round.
+    GM.active = false; GM._paused = false; GM.hookState = 'idle';
+  }
   var partner = gameSetCurrentPartner(name, note, ctx);
   gameApplyPartnerToGames(partner);
+  rpLoadTower();
   try { if (typeof g2048Render === 'function') g2048Render(); } catch(e) {}
   try { if (typeof gmUpdateRoundUI === 'function') gmUpdateRoundUI(); } catch(e) {}
   try { if (typeof lgRender === 'function' && typeof LG !== 'undefined' && LG.active) lgRender(); } catch(e) {}
   gameClosePartnerModal();
+  if (STATE.currentView === 'ggold') ggoldOpen();
+  rpResumeGameAnimations(); saveState();
 }
 
 function gameExtractPartnerText(src, names, limit) {
@@ -18617,46 +18656,27 @@ function g2048StripActions(text) {
 
 // ── Render board + UI ──────────────────────────────────────────
 function g2048Render() {
-  var board = document.getElementById('g2048-board');
-  if (!board) return;
-  board.innerHTML = '';
-  LG2048.board.forEach(function(row) {
-    row.forEach(function(v) {
-      var cell = document.createElement('div');
-      cell.className = 'g2048-cell';
-      if (v > 0) {
-        var tile = document.createElement('div');
-        tile.className = 'g2048-tile';
-        tile.setAttribute('data-v', v > 2048 ? 'high' : v);
-        tile.style.fontSize = v >= 1024 ? '14px' : v >= 128 ? '17px' : v >= 8 ? '20px' : '22px';
-        tile.textContent = v;
-        cell.appendChild(tile);
-      }
-      board.appendChild(cell);
-    });
+  const board=document.getElementById('g2048-board'); if(!board)return;
+  if(board.children.length!==16){
+    board.replaceChildren();
+    for(let i=0;i<16;i++){const cell=document.createElement('div');cell.className='g2048-cell';board.append(cell);}
+  }
+  LG2048.board.flat().forEach((value,i)=>{
+    const cell=board.children[i];
+    if(cell.dataset.value===String(value))return;
+    cell.dataset.value=String(value); cell.replaceChildren();
+    if(value>0){
+      const tile=document.createElement('div'); tile.className='g2048-tile';
+      tile.dataset.v=value>2048?'high':String(value); tile.textContent=value;
+      tile.style.fontSize=value>=1024?'14px':value>=128?'17px':value>=8?'20px':'22px'; cell.append(tile);
+    }
   });
-  $('#g2048-score').text(LG2048.score);
-  $('#g2048-best').text(LG2048.best);
-  var turn = LG2048.processing
-    ? LG2048.charName + '\u601d\u8003\u4e2d\u2026'
-    : LG2048.turn === 'user' ? '\u4f60\u7684\u56de\u5408' : LG2048.charName + '\u7684\u56de\u5408\u2026';
-  $('#g2048-turn').text(turn);
+  $('#g2048-score').text(LG2048.score);$('#g2048-best').text(LG2048.best);
+  $('#g2048-turn').text(LG2048.processing?LG2048.charName+'思考中…':LG2048.turn==='user'?'你的回合':LG2048.charName+'的回合…');
 }
 
 // ── Chat message ──────────────────────────────────────────────
-function g2048Msg(type, text) {
-  var cls = type === 'user' ? 'game-msg-user' : type === 'char' ? 'game-msg-char' : 'game-msg-sys';
-  var pre = type === 'char' ? LG2048.charName + ': ' : '';
-  var editBtn = type === 'char' ? '<button class="game-edit-btn" onclick="event.stopPropagation();gameInlineEdit(this)" title="编辑"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/><circle cx="5.5" cy="5.5" r="0" fill="none"/></svg></button>' : '';
-  $('#g2048-chat').append('<div class="game-msg ' + cls + '"><span class="game-msg-text">' + escHtml(pre + String(text ?? '')) + '</span>' + editBtn + '</div>');
-  var el = document.getElementById('g2048-chat');
-  if (el) el.scrollTop = el.scrollHeight;
-  // 记录到游戏内聊天历史(仅 user/char,跳过 sys)
-  if (type === 'user' || type === 'char') {
-    if (!LG2048.chatLog) LG2048.chatLog = [];
-    recordPhoneGameMessage('g2048', type, text);
-  }
-}
+function g2048Msg(type, text) { rpAppendGameMessage('g2048',type,text); }
 
 // ══════════════════════════════════════════════════════════════
 // ⛏️  黄金矿工 (Gold Miner) — 双人轮流，竞技 / 合作爬塔
@@ -18751,7 +18771,7 @@ function gmSpawnItems() {
       ok = placed.every(p => Math.hypot(p.x - x, p.y - y) > p.r + def.r + 5);
       tries++;
     }
-    if (ok) placed.push({ ...def, x, y, grabbed: false });
+    if (ok) placed.push({ ...def, id: placed.length, x, y, grabbed: false });
   }
   GM.items = placed;
   _gmFieldDirty = true;
@@ -19051,6 +19071,9 @@ function gmDraw() {
 }
 
 function gmLoop(ts) {
+  const gameRuntime = rpGameRuntime('gm');
+  const requestAnimationFrame = fn => gameRuntime.frame(fn);
+
   GM.rafId = null;
   if (!rpGameVisible('ggold')) return;
   // 修复：用闭包在函数入口捕获帧序号，防止旧帧当前号等于最新号的问题
@@ -19116,20 +19139,19 @@ function gmLoop(ts) {
   GM.rafId = requestAnimationFrame(gmLoop);
 }
 
-function gmStartTimer() {
-  GM.timeLeft = 30;
-  gmUpdateTimerUI();
-  if (GM.timerInterval) clearInterval(GM.timerInterval);
-  GM.timerInterval = setInterval(() => {
-    if (!rpGameVisible('ggold')) return;
-    GM.timeLeft--;
-    gmUpdateTimerUI();
-    if (GM.timeLeft <= 0) {
-      clearInterval(GM.timerInterval);
-      GM.timerInterval = null;
-      gmEndTurn();
-    }
-  }, 1000);
+function gmStartTimer(reset = true) {
+  const runtime=rpGameRuntime('gm');
+  if(reset)GM.timeLeft=30;
+  gmUpdateTimerUI(); runtime.clearTimer(GM.timerInterval); GM.timerInterval=null;
+  if(!GM.active || !rpGameVisible('ggold'))return;
+  let last=performance.now();
+  GM.timerInterval=runtime.timer(()=>{
+    const now=performance.now();
+    if(!rpGameVisible('ggold')){last=now;return;}
+    GM.timeLeft=Math.max(0,GM.timeLeft-(now-last)/1000); last=now;
+    gmUpdateTimerUI(); saveState();
+    if(GM.timeLeft<=0){runtime.clearTimer(GM.timerInterval);GM.timerInterval=null;void gmEndTurn();}
+  },250,true);
 }
 
 function gmUpdateTimerUI() {
@@ -19164,265 +19186,72 @@ function gmUpdateRoundUI() {
   }
 }
 
-function gmAddMsg(type, text) {
-  const chat = document.getElementById('ggold-chat');
-  if (!chat) { recordPhoneGameMessage('gm', type, text); return; }
-  const div = document.createElement('div');
-  div.className = 'game-msg-' + type;
-  div.style.cssText = 'font-size:11.5px;padding:2px 0;line-height:1.45;word-break:break-word';
-  if (type === 'user') {
-    div.style.color = '#f0e0ff'; div.style.textAlign = 'right';
-    div.textContent = '你：' + text;
-  } else if (type === 'char') {
-    div.style.color = '#c8d8ff';
-    div.textContent = GM.charName + '：' + text;
-  } else {
-    div.style.color = 'rgba(255,255,255,.5)'; div.style.fontSize = '10.5px';
-    div.textContent = text;
-  }
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-  recordPhoneGameMessage('gm', type, text);
-}
+function gmAddMsg(type, text) { rpAppendGameMessage('gm',type,text); }
 
 async function gmTriggerChat(event) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
+  const runtime = rpGameRuntime('gm'); const token = runtime.task();
+  if (GM._commentBusy) return;
+  const serial = GM._turnSerial || 0;
+  const owner = {}; GM._commentBusy = owner;
+  const ctx = getContext() || {}; const name = GM.charName;
+  const user = ctx.name1 || '你';
+  const events = {
+    turn_end_user: `${user}结束挖矿，轮到${name}`,
+    turn_end_char: `${name}结束挖矿，轮到${user}`,
+    item_diamond_user: `${user}获得钻石300分`, item_diamond_char: `${name}获得钻石300分`,
+    item_bomb_user: `${user}钩到炸弹扣50分`, item_bomb_char: `${name}钩到炸弹扣50分`,
+    game_end: '游戏结束',
+  };
+  const history = (GM.chatLog || []).filter(m => m.type === 'char').slice(-4).map(m => String(m.text).slice(0,80));
+  const prompt = `黄金矿工，${GM.mode === 'vs' ? '竞技' : '合作'}；第${GM.round}轮。${user}:${GM.userScore}分；${name}:${GM.charScore}分。事件:${events[event] || event}。\n最近发言:${history.join(' / ')}\n以${name}身份用中文评论一句，≤25字，贴合人设与关系，不复述最近发言；纯台词，无动作/分析。`;
   try {
-    const rawCtx = typeof getContext === 'function' ? getContext() : {};
-    const charName = GM.charName;
-    const userName = (rawCtx && rawCtx.name1) || '你';
-
-    // 复用 g2048GetPersona()：完整人设 + 世界书 + 近期主楼对话，和 2048/飞行棋 对齐
-    const persona = g2048GetPersona();
-
-    // ── 收集最近5条主楼剧情对话（recentPlot 单独保留，用于场景设定注入）
-    let recentPlot = '';
-    try {
-      const plotLines = [];
-      const recentMsgs = (rawCtx.chat || []).slice(-10);
-      recentMsgs.forEach(function(m) {
-        const mes = (m.mes || '').trim();
-        if (!mes) return;
-        if (mes.startsWith(':::') || /<(PHONE|SMS|NEWSPAPER|STATUS)[^>]*>/i.test(mes)) return;
-        if (/^\[.*\]$/.test(mes)) return;
-        const speaker = m.is_user ? userName : charName;
-        const quoteMatch = mes.match(/[「"](.*?)[」"]/);
-        const cleaned2 = quoteMatch ? quoteMatch[1] : mes.replace(/\*[^*]+\*/g, '').replace(/\s+/g, ' ').trim();
-        if (cleaned2.length < 2) return;
-        plotLines.push(speaker + ': ' + cleaned2.slice(0, 70));
-      });
-      const last5 = plotLines.slice(-5);
-      if (last5.length > 0) recentPlot = '\n[最近剧情对话(5层),仅供语境参考,勿直接复述]:\n' + last5.join('\n');
-    } catch(e) {
-    if (!rpTask.valid()) return;
-}
-
-    // ── 去重：收集近期游戏内 char 发言，提取关键词片段 ───────────
-    if (!GM.chatLog) GM.chatLog = [];
-    const recentCharReplies = GM.chatLog.filter(function(m){ return m.type === 'char'; }).slice(-12).map(function(m){ return (m.text || '').trim(); });
-    let avoidNote = '';
-    if (recentCharReplies.length > 0) {
-      const forbidSegsGM = new Set();
-      recentCharReplies.forEach(function(t) {
-        for (var _i = 0; _i < t.length - 1; _i++) {
-          for (var _j = _i + 2; _j <= Math.min(_i + 6, t.length); _j++) {
-            forbidSegsGM.add(t.slice(_i, _j));
-          }
-        }
-      });
-      avoidNote = '\n[你最近说过，严格禁止任何形式的重复或近似，包括换词说同一意思]: ' + recentCharReplies.join(' / ') + '\n[绝对禁用的词语片段(含2字以上，一个都不许出现)]: ' + Array.from(forbidSegsGM).slice(0, 60).join('、') + '\n[额外要求：不得使用与上面句子语义相近的表达，必须切换完全不同的话题或感受]';
-    }
-
-    // ── 话题轮换 ────────────────────────────────────────────────
-    if (!GM.commentCount) GM.commentCount = 0;
-    GM.commentCount++;
-    const commentIdx = GM.commentCount;
-    const modeStr = GM.mode === 'vs' ? '竞技模式（比拼总分）' : '合作模式（共同达标）';
-    const scoreStr = `${userName}${GM.userScore}分，${charName}${GM.charScore}分`;
-    const roundStr = `第${GM.round}轮/共3轮`;
-
-    // 事件描述（更自然的剧情化表述）
-    let eventDesc = '';
-    if (event === 'turn_end_user') eventDesc = userName + '刚结束本轮挖矿，现在轮到' + charName;
-    else if (event === 'turn_end_char') eventDesc = charName + '刚结束本轮挖矿，现在轮到' + userName;
-    else if (event === 'item_diamond_user') eventDesc = userName + '刚挖到了💎钻石，获得300分！';
-    else if (event === 'item_diamond_char') eventDesc = charName + '刚挖到了💎钻石，获得300分！';
-    else if (event === 'item_bomb_user') eventDesc = userName + '不幸钩到了💣炸弹，扣50分';
-    else if (event === 'item_bomb_char') eventDesc = charName + '不幸钩到了💣炸弹，扣50分';
-    else if (event === 'game_end') eventDesc = '游戏结束，' + scoreStr;
-
-    const topicHints = [
-      '自然评论一下刚才发生的事，语气贴合角色性格',
-      '说一句与你们关系或当前剧情相关的话，自然带入游戏背景',
-      '聊聊目前分数走势，或者感慨一句游戏局势',
-      '随口一句符合你性格的感慨，话题可以延伸到剧情',
-      '鼓励一下' + userName + '，或者表达自己对这局游戏的心情',
-      '说一句符合你性格的话，游戏只是背景，重点在你们之间的互动',
-    ];
-    const topicHint = topicHints[(commentIdx - 1) % topicHints.length];
-
-    const sysMsg = persona
-      ? '【严格扮演以下角色本人，不得OOC】\n' + persona
-      : '你是一个角色扮演助手。';
-    // persona 同时嵌入 prompt 正文，确保不支持 system role 的接入方式也能读到人设
-    const personaInline = persona ? '【角色人设】\n' + persona + '\n' : '';
-    const prompt = personaInline + recentPlot + avoidNote + '\n[场景设定]你正在剧情场景中陪' + userName + '一起玩黄金矿工游戏（' + modeStr + '）。当前：' + roundStr + '，' + scoreStr + '。\n刚刚发生：' + eventDesc + '。\n请以' + charName + '的身份，用中文口语说一句话(不超过25字)，方向参考：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何禁用关键词片段。';
-
-    const reply = await rpGuardAwait(lgCallAPI(prompt, 150, sysMsg), rpTask);
-    if (reply && reply.trim()) {
-      const cleaned = cleanGameReply(reply, charName);
-      if (!cleaned || cleaned.length < 2) return;
-      // 去重检测：完全相同 + 前4字 + 关键词重叠(>=3字片段)
-      const isEcho = recentCharReplies.some(function(prev){
-        if (!prev) return false;
-        if (prev === cleaned.trim()) return true;
-        if (prev.length >= 4 && cleaned.includes(prev.slice(0, 4))) return true;
-        for (var _i = 0; _i < cleaned.length - 2; _i++) {
-          for (var _j = _i + 3; _j <= Math.min(_i + 6, cleaned.length); _j++) {
-            if (prev.includes(cleaned.slice(_i, _j))) return true;
-          }
-        }
-        return false;
-      });
-      if (!isEcho) {
-        gmAddMsg('char', g2048StripActions(cleaned));
-      } else {
-        // 自我重复时重试（人设同样内联进 prompt）
-        const retryPrompt = personaInline + recentPlot + '\n[场景设定]你在陪' + userName + '玩黄金矿工游戏。' + eventDesc + '。\n你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请说一句完全不同的话，可以聊聊游戏局势、你们的关系、或者随口一句符合你性格的感慨。20字以内，纯对话台词。';
-        const reply2 = await rpGuardAwait(lgCallAPI(retryPrompt, 150, sysMsg), rpTask);
-        if (reply2 && reply2.trim()) {
-          const cleaned2 = cleanGameReply(reply2, charName);
-          if (cleaned2 && cleaned2.length > 1) {
-            gmAddMsg('char', g2048StripActions(cleaned2));
-          }
-        }
-      }
-    }
-  } catch(e) {
-    if (!rpTask.valid()) return;
- console.warn('[ggold] chat error:', rpErrorInfo(e)); }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+    const reply = await rpGuardAwait(rpGameCallAPI('gm',prompt,256,g2048GetPersona()),token);
+    if (serial !== (GM._turnSerial || 0)) return;
+    const clean = cleanGameReply(reply,name);
+    if (clean.length > 1 && !history.includes(clean)) gmAddMsg('char',clean);
+  } catch(error) { if(token.valid()) console.warn('[Phone] game commentary failed',rpErrorInfo(error)); }
+  finally { if(token.valid() && GM._commentBusy === owner) GM._commentBusy=null; }
 }
 
 async function gmEndTurn() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-  if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
-  if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
-  GM.hookState = 'idle';
-  const btn = document.getElementById('ggold-launch-btn');
-  if (btn) btn.disabled = true;
-
-  if (GM.turn === 'user') {
-    GM.turn = 'char';
-    gmUpdateRoundUI();
-    await rpGuardAwait(gmTriggerChat('turn_end_user'), rpTask);
-    // 合作模式：换边前也检查是否达标（用户回合结束后）
-    if (GM.mode === 'coop') {
-      const target = GM.towerTargets[GM.towerLevel] || 1000;
-      if (GM.userScore + GM.charScore >= target) {
-        await rpGuardAwait(gmEndGame(), rpTask);
-        return;
-      }
-    }
-    gmStartCharTurn();
-  } else {
-    GM.turn = 'user';
-    GM.round++;
-    gmUpdateRoundUI();
-    await rpGuardAwait(gmTriggerChat('turn_end_char'), rpTask);
-    // 合作模式：每轮双方都完成后，检查是否达目标分
-    if (GM.mode === 'coop') {
-      const target = GM.towerTargets[GM.towerLevel] || 1000;
-      if (GM.userScore + GM.charScore >= target) {
-        await rpGuardAwait(gmEndGame(), rpTask);
-        return;
-      }
-    }
-    if (GM.round > 3) {
-      await rpGuardAwait(gmEndGame(), rpTask);
-    } else {
-      gmSpawnItems();
-      gmStartUserTurn();
-    }
+  if (!GM.active || GM._endingTurn) return;
+  GM._endingTurn=true;
+  const runtime=rpGameRuntime('gm');
+  runtime.clearTimer(GM.timerInterval); GM.timerInterval=null;
+  runtime.clearTimer(GM._shootTimer); GM._shootTimer=null;
+  runtime.cancelFrame(GM.rafId); GM.rafId=null;
+  GM.hookState='idle'; GM.hookedItem=null;
+  GM._turnSerial=(GM._turnSerial || 0)+1;
+  const event=GM.turn==='user'?'turn_end_user':'turn_end_char';
+  const target=GM.towerTargets[GM.towerLevel] || 1000;
+  if ((GM.mode==='coop' && GM.userScore+GM.charScore>=target) || (GM.turn==='char' && GM.round>=3)) {
+    GM._endingTurn=false; void gmEndGame(); return;
   }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  if (GM.turn==='user') { GM.turn='char'; gmUpdateRoundUI(); gmStartCharTurn(); }
+  else { GM.turn='user'; GM.round++; gmUpdateRoundUI(); gmSpawnItems(); gmStartUserTurn(); }
+  GM._endingTurn=false;
+  saveState(); void gmTriggerChat(event);
 }
 
 function gmStartCharTurn() {
-  // 修复：先取消可能存在的旧动画循环，防止手机端回合切换时钩子框叠两层
-  if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
-  if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
-  // 递增帧序号，让旧的 gmLoop 帧自动作废
-  GM._expectedSerial++;
-  GM._loopSerial = GM._expectedSerial; // 同步：让第一帧不被丢弃
-  gmAddMsg('sys', `--- ${GM.charName}的回合 ---`);
-  gmSpawnItems();
+  const runtime=rpGameRuntime('gm');
+  runtime.cancelFrame(GM.rafId); runtime.clearTimer(GM.timerInterval); runtime.clearTimer(GM._shootTimer);
+  GM.rafId=null; GM.timerInterval=null; GM._shootTimer=null;
+  GM._expectedSerial++; GM._loopSerial=GM._expectedSerial;
+  gmAddMsg('sys',`--- ${GM.charName}的回合 ---`);
+  gmSpawnItems(); GM.hookState='swing'; GM.hookAngle=0; GM.hookLen=25;
+  GM.lastTime=0; GM.lastFrameTime=0; GM._charLastShot=0;
   gmStartTimer();
-  GM.hookState = 'swing';
-  GM.hookAngle = 0;
-  GM.hookLen = 25;
-  GM.lastTime = 0;
-  GM.lastFrameTime = 0;
-  GM.rafId = requestAnimationFrame(gmLoop);
-
-  function gmCharShoot() {
-    if (!GM.active || GM.turn !== 'char') return;
-    // 时间耗尽则停止（计时器会调用 gmEndTurn）
-    if (GM.timeLeft <= 0) return;
-
-    // 钩子还没回来，稍等后重试
-    if (GM.hookState !== 'swing') {
-      setTimeout(gmCharShoot, 200);
-      return;
-    }
-
-    // 上次发射后至少等 1500ms 才能再发
-    const sinceLastShot = Date.now() - (GM._charLastShot || 0);
-    if (sinceLastShot < 1500) {
-      setTimeout(gmCharShoot, 1500 - sinceLastShot + 50);
-      return;
-    }
-
-    // 智能选目标：按性价比（分数/重量）排序，优先高分低重，避免炸弹和石头
-    const candidates = GM.items.filter(it => !it.grabbed && it.score > 0);
-    candidates.sort((a, b) => (b.score / b.weight) - (a.score / a.weight));
-    const best = candidates[0];
-
-    // 场上只剩石头/炸弹（无正分目标），char 放弃，等倒计时结束
-    if (!best) return;
-
-    // ── 公平等待：char 必须像 user 一样等钟摆真正摆到目标角度附近才能发射 ──
-    // 计算目标角度
-    const targetAngle = Math.atan2(best.x - GM_ANCHOR_X, best.y - GM_ANCHOR_Y);
-    // 容差：±0.18 rad（约10度），模拟人类反应
-    const tolerance = 0.18;
-
-    // 判断当前钟摆是否已经进入目标角度附近
-    if (Math.abs(GM.hookAngle - targetAngle) > tolerance) {
-      // 还没摆到，50ms 后再检查
-      setTimeout(gmCharShoot, 50);
-      return;
-    }
-
-    // 钟摆已摆到目标区域，发射！（角度直接使用当前真实钟摆角度，不强制设值）
-    GM.hookState = 'go';
-    GM._charLastShot = Date.now();
-
-    // 钩子回来后继续轮询
-    setTimeout(gmCharShoot, 200);
-  }
-
-  // 第一炮延迟 0.8-1.2s 开始，之后一直打到时间结束
-  setTimeout(gmCharShoot, 800 + Math.random() * 400);
+  if(rpGameVisible('ggold'))GM.rafId=runtime.frame(gmLoop);
+  gmScheduleCharShots(); saveState();
 }
 
 function gmStartUserTurn() {
+  const gameRuntime = rpGameRuntime('gm');
+  const clearInterval = id => gameRuntime.clearTimer(id);
+  const requestAnimationFrame = fn => gameRuntime.frame(fn);
+  const cancelAnimationFrame = id => gameRuntime.cancelFrame(id);
+
   // 修复：先取消可能存在的旧动画循环，防止手机端回合切换时钩子框叠两层
   if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
   if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
@@ -19442,13 +19271,19 @@ function gmStartUserTurn() {
 }
 
 async function gmEndGame() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  const gameRuntime = rpGameRuntime('gm');
+  const clearInterval = id => gameRuntime.clearTimer(id);
+  const cancelAnimationFrame = id => gameRuntime.cancelFrame(id);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('gm').task();
   /* rp-cancel-boundary */ try {
 
-  GM.active = false;
+  if (!GM.active) return; // Settling twice must not award the same tower floor twice.
+  GM.active = false; GM._paused = false;
   if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
   if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
-  await rpGuardAwait(gmTriggerChat('game_end'), rpTask);
+  gameRuntime.clearTimer(GM._shootTimer); GM._shootTimer = null;
+  void gmTriggerChat('game_end');
 
   const total = GM.userScore + GM.charScore;
   const qs = id => document.getElementById(id);
@@ -19477,7 +19312,7 @@ async function gmEndGame() {
     const target = GM.towerTargets[GM.towerLevel] || 1000;
     if (total >= target) {
       GM.towerLevel++;
-      localStorage.setItem(GM._towerKey || 'ggold_tower_default', GM.towerLevel);
+      rpSaveTower();
       const isTop = GM.towerLevel >= GM.towerTargets.length;
       if (isTop) {
         qs('ggold-over-emoji').textContent = '👑';
@@ -19512,11 +19347,16 @@ async function gmEndGame() {
   }
   if (over) over.style.display = 'flex';
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
 let _ggoldBound = false;
 function ggoldOpen() {
+  rpBeginGame('gm');
+  const gameRuntime = rpGameRuntime('gm');
+  const clearInterval = id => gameRuntime.clearTimer(id);
+  const cancelAnimationFrame = id => gameRuntime.cancelFrame(id);
+
   if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = true; }
   const ctx = typeof getContext === 'function' ? getContext() : {};
   GM.charName = gameGetCurrentPartner(ctx).name || '对方';
@@ -19525,11 +19365,7 @@ function ggoldOpen() {
   const clbl = document.getElementById('ggold-c-lbl');
   if (clbl) clbl.textContent = GM.charName;
   GM.towerTargets = gmBuildTower();
-  // 用 charName 作为 key，让不同角色的爬塔进度互相独立
-  const _towerKey = 'ggold_tower_' + (GM.charName || 'default');
-  GM._towerKey = _towerKey;
-  GM.towerLevel = parseInt(localStorage.getItem(_towerKey) || '0');
-  if (GM.towerLevel >= GM.towerTargets.length) GM.towerLevel = GM.towerTargets.length - 1;
+  rpLoadTower();
   gmReadColors();
   _gmFieldDirty = true;
   if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
@@ -19540,9 +19376,19 @@ function ggoldOpen() {
   const overEl = document.getElementById('ggold-over');
   if (modeEl) modeEl.style.display = 'flex';
   if (overEl) overEl.style.display = 'none';
+  saveState();
 }
 
 function ggoldStartGame(mode) {
+  rpBeginGame('gm');
+
+  if (!['vs','coop'].includes(mode)) return;
+  if (mode === 'coop' && GM.towerLevel >= gmBuildTower().length) {
+    gmAddMsg('sys','👑 已完成爬塔；若要重玩，请使用“重置爬塔”。');
+    $('#ggold-reset-tower-btn').show(); return;
+  }
+  GM._commentBusy = null; GM._endingTurn = false; GM._turnSerial = 0;
+  GM.towerTargets = gmBuildTower();
   GM.mode = mode;
   GM.turn = 'user';
   GM.round = 1;
@@ -19571,6 +19417,18 @@ function ggoldStartGame(mode) {
 }
 
 function ggoldBindEvents() {
+  $(document).on('click.mochiPhone','#ggold-chat-hint,#ggold-chat',function(e) {
+    if($(e.target).closest('button,textarea').length)return;
+    const body=document.getElementById('ggold-chat-fs-body');
+    body.replaceChildren(...Array.from(document.getElementById('ggold-chat').children,node=>node.cloneNode(true)));
+    $('#ggold-chat-fs').css('display','flex');body.scrollTop=body.scrollHeight;rpPauseGameAnimations();
+  });
+  $(document).on('click.mochiPhone','#ggold-chat-fs-close',function(e) { e.stopPropagation();$('#ggold-chat-fs').hide();rpResumeGameAnimations(); });
+  const gameRuntime = rpGameRuntime('gm');
+  const clearInterval = id => gameRuntime.clearTimer(id);
+  const cancelAnimationFrame = id => gameRuntime.cancelFrame(id);
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('gm', prompt, max, system, options);
+
   $(document).on("click.mochiPhone", '#ggold-mode-vs', function() { ggoldStartGame('vs'); });
   $(document).on("click.mochiPhone", '#ggold-mode-co', function() { ggoldStartGame('coop'); });
   $(document).on("click.mochiPhone", '#ggold-launch-btn', function() {
@@ -19582,17 +19440,13 @@ function ggoldBindEvents() {
     if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
     if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
     GM.active = false; GM.hookState = 'idle';
-    // 合作模式下，新局重置爬塔进度回第1层（目标分数 1000）
-    if (GM.mode === 'coop') {
-      GM.towerLevel = 0;
-      const _tk = GM._towerKey || 'ggold_tower_default';
-      localStorage.setItem(_tk, '0');
-    }
+    // New round is not a reset of the companion's accumulated tower record.
     ggoldOpen();
   });
   $(document).on("click.mochiPhone", '#ggold-reset-tower-btn', function() {
+    if (!confirm('重置当前搭子的全部爬塔进度？游戏聊天记录会保留。')) return;
     GM.towerLevel = 0;
-    localStorage.removeItem(GM._towerKey || 'ggold_tower_default');
+    rpSaveTower();
     ggoldOpen();
   });
   $(document).on("click.mochiPhone", '#ggold-replay-btn', function() {
@@ -19606,79 +19460,12 @@ function ggoldBindEvents() {
     }
   });
   function ggoldSendChat() {
-    const input = document.getElementById('ggold-input');
-    const text = (input && input.value.trim()) || '';
-    if (!text) return;
-    input.value = '';
-    gmAddMsg('user', text);
-    (async () => {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-      const rawCtx = typeof getContext === 'function' ? getContext() : {};
-      const charName = GM.charName;
-      const userName = (rawCtx && rawCtx.name1) || '你';
-
-      // 复用 g2048GetPersona()：完整人设 + 世界书 + 近期主楼对话，和 2048/飞行棋 对齐
-      const persona = g2048GetPersona();
-
-      // 游戏内完整对话上下文（user+char 交替，GM.chatLog 用 type 字段）
-      const recentLog = (GM.chatLog || []).slice(-10);
-      const historyLines = recentLog
-        .filter(m => m.type === 'user' || m.type === 'char')
-        .slice(0, -1)
-        .map(m => (m.type === 'user' ? userName : charName) + ': ' + (m.text || '').slice(0, 60));
-      const historyNote = historyLines.length > 0
-        ? '\n[游戏内近期对话记录，必须基于此上下文回复]:\n' + historyLines.join('\n') + '\n'
-        : '';
-
-      // 去重：char 最近说过的话
-      const recentCharReplies = (GM.chatLog || []).filter(m => m.type === 'char').slice(-4).map(m => (m.text || '').trim());
-      const avoidNote = recentCharReplies.length > 0
-        ? '\n[你最近说过，不得重复或近似]: ' + recentCharReplies.join(' / ')
-        : '';
-
-      const p = (persona ? persona + '\n' : '')
-        + historyNote + avoidNote
-        + '\n[黄金矿工游戏聊天场景]' + userName + '对你说:「' + text + '」\n请以' + charName + '的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
-
-      const reply = await rpGuardAwait(lgCallAPI(p, 150), rpTask);
-      const cleaned = reply && reply.trim() ? cleanGameReply(reply, charName) : '';
-
-      // 检测复读1：和用户输入相同
-      const userTextNorm = text.trim().toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
-      const cleanedNorm  = (cleaned || '').toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
-      const isEchoUser = cleaned && (cleanedNorm === userTextNorm || cleaned.trim() === text.trim());
-
-      // 检测复读2：和 chatLog 最近 char 回复相同
-      const isEchoSelf = cleaned && recentCharReplies.some(r => r === cleaned.trim());
-
-      if (cleaned && cleaned.length > 1 && !isEchoUser && !isEchoSelf) {
-        gmAddMsg('char', cleaned);
-      } else if (isEchoUser || isEchoSelf) {
-        const echoReason = isEchoSelf ? '你刚才已经说过「' + recentCharReplies[recentCharReplies.length-1] + '」了，请给出完全不同的回应' : '请换一个角度回应用户';
-        const retryP = (persona ? persona + '\n' : '')
-          + historyNote
-          + '[黄金矿工游戏聊天场景]' + echoReason + '。' + userName + '说:「' + text + '」\n请以' + charName + '的身份给出一句新鲜的回应，15字以内，纯对话台词。';
-        const r2 = await rpGuardAwait(lgCallAPI(retryP, 150), rpTask);
-        const c2 = r2 && r2.trim() ? cleanGameReply(r2, charName) : '';
-        if (c2 && c2.length > 1) {
-          gmAddMsg('char', c2);
-        } else {
-          const fallbacks2 = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
-          gmAddMsg('char', fallbacks2[Math.floor(Math.random() * fallbacks2.length)]);
-        }
-      } else {
-        // API 返回空，兜底
-        const fallbacks = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
-        gmAddMsg('char', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
-      }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
-})();
+    const input=document.getElementById('ggold-input');const text=input?.value.trim();
+    if(!text || GM._chatBusy)return;
+    input.value=''; void rpSendGameChat('gm',text);
   }
   $(document).on("click.mochiPhone", '#ggold-send', ggoldSendChat);
-  $(document).on("keydown.mochiPhone", '#ggold-input', function(e) { if (e.key === 'Enter') ggoldSendChat(); });
+  $(document).on("keydown.mochiPhone", '#ggold-input', function(e) { if (e.key === 'Enter' && !e.isComposing && !e.originalEvent?.isComposing) { e.preventDefault(); ggoldSendChat(); } });
 }
 
 // ================================================================
@@ -19701,6 +19488,8 @@ const GWORD = {
 let _gwordBound = false;
 
 function gwordOpen() {
+  rpBeginGame('gword');
+
   if (!_gwordBound) { gwordBindEvents(); _gwordBound = true; }
   const ctx = typeof getContext === 'function' ? getContext() : {};
   GWORD.charName = gameGetCurrentPartner(ctx).name || '对方';
@@ -19723,10 +19512,13 @@ function gwordOpen() {
   $('#gword-status').text('');
   $('#gword-category-badge').text('分类：--');
   $('#gword-round-info').text('第0轮');
+  saveState();
 }
 
 async function gwordStartGame(mode) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  rpBeginGame('gword');
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('gword').task();
   /* rp-cancel-boundary */ try {
 
   GWORD.mode = mode;
@@ -19746,7 +19538,7 @@ async function gwordStartGame(mode) {
   gwordMsg('sys', '✨ 正在出题中...');
   // fixed word bank
   const GWORD_BANK = {
-    '食品': ['香蕉','苹果','西瓜','草莓','葡萄','芒果','榴莲','火龙果','樱桃','柠檬','橙子','菠萝','椰子','荔枝','桃子','梨','哈密瓜','蓝莓','猕猴桃','石榴','红薯','土豆','番茄','黄瓜','茄子','玉米','豆腐','饺子','包子','馒头','面条','米饭','炒饭','披萨','汉堡','薯条','三明治','寿司','拉面','火锅','烤鸭','月饼','粽子','汤圆','冰淇淋','蛋糕','巧克力','饼干','面包','泡面','麻辣烫','煎饼','春卷','臭豆腐','糖葡芦'],
+    '食品': ['香蕉','苹果','西瓜','草莓','葡萄','芒果','榴莲','火龙果','樱桃','柠檬','橙子','菠萝','椰子','荔枝','桃子','梨','哈密瓜','蓝莓','猕猴桃','石榴','红薯','土豆','番茄','黄瓜','茄子','玉米','豆腐','饺子','包子','馒头','面条','米饭','炒饭','披萨','汉堡','薯条','三明治','寿司','拉面','火锅','烤鸭','月饼','粽子','汤圆','冰淇淋','蛋糕','巧克力','饼干','面包','泡面','麻辣烫','煎饼','春卷','臭豆腐','糖葫芦'],
     '电影': ['让子弹飞','大话西游','霸王别姬','功夫','疯狂动物城','哪吒闹海','战狼','流浪地球','泰坦尼克号','阿凡达','蜘蛛侠','钢铁侠','复仇者联盟','盗梦空间','星际穿越','千与千寻','龙猫','你的名字','冰雪奇缘','狮子王','哈利波特','指环王','变形金刚','速度与激情','侏罗纪公园','海底总动员','飞屋环游记','寻梦环游记','疯狂原始人','超能陆战队','头脑特工队','机器人总动员','美人鱼','长津湖','红海行动','唐人街探案'],
     '职业': ['医生','护士','老师','律师','警察','消防员','厨师','司机','飞行员','宇航员','记者','摄影师','画家','歌手','演员','导演','程序员','设计师','建筑师','会计','翻译','快递员','外卖员','理发师','兽医','农民','渔夫','裁缝','主播','模特','调酒师','考古学家','潜水员'],
     '饮料': ['可乐','雪碧','奶茶','咖啡','豆浆','牛奶','果汁','矿泉水','啤酒','红酒','白酒','绿茶','红茶','乌龙茶','酸梅汤','椰汁','柠檬水','气泡水','冰红茶','王老吉','美年达','芬达','养乐多'],
@@ -19782,16 +19574,18 @@ async function gwordStartGame(mode) {
     $('#gword-status').text('答案：' + answer);
   }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
-async function gwordCharHint(userLastGuess) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+async function gwordCharHint(userLastGuess, retry = false) {
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('gword', prompt, max, system, options);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('gword').task();
   /* rp-cancel-boundary */ try {
 
   if (!GWORD.active || GWORD.processing) return;
   GWORD.processing = true;
-  GWORD.round++;
+  if (!retry) GWORD.round++;
   $('#gword-round-info').text('第' + GWORD.round + '轮');
 
   const persona = typeof g2048GetPersona === 'function' ? g2048GetPersona() : '';
@@ -19832,25 +19626,31 @@ async function gwordCharHint(userLastGuess) {
   }
   const raw = await rpGuardAwait(lgCallAPI(prompt, 150), rpTask);
   let hint = raw ? cleanGameReply(raw, charName) : '';
-  if (!hint || hint.length < 2) hint = '这个东西很常见哦~';
   // 泄露答案则重试
-  if (answerChars.some(function(c) { return hint.includes(c); })) {
+  if (hint && answerChars.some(function(c) { return hint.includes(c); })) {
     const retryPrompt = prompt + '\n上次的回复「' + hint + '」包含了答案的字，请重新生成。';
     const retryRaw = await rpGuardAwait(lgCallAPI(retryPrompt, 150), rpTask);
     const retryHint = retryRaw ? cleanGameReply(retryRaw, charName) : '';
-    if (retryHint && retryHint.length >= 2 && !answerChars.some(function(c) { return retryHint.includes(c); })) {
-      hint = retryHint;
-    }
+    hint = retryHint;
   }
+  if (!hint || hint.length < 2 || answerChars.some(c => hint.includes(c))) {
+    GWORD.processing = false;
+    gwordMsg('sys', '⚠️ 未取得有效提示，可点击重试；本轮不会重复计数。');
+    rpWordRetryButton();
+    return;
+  }
+  GWORD.retryHint = false; $('#gword-retry-hint').hide(); $('#gword-status').text('');
   GWORD.hints.push(hint);
   gwordMsg('char', hint);
   GWORD.processing = false;
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
 async function gwordUserGuess(text) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('gword', prompt, max, system, options);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('gword').task();
   /* rp-cancel-boundary */ try {
 
   if (!GWORD.active || GWORD.processing || GWORD.mode !== 'char-describe') return;
@@ -19862,10 +19662,10 @@ async function gwordUserGuess(text) {
   // check answer - normalize: trim, lowercase, strip punctuation
   const normText = text.toLowerCase().replace(/[\s\u3000!！?？。，,\.~～…·\-—]+/g, '');
   const normAnswer = GWORD.answer.toLowerCase().replace(/[\s\u3000!！?？。，,\.~～…·\-—]+/g, '');
-  if (normText.includes(normAnswer) || normText === normAnswer) {
+  if (rpGameGuessMatches(text, GWORD.answer)) {
     gwordMsg('sys', '🎉 恭喜，答案就是「' + GWORD.answer + '」！你在第' + GWORD.round + '轮猜对了！');
     GWORD.active = false;
-    // AI celebration first, then show overlay
+    gwordEndRound(true); // Local result must not wait for an API response.
     const persona = typeof g2048GetPersona === 'function' ? g2048GetPersona() : '';
     const ctx = typeof getContext === 'function' ? getContext() : {};
     const userName = (ctx && ctx.name1) || '你';
@@ -19877,20 +19677,19 @@ async function gwordUserGuess(text) {
     } catch(e) {
     if (!rpTask.valid()) return;
 }
-    // delay overlay so user can read char's response
-    await rpGuardAwait(new Promise(function(res) { setTimeout(res, 1500); }), rpTask);
-    gwordEndRound(true);
     return;
   }
   gwordMsg('sys', '❌ 不对哦，再想想~');
   GWORD.processing = false;
   await rpGuardAwait(gwordCharHint(text), rpTask);
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
-async function gwordUserHint(text) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+async function gwordUserHint(text, retry = false) {
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('gword', prompt, max, system, options);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('gword').task();
   /* rp-cancel-boundary */ try {
 
   if (!GWORD.active || GWORD.processing || GWORD.mode !== 'user-describe') return;
@@ -19902,9 +19701,7 @@ async function gwordUserHint(text) {
     return;
   }
   GWORD.processing = true;
-  gwordMsg('user', text);
-  GWORD.hints.push(text);
-  GWORD.round++;
+  if (!retry) { gwordMsg('user', text); GWORD.hints.push(text); GWORD.round++; }
   $('#gword-round-info').text('第' + GWORD.round + '轮');
   const persona = typeof g2048GetPersona === 'function' ? g2048GetPersona() : '';
   const ctx = typeof getContext === 'function' ? getContext() : {};
@@ -19937,37 +19734,51 @@ async function gwordUserHint(text) {
   }
   const raw = await rpGuardAwait(lgCallAPI(prompt, 150), rpTask);
   let reply = raw ? cleanGameReply(raw, charName) : '';
+  if (!shouldGiveUp && GWORD.round <= 2 && reply.includes(GWORD.answer)) {
+    const retryRaw = await rpGuardAwait(lgCallAPI(prompt + '\n陪玩规则：本轮不能猜「' + GWORD.answer + '」，也不要透露它。改猜另一个合理的词。', 150), rpTask);
+    reply = retryRaw ? cleanGameReply(retryRaw, charName) : '';
+    if (reply.includes(GWORD.answer)) reply = '';
+  }
   GWORD.processing = false;
+  if (!reply || reply.length < 2) {
+    GWORD.retryGuess = true;
+    gwordMsg('sys', '⚠️ 角色回复生成失败，请重试；提示和轮次已保留。');
+    rpWordGuessRetryButton();
+    return;
+  }
+  GWORD.retryGuess = false; $('#gword-retry-guess').hide();
   if (shouldGiveUp) {
-    if (!reply || reply.length < 2) reply = '我猜不出来了，我认输！';
     gwordMsg('char', reply);
     gwordMsg('sys', '🏳️ ' + GWORD.charName + ' 认输了！答案是「' + GWORD.answer + '」');
     gwordEndRound(true);
     return;
   }
-  if (!reply || reply.length < 1) reply = '我猜是...不知道呢';
   gwordMsg('char', reply);
   GWORD.guesses.push(reply);
   // check if char guessed right
-  if (reply.includes(GWORD.answer)) {
+  if (GWORD.round > 2 && rpGameGuessMatches(reply.split(/[，。！？,!?.]/)[0], GWORD.answer)) {
     gwordMsg('sys', '🎉 ' + GWORD.charName + ' 猜对了！答案就是「' + GWORD.answer + '」');
     gwordEndRound(true);
   } else {
     gwordMsg('sys', '❌ 没猜对，继续给提示吧~');
   }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
 function gwordGiveUp() {
+
   if (!GWORD.active) return;
   gwordMsg('sys', '🏳️ 认输了！答案是「' + GWORD.answer + '」');
   gwordEndRound(false);
 }
 
 function gwordEndRound(won) {
+
   GWORD.active = false;
   GWORD.processing = false;
+  GWORD._paused = false; GWORD.retryHint = false; GWORD.retryGuess = false;
+  $('#gword-retry-hint,#gword-retry-guess').hide();
   const emoji = won ? '🎉' : '😅';
   const title = won
     ? (GWORD.mode === 'char-describe' ? '猜对了！' : '回合结束！')
@@ -19977,27 +19788,13 @@ function gwordEndRound(won) {
   $('#gword-over-title').text(title);
   $('#gword-over-sub').text(sub);
   $('#gword-over').css('display', 'flex');
+  saveState();
 }
 
-function gwordMsg(type, text) {
-  const cls = type === 'user' ? 'game-msg-user' : type === 'char' ? 'game-msg-char' : 'game-msg-sys';
-  const pre = type === 'char' ? GWORD.charName + ': ' : '';
-  const editBtnHtml = type === 'char' ? '<button class="game-edit-btn" onclick="event.stopPropagation();gameInlineEdit(this)" title="\u7f16\u8f91"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/></svg></button>' : '';
-  const msgHtml = '<div class="game-msg ' + cls + '"><span class="game-msg-text">' + escHtml(pre + String(text ?? '')) + '</span>' + editBtnHtml + '</div>';
-  const chat = document.getElementById('gword-chat');
-  if (chat) { chat.insertAdjacentHTML('beforeend', msgHtml); chat.scrollTop = chat.scrollHeight; }
-  // sync to fullscreen if open
-  const fs = document.getElementById('gword-chat-fs');
-  if (fs && fs.style.display !== 'none') {
-    const body = document.getElementById('gword-chat-fs-body');
-    if (body) { body.insertAdjacentHTML('beforeend', msgHtml); body.scrollTop = body.scrollHeight; }
-  }
-  if (type === 'user' || type === 'char') {
-    recordPhoneGameMessage('gword', type, text);
-  }
-}
+function gwordMsg(type, text) { rpAppendGameMessage('gword',type,text); }
 
 function gwordBindEvents() {
+
   $(document).on("click.mochiPhone", '#gword-mode-char', function() { gwordStartGame('char-describe'); });
   $(document).on("click.mochiPhone", '#gword-mode-user', function() { gwordStartGame('user-describe'); });
   $(document).on("click.mochiPhone", '#gword-send', function() {
@@ -20005,12 +19802,14 @@ function gwordBindEvents() {
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
+    if (!GWORD.active || GWORD.processing) return;
+    if (GWORD.mode === 'user-describe' && text.includes(GWORD.answer)) { gwordMsg('sys', '⚠️ 不能直接说出答案哦~'); return; }
     input.value = '';
     if (GWORD.mode === 'char-describe') gwordUserGuess(text);
     else if (GWORD.mode === 'user-describe') gwordUserHint(text);
   });
   $(document).on("keydown.mochiPhone", '#gword-input', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); $('#gword-send').trigger('click'); }
+    if (e.key === 'Enter' && !e.isComposing && !e.originalEvent?.isComposing) { e.preventDefault(); $('#gword-send').trigger('click'); }
   });
   $(document).on("click.mochiPhone", '#gword-giveup-btn', function() { gwordGiveUp(); });
   $(document).on("click.mochiPhone", '#gword-newbtn', function() { gwordOpen(); });
@@ -20039,14 +19838,311 @@ function ggoldInit() {
   ggoldOpen();
 }
 
+function gmScheduleCharShots() {
+  const runtime=rpGameRuntime('gm'); runtime.clearTimer(GM._shootTimer); GM._shootTimer=null;
+  const serial=GM._turnSerial || 0;
+  const shoot=()=>{
+    GM._shootTimer=null;
+    if(!GM.active || GM.turn!=='char' || GM.timeLeft<=0 || serial!==(GM._turnSerial || 0) || !rpGameVisible('ggold'))return;
+    const schedule=ms=>{GM._shootTimer=runtime.timer(shoot,ms,false);};
+    if(GM.hookState!=='swing'){schedule(200);return;}
+    const since=Date.now()-(GM._charLastShot || 0);
+    if(since<1500){schedule(1550-since);return;}
+    const candidates=GM.items.filter(item=>!item.grabbed && item.score>0);
+    candidates.sort((a,b)=>(b.score/b.weight)-(a.score/a.weight));
+    const best=candidates[0]; if(!best)return;
+    const angle=Math.atan2(best.x-GM_ANCHOR_X,best.y-GM_ANCHOR_Y);
+    if(Math.abs(GM.hookAngle-angle)>0.18){schedule(50);return;}
+    GM.hookState='go'; GM._charLastShot=Date.now(); saveState(); schedule(200);
+  };
+  if(GM.active && GM.turn==='char' && rpGameVisible('ggold'))GM._shootTimer=runtime.timer(shoot,800+Math.random()*400,false);
+}
+
+// Game-owned lifecycles. Restarting a game never cancels another phone app.
+const rpGameRuntimes = new Map();
+const rpDeferredGameTimers = new Map();
+let rpGamePartner = null;
+let rpGameTowers = Object.create(null);
+const RP_GAME_FIELDS = {
+  ludo: ['userPos','charPos','turn','lastDice','userSkip','charSkip','pendingReroll','_spicyLevel','taskActive','taskPlayer','taskPos','taskStage','taskReplyShown','pendingMove','lastTaskText','lastTaskTime'],
+  g2048: ['board','score','best','turn','won','commentCount'],
+  gm: ['mode','turn','round','userScore','charScore','towerLevel','timeLeft','hookAngle','hookDir','hookState','hookLen','hookedItem','items','coopWon'],
+  gword: ['mode','answer','category','hints','guesses','round','charGiveUpRound','usedWords','retryHint','retryGuess'],
+};
+function rpGameRuntime(key) {
+  if (!rpGameRuntimes.has(key) || rpGameRuntimes.get(key).stats().destroyed) {
+    const parent = rpRuntime.task();
+    const runtime = createPhoneRuntime(window,
+      () => `${STATE.chatId || ''}|${getPhoneChatSlotKey(getContext())}`,
+      () => parent.valid());
+    const abort = () => runtime.destroy();
+    parent.signal.addEventListener('abort',abort,{once:true});
+    runtime.own(() => parent.signal.removeEventListener('abort',abort));
+    if(parent.signal.aborted)runtime.destroy();
+    rpGameRuntimes.set(key,runtime);
+  }
+  return rpGameRuntimes.get(key);
+}
+function rpBeginGame(key) {
+  rpGameRuntime(key).advance();
+  rpDeferredGameTimers.delete(key);
+  const game = getPhoneGameRecordSource(key);
+  game._paused = false;
+  game._chatBusy = null;
+  if (key === 'gword') { game.retryHint = false; game.retryGuess = false; $('#gword-retry-hint,#gword-retry-guess').hide(); }
+  if (key === 'gm') { game._commentBusy = null; game._endingTurn = false; }
+  if (key === 'ludo') {
+    $('#rp-sq-event, #rp-sq-task-bar, #rp-game-resume-ludo').hide();
+    game.pendingMove = null; game.taskStage = null; game.taskActive = null;
+  }
+  $('#rp-game-resume-' + key).hide();
+}
+function rpResetGameRuntimes() {
+  for (const runtime of rpGameRuntimes.values()) runtime.destroy();
+  rpGameRuntimes.clear();
+  rpDeferredGameTimers.clear();
+}
+function rpGameTimer(key, fn, ms, repeat = false, args = []) {
+  const runtime = rpGameRuntime(key);
+  const token = runtime.task();
+  return runtime.timer(() => {
+    const view={ludo:'game',g2048:'g2048',gm:'ggold',gword:'gword'}[key];
+    if (!repeat && !rpGameVisible(view)) {
+      if(!rpDeferredGameTimers.has(key))rpDeferredGameTimers.set(key,[]);
+      rpDeferredGameTimers.get(key).push({token,fn,args}); return;
+    }
+    const result = fn(...args);
+    if (token.valid()) saveState();
+    return result;
+  }, ms, repeat);
+}
+function rpResumeDeferredGameTimers() {
+  for(const [key,entries] of rpDeferredGameTimers) {
+    const view={ludo:'game',g2048:'g2048',gm:'ggold',gword:'gword'}[key];
+    if(!rpGameVisible(view))continue;
+    rpDeferredGameTimers.delete(key);
+    for(const entry of entries)if(entry.token.valid())rpGameTimer(key,entry.fn,0,false,entry.args);
+  }
+}
+function rpGameCallAPI(key, prompt, max, system, options = {}) {
+  const token = rpGameRuntime(key).task();
+  return rpGuardAwait(lgCallAPI(prompt, Math.max(max || 150, 256), system, { ...options, gameTask: token }), token)
+    .catch(error => { if (token.valid()) console.warn('[Phone] game request failed',rpErrorInfo(error)); return null; });
+}
+function rpReadLegacyGameNumber(key, max = Number.MAX_SAFE_INTEGER) {
+  try {
+    const value = Number(localStorage.getItem(key));
+    return Number.isSafeInteger(value) && value >= 0 && value <= max ? value : 0;
+  } catch { return 0; }
+}
+function rpGameTowerKey(name = GM.charName) {
+  return 'partner:' + gameCleanPartnerName(name);
+}
+function rpLoadTower() {
+  const key = rpGameTowerKey();
+  if (!Object.hasOwn(rpGameTowers, key)) rpGameTowers[key] = rpReadLegacyGameNumber('ggold_tower_' + GM.charName, 12);
+  GM._towerKey = key;
+  GM.towerLevel = rpGameTowers[key];
+}
+function rpSaveTower() {
+  rpGameTowers[rpGameTowerKey()] = GM.towerLevel;
+  saveState();
+}
+function rpValidateGameRound(key, raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const r = {};
+  for (const field of ['active','charName', ...RP_GAME_FIELDS[key]]) if (Object.hasOwn(raw, field)) r[field] = raw[field];
+  const integer = (v, max) => Number.isSafeInteger(v) && v >= 0 && v <= max;
+  const finite = (v, min, max) => Number.isFinite(v) && v >= min && v <= max;
+  const list = (v, max) => Array.isArray(v) && v.length <= max && v.every(s => typeof s === 'string' && s.length <= 10000);
+  if (typeof r.active !== 'boolean' || typeof r.charName !== 'string' || r.charName.length > 100) return null;
+  if (key !== 'gword' && !['user','char'].includes(r.turn)) return null;
+  if (key === 'g2048') {
+    if (!Array.isArray(r.board) || r.board.length !== 4 || !r.board.every(row => Array.isArray(row) && row.length === 4 && row.every(v => v === 0 || (integer(v, 2 ** 30) && v >= 2 && Number.isInteger(Math.log2(v)))))) return null;
+    if (!integer(r.score, Number.MAX_SAFE_INTEGER) || !integer(r.best, Number.MAX_SAFE_INTEGER)) return null;
+    r.won = !!r.won; r.commentCount = integer(r.commentCount, Number.MAX_SAFE_INTEGER) ? r.commentCount : 0;
+  } else if (key === 'gword') {
+    if (![null,'char-describe','user-describe'].includes(r.mode) || typeof r.answer !== 'string' || r.answer.length > 100 || typeof r.category !== 'string' || r.category.length > 100) return null;
+    if (!list(r.hints, 10000) || !list(r.guesses, 10000) || !list(r.usedWords, 30) || !integer(r.round, 10000) || !integer(r.charGiveUpRound, 9)) return null;
+    if (r.active && (!r.answer || !r.mode || r.charGiveUpRound < 5)) return null;
+    r.retryHint = !!r.retryHint;
+  } else if (key === 'gm') {
+    if (![null,'vs','coop'].includes(r.mode) || !integer(r.round, 4) || !integer(r.towerLevel, 12) || !integer(r.userScore, Number.MAX_SAFE_INTEGER) || !integer(r.charScore, Number.MAX_SAFE_INTEGER) || !finite(r.timeLeft, 0, 30)) return null;
+    if (!['idle','swing','go','return'].includes(r.hookState) || !finite(r.hookLen, 0, 500) || !finite(r.hookAngle, -2, 2) || ![-1,1].includes(r.hookDir)) return null;
+    if (!Array.isArray(r.items) || r.items.length > 30) return null;
+    const items = [];
+    for (const item of r.items) {
+      const definition = GM_ITEMS_DEF.find(def => def.type === item?.type);
+      if (!definition || !integer(item.id, 100) || !finite(item.x, 0, 270) || !finite(item.y, 0, 192)) return null;
+      items.push({ ...definition, id: item.id, x: item.x, y: item.y, grabbed: !!item.grabbed });
+    }
+    if (new Set(items.map(item => item.id)).size !== items.length) return null;
+    r.items = items;
+    r.hookedItem = raw.hookedItem ? items.find(item => item.id === raw.hookedItem.id && item.grabbed) || null : null;
+    if (r.hookedItem && r.hookState !== 'return') return null;
+    r.coopWon = !!r.coopWon;
+  } else {
+    if (!Array.isArray(raw.path) || raw.path.length > 144 || (r.active && raw.path.length < 2)) return null;
+    if (!raw.path.every(p => Array.isArray(p) && p.length === 2 && p.every(v => integer(v, 11)))) return null;
+    if (new Set(raw.path.map(p => p.join(','))).size !== raw.path.length || raw.path.some((p, i) => i && Math.abs(p[0] - raw.path[i-1][0]) + Math.abs(p[1] - raw.path[i-1][1]) !== 1)) return null;
+    if (!integer(r.userPos, raw.path.length) || !integer(r.charPos, raw.path.length) || !integer(r.lastDice, 6)) return null;
+    r.path = raw.path.map(p => p.slice()); r.theme = String(raw.theme || 'sakura');
+    r.events = {};
+    for (const [pos, event] of Object.entries(raw.events || {})) {
+      if (!integer(Number(pos), r.path.length)) continue;
+      const task = TASK_POOL.find(task => task.type === event?.type && task.text === event.text);
+      if (task) r.events[pos] = { ...task, note: task.type === 'action' ? '请在对话框互动(需有动作描写)' : '' };
+    }
+    r.decos = Array.isArray(raw.decos) ? raw.decos.filter(d => integer(d?.r,11) && integer(d.c,11) && typeof d.emoji === 'string' && d.emoji.length < 20).slice(0, 20).map(d => ({r:d.r,c:d.c,emoji:d.emoji,rot:finite(d.rot,-20,20)?d.rot:0})) : [];
+    if (!['user','char',null,undefined].includes(r.pendingReroll)) r.pendingReroll = null;
+    r._spicyLevel = [1,2,3].includes(r._spicyLevel) ? r._spicyLevel : 1;
+    if (r.pendingMove && (!['user','char'].includes(r.pendingMove.player) || !integer(r.pendingMove.target, r.path.length))) r.pendingMove = null;
+    else if(r.pendingMove)r.pendingMove={player:r.pendingMove.player,target:r.pendingMove.target,depth:integer(r.pendingMove.depth,3)?r.pendingMove.depth:0};
+    if (!['confirm','task',null,undefined].includes(r.taskStage) || !['user','char'].includes(r.taskPlayer) || !integer(r.taskPos, r.path.length) || !r.events[r.taskPos]) { r.taskStage = null; r.taskActive = null; }
+    else r.taskActive = r.events[r.taskPos].text;
+    r.userSkip = !!r.userSkip; r.charSkip = !!r.charSkip;
+    r.lastTaskText = typeof r.lastTaskText === 'string' ? r.lastTaskText.slice(0, 500) : null;
+    r.lastTaskTime = integer(r.lastTaskTime, Number.MAX_SAFE_INTEGER) ? r.lastTaskTime : 0;
+  }
+  return r;
+}
+function rpShowGameResume(key) {
+  const game = getPhoneGameRecordSource(key);
+  if (!game._paused) return false;
+  const legacy={ludo:'#rp-ludo-spicy,#rp-game-win,#rp-sq-event,#rp-sq-task-bar',g2048:'#g2048-over',gm:'#ggold-mode-select,#ggold-over,#ggold-chat-fs',gword:'#gword-mode-select,#gword-over'}[key];
+  $(legacy).hide();
+  const view = {ludo:'game',g2048:'g2048',gm:'ggold',gword:'gword'}[key];
+  let overlay = document.getElementById('rp-game-resume-' + key);
+  if (!overlay) {
+    overlay = document.createElement('div'); overlay.id = 'rp-game-resume-' + key;
+    overlay.style.cssText = 'position:absolute;inset:0;z-index:130;background:var(--rp-bg,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--rp-text,#333)';
+    const label = document.createElement('div'); label.textContent = '已保存本局进度'; overlay.append(label);
+    const resume = document.createElement('button'); resume.type = 'button'; resume.textContent = '继续本局';
+    resume.onclick = () => { overlay.style.display = 'none'; void rpResumeSavedGame(key); };
+    const restart = document.createElement('button'); restart.type = 'button'; restart.textContent = '开始新局';
+    restart.onclick = () => { overlay.style.display = 'none'; game._paused = false; if(key==='ludo')lgInit();else if(key==='g2048')g2048Init();else if(key==='gm')ggoldOpen();else gwordOpen(); };
+    for(const button of [resume,restart]) button.style.cssText='padding:10px 22px;border-radius:14px;border:1px solid #aaa;background:var(--rp-nav-btn,#c0306a);color:white;cursor:pointer';
+    overlay.append(resume,restart); document.getElementById('rp-view-' + view)?.append(overlay);
+  }
+  overlay.style.display = 'flex';
+  return true;
+}
+async function rpResumeSavedGame(key) {
+  const game = getPhoneGameRecordSource(key);
+  if (!game._paused) return;
+  game._paused = false; game.active = true;
+  gameApplyPartnerToGames({name:game.charName});
+  if (key === 'g2048') {
+    renderPhoneGameHistory(key); g2048Render();
+    if (game.turn === 'char') rpGameTimer(key, g2048CharTurn, 500);
+  } else if (key === 'gword') {
+    gwordBindOnce(); renderPhoneGameHistory(key);
+    $('#gword-mode-select, #gword-over').hide();
+    $('#gword-status').text(game.mode === 'user-describe' ? '答案：' + game.answer : '');
+    $('#gword-category-badge').text('分类：' + game.category); $('#gword-round-info').text('第' + game.round + '轮');
+    $('#gword-input').attr('placeholder', game.mode === 'char-describe' ? '输入你的猜测...' : '输入描述提示...');
+    if (game.mode === 'char-describe' && (!game.hints.length || game.retryHint)) rpWordRetryButton();
+    if (game.mode === 'user-describe' && game.retryGuess) rpWordGuessRetryButton();
+  } else if (key === 'gm') {
+    ggoldBindOnce(); renderPhoneGameHistory(key); gmReadColors(); _gmFieldDirty = true;
+    $('#ggold-mode-select, #ggold-over').hide(); $('#ggold-coop-bar').toggle(game.mode === 'coop');
+    gmUpdateScoreUI(); gmUpdateRoundUI(); gmUpdateTimerUI();
+    GM._expectedSerial++; GM._loopSerial = GM._expectedSerial;
+    rpResumeGameAnimations();
+  } else {
+    $('#rp-ludo-spicy, #rp-game-win').hide(); renderPhoneGameHistory(key); lgRender();
+    const token = rpGameRuntime('ludo').task();
+    try {
+      if (LG.pendingMove) {
+        const move = LG.pendingMove; const pos = move.player === 'user' ? LG.userPos : LG.charPos;
+        await rpGuardAwait(lgMove(move.player, move.target - pos - (pos === 0 ? 1 : 0), move.depth || 0), token, 0);
+        rpFinishLudoMove(move.player);
+      } else if (LG.taskStage) {
+        await rpGuardAwait(lgTriggerSquareEvent(LG.taskPlayer, LG.taskPos), token, 0);
+        rpFinishLudoMove(LG.taskPlayer);
+      } else if (LG.turn === 'char') rpGameTimer('ludo', lgCharTurn, 500);
+      else { $('#rp-dice-btn').prop('disabled',false); lgStatus('你的回合 - 按🎲掷骰子!'); }
+    } catch(error) { if(token.valid()) console.warn('[Phone] game resume failed',rpErrorInfo(error)); }
+    rpResumeGameAnimations();
+  }
+  saveState();
+}
+function rpFinishLudoMove(player) {
+  LG.rolling = false;
+  if (LG.userPos >= LUDO_PATH_LEN) { lgWin('user'); return; }
+  if (LG.charPos >= LUDO_PATH_LEN) { lgWin('char'); return; }
+  const again = LG.pendingReroll === player || LG.lastDice === 6;
+  LG.pendingReroll = null; LG.turn = again ? player : player === 'user' ? 'char' : 'user';
+  if (LG.turn === 'char') rpGameTimer('ludo', lgCharTurn, 800);
+  else { $('#rp-dice-btn').prop('disabled',false); lgStatus(again ? '🎲 再掷一次!' : '你的回合 - 按🎲掷骰子!'); }
+  saveState();
+}
+function rpWaitGameChoice(key, buttons) {
+  const token = rpGameRuntime(key).task();
+  return new Promise(resolve => {
+    const finish = result => { buttons.forEach((button,i) => button.removeEventListener('click',handlers[i])); token.signal.removeEventListener('abort',abort); resolve(result); };
+    const handlers = buttons.map((button,i) => () => { if(!button.disabled)finish(i); });
+    const abort = () => finish(-1);
+    buttons.forEach((button,i) => button.addEventListener('click',handlers[i]));
+    token.signal.addEventListener('abort',abort,{once:true}); if(!token.valid())abort();
+  });
+}
+async function rpSendGameChat(key, text) {
+  const game=getPhoneGameRecordSource(key);
+  text=String(text || '').trim(); if(!text || game._chatBusy)return;
+  const token=rpGameRuntime(key).task(); const owner={};game._chatBusy=owner;
+  const name=game.charName; const ctx=getContext() || {};const user=ctx.name1 || '你';
+  rpAppendGameMessage(key,'user',text);
+  const history=(game.chatLog || []).filter(m=>['user','char'].includes(m.role || m.type)).slice(-11,-1)
+    .map(m=>`${(m.role || m.type)==='user'?user:(m.name || name)}:${String(m.text).slice(0,100)}`).join('\n');
+  const task=key==='ludo' && game.taskActive ? `\n当前任务:${game.taskActive}`:'';
+  const prompt=`游戏聊天；${history}${task}\n${user}:${text}\n以${name}身份根据上下文直接回复，中文≤30字；纯台词，无分析/旁白，不复述用户原话。`;
+  try {
+    const raw=await rpGuardAwait(rpGameCallAPI(key,prompt,256,g2048GetPersona()),token);
+    const reply=cleanGameReply(raw,name);
+    if(reply.length>1 && reply!==text)rpAppendGameMessage(key,'char',reply);
+    else rpAppendGameMessage(key,'sys','⚠️ 角色回复生成失败，未生成替代台词；可重新发送。');
+  } catch(error) { if(token.valid())rpAppendGameMessage(key,'sys','⚠️ 角色回复生成失败，请重试。'); }
+  finally { if(token.valid() && game._chatBusy===owner)game._chatBusy=null; }
+}
+function rpWordRetryButton() {
+  GWORD.retryHint = true;
+  $('#gword-status').text('提示生成未完成，请重试');
+  let button = document.getElementById('gword-retry-hint');
+  if (!button) {
+    button = document.createElement('button'); button.id = 'gword-retry-hint'; button.type = 'button'; button.textContent = '重试提示';
+    button.onclick = () => { if (GWORD.active && !GWORD.processing) void gwordCharHint(undefined, true); };
+    document.getElementById('gword-status')?.after(button);
+  }
+  button.style.display = '';
+}
+function rpWordGuessRetryButton() {
+  let button = document.getElementById('gword-retry-guess');
+  if (!button) {
+    button = document.createElement('button'); button.id='gword-retry-guess'; button.type='button'; button.textContent='重试角色回复';
+    button.onclick=()=>{ if(GWORD.active && !GWORD.processing && GWORD.hints.length) void gwordUserHint(GWORD.hints.at(-1),true); };
+    document.getElementById('gword-status')?.after(button);
+  }
+  button.style.display='';
+}
+function rpGameGuessMatches(text, answer) {
+  const normalize = value => String(value || '').toLowerCase().replace(/[\s\u3000!！?？。，,.~～…·\-—「」“”"']/g, '');
+  const candidate = normalize(text).replace(/^(?:答案是|答案|我觉得是|我猜是|我猜|猜是|是不是|是)/, '').replace(/(?:对吗|吗|吧|呢)$/, '');
+  return !!answer && candidate === normalize(answer);
+}
+function gwordBindOnce() { if (!_gwordBound) { gwordBindEvents(); _gwordBound = true; } }
+function ggoldBindOnce() { if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = true; } }
+
 // ── Init new game ─────────────────────────────────────────────
 function g2048Init() {
+  rpBeginGame('g2048');
+
   var ctx = getContext ? getContext() : {};
   LG2048.charName = gameGetCurrentPartner(ctx).name || '\u5bf9\u65b9';
   gameApplyPartnerToGames({ name: LG2048.charName });
   LG2048.board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
   LG2048.score = 0;
-  LG2048.best = parseInt(localStorage.getItem('g2048_best') || '0');
+  LG2048.best = Math.max(LG2048.best || 0, rpReadLegacyGameNumber('g2048_best'));
   LG2048.turn = 'user';
   LG2048.active = true;
   LG2048.processing = false;
@@ -20061,6 +20157,9 @@ function g2048Init() {
 
 // ── User move ─────────────────────────────────────────────────
 function g2048UserMove(dir) {
+  const setTimeout = (fn, ms, ...args) => rpGameTimer('g2048', fn, ms, false, args);
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('g2048', prompt, max, system, options);
+
   if (!LG2048.active || LG2048.processing || LG2048.turn !== 'user') return;
   var res = g2048Apply(LG2048.board, dir);
   if (!res.changed) return;
@@ -20068,7 +20167,7 @@ function g2048UserMove(dir) {
   LG2048.score += res.score;
   if (LG2048.score > LG2048.best) {
     LG2048.best = LG2048.score;
-    localStorage.setItem('g2048_best', LG2048.best);
+    saveState();
   }
   g2048AddTile();
   g2048Render();
@@ -20084,7 +20183,7 @@ function g2048UserMove(dir) {
     $('#g2048-over').css('display', 'flex');
     var persona = g2048GetPersona();
     var wp = (persona ? persona + '\n' : '') + '[2048游戏场景]我们在一起玩2048数字拼盘游戏中合力达成了2048！\n请以' + LG2048.charName + '的身份用中文口语说一句庆祝的话，20字以内，纯对话台词，不带括号、*号、动作描写、省略号。';
-    lgCallAPI(wp, 150).then(rpRuntime.guard(function(r) {
+    lgCallAPI(wp, 150).then(rpGameRuntime('g2048').guard(function(r) {
       var cleaned = r && r.trim() ? cleanGameReply(r, LG2048.charName) : '';
       if (cleaned && cleaned.length > 1) g2048Msg('char', g2048StripActions(cleaned));
     }));
@@ -20100,7 +20199,9 @@ function g2048UserMove(dir) {
 
 // ── Char turn ─────────────────────────────────────────────────
 function g2048CharTurn() {
-  if (!LG2048.active) return;
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('g2048', prompt, max, system, options);
+
+  if (!LG2048.active || LG2048.turn !== 'char') return;
   var dir = g2048BestDir();
   if (!dir) { g2048GameOver(); return; }
   var dirCN = { left: '\u5411\u5de6', right: '\u5411\u53f3', up: '\u5411\u4e0a', down: '\u5411\u4e0b' }[dir];
@@ -20109,7 +20210,7 @@ function g2048CharTurn() {
   LG2048.score += res.score;
   if (LG2048.score > LG2048.best) {
     LG2048.best = LG2048.score;
-    localStorage.setItem('g2048_best', LG2048.best);
+    saveState();
   }
   g2048AddTile();
   g2048Render();
@@ -20196,7 +20297,7 @@ function g2048CharTurn() {
     var topicHint = topicPool2048[Math.floor(Math.random() * topicPool2048.length)];
     // prompt 弱化游戏信息权重，突出"陪伴聊天"而非"游戏解说"
     var p = (persona ? persona + '\n' : '') + recentPlot + avoidNote + '\n[当前场景]你和' + userName2048 + '正在一边玩2048一边聊天，游戏只是背景，重点是你们之间的对话。\n请以' + LG2048.charName + '的身份，用中文口语说一句话(20字以内)，说话方向：' + topicHint + '。\n要求：纯对话台词，语气自然贴合角色人设，不带括号、*号、动作描写、引号、省略号，必须说出全新内容，禁止使用上面列出的任何禁用关键词片段。';
-    lgCallAPI(p, 150).then(rpRuntime.guard(function(r) {
+    lgCallAPI(p, 150).then(rpGameRuntime('g2048').guard(function(r) {
       var cleaned = r && r.trim() ? cleanGameReply(r, LG2048.charName) : '';
       // 常见无意义虚词/短语，排除在相似度判断之外
       var stopWords2048 = new Set(['的','了','吗','呢','啊','哦','哈','嗯','嘛','吧','呀','啦','哇','噢','哎','哟','喔','诶','对','好','是','不','我','你','他','她','它','们','这','那','也','都','在','有','和','与','或','但','就','才','还','又','很','真','太','最','更','已','要','会','能','可','去','来','说','做','想','看','给','让','把','被','从','到','为','以','于','同','跟','用','只','没','没有']);
@@ -20223,10 +20324,10 @@ function g2048CharTurn() {
         var retryTopics = ['随口撒个娇或聊聊心情', '说一句关心' + userName2048 + '的话', '聊一句和游戏完全无关的事', '说句符合性格的俏皮话或感慨'];
         var retryTopic = retryTopics[Math.floor(Math.random() * retryTopics.length)];
         var retryP = (persona ? persona + '\n' : '') + '[你刚才说过了「' + recentCharReplies[recentCharReplies.length-1] + '」，请换一句完全不同的话。]\n以' + LG2048.charName + '的身份：' + retryTopic + '。15字以内，纯对话台词，不带*号括号动作描写。';
-        lgCallAPI(retryP, 150).then(rpRuntime.guard(function(r2) {
+        lgCallAPI(retryP, 150).then(rpGameRuntime('g2048').guard(function(r2) {
           var c2 = r2 && r2.trim() ? cleanGameReply(r2, LG2048.charName) : '';
           if (c2 && c2.length > 1 && LG2048.active) g2048Msg('char', g2048StripActions(c2));
-        })).catch(rpRuntime.guard(function(){}));
+        })).catch(rpGameRuntime('g2048').guard(function(){}));
       } else if (!r) console.warn('[2048] charTurn: API returned empty');
     }));
   }
@@ -20247,77 +20348,7 @@ function g2048GameOver() {
 }
 
 // ── In-game chat ──────────────────────────────────────────────
-function g2048Chat(text) {
-  if (!text) return;
-  g2048Msg('user', text);
-  // 只要有角色名就允许聊天，不受游戏 active/won 状态限制
-  // （游戏结束/GameOver 后用户仍应能与 char 对话）
-  if (!LG2048.charName) return;
-  var persona = g2048GetPersona();
-  var ctx = getContext ? getContext() : {};
-  var userName = (ctx && ctx.name1) || '你';
-  var cName = LG2048.charName;
-
-  // 把游戏内聊天记录完整交替排列（user+char都要），让 AI 看到真实对话上下文
-  // 取最近10条（user+char混合），不能只取 user 一侧
-  var recentLog = (LG2048.chatLog || []).slice(-10);
-  // 排除最后一条（就是刚才加进去的 user 当前发言，避免重复）
-  var historyLines = recentLog
-    .filter(function(m){ return m.role === 'user' || m.role === 'char'; })
-    .slice(0, -1)  // 去掉最后一条（当前发言）
-    .map(function(m){
-      var speaker = m.role === 'user' ? userName : cName;
-      return speaker + ': ' + m.text.slice(0, 60);
-    });
-  var historyNote = historyLines.length > 0
-    ? '\n[游戏内近期对话记录，必须基于此上下文回复]:\n' + historyLines.join('\n') + '\n'
-    : '';
-
-  // 去重：char 最近说过的话
-  var recentCharReplies2048 = (LG2048.chatLog || []).filter(function(m){ return m.role === 'char'; }).slice(-4).map(function(m){ return m.text.trim(); });
-  var avoidCharNote = recentCharReplies2048.length > 0
-    ? '\n[你最近说过，不得重复或近似]: ' + recentCharReplies2048.join(' / ')
-    : '';
-
-  var p = (persona ? persona + '\n' : '')
-    + historyNote
-    + avoidCharNote
-    + '\n[2048游戏聊天场景]' + userName + '对你说:「' + text + '」\n请以' + cName + '的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。';
-
-  lgCallAPI(p, 150).then(rpRuntime.guard(function(r) {
-    var cleaned = r && r.trim() ? cleanGameReply(r, cName) : '';
-
-    // 检测复读1：和用户输入相同
-    var userTextNorm = text.trim().toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
-    var cleanedNorm  = (cleaned || '').toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
-    var isEchoUser = cleaned && (cleanedNorm === userTextNorm || cleaned.trim() === text.trim());
-
-    // 检测复读2：和 chatLog 最近 char 回复相同
-    var isEchoSelf = cleaned && recentCharReplies2048.some(function(prev){ return prev === cleaned.trim(); });
-
-    if (cleaned && cleaned.length > 1 && !isEchoUser && !isEchoSelf) {
-      g2048Msg('char', g2048StripActions(cleaned));
-    } else if (isEchoUser || isEchoSelf) {
-      var echoReason = isEchoSelf ? '你刚才已经说过「' + recentCharReplies2048[recentCharReplies2048.length-1] + '」了，请给出完全不同的回应' : '请换一个角度回应用户';
-      var retryP = (persona ? persona + '\n' : '')
-        + historyNote
-        + '[2048游戏聊天场景]' + echoReason + '。' + userName + '说:「' + text + '」\n请以' + cName + '的身份给出一句新鲜的回应，15字以内，纯对话台词。';
-      lgCallAPI(retryP, 150).then(rpRuntime.guard(function(r2) {
-        var c2 = r2 && r2.trim() ? cleanGameReply(r2, cName) : '';
-        var isRetryEcho = c2 && recentCharReplies2048.some(function(prev){ return prev === c2.trim(); });
-        if (c2 && c2.length > 1 && !isRetryEcho) g2048Msg('char', g2048StripActions(c2));
-        else {
-          var fallbacks2 = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
-          g2048Msg('char', fallbacks2[Math.floor(Math.random() * fallbacks2.length)]);
-        }
-      }));
-    } else {
-      // API 返回空，兜底
-      var fallbacks = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
-      g2048Msg('char', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
-    }
-  }));
-}
+async function g2048Chat(text) { await rpSendGameChat('g2048',text); }
 
 // ── Touch swipe ───────────────────────────────────────────────
 (function() {
@@ -20325,12 +20356,14 @@ function g2048Chat(text) {
   rpRuntime.listenDOM(document, 'touchstart', function(e) {
     var wrap = document.getElementById('g2048-board-wrap');
     if (!wrap || !wrap.contains(e.target)) return;
+    if(e.touches.length !== 1){_ts=null;return;}
     if (!LG2048.active || LG2048.processing || LG2048.turn !== 'user') return;
     var t = e.touches[0];
-    _ts = { x: t.clientX, y: t.clientY };
+    _ts = { x: t.clientX, y: t.clientY, task: rpGameRuntime('g2048').task() };
   }, { passive: true });
   rpRuntime.listenDOM(document, 'touchend', function(e) {
     if (!_ts) return;
+    if(!_ts.task.valid() || !e.changedTouches.length){_ts=null;return;}
     var wrap = document.getElementById('g2048-board-wrap');
     if (!wrap) { _ts = null; return; }
     if (!LG2048.active || LG2048.processing || LG2048.turn !== 'user') { _ts = null; return; }
@@ -20342,6 +20375,7 @@ function g2048Chat(text) {
     var dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
     g2048UserMove(dir);
   }, { passive: true });
+  rpRuntime.listenDOM(document,'touchcancel',()=>{_ts=null;},{passive:true});
 })();
 
 //  LUDO GAME
@@ -20488,17 +20522,13 @@ function _lgHas2x2(visited, nr, nc, N) {
 // Fallback S-shape path
 function _lgFallbackPath(N) {
   const path = [];
-  let r = N - 1, c = 1, dir = 1; // start bottom-left, go right
-  while (path.length < 48 && r >= 0) {
-    path.push([r, c]);
-    c += dir;
-    if (c >= N - 1 || c <= 0) {
-      dir = -dir;
-      r--;
-      if (r >= 0) path.push([r, c]);
+  for (let r = N - 1; r >= 0 && path.length < 48; r--) {
+    for (let i = 0; i < N && path.length < 48; i++) {
+      const c = (N - 1 - r) % 2 ? N - 1 - i : i;
+      path.push([r, c]);
     }
   }
-  return path.slice(0, 48);
+  return path;
 }
 
 // Generate decorations for empty cells (theme-specific)
@@ -20531,6 +20561,8 @@ function _lgGenerateDecos(path, theme, N) {
 
 // Store decorations per board so they don't change on re-render
 let _lgDecos = [];
+let _lgBoardCache = null;
+let _lgBoardCachePath = null, _lgBoardCacheTheme = null, _lgBoardCacheDecos = null;
 
 // Phase 2: Home Run removed, no eat mechanic, shared linear path
 // Both players run the same LUDO_PATH from pos 1 (index 0) to pos LUDO_PATH_LEN (win)
@@ -20802,13 +20834,22 @@ function lgInitFabDrag() {
 }
 
 function lgInit() {
+  rpBeginGame('ludo');
+  LG.active = false; LG.rolling = false;
+
   gameApplyPartnerToGames(gameGetCurrentPartner());
   // Show spiciness selector
   const overlay = document.getElementById('rp-ludo-spicy');
   if (overlay) overlay.style.display = 'flex';
+  saveState();
 }
 
 function lgStartGame(spicyLevel) {
+  rpBeginGame('ludo');
+  const gameRuntime = rpGameRuntime('ludo');
+  const requestAnimationFrame = fn => gameRuntime.frame(fn);
+  const cancelAnimationFrame = id => gameRuntime.cancelFrame(id);
+
   // Hide selector
   const overlay = document.getElementById('rp-ludo-spicy');
   if (overlay) overlay.style.display = 'none';
@@ -20848,15 +20889,10 @@ function lgStartGame(spicyLevel) {
   $('#rp-dice-btn').prop('disabled', false);
 
   lgRender();
-  // 启动棋盘动画循环(驱动 ♥ 闪烁)
+  // Shared animation scheduler owns visibility, reduced motion and draw throttling.
   if (LG._animFrame) cancelAnimationFrame(LG._animFrame);
-  const _animLoop = () => {
-    LG._animFrame = null;
-    if (!LG.active || !rpGameVisible('game')) return;
-    lgRender();
-    LG._animFrame = requestAnimationFrame(_animLoop);
-  };
-  LG._animFrame = requestAnimationFrame(_animLoop);
+  LG._animFrame = null;
+  rpResumeGameAnimations();
   lgStatus('你先出手 - 按🎲掷骰子!');
   lgMsg('sys', `游戏开始! ${LUDO_THEME.name} · ${LUDO_PATH_LEN}格 · 先到终点者胜。粉=你,紫=${LG.charName}`);
 }
@@ -20881,10 +20917,17 @@ function lgCoords(player, pos) {
 function lgRender() {
   const canvas = document.getElementById('rp-ludo-canvas');
   if (!canvas || !LUDO_PATH.length) return;
-  const C = canvas.getContext('2d');
+  const screen = canvas.getContext('2d');
+  if (!screen) return;
+  let C = screen;
   const CELL = 20, N = 12, W = N * CELL;
   const T = LUDO_THEME || LUDO_THEMES[0];
 
+  if (!_lgBoardCache || _lgBoardCachePath !== LUDO_PATH || _lgBoardCacheTheme !== T || _lgBoardCacheDecos !== _lgDecos) {
+  _lgBoardCache = document.createElement('canvas'); _lgBoardCache.width=W; _lgBoardCache.height=W;
+  C = _lgBoardCache.getContext('2d');
+  if (!C) { _lgBoardCache=null; return; }
+  _lgBoardCachePath=LUDO_PATH; _lgBoardCacheTheme=T; _lgBoardCacheDecos=_lgDecos;
   C.clearRect(0, 0, W, W);
 
   // ── Background ──
@@ -20957,7 +21000,10 @@ function lgRender() {
     }
   });
 
-  // ── Event markers (diamond pulse) ──
+  }
+  C = screen; C.clearRect(0,0,W,W); C.drawImage(_lgBoardCache,0,0);
+
+  // Only pieces and event markers repaint; the grid, path and decorations are cached.
   {
     const pulse = 0.5 + 0.5 * Math.abs(Math.sin(Date.now() / 800));
     C.save();
@@ -21002,19 +21048,23 @@ function lgDrawPiece(C, player, pos, CELL) {
 function lgRoll() { return Math.floor(Math.random() * 6) + 1; }
 
 async function lgAnimDice() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  const setTimeout = (fn, ms, ...args) => rpGameTimer('ludo', fn, ms, false, args);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
   for (let i = 0; i < 8; i++) {
     $('#rp-dice-face').text(DICE_EMOJI[Math.floor(Math.random()*6)+1]);
-    await rpGuardAwait(new Promise(r => setTimeout(r, 90)), rpTask);
+    await rpGuardAwait(new Promise(r => setTimeout(r, 90)), rpTask, 0);
   }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
 async function lgUserRoll() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  const setTimeout = (fn, ms, ...args) => rpGameTimer('ludo', fn, ms, false, args);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
   if (!LG.active || LG.rolling || LG.turn !== 'user') return;
@@ -21030,7 +21080,7 @@ async function lgUserRoll() {
   LG.rolling = true;
   $('#rp-dice-btn').prop('disabled', true).addClass('ludo-rolling');
 
-  await rpGuardAwait(lgAnimDice(), rpTask);
+  await rpGuardAwait(lgAnimDice(), rpTask, 0);
   $('#rp-dice-btn').removeClass('ludo-rolling');
 
   const n = lgRoll();
@@ -21062,11 +21112,13 @@ async function lgUserRoll() {
     setTimeout(() => lgCharTurn(), 1100 + Math.random()*500);
   }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
 async function lgCharTurn() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  const setTimeout = (fn, ms, ...args) => rpGameTimer('ludo', fn, ms, false, args);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
   if (!LG.active) return;
@@ -21079,7 +21131,7 @@ async function lgCharTurn() {
     $('#rp-dice-btn').prop('disabled', false);
     return;
   }
-  await rpGuardAwait(lgAnimDice(), rpTask);
+  await rpGuardAwait(lgAnimDice(), rpTask, 0);
 
   const n = lgRoll();
   LG.lastDice = n;
@@ -21107,11 +21159,13 @@ async function lgCharTurn() {
     $('#rp-dice-btn').prop('disabled', false);
   }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
-async function lgMove(player, steps) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+async function lgMove(player, steps, eventDepth = 0) {
+  const setTimeout = (fn, ms, ...args) => rpGameTimer('ludo', fn, ms, false, args);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
   const isUser = player === 'user';
@@ -21122,22 +21176,25 @@ async function lgMove(player, steps) {
   // Phase 2: clamp to path length (= win), no bounce back
   if (next > LUDO_PATH_LEN) next = LUDO_PATH_LEN;
   if (next < 0)  next = 0;
+  LG.pendingMove = { player, target: next, depth: eventDepth }; saveState();
 
   // Animate step-by-step
   if (cur === 0) {
     if (isUser) LG.userPos = 1; else LG.charPos = 1;
     lgRender();
-    await rpGuardAwait(new Promise(r => setTimeout(r, 200)), rpTask);
+    await rpGuardAwait(new Promise(r => setTimeout(r, 200)), rpTask, 0);
   }
   const start = Math.max(cur, 1);
-  for (let p = start + 1; p <= next; p++) {
+  const step = next >= start ? 1 : -1;
+  for (let p = start + step; step > 0 ? p <= next : p >= next; p += step) {
     if (isUser) LG.userPos = p; else LG.charPos = p;
     lgRender();
-    await rpGuardAwait(new Promise(r => setTimeout(r, 320)), rpTask);
+    await rpGuardAwait(new Promise(r => setTimeout(r, 320)), rpTask, 0);
   }
 
   if (isUser) LG.userPos = next; else LG.charPos = next;
   lgRender();
+  LG.pendingMove = null; saveState();
 
   // Phase 2: NO eat check (removed)
   // Phase 2: NO home-run entry (removed)
@@ -21145,34 +21202,15 @@ async function lgMove(player, steps) {
   // Trigger square event if applicable (shared path, direct position)
   const finalPos = isUser ? LG.userPos : LG.charPos;
   if (finalPos >= 1 && finalPos < LUDO_PATH_LEN && SQUARE_EVENTS[finalPos]) {
-    await rpGuardAwait(lgTriggerSquareEvent(player, finalPos), rpTask, 0);
+    await rpGuardAwait(lgTriggerSquareEvent(player, finalPos, eventDepth), rpTask, 0);
   }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
 
 function lgStatus(txt) { $('#rp-game-status-text').text(txt); }
 
-function lgMsg(type, text) {
-  const cls = type === 'user' ? 'game-msg-user' : type === 'char' ? 'game-msg-char' : 'game-msg-sys';
-  const pre  = type === 'char' ? `${LG.charName}: ` : '';
-  const editBtnHtml = type === 'char' ? `<button class="game-edit-btn" onclick="event.stopPropagation();gameInlineEdit(this)" title="编辑"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/><circle cx="5.5" cy="5.5" r="0" fill="none"/></svg></button>` : '';
-  const msgHtml = `<div class="game-msg ${cls}"><span class="game-msg-text">${escHtml(pre + String(text ?? ''))}</span>${editBtnHtml}</div>`;
-  $('#rp-game-chat').append(msgHtml);
-  const el = document.getElementById('rp-game-chat');
-  if (el) el.scrollTop = el.scrollHeight;
-  // sync to fullscreen if open
-  const fs = document.getElementById('rp-game-chat-fs');
-  if (fs && fs.style.display !== 'none') {
-    const body = document.getElementById('rp-game-chat-fs-body');
-    if (body) { body.insertAdjacentHTML('beforeend', msgHtml); body.scrollTop = body.scrollHeight; }
-  }
-  // 记录到游戏内聊天历史(仅 user/char,跳过 sys)
-  if (type === 'user' || type === 'char') {
-    if (!LG.chatLog) LG.chatLog = [];
-    recordPhoneGameMessage('ludo', type, text);
-  }
-}
+function lgMsg(type, text) { rpAppendGameMessage('ludo',type,text); }
 
 function lgWin(winner) {
   LG.active = false;
@@ -21184,11 +21222,12 @@ function lgWin(winner) {
     ? `你率先抵达终点!${LG.charName}甘拜下风~`
     : `${LG.charName}率先抵达终点!再来一局?`);
   $('#rp-game-win').show();
+  saveState();
 }
 
 // ── AI commentary (calls ST generate pipeline silently) ──────────
 // ── Strip AI noise, keep only first clean dialogue line ──────────────────────
-function cleanGameReply(raw, charName) {
+function cleanGameReply(raw, charName, allowActions = false) {
   let text = (raw || '').trim();
   if (!text) return '';
 
@@ -21235,9 +21274,9 @@ function cleanGameReply(raw, charName) {
   // 4. 删除整行 markdown 标题(而非仅仅 # 号)，保留其他内容
   text = text.replace(/^#{1,6}\s*.{0,100}$/gm, '').trim();
   // 4b. 删除 *动作描写* 整段（中文内容或短于30字的动作）
-  text = text.replace(/\*[^*\n]{1,50}\*/g, '').trim();
+  if (!allowActions) text = text.replace(/\*[^*\n]{1,50}\*/g, '').trim();
   // 4b2. 单星号开头无闭合的动作描写
-  text = text.replace(/^\*[^*\n]{1,50}$/gm, '').trim();
+  if (!allowActions) text = text.replace(/^\*[^*\n]{1,50}$/gm, '').trim();
   // 4b3. bold/italic 标记（非动作，如英文强调）保留内容
   text = text.replace(/_{1,3}([^_\n]+)_{1,3}/g, '$1').trim();
   // 4c. 删除括号包裹的动作/思维描写（短动作保留型已在 3b 处理，这里清短括号）
@@ -21253,7 +21292,7 @@ function cleanGameReply(raw, charName) {
 
   // 6. 优先提取引号内台词
   const quoteMatch = text.match(/["""\u201c\u300c]([^"""\u201d\u300d\n]{2,80})["""\u201d\u300d]/);
-  if (quoteMatch) {
+  if (quoteMatch && !allowActions) {
     const q = quoteMatch[1].trim();
     if (q.length >= 2 && q.length <= 80) {
       return q;
@@ -21383,7 +21422,7 @@ function lgGetPersona() {
 // ── Square event trigger (两步流程) ──────────────────────────────
 // ── 自定义 API 调用(支持 DeepSeek / 通义 / GLM 等 OpenAI 兼容格式)──
 async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  /* rp-task-scope */ const rpTask = options.gameTask || rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
   const cfg = readCustomApiConfig();
@@ -21406,6 +21445,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       msgs.push({ role: 'user', content: prompt });
       const data = await rpGuardAwait(rpRuntime.fetchJSON(buildCustomApiEndpoint(cfg.url, 'chat/completions'), {
         method: 'POST',
+        signal: rpTask.signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
         body: JSON.stringify(rpCustomApiRequestBody(cfg, msgs, maxTokens, options))
       }), rpTask);
@@ -21471,7 +21511,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
       msgs.push({ role: 'user', content: prompt });
-      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneTranslation ? { trimNames: false } : {}) }), rpTask);
+      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneTranslation ? { trimNames: false } : {}), ...(options.gameTask ? { responseLength: maxTokens } : {}) }), rpTask);
       if (resp && resp.trim()) {
         // ST 路径也统一清洗 think/thinking 标签
         let stText = resp.trim();
@@ -21494,7 +21534,10 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
 }
 
 async function lgTriggerSquareEvent(player, pos, _depth) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  const setTimeout = (fn, ms, ...args) => rpGameTimer('ludo', fn, ms, false, args);
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('ludo', prompt, max, system, options);
+
+  /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
   if ((_depth || 0) >= 3) return; // 防止无限链式触发
@@ -21502,6 +21545,9 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
   if (!ev) return;
   const isUser = player === 'user';
   const moverName = isUser ? '你' : LG.charName;
+  const alreadyReplied = LG.taskStage === 'task' && LG.taskPos === pos && LG.taskReplyShown;
+  LG.taskActive = ev.text; LG.taskPlayer = player; LG.taskPos = pos;
+  LG.taskStage = 'confirm'; LG.taskReplyShown = !!alreadyReplied; saveState();
 
   // 填充弹窗内容
   document.getElementById('rp-sq-event-sq').textContent = `第 ${pos} 格`;
@@ -21516,23 +21562,26 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
   LG.taskBusy = true;
   const overlay = document.getElementById('rp-sq-event');
   overlay.style.display = 'flex';
-  await rpGuardAwait(rpRuntime.waitForClick(document.getElementById('rp-sq-event-done'), overlay), rpTask, 0);
+  await rpGuardAwait(rpGameRuntime('ludo').waitForClick(document.getElementById('rp-sq-event-done'), overlay), rpTask, 0);
   LG.taskBusy = false;
+  LG.taskStage = null; saveState();
 
   // 特殊格:立即执行效果,不进入步骤二
   if (ev.type === 'move') {
     const curPos = isUser ? LG.userPos : LG.charPos;
     const newPos = Math.max(1, Math.min(LUDO_PATH_LEN, curPos + ev.delta));
     const step   = ev.delta > 0 ? 1 : -1;
+    LG.pendingMove = { player, target: newPos, depth: (_depth || 0) + 1 }; saveState();
     // 逐格动画,与普通掷骰移动相同速度
     for (let p = curPos + step; step > 0 ? p <= newPos : p >= newPos; p += step) {
       if (isUser) LG.userPos = p; else LG.charPos = p;
       lgRender();
-      await rpGuardAwait(new Promise(r => setTimeout(r, 320)), rpTask);
+      await rpGuardAwait(new Promise(r => setTimeout(r, 320)), rpTask, 0);
     }
     lgMsg('sys', ev.delta > 0 ? `${moverName}前进${ev.delta}格,到第${newPos}格` : `${moverName}后退${Math.abs(ev.delta)}格,到第${newPos}格`);
     // 落地后检查新位置有没有任务格(Bug2修复)
-    await rpGuardAwait(new Promise(r => setTimeout(r, 300)), rpTask);
+    await rpGuardAwait(new Promise(r => setTimeout(r, 300)), rpTask, 0);
+    LG.pendingMove = null; saveState();
     let _chainKey = null;
     if (newPos >= 1 && newPos < LUDO_PATH_LEN && SQUARE_EVENTS[newPos]) {
       _chainKey = newPos;
@@ -21641,6 +21690,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
 
   // 步骤二:对话/动作类任务
   LG.taskBusy = true;
+  LG.taskStage = 'task'; saveState();
   const bar = document.getElementById('rp-sq-task-bar');
   const btn = document.getElementById('rp-sq-task-done-btn');
   const txt = document.getElementById('rp-sq-task-text');
@@ -21654,42 +21704,24 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
     const hintEl = document.getElementById('rp-sq-task-hint');
     if (hintEl) hintEl.textContent = `请耐心等待${LG.charName}的回答`;
 
-    // AI 生成 char 完成任务的话(支持自定义 API)
-    const persona   = g2048GetPersona();
-    const actHint   = ev.type === 'action' ? '(若有动作用*动作*格式,不超过8字)' : '';
-    // 所有 talk/truth 类型任务都加强提示，防止 AI 只重复任务名称
-    const _taskExpandHint = (ev.type === 'talk' || ev.type === 'truth' || !ev.type)
-      ? `\n★ 强制要求：必须直接给出具体答案/内容，严禁用括号包裹任务名称（如"（关于…）"是错误格式），严禁以"关于这个问题"/"我的回答是"等元描述开头，直接说出实际内容。示例——任务"分享一个秘密"→正确:"我偷偷存了你的联系人头像" 错误:"（关于分享一个秘密……）"。任务"最喜欢对方哪里"→正确:"你笑起来眼睛会弯成月亮，我每次都想多看两眼" 错误:"我最喜欢你的…"。`
-      : '';
-    const prompt    = `[飞行棋强制任务规则]无论角色性格如何,踩到任务格必须立刻直接完成任务,不许沉默、回避、卖关子或绕弯子。${_taskExpandHint}\n${persona}\n当前任务:${ev.text}${actHint}\n请以${LG.charName}的身份用中文口语直接完成该任务，30字以内，纯对话台词，不带括号(任务动作除外)、引号，直接开口说内容。`;
-    const rawReply = await rpGuardAwait(lgCallAPI(prompt, 150), rpTask);
-    // 清洗回复，同时检测"重复任务名"的无效回复
-    let cleanedReply = rawReply && rawReply.trim() ? cleanGameReply(rawReply, LG.charName) : '';
-    // 检测 AI 只重复了任务文本而没有给出实质内容（任务文本出现在回复里且回复本身很短）
-    const _taskTextInReply = cleanedReply && ev.text && cleanedReply.includes(ev.text.slice(0, 8));
-    const _tooShort = cleanedReply.length <= 4;
-    if (_taskTextInReply || _tooShort) cleanedReply = '';
-    const replied  = cleanedReply.length > 1;
-    if (replied) lgMsg('char', cleanedReply);
-    else {
-      // 兜底：用更简短直接的 prompt 再试一次
-      const _fallbackPrompt = `${persona}\n你正在玩飞行棋，踩到任务格，任务是：${ev.text}。请直接说出你的回答，不超过15字，不要重复任务内容，直接开口。`;
-      const _fb = await rpGuardAwait(lgCallAPI(_fallbackPrompt, 150), rpTask);
-      const _fbClean = _fb && _fb.trim() ? cleanGameReply(_fb, LG.charName) : '';
-      if (_fbClean && _fbClean.length > 1 && !_fbClean.includes(ev.text.slice(0, 8))) {
-        lgMsg('char', _fbClean);
-      } else {
-        // 兆底回复池：根据任务类型给出实质性内容，不许规避
-        const _talkFallbacks = [
-          '你啊……就是看你笑起来的时候，会想多看两眼。',
-          '这种话要我说几遍才够？',
-          '你猜。',
-          '……我心里有答案，但我不想让你太得意。',
-          '反正不是你想的那样……也不是不是。'
-        ];
-        const _actionFallbacks = [`*完成${ev.text}*`];
-        const _pool = ev.type === 'action' ? _actionFallbacks : _talkFallbacks;
-        lgMsg('char', _pool[Math.floor(Math.random() * _pool.length)]);
+    if (!alreadyReplied) {
+      let done = false;
+      while (!done) {
+        const format = ev.type === 'action' ? '动作可用*动作*，不冒充用户的行为' : '纯台词，无动作';
+        const prompt = `飞行棋任务:${ev.text}。以${LG.charName}身份直接给具体内容，中文≤30字；${format}。×分析/重复任务名/占位词。`;
+        const rawReply = await rpGuardAwait(lgCallAPI(prompt, 256, g2048GetPersona()), rpTask);
+        const reply = cleanGameReply(rawReply, LG.charName, ev.type === 'action');
+        if (reply.length > 1 && !/\*完成[^*]*\*/.test(reply) && (!reply.includes(ev.text) || (ev.type === 'action' && /\*[^*]+\*/.test(reply)))) {
+          lgMsg('char', reply); LG.taskReplyShown = true; saveState(); done = true;
+        } else {
+          lgMsg('sys', '⚠️ 任务回复生成失败，未自动完成；可重试或跳过。');
+          btn.disabled = false; btn.textContent = '跳过本任务';
+          const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '重试';
+          bar.append(retry);
+          const choice = await rpGuardAwait(rpWaitGameChoice('ludo', [btn,retry]).finally(() => retry.remove()), rpTask, 0);
+          if (choice === 0) { bar.style.display='none'; LG.taskBusy = false; LG.taskStage = null; LG.taskActive = null; return; }
+          btn.disabled = true;
+        }
       }
     }
 
@@ -21699,22 +21731,26 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
   } else {
     // ── User 任务:显示小条,user 自行在聊天框完成后点「已完成」 ──
     txt.textContent = `💬 ${ev.text}`;
+    btn.disabled = false; btn.textContent = '✅ 已完成';
     bar.style.display = 'flex';
     const hintEl2 = document.getElementById('rp-sq-task-hint');
     if (hintEl2) hintEl2.textContent = '请在下方对话框内完成指定任务';
   }
 
   // 等待「已完成」点击
-  await rpGuardAwait(rpRuntime.waitForClick(btn, bar), rpTask, 0);
+  await rpGuardAwait(rpGameRuntime('ludo').waitForClick(btn, bar), rpTask, 0);
   LG.justDidTask = true;
   LG.lastTaskTime = Date.now();
   LG.lastTaskText = ev.text || null; // 记住最近任务，供 lgGameChat 上下文用
   LG.taskBusy = false;
+  LG.taskStage = null; LG.taskActive = null; LG.taskReplyShown = false;
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) { if (!LG.taskBusy) { LG.taskActive=null; LG.taskStage=null; } saveState(); } }
 }
 
 function lgCharComment(event) {
+  const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('ludo', prompt, max, system, options);
+
   if (!LG.active && !event.endsWith('_win')) return;
   // 任务进行中或刚结束后 2 秒内不发评论
   if (LG.taskBusy || LG.justDidTask || (LG.lastTaskTime && Date.now() - LG.lastTaskTime < 2000)) {
@@ -21777,7 +21813,7 @@ function lgCharComment(event) {
   // ── game_start:游戏开场白 ──────────────────────────────────
   if (event === 'game_start') {
     (async () => {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
       try {
@@ -21794,7 +21830,7 @@ function lgCharComment(event) {
     if (!rpTask.valid()) return;
  console.warn('[Ludo] lgCharComment game_start error:', rpErrorInfo(e)); }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 })();
     return;
   }
@@ -21821,7 +21857,7 @@ function lgCharComment(event) {
 
   // 异步 AI 生成，不阻塞游戏流程
   (async () => {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+  /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
     try {
@@ -21861,97 +21897,21 @@ function lgCharComment(event) {
     if (!rpTask.valid()) return;
  console.warn('[Ludo] lgCharComment error:', rpErrorInfo(e)); }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 })();
 }
 
-async function lgGameChat(text) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-  if (!text.trim()) return;
-  lgMsg('user', text);
-
-  const ctx    = getContext();
-  const cName  = LG.charName;
-  const userName = (ctx && ctx.name1) || '你';
-  const persona = g2048GetPersona();
-  const taskNote = LG.taskActive
-    ? `\n[当前待完成任务:「${LG.taskActive}」--必须直接完成,不许回避]`
-    : (LG.lastTaskText && LG.lastTaskTime && Date.now() - LG.lastTaskTime < 60000)
-      ? `\n[刚才完成的任务:「${LG.lastTaskText}」--用户可能在追问这个任务的内容]`
-      : '';
-
-  // 游戏内完整对话上下文（user+char 交替，和 2048 对齐）
-  const recentLog = (LG.chatLog || []).slice(-10);
-  const historyLines = recentLog
-    .filter(m => m.role === 'user' || m.role === 'char')
-    .slice(0, -1)
-    .map(m => (m.role === 'user' ? userName : cName) + ': ' + m.text.slice(0, 60));
-  const historyNote = historyLines.length > 0
-    ? `\n[游戏内近期对话记录，必须基于此上下文回复]:\n${historyLines.join('\n')}\n`
-    : '';
-
-  // 去重：char 最近说过的话
-  const recentCharReplies = (LG.chatLog || []).filter(m => m.role === 'char').slice(-4).map(m => m.text.trim());
-  const avoidNote = recentCharReplies.length > 0
-    ? `\n[你最近说过，不得重复或近似]: ${recentCharReplies.join(' / ')}`
-    : '';
-
-  const prompt = `${persona}${taskNote}${historyNote}${avoidNote}\n[游戏聊天场景]${userName}对你说:「${text}」\n请以${cName}的身份，根据上方对话上下文用中文口语直接回复，20字以内，纯对话台词，不带括号、*号、动作描写、引号。`;
-
-  const resp = await rpGuardAwait(lgCallAPI(prompt, 150), rpTask);
-  const cleaned = resp && resp.trim() ? cleanGameReply(resp, cName) : '';
-
-  // 检测复读1：和用户输入相同
-  const userTextNorm = text.trim().toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
-  const cleanedNorm  = (cleaned || '').toLowerCase().replace(/[。，！？\.…,!?~～\s]+$/, '');
-  const isEchoUser = cleaned && (cleanedNorm === userTextNorm || cleaned.trim() === text.trim());
-
-  // 检测复读2：和 chatLog 最近 char 回复相同
-  const isEchoSelf = cleaned && recentCharReplies.some(r => r === cleaned.trim());
-
-  if (cleaned && cleaned.length > 1 && !isEchoUser && !isEchoSelf) {
-    lgMsg('char', g2048StripActions(cleaned));
-  } else if (isEchoUser || isEchoSelf) {
-    const echoReason = isEchoSelf ? `你刚才已经说过「${recentCharReplies[recentCharReplies.length-1]}」了，请给出完全不同的回应` : '请换一个角度回应用户';
-    const retryPrompt = `${persona}\n${historyNote}[游戏聊天场景]${echoReason}。${userName}说:「${text}」\n请以${cName}的身份给出一句新鲜的回应，15字以内，纯对话台词。`;
-    const retryResp = await rpGuardAwait(lgCallAPI(retryPrompt, 150), rpTask);
-    const retryCleaned = retryResp && retryResp.trim() ? cleanGameReply(retryResp, cName) : '';
-    const isRetryEcho = retryCleaned && recentCharReplies.some(r => r === retryCleaned.trim());
-    if (retryCleaned && retryCleaned.length > 1 && !isRetryEcho) {
-      lgMsg('char', g2048StripActions(retryCleaned));
-    } else {
-      const fallbacks2 = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
-      lgMsg('char', fallbacks2[Math.floor(Math.random() * fallbacks2.length)]);
-    }
-  } else {
-    // API 返回空,兜底用简短回复
-    const fallbacks = ['嗯？','怎么了？','继续啊~','说什么呢','嗯嗯','哈？','然后呢','你说呢'];
-    lgMsg('char', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
-  }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
-}
+async function lgGameChat(text) { await rpSendGameChat('ludo',text); }
 
 // ================================================================
 //  GLOBAL SCOPE EXPORTS  (required: onclick="" attrs run in window scope)
 // ================================================================
 const rpGameDefaults = [LG, LG2048, GM, GWORD].map(game => JSON.parse(JSON.stringify(game)));
 function rpStoreAndResetGames() {
-  rpPauseGameAnimations();
-  clearInterval(GM.timerInterval);
-  [LG, LG2048, GM, GWORD].forEach((game, index) => {
-    const best = game.best;
-    const history = Array.isArray(game.chatLog) ? game.chatLog.slice() : [];
-    Object.keys(game).forEach(key => { delete game[key]; });
-    Object.assign(game, JSON.parse(JSON.stringify(rpGameDefaults[index])));
-    // Disabling resets gameplay, not records. Chat switches restore their own log next.
-    game.chatLog = history;
-    if (best != null) game.best = best;
-  });
+  const saved = getPhoneGameStateSnapshot();
+  // Suspend gameplay; preserve both the round and its independent full history.
+  restorePhoneGameState(saved);
 }
-rpRuntime.own(() => { rpPauseGameAnimations(); });
 Object.assign(window, {
   openHongbao, playVoice, sendUserHongbao,
   toggleAttachPanel, showHongbaoSheet, sendLocation,
@@ -22048,7 +22008,7 @@ function rpInlineEdit(bubbleEl, threadId, msg, msgIdx) {
   };
 }
 
-// P2/P3: 游戏聊天内联编辑(只改 DOM,不持久化)
+// Game edits persist by ID and update every open view of that same message.
 function gameInlineEdit(btn) {
   const msgDiv = btn.parentElement;
   const textSpan = msgDiv.querySelector('.game-msg-text');
@@ -22105,6 +22065,11 @@ function gameInlineEdit(btn) {
       if (entry) {
         const prefix = (entry.name || game.charName) + ': ';
         entry.text = newText.startsWith(prefix) ? newText.slice(prefix.length) : newText;
+        document.querySelectorAll('[data-rp-game-message-id]').forEach(node => {
+          if(node.dataset.rpGameKey === msgDiv.dataset.rpGameKey && node.dataset.rpGameMessageId === entry.id) {
+            const span=node.querySelector('.game-msg-text'); if(span)span.textContent=(entry.name || game.charName)+': '+entry.text;
+          }
+        });
         saveState();
       }
     }

@@ -139,17 +139,19 @@ export function createPhoneRuntime(host, getSlot, isEnabled = () => true) {
         const request = new host.AbortController();
         const abort = () => request.abort();
         token.signal.addEventListener('abort', abort, { once: true });
+        options.signal?.addEventListener('abort', abort, { once: true });
         const id = host.setTimeout(abort, timeout);
         try {
-            if (!token.valid()) throw new host.DOMException('Phone task cancelled', 'AbortError');
+            if (!token.valid() || options.signal?.aborted) throw new host.DOMException('Phone task cancelled', 'AbortError');
             const res = await host.fetch(url, { ...options, signal: request.signal });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            if (!token.valid()) throw new host.DOMException('Phone task cancelled', 'AbortError');
+            if (!token.valid() || options.signal?.aborted) throw new host.DOMException('Phone task cancelled', 'AbortError');
             return data;
         } finally {
             host.clearTimeout(id);
             token.signal.removeEventListener('abort', abort);
+            options.signal?.removeEventListener('abort', abort);
         }
     };
     return { task, guard, own, timer, clearTimer, listen, listenDOM, advance, frame, cancelFrame, destroy, Observer, waitForClick, wait, fetchJSON,
