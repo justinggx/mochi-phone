@@ -2326,7 +2326,7 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 /* 2048 fullscreen chat */
 #g2048-chat-hint{font-size:9.5px;color:rgba(240,225,205,.55);text-align:right;padding:0 16px 2px;flex-shrink:0;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 #g2048-chat-fs{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.78);backdrop-filter:none;display:flex;flex-direction:column}
-#g2048-chat-fs-hd{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.12)}
+#g2048-chat-fs-hd{display:flex;align-items:center;justify-content:space-between;padding:60px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.12)}
 #g2048-chat-fs-title{color:#fff;font-weight:600;font-size:14px}
 #g2048-chat-fs-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:50%;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
 #g2048-chat-fs-body{flex:1;overflow-y:auto;padding:8px 14px;display:flex;flex-direction:column;gap:4px}
@@ -3688,7 +3688,7 @@ ${XHS_COVER_CSS}
 .rp-dark #rp-game-chat{background:rgba(30,10,40,.4);border-top-color:rgba(200,120,255,.08)}
 #rp-game-chat-hint{font-size:9.5px;color:rgba(160,80,200,.5);text-align:right;padding:0 14px 1px;flex-shrink:0}
 /* Full-screen chat */
-#rp-game-chat-fs{position:absolute;top:12%;bottom:0;left:0;right:0;z-index:200;background:rgba(250,245,255,.97);backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;flex-direction:column}
+#rp-game-chat-fs{position:absolute;top:56px;bottom:0;left:0;right:0;z-index:200;background:rgba(250,245,255,.97);backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;flex-direction:column}
 .rp-dark #rp-game-chat-fs{background:rgba(18,8,28,.97)}
 #rp-game-chat-fs-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(180,120,200,.15);flex-shrink:0}
 #rp-game-chat-fs-title{font-size:14px;font-weight:600;color:#4a1060}
@@ -3899,6 +3899,13 @@ ${XHS_COVER_CSS}
 }
 /* ══ 黄金矿工 GAME ══ */
 #rp-view-ggold{position:relative;background:transparent;display:flex;flex-direction:column;overflow:hidden;height:100%}
+/* Reserve the status bar plus its padding, regardless of host box-sizing. */
+#ggold-chat-fs{position:absolute;inset:0;z-index:50;background:#1c1630;color:#fff;display:flex;flex-direction:column;padding:60px 14px 14px;box-sizing:border-box}
+#ggold-chat-fs-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-shrink:0}
+#ggold-chat-fs-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:50%;color:#fff}
+#rp-phone .rp-game-chat-close{width:44px;height:44px;min-width:44px;min-height:44px;flex:0 0 44px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;cursor:pointer;touch-action:manipulation}
+#rp-phone .rp-game-chat-header>span{min-width:0;overflow-wrap:anywhere}
+#rp-phone .rp-game-chat-body{min-height:0;overscroll-behavior:contain}
 #ggold-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;flex-shrink:0;gap:4px}
 .ggold-score-box{background:rgba(255,255,255,.82);border:1px solid rgba(0,0,0,.08);border-radius:7px;padding:3px 8px;text-align:center;min-width:60px;box-shadow:0 1px 4px rgba(0,0,0,.1)}
 .ggold-score-lbl{font-size:9px;font-weight:700;color:rgba(60,40,10,.65);text-transform:uppercase;letter-spacing:.04em}
@@ -3967,7 +3974,7 @@ ${XHS_COVER_CSS}
 #gword-mode-char{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff}
 #gword-mode-user{background:linear-gradient(135deg,#f472b6,#db2777);color:#fff}
 #gword-chat-fs{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.78);backdrop-filter:none;display:flex;flex-direction:column}
-#gword-chat-fs-hd{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.12)}
+#gword-chat-fs-hd{display:flex;align-items:center;justify-content:space-between;padding:60px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.12)}
 #gword-chat-fs-title{color:#fff;font-weight:600;font-size:14px}
 #gword-chat-fs-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:50%;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
 #gword-chat-fs-body{flex:1;overflow-y:auto;padding:8px 14px;display:flex;flex-direction:column;gap:4px}
@@ -7422,11 +7429,11 @@ const HTML = `
           </div>
           <!-- 2048 fullscreen chat -->
           <div id="g2048-chat-fs" style="display:none">
-            <div id="g2048-chat-fs-hd">
+            <div id="g2048-chat-fs-hd" class="rp-game-chat-header">
               <span id="g2048-chat-fs-title">💬 聊天记录</span>
-              <button id="g2048-chat-fs-close">✕</button>
+              <button id="g2048-chat-fs-close" class="rp-game-chat-close" type="button" aria-label="关闭聊天记录">✕</button>
             </div>
-            <div id="g2048-chat-fs-body"></div>
+            <div id="g2048-chat-fs-body" class="rp-game-chat-body"></div>
           </div>
           <div id="g2048-over">
             <div class="g2048-over-emoji" id="g2048-over-emoji">🎉</div>
@@ -7466,9 +7473,9 @@ const HTML = `
             <input id="ggold-input" type="text" placeholder="游戏中聊天..." autocomplete="off"/>
             <button id="ggold-send" type="button">↑</button>
           </div>
-          <div id="ggold-chat-fs" style="display:none;position:absolute;inset:0;z-index:50;background:#1c1630;color:#fff;flex-direction:column;padding:14px;box-sizing:border-box">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span>💬 聊天记录</span><button id="ggold-chat-fs-close" type="button" aria-label="关闭聊天记录">✕</button></div>
-            <div id="ggold-chat-fs-body" style="flex:1;min-height:0;overflow-y:auto"></div>
+          <div id="ggold-chat-fs" style="display:none">
+            <div id="ggold-chat-fs-header" class="rp-game-chat-header"><span>💬 聊天记录</span><button id="ggold-chat-fs-close" class="rp-game-chat-close" type="button" aria-label="关闭聊天记录">✕</button></div>
+            <div id="ggold-chat-fs-body" class="rp-game-chat-body" style="flex:1;overflow-y:auto"></div>
           </div>
           <div id="ggold-over" style="display:none">
             <div class="ggold-over-emoji" id="ggold-over-emoji">🏆</div>
@@ -7505,11 +7512,11 @@ const HTML = `
             <button id="gword-send" type="button">↑</button>
           </div>
           <div id="gword-chat-fs" style="display:none">
-            <div id="gword-chat-fs-hd">
+            <div id="gword-chat-fs-hd" class="rp-game-chat-header">
               <span id="gword-chat-fs-title">💬 聊天记录</span>
-              <button id="gword-chat-fs-close">✕</button>
+              <button id="gword-chat-fs-close" class="rp-game-chat-close" type="button" aria-label="关闭聊天记录">✕</button>
             </div>
-            <div id="gword-chat-fs-body"></div>
+            <div id="gword-chat-fs-body" class="rp-game-chat-body"></div>
           </div>
           <div id="gword-over" style="display:none">
             <div class="gword-over-emoji" id="gword-over-emoji">🎉</div>
@@ -7612,11 +7619,11 @@ const HTML = `
           </div>
           <!-- 全屏聊天记录 -->
           <div id="rp-game-chat-fs" style="display:none">
-            <div id="rp-game-chat-fs-header">
+            <div id="rp-game-chat-fs-header" class="rp-game-chat-header">
               <span id="rp-game-chat-fs-title">💬 游戏聊天记录</span>
-              <button id="rp-game-chat-fs-close" type="button">✕</button>
+              <button id="rp-game-chat-fs-close" class="rp-game-chat-close" type="button" aria-label="关闭聊天记录">✕</button>
             </div>
-            <div id="rp-game-chat-fs-body"></div>
+            <div id="rp-game-chat-fs-body" class="rp-game-chat-body"></div>
           </div>
         </div>
 
