@@ -38,6 +38,24 @@ async function rpGuardAwait(promise, token, timeout = 120000) {
 // ================================================================
 // Visual components live in one scoped block, after legacy theme overrides.
 // Keep existing theme variables and later user CSS; never style the host page.
+// Approved raster artwork: built-in themes only; user CSS remains independent.
+const RP_ART_CSS = `
+#rp-phone.rp-art-icons {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
+#rp-phone.rp-art-icons[data-rp-art-theme="star"] {--rp-art-metal:linear-gradient(120deg,#716d7d,#292835 20%,#585566 40%,#343340 62%,#171923 82%,#575262);--rp-art-edge:rgba(203,197,222,.37);--rp-art-screen-edge:rgba(0,0,0,.9);--rp-art-button:#585362;--rp-art-shadow:rgba(12,10,24,.45);}
+#rp-phone.rp-art-icons[data-rp-art-theme="misty"] {--rp-art-metal:linear-gradient(120deg,#fbfdff,#afbdc9 20%,#eff4f7 39%,#c6d1da 60%,#8e9ca8 82%,#e0e7ed);--rp-art-edge:rgba(255,255,255,.88);--rp-art-screen-edge:rgba(45,70,90,.23);--rp-art-button:#8a9ca9;--rp-art-shadow:rgba(35,57,76,.22);}
+#rp-phone.rp-art-icons #rp-frame {padding:7px!important;border-radius:38px!important;background:var(--rp-art-metal)!important;box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)!important;}
+#rp-phone.rp-art-icons #rp-frame::after {content:'';position:absolute;inset:1px;border:1px solid var(--rp-art-edge);border-radius:37px;pointer-events:none;}
+#rp-phone.rp-art-icons #rp-screen {border-radius:31px!important;box-shadow:0 0 0 1px var(--rp-art-screen-edge);}
+#rp-phone.rp-art-icons #rp-frame .rp-btn {background:var(--rp-art-button);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
+#rp-phone.rp-art-icons #rp-screen #rp-app-grid .rp-app-ico {width:60px;height:60px;}
+#rp-phone.rp-art-icons #rp-screen #rp-app-grid .rp-app-lbl {font-weight:500!important;text-shadow:none!important;letter-spacing:.15px;}
+#rp-phone.rp-art-icons #rp-screen #rp-home-clock {font-weight:300!important;letter-spacing:-2px!important;text-shadow:none!important;}
+#rp-phone.rp-art-icons.rp-theme-misty #rp-screen .rp-home-dot {background:rgba(44,77,104,.28)!important;}
+#rp-phone.rp-art-icons.rp-theme-misty #rp-screen .rp-home-dot-active {background:#527893!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-app-ico,.rp-folder-item-ico).rp-art-ready {position:relative;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;filter:none!important;overflow:visible;}
+#rp-phone .rp-art-clip {position:absolute;inset:0;overflow:hidden;clip-path:inset(4%);pointer-events:none;}
+#rp-phone .rp-art-atlas {position:absolute;display:block;max-width:none!important;max-height:none!important;image-rendering:auto!important;pointer-events:none;}
+`;
 const RP_VISUAL_CSS = `
 #rp-phone {
   --rp-v-text:var(--rp-input-color,#4a1030);
@@ -4933,6 +4951,7 @@ ${XHS_COVER_CSS}
 .rp-dark #rp-game-partner-cancel{background:color-mix(in srgb,var(--rp-nav-btn,#d8b4fe) 18%,transparent);color:var(--rp-nav-btn,#d8b4fe)}
 
 ${RP_VISUAL_CSS}
+${RP_ART_CSS}
 `;
 
 // ================================================================
@@ -5888,6 +5907,7 @@ function applyDarkModeState() {
   $('#rp-phone').toggleClass('rp-dark', enabled);
   $('.rp-dm-ico').text(enabled ? '☀️' : '🌙');
   $('#rp-dm-lbl').text(enabled ? '日间' : '夜间');
+  if (document.getElementById('rp-app-grid')) lgRenderHomeIcons();
 }
 
 // FIX2: 按 chat slot key 存储各窗口的手机状态(内存缓存)
@@ -8836,6 +8856,7 @@ function bindUI() {
   $(document).on("click.mochiPhone", '[data-app="folder-games"]', function(e) {
     e.stopPropagation();
     $('#rp-folder-modal').show();
+    rpRenderGameFolderIcons();
   });
   $(document).on("click.mochiPhone", '#rp-folder-modal', function(e) {
     if (e.target === this) {
@@ -15641,17 +15662,120 @@ const RP_ICON_COLORS = {
   custom: null
 };
 
+const RP_ART_HOME_APPS = ['messages','moments','settings','folder-games','api-settings','themes','diary','xhs','bank'];
+const RP_ART_GAME_APPS = ['ludo','g2048','ggold','gword'];
+const rpArtImageCache = new Map();
+const rpArtFolderFallbacks = new Map();
+let rpArtPaintEpoch = 0;
+
+function rpArtAtlasUrl(theme, kind, local = false) {
+  if (!['candy','star','misty'].includes(theme) || !['home','games'].includes(kind)) return '';
+  const name = `mochi-phone-${theme}-${kind}-20261013.png`;
+  return local ? new URL(`scripts/extensions/third-party/mochi-phone/icons-20261013/${name}`, document.baseURI).href
+    : `https://preview.taliatang1.xyz/assets/${name}`;
+}
+
+// One bounded cache entry per theme/group. Loading never blocks navigation.
+function rpLoadArtAtlas(theme, kind) {
+  const key = `${theme}:${kind}`;
+  if (rpArtImageCache.has(key)) return rpArtImageCache.get(key);
+  const promise = new Promise(resolve => {
+    const image = new Image();
+    let usingLocal = false;
+    image.referrerPolicy = 'no-referrer';
+    const finish = value => { image.onload = null; image.onerror = null; resolve(value); };
+    image.onload = () => finish({src:image.src,width:image.naturalWidth,height:image.naturalHeight});
+    image.onerror = () => {
+      if (!usingLocal) { usingLocal = true; image.src = rpArtAtlasUrl(theme,kind,true); }
+      else finish(null);
+    };
+    image.src = rpArtAtlasUrl(theme,kind);
+  });
+  rpArtImageCache.set(key,promise);
+  promise.then(value => { if (!value && rpArtImageCache.get(key) === promise) rpArtImageCache.delete(key); });
+  return promise;
+}
+
+function rpRestoreArtIcon(icon, html) {
+  const badge = icon.querySelector('.rp-badge');
+  icon.innerHTML = html;
+  if (badge) icon.prepend(badge);
+  icon.classList.remove('rp-art-ready');
+}
+
+function rpPaintArtIcon(icon, atlas, index, columns) {
+  const badge = icon.querySelector('.rp-badge');
+  const clip = document.createElement('span');
+  clip.className = 'rp-art-clip';
+  clip.setAttribute('aria-hidden','true');
+  const image = document.createElement('img');
+  image.className = 'rp-art-atlas';
+  image.alt = '';
+  image.referrerPolicy = 'no-referrer';
+  image.style.width = `${columns * 100}%`;
+  image.style.height = `${columns * 100}%`;
+  image.style.left = `${-(index % columns) * 100}%`;
+  image.style.top = `${-Math.floor(index / columns) * 100}%`;
+  image.src = atlas.src;
+  clip.append(image);
+  icon.replaceChildren(clip);
+  if (badge) icon.prepend(badge);
+  icon.classList.add('rp-art-ready');
+}
+
+function rpRenderGameFolderIcons() {
+  const phone = document.getElementById('rp-phone');
+  if (!phone?.classList.contains('rp-art-icons')) return;
+  const theme = phone.dataset.rpArtTheme;
+  const epoch = rpArtPaintEpoch;
+  rpLoadArtAtlas(theme,'games').then(atlas => {
+    if (!atlas || !phone.isConnected || epoch !== rpArtPaintEpoch || phone.dataset.rpArtTheme !== theme || !phone.classList.contains('rp-art-icons')) return;
+    phone.querySelectorAll('#rp-folder-modal [data-folder-app]').forEach(el => {
+      const index = RP_ART_GAME_APPS.indexOf(el.dataset.folderApp);
+      const icon = el.querySelector('.rp-folder-item-ico');
+      if (icon && index >= 0) rpPaintArtIcon(icon,atlas,index,2);
+    });
+  });
+}
+
 function lgRenderHomeIcons() {
-  // SVG 图标已全部使用 currentColor，颜色由 CSS 的 color: var(--rp-clock-color) 控制。
-  // 此函数仅负责将 SVG HTML 写入 DOM，不再需要读取/传递颜色值。
+  const phone = document.getElementById('rp-phone');
+  if (!phone) return;
+  const epoch = ++rpArtPaintEpoch;
+  const selected = readPhoneThemeValue('rp_theme') || 'candy';
+  const builtIn = ['candy','star','misty'].includes(selected);
+  const theme = phone.classList.contains('rp-dark') ? 'star' : selected;
+  phone.classList.toggle('rp-art-icons',builtIn);
+  if (builtIn) phone.dataset.rpArtTheme = theme;
+  else delete phone.dataset.rpArtTheme;
+  // Legacy currentColor artwork stays available for custom themes/load failure.
+  // Built-in themes replace it only after the matching raster atlas has loaded.
   document.querySelectorAll('#rp-app-grid [data-app]').forEach(el => {
     const appId = el.dataset.app;
     const ico = el.querySelector('.rp-app-ico');
     if (!ico || !RP_THEME_ICONS[appId]) return;
     const badge = ico.querySelector('.rp-badge');
     ico.innerHTML = RP_THEME_ICONS[appId];
+    ico.classList.remove('rp-art-ready');
     if (badge) ico.prepend(badge);
   });
+  phone.querySelectorAll('#rp-folder-modal [data-folder-app]').forEach(el => {
+    const icon = el.querySelector('.rp-folder-item-ico');
+    if (!icon) return;
+    if (!rpArtFolderFallbacks.has(el.dataset.folderApp)) rpArtFolderFallbacks.set(el.dataset.folderApp,icon.innerHTML);
+    rpRestoreArtIcon(icon,rpArtFolderFallbacks.get(el.dataset.folderApp));
+  });
+  document.getElementById('rp-frame')?.style.removeProperty('box-shadow');
+  if (!builtIn) return;
+  rpLoadArtAtlas(theme,'home').then(atlas => {
+    if (!atlas || !phone.isConnected || epoch !== rpArtPaintEpoch || phone.dataset.rpArtTheme !== theme || !phone.classList.contains('rp-art-icons')) return;
+    phone.querySelectorAll('#rp-app-grid [data-app]').forEach(el => {
+      const index = RP_ART_HOME_APPS.indexOf(el.dataset.app);
+      const icon = el.querySelector('.rp-app-ico');
+      if (icon && index >= 0) rpPaintArtIcon(icon,atlas,index,3);
+    });
+  });
+  if (document.getElementById('rp-folder-modal')?.style.display !== 'none') rpRenderGameFolderIcons();
 }
 
 function lgApplyTheme(id, opts) {
@@ -15686,6 +15810,10 @@ function lgApplyTheme(id, opts) {
 function rpStripFrameRing() {
   const frame = document.getElementById('rp-frame');
   if (!frame) return;
+  if (document.getElementById('rp-phone')?.classList.contains('rp-art-icons')) {
+    frame.style.removeProperty('box-shadow');
+    return;
+  }
   const computed = getComputedStyle(frame).boxShadow;
   if (!computed || computed === 'none') return;
   // 将 box-shadow 按逗号分割，过滤掉 spread 为 7px~11px 且颜色为不透明色的那一层（外圈特征）
