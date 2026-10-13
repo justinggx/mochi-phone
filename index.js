@@ -36,6 +36,117 @@ async function rpGuardAwait(promise, token, timeout = 120000) {
 //  彻底绕开 SillyTavern 扩展 CSS 加载管线,
 //  避免与终端正则美化 <style> 标签的 CSS 解析器产生冲突。
 // ================================================================
+// Visual components live in one scoped block, after legacy theme overrides.
+// Keep existing theme variables and later user CSS; never style the host page.
+const RP_VISUAL_CSS = `
+#rp-phone {
+  --rp-v-text:var(--rp-input-color,#4a1030);
+  --rp-v-muted:color-mix(in srgb,var(--rp-v-text) 76%,transparent);
+  --rp-v-surface:#fff7fa;
+  --rp-v-card:color-mix(in srgb,var(--rp-v-surface) 94%,var(--rp-nav-btn));
+  --rp-v-border:color-mix(in srgb,var(--rp-v-text) 20%,transparent);
+  --rp-v-danger:#b9384b;
+}
+#rp-phone.rp-theme-star {--rp-v-surface:#211638;--rp-v-danger:#ff9aab;}
+#rp-phone.rp-theme-misty {--rp-v-surface:#f0f7fc;}
+#rp-phone.rp-dark {--rp-v-text:#e7e0f4;--rp-v-surface:#211d2f;--rp-v-danger:#ff9aab;}
+/* Navigation: retain the safe top inset and centered titles. */
+#rp-phone #rp-screen .rp-nav-bar .rp-back,#rp-phone #rp-screen .rp-nav-bar .rp-nav-add,
+#rp-phone #rp-screen .rp-diary-gen-btn {min-width:40px;min-height:40px;align-items:center;justify-content:center;touch-action:manipulation;}
+#rp-phone #rp-screen .rp-nav-bar .rp-nav-title {text-shadow:none!important;}
+#rp-phone.rp-theme-misty #rp-screen .rp-nav-bar .rp-nav-title,
+#rp-phone.rp-theme-misty #rp-screen .rp-nav-bar .rp-back,
+#rp-phone.rp-theme-misty #rp-screen .rp-nav-bar .rp-nav-add {color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone #rp-screen .rp-hd-name {font-size:12px;color:var(--rp-v-muted);}
+#rp-phone #rp-screen .rp-translation-control {color:var(--rp-v-muted);}
+#rp-phone #rp-screen .rp-translation-btn {opacity:1;min-width:30px;min-height:30px;padding:3px 7px;border-color:var(--rp-v-border);border-radius:8px;}
+#rp-phone #rp-screen .rp-translation-text {color:var(--rp-v-text);font-size:13px;line-height:1.6;background:var(--rp-v-card);border-color:var(--rp-nav-btn);}
+/* Reading first: time and existing tools share one row. No hidden/long-press actions. */
+#rp-phone #rp-screen .rp-message-meta {display:flex;flex-wrap:wrap;align-items:center;gap:0 4px;max-width:100%;min-width:0;}
+#rp-phone #rp-screen .rp-out>.rp-message-meta {justify-content:flex-end;}
+#rp-phone #rp-screen .rp-message-meta .rp-bts {padding:0 2px;}
+#rp-phone #rp-screen .rp-message-meta .rp-translation-control {margin:0;}
+#rp-phone #rp-screen .rp-message-meta.rp-has-expanded-translation>.rp-translation-control {flex-basis:100%;max-width:100%;}
+#rp-phone #rp-screen .rp-out .rp-message-meta>.rp-translation-control {text-align:right;}
+#rp-phone #rp-screen .rp-translation-text {text-align:left;}
+#rp-phone #rp-screen .rp-bts {font-size:11px;color:var(--rp-v-muted);}
+#rp-phone #rp-screen .rp-bwrap .rp-edit-btn,#rp-phone #rp-screen .rp-bwrap .rp-del-btn {width:30px;height:30px;min-width:30px;min-height:30px;opacity:1;pointer-events:auto;border:none;background:transparent;color:var(--rp-v-muted);box-shadow:none;touch-action:manipulation;}
+#rp-phone #rp-screen .rp-bwrap .rp-del-btn {color:var(--rp-v-danger);}
+#rp-phone #rp-screen .rp-bwrap .rp-edit-btn:hover,#rp-phone #rp-screen .rp-bwrap .rp-del-btn:hover {background:var(--rp-v-card);}
+#rp-phone #rp-screen .rp-moment .rp-moment-time,#rp-phone #rp-screen .rp-diary-date {font-size:12px;color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen .rp-moment .rp-moment-act {min-height:34px;padding:5px 9px;font-size:12px;color:var(--rp-v-muted)!important;border-radius:10px;}
+#rp-phone #rp-screen .rp-moment .rp-moment-del-btn,#rp-phone #rp-screen .rp-moment .rp-moment-comment-del-btn {color:var(--rp-v-danger)!important;}
+#rp-phone #rp-screen .rp-moment .rp-moment-act.rp-liked {color:var(--rp-v-danger)!important;}
+#rp-phone #rp-screen .rp-moment-reply-btn,#rp-phone #rp-screen .rp-moment-comment-del-btn {display:inline-flex;align-items:center;min-height:28px;padding:0 4px;font-size:12px;touch-action:manipulation;}
+#rp-phone #rp-screen .rp-moment .rp-moment-reply-btn {color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen .rp-moment .rp-moment-comments-wrap {background:var(--rp-v-card)!important;line-height:1.6;}
+#rp-phone #rp-screen .rp-diary-empty {color:var(--rp-v-muted);line-height:1.7;padding:32px 10px;}
+#rp-phone #rp-screen .rp-diary-compose {padding-top:8px;gap:6px;}
+#rp-phone #rp-screen .rp-diary-input {height:80px;min-height:64px;}
+#rp-phone #rp-screen .rp-diary-send-btn {min-height:38px;background:var(--rp-send-bg);}
+#rp-phone #rp-screen .rp-diary-edit-btn {min-width:28px;min-height:28px;opacity:1;pointer-events:auto;}
+/* A new task must not show readable content from the previous page through it. */
+#rp-phone #rp-screen #rp-compose-modal,#rp-phone #rp-screen #rp-del-picker {top:48px;background:var(--rp-v-surface)!important;color:var(--rp-v-text);}
+#rp-phone #rp-screen :is(#rp-compose-modal,#rp-del-picker) .rp-nav-bar {height:44px;padding-top:0;}
+#rp-phone #rp-screen #rp-compose-modal::before,#rp-phone #rp-screen #rp-compose-modal::after,
+#rp-phone #rp-screen #rp-del-picker::before,#rp-phone #rp-screen #rp-del-picker::after {display:none;}
+#rp-phone #rp-screen .rp-add-choice-box,#rp-phone #rp-screen .rp-add-choice-cancel,
+#rp-phone #rp-screen .rp-hb-sheet,#rp-phone #rp-screen .rp-loc-sheet,#rp-phone #rp-screen .rp-game-partner-sheet {background:var(--rp-v-surface)!important;color:var(--rp-v-text);border-color:var(--rp-v-border);}
+#rp-phone #rp-screen .rp-add-choice-item:not(.rp-add-choice-delete),#rp-phone #rp-screen .rp-add-choice-cancel,
+#rp-phone #rp-screen .rp-hb-cancel-btn,#rp-phone #rp-screen .rp-loc-cancel-btn {color:var(--rp-v-text)!important;min-height:38px;}
+#rp-phone #rp-screen .rp-add-choice-delete,#rp-phone #rp-screen #rp-del-confirm {color:var(--rp-v-danger)!important;}
+/* Forms: explicit, named regions instead of brittle inline-style matching. */
+#rp-phone #rp-screen .rp-api-heading {font-size:13px!important;text-align:left!important;margin-bottom:8px!important;color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone #rp-screen .rp-api-explanation {font-size:12px!important;line-height:1.55!important;margin-bottom:12px!important;color:var(--rp-v-muted)!important;background:var(--rp-v-card)!important;}
+#rp-phone #rp-screen .rp-api-privacy {font-size:12px!important;line-height:1.55!important;color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen .rp-api-footer {gap:8px!important;padding:8px 18px 20px!important;border-top:1px solid var(--rp-v-border);}
+#rp-phone #rp-screen #rp-api-test-v {margin-bottom:0!important;min-height:40px;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen #rp-api-save-v {min-height:42px;}
+#rp-phone #rp-screen .rp-api-preset-btn,#rp-phone #rp-screen #rp-api-fetch-models {min-height:30px;}
+#rp-phone #rp-screen #rp-view-api-settings .rp-api-opt {color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone #rp-screen #rp-api-test-v.fail {color:var(--rp-v-danger)!important;}
+#rp-phone #rp-screen #rp-api-test-v.ok {color:#176b49!important;}
+#rp-phone.rp-dark #rp-screen #rp-api-test-v.ok,#rp-phone.rp-theme-star #rp-screen #rp-api-test-v.ok {color:#9ae6b4!important;}
+#rp-phone #rp-screen .rp-set-section .rp-set-hint {color:var(--rp-v-muted)!important;line-height:1.55;}
+#rp-phone #rp-screen .rp-set-select {min-height:32px;}
+#rp-phone input:not([type=radio]):not([type=checkbox]):not([type=range]) {min-width:0;}
+#rp-phone #rp-screen :is(.rp-api-input,.rp-diary-input,#rp-compose-text,#rp-loc-inp,#rp-hb-amount,#rp-hb-note,#rp-game-partner-name-input,#rp-game-partner-note-input) {color:var(--rp-v-text)!important;background:var(--rp-v-surface)!important;border-color:var(--rp-v-border)!important;}
+#rp-phone #rp-screen :is(.rp-api-input,.rp-diary-input,#rp-compose-text,#rp-loc-inp,#rp-hb-amount,#rp-hb-note)::placeholder {color:var(--rp-v-muted)!important;opacity:1;}
+#rp-phone #rp-screen :is(button,input,textarea,select):focus-visible {outline:2px solid var(--rp-nav-btn);outline-offset:2px;}
+#rp-phone #rp-screen #rp-ts-tip {font-size:11px;line-height:1.5;animation:none;}
+#rp-phone #rp-screen .rp-ts-welcome-hint {font-size:12px;line-height:1.5;}
+/* Game typography/surfaces only. Canvas size, paths, timers and rules are untouched. */
+#rp-phone #rp-screen :is(#g2048-chat,#ggold-chat,#gword-chat,#rp-game-chat) {background:var(--rp-v-card)!important;border:1px solid var(--rp-v-border);}
+#rp-phone #rp-screen :is(#g2048-chat-fs,#ggold-chat-fs,#gword-chat-fs,#rp-game-chat-fs) {background:var(--rp-v-surface)!important;color:var(--rp-v-text);}
+#rp-phone #rp-screen :is(#g2048-chat-fs-title,#gword-chat-fs-title,#rp-game-chat-fs-title) {color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen .rp-game-chat-header,#rp-phone #rp-screen .rp-game-chat-header>span {color:var(--rp-v-text);}
+#rp-phone #rp-screen :is(#g2048-chat,#ggold-chat,#gword-chat,#rp-game-chat,#g2048-chat-fs-body,#ggold-chat-fs-body,#gword-chat-fs-body,#rp-game-chat-fs-body) .game-msg {text-shadow:none!important;line-height:1.6;}
+#rp-phone #rp-screen :is(#g2048-chat,#ggold-chat,#gword-chat,#rp-game-chat,#g2048-chat-fs-body,#ggold-chat-fs-body,#gword-chat-fs-body,#rp-game-chat-fs-body) .game-msg-sys {color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen :is(#g2048-chat,#ggold-chat,#gword-chat,#rp-game-chat,#g2048-chat-fs-body,#ggold-chat-fs-body,#gword-chat-fs-body,#rp-game-chat-fs-body) :is(.game-msg-char,.game-msg-user) {color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen .rp-game-chat-close {color:var(--rp-v-text)!important;background:var(--rp-v-card)!important;border-color:var(--rp-v-border);}
+#rp-phone #rp-screen :is(.ggold-score-lbl,.g2048-slbl,#ggold-chat-hint,#gword-chat-hint,#g2048-chat-hint,#rp-game-chat-hint) {font-size:11px;color:var(--rp-v-muted)!important;text-shadow:none;}
+#rp-phone #rp-screen :is(.ggold-score-box,.g2048-sbox) {background:var(--rp-v-surface)!important;border-color:var(--rp-v-border);box-shadow:none;}
+#rp-phone #rp-screen :is(.ggold-score-val,#g2048-score,#g2048-best) {color:var(--rp-v-text)!important;font-variant-numeric:tabular-nums;}
+#rp-phone #rp-screen :is(#ggold-newbtn,#g2048-newbtn,#gword-newbtn) {min-height:30px;border:1px solid var(--rp-v-border);border-radius:10px;background:var(--rp-v-surface);color:var(--rp-v-text);font-size:12px;font-weight:600;font-family:inherit;padding:4px 10px;}
+#rp-phone #rp-screen :is(#gword-status,#gword-category-badge,#gword-round-info,#g2048-turn,#ggold-round-info,#ggold-turn-badge) {color:var(--rp-v-text)!important;background:var(--rp-v-card)!important;text-shadow:none!important;overflow-wrap:anywhere;}
+#rp-phone #rp-screen .game-edit-btn {min-width:28px;min-height:28px;color:var(--rp-v-muted);}
+#rp-phone #rp-screen .g2048-dir {min-height:30px;}
+#rp-phone #rp-screen #g2048-board-wrap {flex:0 1 220px;min-height:132px;}
+#rp-phone #rp-screen #g2048-board {height:100%;width:auto;aspect-ratio:1;max-height:214px;max-width:214px;}
+#rp-phone #rp-screen .g2048-cell {background:color-mix(in srgb,var(--rp-v-surface) 88%,var(--rp-nav-btn));outline:1px solid var(--rp-v-border);}
+#rp-phone #rp-screen #g2048-chat {min-height:36px;}
+#rp-phone #rp-screen .rp-game-partner-change {min-height:28px;}
+#rp-phone #rp-screen :is(#g2048-api-tip,#rp-api-blink) {animation:none!important;text-shadow:none!important;color:var(--rp-v-muted)!important;}
+/* Refinements without changing cover selection, grid or detail interactions. */
+#rp-phone.rp-theme-misty:not(.rp-dark) #rp-screen :is(#rp-home-clock,.rp-app-lbl,.rp-app-ico) {color:#294c69!important;text-shadow:none!important;}
+#rp-phone #rp-screen .rp-app-lbl {font-size:12px;}
+#rp-phone #rp-screen .rp-ln-type {font-size:11px;color:var(--rp-v-muted);}
+#rp-phone #rp-screen .rp-xhs-card-meta {line-height:1.5;}
+#rp-phone #rp-screen .rp-xhs-card-author {font-size:11px;}
+#rp-phone #rp-screen :is(.rp-asset-desc,.rp-bank-hero-stat-lbl,.rp-bank-txn-date) {font-size:11px;line-height:1.55;}
+#rp-phone #rp-screen :is(.rp-bank-hero-amount,.rp-bank-hero-stat-val,.rp-asset-amount,.rp-bank-txn-amt) {font-variant-numeric:tabular-nums;}
+@media(prefers-reduced-motion:reduce) {#rp-phone #rp-screen :is(#rp-compose-modal,.rp-nav-add,.rp-back) {animation:none!important;transition:none!important;}}
+`;
 const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:9998; }
 
@@ -4769,6 +4880,7 @@ ${XHS_COVER_CSS}
 #rp-game-partner-save{background:var(--rp-wd-fill,linear-gradient(135deg,var(--rp-nav-btn,#c0306a),color-mix(in srgb,var(--rp-nav-btn,#c0306a) 68%,#fff 32%)));color:#fff;box-shadow:0 4px 12px color-mix(in srgb,var(--rp-nav-btn,#c0306a) 28%,transparent)}
 .rp-dark #rp-game-partner-cancel{background:color-mix(in srgb,var(--rp-nav-btn,#d8b4fe) 18%,transparent);color:var(--rp-nav-btn,#d8b4fe)}
 
+${RP_VISUAL_CSS}
 `;
 
 // ================================================================
@@ -6485,8 +6597,10 @@ function appendGroupSenderBody(wrap, msg, contentEl, btnRow, time) {
   const body = $('<div>').addClass('rp-grp-body');
   body.append($('<div>').addClass('rp-grp-sender').text((msg && msg.name) || ''));
   body.append(contentEl);
-  if (btnRow) body.append(btnRow);
-  body.append($('<div>').addClass('rp-bts').text(time || ''));
+  const meta = $('<div>').addClass('rp-message-meta');
+  meta.append($('<div>').addClass('rp-bts').text(time || ''));
+  if (btnRow) meta.append(btnRow);
+  body.append(meta);
   wrap.append($(buildGroupSenderAvatarHtml(msg)), body);
 }
 
@@ -7121,8 +7235,8 @@ const HTML = `
             <span class="rp-nav-title">API 设置</span>
           </div>
           <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px 10px;display:flex;flex-direction:column;gap:0">
-            <div style="font-size:17px;color:#2d1060;font-weight:800;text-align:center;margin-bottom:12px;letter-spacing:-.2px">⚡ 自定义API设置</div>
-            <div style="font-size:11px;color:#9070b0;line-height:1.7;margin-bottom:16px;background:rgba(168,85,247,.06);border-radius:12px;padding:10px 12px">
+            <div class="rp-api-heading" style="font-size:17px;color:#2d1060;font-weight:800;text-align:center;margin-bottom:12px;letter-spacing:-.2px">⚡ 自定义API设置</div>
+            <div class="rp-api-explanation" style="font-size:11px;color:#9070b0;line-height:1.7;margin-bottom:16px;background:rgba(168,85,247,.06);border-radius:12px;padding:10px 12px">
               本API将使用在除信息以外的全部小手机功能中,信息功能仍使用原本的酒馆API<br>
               <span id="rp-api-blink" style="color:#a855f7;font-weight:700">建议接入 DeepSeek 等国产模型,让生成速度更快。</span><br>
               接入后直接调用真实 API,需自备 Key。
@@ -7130,7 +7244,7 @@ const HTML = `
             <label class="rp-api-opt" style="margin-bottom:10px"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 使用当前 API(SillyTavern)</label>
             <label class="rp-api-opt" style="margin-bottom:12px"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 接入其他 API</label>
             <div id="rp-api-custom-fields-v" style="display:none;flex-direction:column;gap:8px">
-              <div style="font-size:11px;color:#9070b0;line-height:1.6">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
+              <div class="rp-api-privacy" style="font-size:11px;color:#9070b0;line-height:1.6">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
               <div class="rp-api-presets" style="margin-bottom:4px">
                 <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                 <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
@@ -7147,7 +7261,7 @@ const HTML = `
             </div>
             <div id="rp-api-status-v" style="font-size:11px;color:#a855f7;min-height:18px;margin-top:8px"></div>
           </div>
-          <div style="padding:10px 18px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+          <div class="rp-api-footer" style="padding:10px 18px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
             <button id="rp-api-test-v" style="width:100%;padding:11px;margin-bottom:8px;background:rgba(255,255,255,.18);border:1.5px solid rgba(168,85,247,.45);color:#6d28d9;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer">📡 测试连通性</button>
             <button id="rp-api-save-v" style="width:100%;padding:13px;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;border:none;border-radius:18px;font-size:14px;font-weight:700;cursor:pointer">保存设置</button>
           </div>
@@ -10180,6 +10294,7 @@ function rpPaintPhoneTranslation(control, target) {
   // Never run the conversation/action sanitizer on translated text.
   body.text(cache ? (cache.target === 'zh' ? '中文译文：\n' : 'English：\n') + cache.text : '');
   body.prop('hidden', !cache?.expanded);
+  control.parent('.rp-message-meta').toggleClass('rp-has-expanded-translation', !!cache?.expanded);
 }
 
 function rpMakePhoneTranslationControl(target) {
@@ -10193,7 +10308,10 @@ function rpMakePhoneTranslationControl(target) {
 function rpAttachMessageTranslation(wrap, item, threadId) {
   const body = wrap.children('.rp-grp-body');
   const control = rpMakePhoneTranslationControl({ kind: 'message', item, threadId });
-  (body.length ? body : wrap).append(control);
+  const container = body.length ? body : wrap;
+  const meta = container.children('.rp-message-meta');
+  (meta.length ? meta : container).append(control);
+  if (control.length) rpPaintPhoneTranslation(control, control.data('phoneTranslationTarget'));
 }
 
 function rpRefreshPhoneTranslationControls(item) {
@@ -10528,7 +10646,7 @@ function renderBubbles(threadId) {
       // 横排按钮组
       const btnRow = $('<div>').addClass('rp-btn-row');
       btnRow.append(EDIT_SVG_BTN(msgIdx, threadId), DEL_BTN(msgIdx, threadId));
-      wrap.append(bbl, btnRow, ts);
+      wrap.append(bbl, $('<div>').addClass('rp-message-meta').append(ts, btnRow));
     }
     rpAttachMessageTranslation(wrap, msg, threadId);
     area.append(wrap);
@@ -20463,41 +20581,41 @@ const LUDO_THEMES = [
   {
     name: '🌸 樱花粉', key: 'sakura',
     bg: '#fdf2f8', empty: '#f9f0f5', path: '#fff0f6',
-    pathBorder: 'rgba(236,72,153,0.08)', pathGlow: 'rgba(236,72,153,0.13)',
+    pathBorder: 'rgba(236,72,153,0.32)', pathGlow: 'rgba(236,72,153,0.13)',
     start: '#d1fae5', end: '#fef9c3',
-    event: 'rgba(219,39,119,0.32)', seqNum: 'rgba(180,80,140,0.22)',
+    event: 'rgba(219,39,119,0.32)', seqNum: 'rgba(180,80,140,0.75)',
     deco: ['🌸','🌷','💮','✿'], decoAlpha: 0.18,
   },
   {
     name: '💜 薰衣草', key: 'lavender',
     bg: '#faf5ff', empty: '#f3eef8', path: '#f5f0ff',
-    pathBorder: 'rgba(139,92,246,0.08)', pathGlow: 'rgba(139,92,246,0.13)',
+    pathBorder: 'rgba(139,92,246,0.32)', pathGlow: 'rgba(139,92,246,0.13)',
     start: '#d1fae5', end: '#fef9c3',
-    event: 'rgba(124,58,237,0.32)', seqNum: 'rgba(124,58,237,0.2)',
+    event: 'rgba(124,58,237,0.32)', seqNum: 'rgba(124,58,237,0.75)',
     deco: ['🦋','✨','💜','🔮'], decoAlpha: 0.16,
   },
   {
     name: '🍃 薄荷糖', key: 'mint',
     bg: '#f0fdf4', empty: '#e8f5ee', path: '#ecfdf5',
-    pathBorder: 'rgba(16,185,129,0.08)', pathGlow: 'rgba(16,185,129,0.13)',
+    pathBorder: 'rgba(16,185,129,0.32)', pathGlow: 'rgba(16,185,129,0.13)',
     start: '#dbeafe', end: '#fef9c3',
-    event: 'rgba(5,150,105,0.32)', seqNum: 'rgba(16,185,129,0.22)',
+    event: 'rgba(5,150,105,0.32)', seqNum: 'rgba(16,185,129,0.75)',
     deco: ['🍃','🌿','☘️','🌱'], decoAlpha: 0.15,
   },
   {
     name: '🍑 蜜桃橘', key: 'peach',
     bg: '#fff7ed', empty: '#fef0e4', path: '#fff8f0',
-    pathBorder: 'rgba(251,146,60,0.08)', pathGlow: 'rgba(251,146,60,0.13)',
+    pathBorder: 'rgba(251,146,60,0.32)', pathGlow: 'rgba(251,146,60,0.13)',
     start: '#d1fae5', end: '#fde68a',
-    event: 'rgba(234,88,12,0.32)', seqNum: 'rgba(194,120,60,0.2)',
+    event: 'rgba(234,88,12,0.32)', seqNum: 'rgba(194,120,60,0.75)',
     deco: ['🍑','🌻','🧡','🔆'], decoAlpha: 0.15,
   },
   {
     name: '💎 星空蓝', key: 'starry',
     bg: '#eff6ff', empty: '#e8eef8', path: '#f0f4ff',
-    pathBorder: 'rgba(59,130,246,0.08)', pathGlow: 'rgba(59,130,246,0.13)',
+    pathBorder: 'rgba(59,130,246,0.32)', pathGlow: 'rgba(59,130,246,0.13)',
     start: '#d1fae5', end: '#fef9c3',
-    event: 'rgba(37,99,235,0.32)', seqNum: 'rgba(59,130,246,0.2)',
+    event: 'rgba(37,99,235,0.32)', seqNum: 'rgba(59,130,246,0.75)',
     deco: ['⭐','✨','💫','🌙'], decoAlpha: 0.16,
   },
 ];
