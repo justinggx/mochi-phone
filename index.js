@@ -145,7 +145,59 @@ const RP_VISUAL_CSS = `
 #rp-phone #rp-screen .rp-xhs-card-author {font-size:11px;}
 #rp-phone #rp-screen :is(.rp-asset-desc,.rp-bank-hero-stat-lbl,.rp-bank-txn-date) {font-size:11px;line-height:1.55;}
 #rp-phone #rp-screen :is(.rp-bank-hero-amount,.rp-bank-hero-stat-val,.rp-asset-amount,.rp-bank-txn-amt) {font-variant-numeric:tabular-nums;}
+/* Complete theme colors for media, input hints and accessory controls. */
+#rp-phone #rp-screen :is(.rp-grp-sender,.rp-voice-dur) {color:var(--rp-v-muted);font-size:12px;overflow-wrap:anywhere;}
+#rp-phone #rp-screen .rp-voice-txt {color:var(--rp-v-text);}
+#rp-phone #rp-screen .rp-voice-bbl {background:var(--rp-v-card);border:1px solid var(--rp-v-border);min-width:0;}
+#rp-phone #rp-screen .rp-wb {background:var(--rp-v-muted);}
+#rp-phone #rp-screen .rp-voice-bbl.played .rp-wb {opacity:.65;}
+#rp-phone #rp-screen #rp-input::placeholder {color:var(--rp-v-muted)!important;opacity:1;}
+#rp-phone #rp-screen #rp-attach-btn {color:var(--rp-v-text);background:var(--rp-v-card);border:1px solid var(--rp-v-border);}
+#rp-phone #rp-screen #rp-attach-panel {background:var(--rp-v-surface);border-color:var(--rp-v-border);}
+#rp-phone #rp-screen .rp-attach-item {color:var(--rp-v-text);}
+#rp-phone #rp-screen #rp-gen-diary {color:var(--rp-nav-btn)!important;filter:none!important;}
+#rp-phone #rp-screen .rp-out .rp-message-meta {justify-content:flex-end;}
+#rp-phone #rp-screen .rp-add-choice-cancel {width:min(220px,calc(100% - 36px));display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:14px;border:1px solid var(--rp-v-border);font-size:14px;cursor:pointer;}
+/* Keep XHS branding, not fixed white editor surfaces in a dark theme. */
+#rp-phone #rp-screen #rp-view-xhs-compose {background:var(--rp-v-surface)!important;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose .rp-nav-bar {height:92px!important;min-height:92px!important;padding:46px 16px 0!important;background:var(--rp-v-surface)!important;border-bottom:1px solid var(--rp-v-border)!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose .rp-nav-title {font-size:15px!important;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose .rp-back {color:var(--rp-v-text)!important;font-size:28px!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose .rp-xhs-compose-body {padding:14px 14px 20px!important;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+#rp-phone #rp-screen .rp-xhs-idea-card {height:auto!important;min-height:0!important;flex:none!important;padding:20px 18px!important;border-radius:22px!important;background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border:1px solid var(--rp-v-border)!important;overflow:visible!important;}
+#rp-phone #rp-screen .rp-xhs-idea-card::before,#rp-phone #rp-screen .rp-xhs-quote-mark {display:none!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose #rp-xhs-post-title {font-size:20px!important;line-height:1.4!important;min-height:34px!important;letter-spacing:0!important;color:var(--rp-v-text)!important;padding:0!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose #rp-xhs-post-title::placeholder {font-size:20px!important;color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose #rp-xhs-post-body {font-size:15px!important;line-height:1.65!important;height:220px!important;min-height:160px!important;padding:0!important;overflow-y:auto!important;color:var(--rp-v-text)!important;overscroll-behavior:contain;}
+#rp-phone #rp-screen #rp-view-xhs-compose #rp-xhs-post-body::placeholder {font-size:15px!important;color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen #rp-view-xhs-compose :is(#rp-xhs-post-body,#rp-xhs-post-title):focus-visible {outline:2px solid var(--rp-xhs-accent,#ff2442)!important;outline-offset:3px!important;border-radius:4px!important;}
+/* Calm shadows, readable hint, same shell and home arrangement. */
+#rp-phone #rp-screen .rp-app-ico {filter:drop-shadow(0 1px 2px rgba(0,0,0,.18))!important;}
+#rp-phone #rp-screen #rp-swipe-hint {color:var(--rp-lock-color);animation:rp-readable-breathe 2.2s ease-in-out infinite;font-size:12px;}
+@keyframes rp-readable-breathe {0%,100%{opacity:.72}50%{opacity:1}}
+/* A fixed synthetic miniature; no model calls or saved CSS execution. */
+#rp-phone #rp-screen .rp-theme-preview {height:112px;}
+#rp-phone #rp-screen .rp-saved-card-preview {height:112px;display:flex;align-items:center;justify-content:center;}
+#rp-phone #rp-screen .rp-theme-info {min-height:70px;}
+#rp-phone #rp-screen .rp-theme-card[data-tid="candy"] .rp-theme-preview {background-color:#fff1f7!important;}
+#rp-phone #rp-screen .rp-theme-card[data-tid="star"] .rp-theme-preview {background-color:#1b1233!important;}
+#rp-phone #rp-screen .rp-theme-card[data-tid="misty"] .rp-theme-preview {background-color:#e9f3fa!important;}
+#rp-phone #rp-screen .rp-theme-mini-scene {--rp-mini-text:#633149;--rp-mini-panel:rgba(255,247,250,.94);--rp-mini-sent:#d9407a;--rp-mini-recv:#fff;display:flex;flex-direction:column;gap:5px;width:calc(100% - 16px);padding:8px;border-radius:12px;background:var(--rp-mini-panel);color:var(--rp-mini-text);box-sizing:border-box;}
+#rp-phone #rp-screen .rp-theme-mini-scene[data-preview-theme="star"] {--rp-mini-text:#e0d8ff;--rp-mini-panel:rgba(33,22,56,.94);--rp-mini-sent:#7534d4;--rp-mini-recv:#372452;}
+#rp-phone #rp-screen .rp-theme-mini-scene[data-preview-theme="misty"] {--rp-mini-text:#294c69;--rp-mini-panel:rgba(240,247,252,.94);--rp-mini-sent:#477fa5;--rp-mini-recv:#fff;}
+#rp-phone #rp-screen .rp-theme-mini-top {display:flex;justify-content:space-between;gap:4px;font-size:10px;font-weight:600;}
+#rp-phone #rp-screen .rp-theme-mini-recv,#rp-phone #rp-screen .rp-theme-mini-sent {max-width:90%;padding:4px 6px;font-size:10px;line-height:1.3;border-radius:7px;background:var(--rp-mini-recv);color:var(--rp-mini-text);}
+#rp-phone #rp-screen .rp-theme-mini-sent {align-self:flex-end;background:var(--rp-mini-sent);color:#fff;}
+#rp-phone #rp-screen .rp-theme-desc {font-size:11px;line-height:1.5;}
+#rp-phone #rp-screen .rp-theme-custom-status {font-size:11px;color:var(--rp-v-muted);margin-top:3px;}
+#rp-phone #rp-screen .rp-api-scroll {padding-top:12px!important;min-height:0;overscroll-behavior:contain;}
+#rp-phone #rp-screen .rp-api-field-label {font-size:12px;font-weight:600;color:var(--rp-v-text)!important;line-height:1.4;}
+#rp-phone #rp-screen #rp-api-fetch-models {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border-color:var(--rp-v-border)!important;}
+#rp-phone #rp-screen .rp-api-input {min-height:36px;font-size:12px;}
+#rp-phone #rp-screen .rp-api-privacy {padding:8px 10px;border:1px solid var(--rp-v-border);border-radius:12px;background:var(--rp-v-card);margin-top:4px;}
+#rp-phone #rp-screen .rp-api-explanation {padding:8px 10px!important;margin:10px 0 4px!important;font-size:11px!important;}
 @media(prefers-reduced-motion:reduce) {#rp-phone #rp-screen :is(#rp-compose-modal,.rp-nav-add,.rp-back) {animation:none!important;transition:none!important;}}
+@media(prefers-reduced-motion:reduce) {#rp-phone #rp-screen #rp-swipe-hint {animation:none!important;opacity:1;}}
 `;
 const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:9998; }
@@ -7234,32 +7286,34 @@ const HTML = `
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title">API 设置</span>
           </div>
-          <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px 10px;display:flex;flex-direction:column;gap:0">
+          <div class="rp-api-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px 10px;display:flex;flex-direction:column;gap:0">
             <div class="rp-api-heading" style="font-size:17px;color:#2d1060;font-weight:800;text-align:center;margin-bottom:12px;letter-spacing:-.2px">⚡ 自定义API设置</div>
-            <div class="rp-api-explanation" style="font-size:11px;color:#9070b0;line-height:1.7;margin-bottom:16px;background:rgba(168,85,247,.06);border-radius:12px;padding:10px 12px">
-              本API将使用在除信息以外的全部小手机功能中,信息功能仍使用原本的酒馆API<br>
-              <span id="rp-api-blink" style="color:#a855f7;font-weight:700">建议接入 DeepSeek 等国产模型,让生成速度更快。</span><br>
-              接入后直接调用真实 API,需自备 Key。
-            </div>
             <label class="rp-api-opt" style="margin-bottom:10px"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 使用当前 API(SillyTavern)</label>
             <label class="rp-api-opt" style="margin-bottom:12px"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 接入其他 API</label>
             <div id="rp-api-custom-fields-v" style="display:none;flex-direction:column;gap:8px">
-              <div class="rp-api-privacy" style="font-size:11px;color:#9070b0;line-height:1.6">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
               <div class="rp-api-presets" style="margin-bottom:4px">
                 <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                 <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
                 <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">GLM</button>
                 <button class="rp-api-preset-btn" data-url="" data-model="">其他OpenAI</button>
               </div>
-              <input class="rp-api-input" id="rp-api-url-v" placeholder="API 地址 (如 https://api.deepseek.com/v1)" type="url">
+              <label class="rp-api-field-label" for="rp-api-url-v">API 地址</label>
+              <input class="rp-api-input" id="rp-api-url-v" placeholder="https://api.deepseek.com/v1" type="url">
+              <label class="rp-api-field-label" for="rp-api-key-v">API Key</label>
               <input class="rp-api-input" id="rp-api-key-v" placeholder="API Key" type="password">
+              <label class="rp-api-field-label" for="rp-api-model-v">模型</label>
               <div style="display:flex;gap:6px;align-items:center">
                 <input class="rp-api-input" id="rp-api-model-v" placeholder="模型名称 (如 deepseek-chat)" style="flex:1;min-width:0">
                 <button id="rp-api-fetch-models" style="flex-shrink:0;padding:7px 10px;border-radius:12px;border:1.5px solid rgba(168,85,247,.3);background:rgba(168,85,247,.08);color:#7c3aed;font-size:11px;cursor:pointer;white-space:nowrap;font-weight:600">获取模型</button>
               </div>
               <div id="rp-model-list" style="display:none;background:rgba(255,255,255,.95);border:1px solid rgba(168,85,247,.2);border-radius:12px;max-height:140px;overflow-y:auto"></div>
+              <div class="rp-api-privacy" style="font-size:11px;color:#9070b0;line-height:1.6">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
             </div>
-            <div id="rp-api-status-v" style="font-size:11px;color:#a855f7;min-height:18px;margin-top:8px"></div>
+            <div id="rp-api-status-v" role="status" aria-live="polite" style="font-size:11px;color:#a855f7;min-height:18px;margin-top:8px"></div>
+            <div class="rp-api-explanation" style="font-size:11px;color:#9070b0;line-height:1.7;background:rgba(168,85,247,.06);border-radius:12px;padding:10px 12px">
+              信息仍用酒馆 API；其他小手机功能可使用此接口，需自备 Key。
+              <span id="rp-api-blink" style="color:#a855f7;font-weight:700">可接入 DeepSeek 等模型。</span>
+            </div>
           </div>
           <div class="rp-api-footer" style="padding:10px 18px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
             <button id="rp-api-test-v" style="width:100%;padding:11px;margin-bottom:8px;background:rgba(255,255,255,.18);border:1.5px solid rgba(168,85,247,.45);color:#6d28d9;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer">📡 测试连通性</button>
@@ -7409,7 +7463,7 @@ const HTML = `
         <div id="rp-view-xhs-compose" class="rp-view" style="display:none;flex-direction:column">
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="xhs" aria-label="关闭" style="background:transparent;border:none;cursor:pointer">×</button>
-            <span class="rp-nav-title" aria-hidden="true"></span>
+            <span class="rp-nav-title">写笔记</span>
             <button id="rp-xhs-post-btn" style="border:none;cursor:pointer">发帖</button>
           </div>
           <div class="rp-xhs-compose-body" style="flex:1;overflow-y:auto">
@@ -9001,7 +9055,8 @@ function bindUI() {
     $btn.text('✓ 保存成功').css('background','linear-gradient(135deg,#34d399,#059669)');
     setTimeout(() => {
       $btn.text(origText).css('background','linear-gradient(135deg,#f472b6,#a855f7)');
-      go('home');
+      // Do not pull the user away from a page they opened after saving.
+      if (STATE.currentView === 'api-settings') go('home');
     }, 1400);
   });
 
@@ -10359,6 +10414,27 @@ async function rpTogglePhoneTranslation(target) {
   }
 }
 
+// Move existing metadata nodes only: preserve handlers, targets and receive order.
+function rpNormalizeMessageMeta(wrap) {
+  const groupBody = wrap.children('.rp-grp-body');
+  const body = groupBody.length ? groupBody : wrap;
+  if (body.children('.rp-message-meta').length) return;
+  const time = body.children('.rp-bts');
+  const tools = body.children('.rp-btn-row');
+  const buttons = body.children('.rp-edit-btn,.rp-del-btn');
+  const translation = body.children('.rp-translation-control');
+  if (!time.length && !tools.length && !buttons.length && !translation.length) return;
+  const meta = $('<div>').addClass('rp-message-meta');
+  meta.append(time, tools);
+  if (buttons.length) meta.append($('<div>').addClass('rp-btn-row').append(buttons));
+  meta.append(translation);
+  body.append(meta);
+  translation.each(function() {
+    const control = $(this), target = control.data('phoneTranslationTarget');
+    if (target) rpPaintPhoneTranslation(control, target);
+  });
+}
+
 function renderBubbles(threadId) {
   const area = $('#rp-bubbles').empty();
   const thread = STATE.threads[threadId];
@@ -10653,6 +10729,7 @@ function renderBubbles(threadId) {
   });
 
   // 先同步滚一次，再 setTimeout 等 DOM & 图片布局稳定后再滚一次
+  area.children('.rp-bwrap').each(function() { rpNormalizeMessageMeta($(this)); });
   area.scrollTop(area[0].scrollHeight);
   setTimeout(function() {
     var el = area[0];
@@ -15750,10 +15827,7 @@ function lgRenderSavedThemes() {
     $cards.append(`
       <div class="rp-saved-card${isActive ? ' rp-tc-active' : ''}" data-idx="${i}">
         <div class="rp-saved-card-preview" style="background:${escHtml(preview.wall || '#f5ece4')};background-size:cover">
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px">
-            <div style="height:10px;width:38px;border-radius:6px;background:${escHtml(preview.sent || '#c06040')};opacity:.9"></div>
-            <div style="height:10px;width:28px;border-radius:6px;background:rgba(255,255,255,.55)"></div>
-          </div>
+          ${rpThemePreviewHtml('custom', preview.sent || '#c06040')}
           ${isActive ? '<div class="rp-theme-check">✓</div>' : ''}
         </div>
         <div class="rp-saved-card-info">
@@ -15791,6 +15865,16 @@ function lgDeleteSavedTheme(idx) {
   try { saveState(); } catch(e) {}
 }
 
+function rpThemePreviewHtml(theme, sentBackground) {
+  const id = ['candy', 'star', 'misty', 'custom'].includes(theme) ? theme : 'custom';
+  const style = sentBackground ? ` style="--rp-mini-sent:${escHtml(sentBackground)}"` : '';
+  return `<div class="rp-theme-mini-scene" data-preview-theme="${id}"${style}>
+    <div class="rp-theme-mini-top"><span>12:00</span><span>示意</span></div>
+    <div class="rp-theme-mini-recv">今天也很好。</div>
+    <div class="rp-theme-mini-sent">晚点见。</div>
+  </div>`;
+}
+
 function lgRenderThemePicker() {
   const cur = readPhoneThemeValue('rp_theme') || 'candy';
   const $c = $('#rp-theme-cards').empty();
@@ -15802,16 +15886,14 @@ function lgRenderThemePicker() {
       $c.append(`
         <div class="rp-theme-card${active ? ' rp-tc-active' : ''}" data-tid="custom" style="cursor:pointer">
           <div class="rp-theme-preview" style="background:${t.bg};position:relative;overflow:hidden">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-              <div style="font-size:26px">🎨</div>
-              <div style="font-size:10px;font-weight:700;color:#6b21a8;opacity:.85;letter-spacing:.3px">AI 定制</div>
-            </div>
+            ${rpThemePreviewHtml('custom')}
             ${active ? '<div class="rp-theme-check">✓</div>' : ''}
             ${hasCustom && !active ? '<div style="position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:#a855f7;box-shadow:0 0 5px rgba(168,85,247,.7)"></div>' : ''}
           </div>
           <div class="rp-theme-info">
             <div class="rp-theme-name">${t.emoji} ${t.name}</div>
             <div class="rp-theme-desc">${t.desc}</div>
+            <div class="rp-theme-custom-status">${hasCustom ? '已有自定义方案 · 点击编辑' : '尚未创建 · 点击定制'}</div>
           </div>
         </div>
       `);
@@ -15819,14 +15901,7 @@ function lgRenderThemePicker() {
       $c.append(`
         <div class="rp-theme-card${active ? ' rp-tc-active' : ''}" data-tid="${id}">
           <div class="rp-theme-preview" style="background:${t.bg}">
-            <div class="rp-theme-mini">
-              <div class="rp-theme-mini-clock" style="color:${t.clockColor}">12:00</div>
-              <div class="rp-theme-mini-dots">
-                <div class="rp-theme-mini-dot"></div>
-                <div class="rp-theme-mini-dot"></div>
-                <div class="rp-theme-mini-dot"></div>
-              </div>
-            </div>
+            ${rpThemePreviewHtml(id)}
             ${active ? '<div class="rp-theme-check">✓</div>' : ''}
           </div>
           <div class="rp-theme-info">
