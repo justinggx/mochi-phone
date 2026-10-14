@@ -80,6 +80,13 @@ const RP_VISUAL_CSS = `
 #rp-phone.rp-theme-misty #rp-screen .rp-nav-bar .rp-back,
 #rp-phone.rp-theme-misty #rp-screen .rp-nav-bar .rp-nav-add {color:var(--rp-v-text)!important;text-shadow:none!important;}
 #rp-phone #rp-screen .rp-hd-name {font-size:12px;color:var(--rp-v-muted);}
+/* Thread identity stays inside its own header, away from scrolling messages. */
+#rp-phone #rp-screen #rp-view-thread>.rp-nav-bar {height:auto;min-height:116px;padding:46px 12px 14px;box-sizing:border-box;display:grid;grid-template-columns:40px minmax(0,1fr) 40px;gap:8px;align-items:center;flex-shrink:0;position:relative;z-index:2;}
+#rp-phone #rp-screen #rp-view-thread .rp-thread-hd {min-width:0;max-width:100%;gap:6px;}
+#rp-phone #rp-screen #rp-view-thread .rp-hd-av {flex-shrink:0;}
+#rp-phone #rp-screen #rp-view-thread .rp-hd-name {max-width:100%;line-height:1.4;text-align:center;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
+#rp-phone #rp-screen #rp-view-thread>#rp-bubbles {min-height:0;padding:14px 12px 16px;}
+#rp-phone #rp-screen #rp-view-thread .rp-grp-sender {line-height:1.4;margin:0 0 8px 3px;}
 #rp-phone #rp-screen .rp-translation-control {color:var(--rp-v-muted);}
 #rp-phone #rp-screen .rp-translation-btn {opacity:1;min-width:30px;min-height:30px;padding:3px 7px;border-color:var(--rp-v-border);border-radius:8px;}
 #rp-phone #rp-screen .rp-translation-text {color:var(--rp-v-text);font-size:13px;line-height:1.6;background:var(--rp-v-card);border-color:var(--rp-nav-btn);}
