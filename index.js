@@ -341,6 +341,13 @@ const RP_REFINED_CSS = `
 #rp-phone #rp-screen #ggold-mode-select .ggold-mode-desc {font-size:12px;font-weight:400;line-height:1.6;color:var(--rp-v-text)!important;opacity:1;}
 #rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:hover {background:color-mix(in srgb,var(--rp-v-text) 10%,var(--rp-v-surface))!important;}
 #rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:3px;}
+#rp-phone #rp-screen #gword-status:empty {display:none;}
+#rp-phone #rp-screen #gword-hint-feedback {display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:8px 14px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen #gword-hint-message {flex:1 1 auto;min-width:0;font-size:12px;line-height:1.6;font-weight:400;overflow-wrap:anywhere;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen :is(#gword-retry-hint,#gword-retry-guess) {width:auto!important;max-width:100%;align-self:flex-end;flex:0 0 auto;min-height:36px;padding:6px 10px;margin:0 14px 4px;border:0!important;border-radius:10px;background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;box-shadow:none!important;font-size:12px;font-weight:500;font-family:inherit;line-height:1.4;white-space:nowrap;touch-action:manipulation;}
+#rp-phone #rp-screen #gword-hint-feedback #gword-retry-hint {align-self:center;margin:0;}
+#rp-phone #rp-screen :is(#gword-retry-hint,#gword-retry-guess):focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:2px;}
+#rp-phone #rp-screen #gword-retry-hint:disabled {opacity:.7;cursor:wait;}
 #rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {flex:1 0 auto;padding:12px 20px 20px;gap:10px;}
 #rp-phone #rp-screen #ggold-canvas {height:100%;width:auto;max-width:100%;max-height:190px;aspect-ratio:27/19;object-fit:contain;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold) {overflow-y:auto;overscroll-behavior:contain;}
@@ -7951,6 +7958,9 @@ const HTML = `
             <div id="gword-round-info">第0轮</div>
           </div>
           <div id="gword-status"></div>
+          <div id="gword-hint-feedback" role="status" aria-live="polite" style="display:none">
+            <span id="gword-hint-message"></span><button id="gword-retry-hint" type="button">重试提示</button>
+          </div>
           <div id="gword-chat-hint">点击展开 ↗</div>
           <div id="gword-chat"></div>
           <div id="gword-input-row">
@@ -10198,6 +10208,7 @@ function rpClassifyPhoneApiError(error) {
 // Output ceilings, not requested text lengths. Other phone apps retain their limits.
 const RP_DIARY_MAX_TOKENS = 4096;
 const RP_DIARY_TIMEOUT_MS = 180000;
+const RP_WORD_HINT_MAX_TOKENS = 2048;
 
 function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
   const body = {
@@ -10208,11 +10219,11 @@ function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
   let officialDeepSeek = false;
   try { officialDeepSeek = new URL(cfg.url).hostname === 'api.deepseek.com'; } catch(e) {}
   const switchable = ['deepseek-flash', 'deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-v4-flash-vision-exp', 'deepseek-chat'].includes(body.model);
-  if (officialDeepSeek && switchable && (options.structured || options.phoneDiary)) {
-    // Bounded structured/diary tasks use non-thinking mode on compatible models.
-    // Other providers and ordinary game/chat requests keep their existing policy.
+  if (officialDeepSeek && switchable && (options.structured || options.phoneDiary || options.phoneWordHint)) {
+    // Bounded data, diary and word-hint tasks request final text, not reasoning.
+    // Other providers and ordinary game/chat requests retain their policy.
     body.thinking = { type: 'disabled' };
-    body.temperature = options.phoneDiary ? 0.8 : 0.3;
+    body.temperature = options.phoneDiary ? 0.8 : options.phoneWordHint ? 0.7 : 0.3;
     body.max_tokens = Math.max(body.max_tokens, options.jsonMode === 'object' ? 4096 : 2048);
     if (options.jsonMode === 'object') body.response_format = { type: 'json_object' };
   }
@@ -20237,7 +20248,7 @@ async function gwordStartGame(mode) {
   if (mode === 'char-describe') {
     gwordMsg('sys', '🎯 模式：你说我猜。分类：「' + category + '」');
     $('#gword-status').text('');
-    await rpGuardAwait(gwordCharHint(), rpTask);
+    await rpGuardAwait(gwordCharHint(), rpTask, 0); // Each hint request owns its bounded timeout.
   } else {
     gwordMsg('sys', '🎯 模式：我说你猜。分类：「' + category + '」');
     gwordMsg('sys', '💡 答案是：「' + answer + '」，请给出提示让' + GWORD.charName + '猜！');
@@ -20251,10 +20262,14 @@ async function gwordCharHint(userLastGuess, retry = false) {
   const lgCallAPI = (prompt, max = 150, system = '', options = {}) => rpGameCallAPI('gword', prompt, max, system, options);
 
   /* rp-task-scope */ const rpTask = rpGameRuntime('gword').task();
+  let started = false;
   /* rp-cancel-boundary */ try {
 
-  if (!GWORD.active || GWORD.processing) return;
+  if (!GWORD.active || GWORD.processing || GWORD.mode !== 'char-describe') return;
+  started = true;
   GWORD.processing = true;
+  rpWordHintFeedback('busy');
+  if (retry && userLastGuess === undefined) userLastGuess = GWORD.guesses.at(-1);
   if (!retry) GWORD.round++;
   $('#gword-round-info').text('第' + GWORD.round + '轮');
 
@@ -20294,27 +20309,40 @@ async function gwordCharHint(userLastGuess, retry = false) {
       + '\n请给出一个提示来描述这个词，15字以内，纯对话台词，语气自然贴合角色人设。'
       + '\n禁止给字数/笔画提示。前几轮要模糊抽象，随轮次逐渐明确。';
   }
-  const raw = await rpGuardAwait(lgCallAPI(prompt, 150), rpTask);
+  const hintOptions = { phoneWordHint: true, reportErrors: true };
+  const raw = await rpGuardAwait(lgCallAPI(prompt, RP_WORD_HINT_MAX_TOKENS, '', hintOptions), rpTask);
+  if (!GWORD.active || GWORD.mode !== 'char-describe') return;
   let hint = raw ? cleanGameReply(raw, charName) : '';
   // 泄露答案则重试
   if (hint && answerChars.some(function(c) { return hint.includes(c); })) {
     const retryPrompt = prompt + '\n上次的回复「' + hint + '」包含了答案的字，请重新生成。';
-    const retryRaw = await rpGuardAwait(lgCallAPI(retryPrompt, 150), rpTask);
+    const retryRaw = await rpGuardAwait(lgCallAPI(retryPrompt, RP_WORD_HINT_MAX_TOKENS, '', hintOptions), rpTask);
+    if (!GWORD.active || GWORD.mode !== 'char-describe') return;
     const retryHint = retryRaw ? cleanGameReply(retryRaw, charName) : '';
     hint = retryHint;
   }
   if (!hint || hint.length < 2 || answerChars.some(c => hint.includes(c))) {
-    GWORD.processing = false;
-    gwordMsg('sys', '⚠️ 未取得有效提示，可点击重试；本轮不会重复计数。');
-    rpWordRetryButton();
+    rpWordRetryButton(!hint || hint.length < 2 ? 'empty' : 'leak');
     return;
   }
-  GWORD.retryHint = false; $('#gword-retry-hint').hide(); $('#gword-status').text('');
+  GWORD.retryHint = false; rpWordHintFeedback('clear'); $('#gword-status').text('');
   GWORD.hints.push(hint);
   gwordMsg('char', hint);
   GWORD.processing = false;
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
+  } catch (rpError) {
+    if (!rpTask.valid() || !started || !GWORD.active || GWORD.mode !== 'char-describe') return;
+    const code = rpClassifyPhoneApiError(rpError).phoneApiCode;
+    console.warn('[Phone] word hint unavailable', { code });
+    rpWordRetryButton(code);
+  } finally {
+    if (started && rpTask.valid()) {
+      GWORD.processing = false;
+      const button = document.getElementById('gword-retry-hint');
+      if (button) button.disabled = false;
+      saveState();
+    }
+  }
 }
 
 async function gwordUserGuess(text) {
@@ -20351,7 +20379,7 @@ async function gwordUserGuess(text) {
   }
   gwordMsg('sys', '❌ 不对哦，再想想~');
   GWORD.processing = false;
-  await rpGuardAwait(gwordCharHint(text), rpTask);
+  await rpGuardAwait(gwordCharHint(text), rpTask, 0);
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
@@ -20448,6 +20476,7 @@ function gwordEndRound(won) {
   GWORD.active = false;
   GWORD.processing = false;
   GWORD._paused = false; GWORD.retryHint = false; GWORD.retryGuess = false;
+  rpWordHintFeedback('clear');
   $('#gword-retry-hint,#gword-retry-guess').hide();
   const emoji = won ? '🎉' : '😅';
   const title = won
@@ -20559,7 +20588,7 @@ function rpBeginGame(key) {
   const game = getPhoneGameRecordSource(key);
   game._paused = false;
   game._chatBusy = null;
-  if (key === 'gword') { game.retryHint = false; game.retryGuess = false; $('#gword-retry-hint,#gword-retry-guess').hide(); }
+  if (key === 'gword') { game.retryHint = false; game.retryGuess = false; rpWordHintFeedback('clear'); $('#gword-retry-hint,#gword-retry-guess').hide(); }
   if (key === 'gm') { game._commentBusy = null; game._endingTurn = false; }
   if (key === 'ludo') {
     $('#rp-sq-event, #rp-sq-task-bar, #rp-game-resume-ludo').hide();
@@ -20597,7 +20626,11 @@ function rpResumeDeferredGameTimers() {
 function rpGameCallAPI(key, prompt, max, system, options = {}) {
   const token = rpGameRuntime(key).task();
   return rpGuardAwait(lgCallAPI(prompt, Math.max(max || 150, 256), system, { ...options, gameTask: token }), token)
-    .catch(error => { if (token.valid()) console.warn('[Phone] game request failed',rpErrorInfo(error)); return null; });
+    .catch(error => {
+      if (!token.valid()) return null;
+      if (options.reportErrors) throw rpClassifyPhoneApiError(error);
+      console.warn('[Phone] game request failed',rpErrorInfo(error)); return null;
+    });
 }
 function rpReadLegacyGameNumber(key, max = Number.MAX_SAFE_INTEGER) {
   try {
@@ -20777,16 +20810,44 @@ async function rpSendGameChat(key, text) {
   } catch(error) { if(token.valid())rpAppendGameMessage(key,'sys','⚠️ 角色回复生成失败，请重试。'); }
   finally { if(token.valid() && game._chatBusy===owner)game._chatBusy=null; }
 }
-function rpWordRetryButton() {
+function rpWordHintFeedback(state, code = 'unavailable') {
+  const panel = document.getElementById('gword-hint-feedback');
+  const label = document.getElementById('gword-hint-message');
+  const button = document.getElementById('gword-retry-hint');
+  if (!panel || !label || !button) return;
+  const messages = {
+    unavailable: '本轮提示未完成，重试不计新一轮。',
+    empty: '模型没有返回提示正文。',
+    leak: '提示未通过防泄露校验。',
+    truncated: '模型回答被截断，请重试。',
+    config: '请先填写并保存 API 设置。',
+    interrupted: '模型未完成回答，请重试。',
+    format: 'API 返回格式异常。',
+    auth: 'API 验证失败，请检查密钥。',
+    forbidden: 'API 权限不足，请检查模型权限。',
+    rateLimit: 'API 额度或速率受限，请稍后重试。',
+    provider: 'API 服务暂时异常，请稍后重试。',
+    invalidRequest: '接口、模型或请求参数不被支持。',
+    timeout: '生成超时，请稍后重试。',
+    request: '请求失败，请检查连接后重试。',
+  };
+  panel.style.display = state === 'clear' ? 'none' : 'flex';
+  panel.setAttribute('aria-busy', String(state === 'busy'));
+  label.textContent = state === 'clear' ? '' : state === 'busy' ? '正在准备本轮提示…' : messages[code] || messages.request;
+  button.style.display = state === 'clear' ? 'none' : 'inline-flex';
+  button.disabled = state === 'busy';
+  button.textContent = state === 'busy' ? '生成中…' : '重试提示';
+}
+function rpWordRetryButton(code = 'unavailable') {
   GWORD.retryHint = true;
-  $('#gword-status').text('提示生成未完成，请重试');
-  let button = document.getElementById('gword-retry-hint');
-  if (!button) {
-    button = document.createElement('button'); button.id = 'gword-retry-hint'; button.type = 'button'; button.textContent = '重试提示';
-    button.onclick = () => { if (GWORD.active && !GWORD.processing) void gwordCharHint(undefined, true); };
-    document.getElementById('gword-status')?.after(button);
-  }
-  button.style.display = '';
+  $('#gword-status').text('');
+  rpWordHintFeedback('error', code);
+  const button = document.getElementById('gword-retry-hint');
+  if (button) button.onclick = () => { if (GWORD.active && !GWORD.processing) void gwordCharHint(undefined, true); };
+  // Old transient notices are presentation-only; never delete persisted history.
+  document.querySelectorAll('#gword-chat .game-msg-sys,#gword-chat-fs-body .game-msg-sys').forEach(node => {
+    if (node.textContent.trim() === '⚠️ 未取得有效提示，可点击重试；本轮不会重复计数。') node.remove();
+  });
 }
 function rpWordGuessRetryButton() {
   let button = document.getElementById('gword-retry-guess');
