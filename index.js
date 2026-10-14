@@ -5236,6 +5236,7 @@ runtime.own(() => { if (rpInitialized) flushStateNow(); });
 runtime.own(rpResetGameRuntimes);
 runtime.own(() => { void rpPhoneArchive.close(); });
 runtime.own(() => $(document).off('.mochiPhone'));
+runtime.listenDOM(document, 'click', rpHandlePhoneQuickReplyClick, true);
 runtime.own(() => {
   ['_rpImageSyncInstalled', '_rpChatu8ButtonBridgeInstalled', '__rpPhoneRenderObserverInstalled',
    '_rpHomeSwipeGoto', '__rpUserOocCleanupObserver', '__rpUserOocCleanupTimer'].forEach(key => { delete window[key]; });
@@ -5427,31 +5428,108 @@ const _saveSettings = () => {
   } catch(e) {}
 };
 
-function openMochiPhoneFromExternal() {
-  if (!isMochiPhoneEnabled()) return '';
+function rpPhoneQuickReplyAction(button) {
+  const api = globalThis.quickReplyApi;
+  if (!api || typeof api.listSets !== 'function' || typeof api.getSetByName !== 'function') return null;
+  try {
+    const names = api.listSets();
+    if (!Array.isArray(names)) return null;
+    for (const name of names) {
+      const set = api.getSetByName(name);
+      if (!set || set.isDeleted || set.disableSend || set.injectInput || !Array.isArray(set.qrList)) continue;
+      // Match the actual host QR object; never guess from label/title or DOM text.
+      const qr = set.qrList.find(item => item?.dom === button);
+      if (!qr || typeof qr.message !== 'string') continue;
+      const match = /^\/(?:mochiphone|mochi-phone)(?:\s+(open|show|close|hide|toggle))?\s*$/i.exec(qr.message.trim());
+      return match ? (match[1] || 'open').toLowerCase() : null;
+    }
+  } catch(e) { /* Missing/incompatible QR API retains the host's original path. */ }
+  return null;
+}
+function rpHandlePhoneQuickReplyClick(event) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+  const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+  const button = target?.closest('.qr--button');
+  if (!button || target.closest('.qr--button-expander')) return;
+  const action = rpPhoneQuickReplyAction(button);
+  if (action === null) return;
+  // Only standalone phone actions bypass the shared busy script-input channel.
+  // No core methods/settings are patched; unrelated QR scripts remain untouched.
+  event.preventDefault(); event.stopImmediatePropagation();
+  const settings = getMochiLaunchSettings();
+  if (!settings.enabled || !settings.qrLaunch) {
+    globalThis.toastr?.info?.(!settings.enabled ? '小手机已停用，请先在扩展设置中启用。' : 'QR 启动已关闭，请在扩展设置中启用。');
+    return;
+  }
+  Promise.resolve(handleMochiPhoneSlashCommand(action)).catch(() => {
+    console.warn('[Phone] QR launch unavailable');
+    globalThis.toastr?.warning?.('手机未能打开，请刷新页面后重试。');
+  });
+}
+function rpSetPhoneOpen(open) {
+  if (open && !isMochiPhoneEnabled()) return;
   const phone = $('#rp-phone');
-  if (!phone.length) {
-    init().then(() => { if (document.getElementById('rp-phone')) openMochiPhoneFromExternal(); })
-      .catch(() => console.error('[Phone] external open init failed'));
-    return '';
-  }
-  if (!phone.is(':visible')) {
-    $('#rp-fab').trigger('click');
-  }
+  if (!phone.length) return;
+  if (!open) {
+      // 关闭手机前记住当前界面，下次直接恢复，不再强迫用户从锁屏/桌面重新点
+      if (STATE.currentView && STATE.currentView !== 'lock') {
+        STATE._savedView = STATE.currentView;
+        if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
+      }
+      saveState();
+      phone.hide();
+      rpPauseGameAnimations();
+      return;
+    }
+    // 记录打开时间戳,防止 document click 在同一事件循环内把手机关掉（部分 Android 合成 click 问题）
+    STATE._phoneOpenedAt = Date.now();
+    if (phone.is(':visible')) return; // Opening is idempotent, including repeated QR clicks.
+    // 防御性同步:若 CHAT_CHANGED 未触发(用户直接切换了对话),此处补偿
+    syncToCurrentChat();
+    // 从聊天历史重建联系人(服务端数据,PC/手机共享同一份聊天记录)
+    var _fabChatId = STATE.chatId;
+    setTimeout(function() { rebuildContactsFromHistory(_fabChatId); }, 300);
+    // 恢复上次关闭时的界面：优先用显式保存的 _savedView/_savedThread，
+    // 不再依赖可能被后台事件改动的 currentView/currentThread。
+    const _rv = STATE._savedView || STATE.currentView;
+    const _rt = STATE._savedThread || STATE.currentThread;
+    const _gameViews = ['g2048', 'game', 'ludo'];
+    if (_rv && _rv !== 'lock' && !_gameViews.includes(_rv)) {
+      if (_rv === 'thread' && _rt && STATE.threads[_rt]) {
+        phone.show();
+        openThread(_rt);
+      } else {
+        go(_rv);
+        phone.show();
+      }
+    } else {
+      go('lock');
+      phone.show();
+    }
+    rpResumeGameAnimations();
+    if (IS_TOUCH_DEVICE) setTimeout(rpUpdateViewport, 0);
+    else rpApplyDesktopPhoneSize();
+}
+async function openMochiPhoneFromExternal() {
+  if (!isMochiPhoneEnabled()) return '';
+  const instance = rpRuntime;
+  await init();
+  if (globalThis.__mochiPhoneRuntime !== instance || instance.stats().destroyed || !isMochiPhoneEnabled()) return '';
+  rpSetPhoneOpen(true);
   return '';
 }
 
 function closeMochiPhoneFromExternal() {
-  const phone = $('#rp-phone');
-  if (phone.is(':visible')) {
-    $('#rp-fab').trigger('click');
-  }
+  rpSetPhoneOpen(false);
   return '';
 }
 
-function toggleMochiPhoneFromExternal() {
+async function toggleMochiPhoneFromExternal() {
   if (!isMochiPhoneEnabled()) return '';
-  $('#rp-fab').trigger('click');
+  const instance = rpRuntime;
+  await init();
+  if (globalThis.__mochiPhoneRuntime !== instance || instance.stats().destroyed || !isMochiPhoneEnabled()) return '';
+  rpSetPhoneOpen(!$('#rp-phone').is(':visible'));
   return '';
 }
 
@@ -8991,45 +9069,7 @@ function bindUI() {
   $('#rp-fab').on('click', (e) => {
     e.stopPropagation();
     if (!isMochiPhoneEnabled()) return;
-    const phone = $('#rp-phone');
-    if (phone.is(':visible')) {
-      // 关闭手机前记住当前界面，下次直接恢复，不再强迫用户从锁屏/桌面重新点
-      if (STATE.currentView && STATE.currentView !== 'lock') {
-        STATE._savedView = STATE.currentView;
-        if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
-      }
-      saveState();
-      phone.hide();
-      rpPauseGameAnimations();
-      return;
-    }
-    // 记录打开时间戳,防止 document click 在同一事件循环内把手机关掉（部分 Android 合成 click 问题）
-    STATE._phoneOpenedAt = Date.now();
-    // 防御性同步:若 CHAT_CHANGED 未触发(用户直接切换了对话),此处补偿
-    syncToCurrentChat();
-    // 从聊天历史重建联系人(服务端数据,PC/手机共享同一份聊天记录)
-    var _fabChatId = STATE.chatId;
-    setTimeout(function() { rebuildContactsFromHistory(_fabChatId); }, 300);
-    // 恢复上次关闭时的界面：优先用显式保存的 _savedView/_savedThread，
-    // 不再依赖可能被后台事件改动的 currentView/currentThread。
-    const _rv = STATE._savedView || STATE.currentView;
-    const _rt = STATE._savedThread || STATE.currentThread;
-    const _gameViews = ['g2048', 'game', 'ludo'];
-    if (_rv && _rv !== 'lock' && !_gameViews.includes(_rv)) {
-      if (_rv === 'thread' && _rt && STATE.threads[_rt]) {
-        phone.show();
-        openThread(_rt);
-      } else {
-        go(_rv);
-        phone.show();
-      }
-    } else {
-      go('lock');
-      phone.show();
-    }
-    rpResumeGameAnimations();
-    if (IS_TOUCH_DEVICE) setTimeout(rpUpdateViewport, 0);
-    else rpApplyDesktopPhoneSize();
+    rpSetPhoneOpen(!$('#rp-phone').is(':visible'));
   });
 
   // Click outside phone → close
