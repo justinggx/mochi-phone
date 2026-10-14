@@ -217,6 +217,115 @@ const RP_VISUAL_CSS = `
 @media(prefers-reduced-motion:reduce) {#rp-phone #rp-screen :is(#rp-compose-modal,.rp-nav-add,.rp-back) {animation:none!important;transition:none!important;}}
 @media(prefers-reduced-motion:reduce) {#rp-phone #rp-screen #rp-swipe-hint {animation:none!important;opacity:1;}}
 `;
+// Built-in visual system. Custom themes deliberately do not opt into rp-art-icons.
+// Layout repairs below are shared; colors/surfaces stay scoped to built-in themes.
+const RP_REFINED_CSS = `
+#rp-phone.rp-art-icons {--rp-v-text:#44353d;--rp-v-muted:#756772;--rp-v-surface:#faf8f5;--rp-v-card:#f1ece9;--rp-v-border:#ded5d9;--rp-r-accent:#956174;--rp-r-on-accent:#fff;--rp-send-bg:var(--rp-r-accent);--rp-nav-btn:var(--rp-r-accent);}
+#rp-phone.rp-art-icons.rp-theme-star {--rp-v-text:#ece6f3;--rp-v-muted:#c2b7d0;--rp-v-surface:#211e2b;--rp-v-card:#2c2738;--rp-v-border:#4a405b;--rp-r-accent:#bca9d0;--rp-r-on-accent:#251f30;}
+#rp-phone.rp-art-icons.rp-theme-misty {--rp-v-text:#344953;--rp-v-muted:#627782;--rp-v-surface:#f5f8f9;--rp-v-card:#eaf0f3;--rp-v-border:#cedae0;--rp-r-accent:#52758b;--rp-r-on-accent:#fff;}
+#rp-phone.rp-art-icons.rp-dark {--rp-v-text:#ebe7f0;--rp-v-muted:#c5bdce;--rp-v-surface:#211e29;--rp-v-card:#2c2735;--rp-v-border:#4c4258;--rp-r-accent:#b6a4c7;--rp-r-on-accent:#251f30;}
+/* Wallpaper belongs to the home/lock experience; reading pages have a stable surface. */
+#rp-phone.rp-art-icons #rp-screen .rp-view:not(#rp-view-home):not(#rp-view-lock) {background:var(--rp-v-surface)!important;color:var(--rp-v-text);}
+#rp-phone.rp-art-icons #rp-screen .rp-view:not(#rp-view-home):not(#rp-view-lock)::before,#rp-phone.rp-art-icons #rp-screen .rp-view:not(#rp-view-home):not(#rp-view-lock)::after {display:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-nav-bar {background:var(--rp-v-surface)!important;border-bottom:1px solid var(--rp-v-border)!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-nav-bar :is(.rp-nav-title,.rp-back,.rp-nav-add),#rp-phone.rp-art-icons #rp-screen .rp-hd-name {color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-nav-title {font-size:17px;font-weight:600;}
+#rp-phone.rp-art-icons.rp-dark #rp-screen #rp-swipe-hint {color:var(--rp-v-text)!important;}
+/* Shared paper, typography and secondary actions. Do not hide existing tools. */
+#rp-phone.rp-art-icons #rp-screen :is(#rp-add-form,.rp-gm-sheet,.rp-grp-modal,.rp-set-section,.rp-ts-welcome,.rp-diary-entry,.rp-bank-card,.rp-theme-info,.rp-saved-card,.rp-hb-sheet,.rp-loc-sheet,.rp-game-partner-sheet) {background:var(--rp-v-surface)!important;border:1px solid var(--rp-v-border)!important;border-radius:16px;box-shadow:none!important;color:var(--rp-v-text)!important;}
+#rp-phone.rp-art-icons #rp-screen :is(#rp-add-form input,.rp-grp-name-inp,.rp-set-select,#rp-block-input,.rp-api-input,.rp-moment-cinput,#rp-ts-input,#rp-game-input,#g2048-input,#ggold-input,#gword-input) {background:var(--rp-v-surface)!important;color:var(--rp-v-text)!important;border-color:var(--rp-v-border)!important;box-shadow:none!important;font-family:inherit;}
+#rp-phone.rp-art-icons #rp-screen #rp-add-form h3 {color:var(--rp-v-text)!important;font-size:17px;}
+#rp-phone.rp-art-icons #rp-screen :is(input,textarea)::placeholder {color:var(--rp-v-muted)!important;opacity:1;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-set-key,.rp-tn,.rp-tp,.rp-gm-title,.rp-gm-name,.rp-grp-pick-name,.rp-grp-modal-hd,.rp-diary-author,.rp-diary-body,.rp-diary-reply-text,.rp-moment-text,.rp-moment-comment,.rp-call-rec,.rp-ts-welcome-title,.rp-ts-bubble-ai) {color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-tt,.rp-gm-sub,.rp-gm-role,.rp-set-hint,.rp-set-section-title,.rp-game-partner-sub,.rp-game-partner-hint,.rp-ts-welcome-hint,.rp-theme-desc,.rp-saved-card-time,.rp-game-status,.rp-diary-date) {color:var(--rp-v-muted)!important;opacity:1;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-moment-name,.rp-moment-cname,.rp-diary-reply-name,.rp-game-partner-title,.rp-game-partner-label,.rp-theme-name,.rp-saved-card-name) {color:var(--rp-v-text)!important;font-weight:600;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-set-upload-btn,.rp-avatar-upload-btn,.rp-api-preset-btn,#rp-api-fetch-models,#rp-ts-undo-v2,.rp-grp-ft-cancel,#rp-add-cancel,.rp-saved-card-act-btn,#rp-newboard-btn,#rp-game-partner-cancel) {min-height:34px;font-size:12px;background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border:1px solid var(--rp-v-border)!important;border-radius:10px;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(#rp-send,.rp-diary-send-btn,.rp-compose-post-btn,.rp-moment-csend,#rp-api-save-v,#rp-add-confirm,#rp-block-add-btn,#rp-game-partner-save,#rp-ts-save-v2,#rp-ts-send,#rp-game-send,#g2048-send,#ggold-send,#gword-send,#rp-dice-btn,#ggold-launch-btn,.game-win-btn,#rp-sq-event-done) {background:var(--rp-r-accent)!important;color:var(--rp-r-on-accent)!important;border:none!important;box-shadow:none!important;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen button:disabled {cursor:default;opacity:.5;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-saved-card-delete-btn,.rp-moment-del-btn,.rp-moment-comment-del-btn,.rp-call-rec.missed) {color:var(--rp-v-danger)!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-api-preset-btn,.rp-set-section-title,.rp-game-partner-name,.rp-game-status,.ggold-score-lbl,.g2048-slbl,#ggold-chat-hint,#gword-chat-hint,#g2048-chat-hint,#rp-game-chat-hint) {font-size:12px!important;line-height:1.45;}
+/* Message reading and existing translation/metadata structure. */
+#rp-phone.rp-art-icons #rp-screen .rp-bubble {font-size:14px!important;line-height:1.6;box-shadow:none!important;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-recv {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border:1px solid var(--rp-v-border)!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-sent {background:var(--rp-r-accent)!important;color:var(--rp-r-on-accent)!important;border:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-bts,.rp-out .rp-bts) {color:var(--rp-v-muted)!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-bwrap :is(.rp-edit-btn,.rp-del-btn) {width:34px;height:34px;min-width:34px;min-height:34px;font-size:12px;}
+#rp-phone.rp-art-icons #rp-screen .rp-bwrap .rp-translation-btn {width:auto;height:auto;min-width:34px;min-height:34px;font-size:12px;white-space:nowrap;}
+#rp-phone.rp-art-icons #rp-screen .rp-grp-ft-ok {color:var(--rp-r-accent)!important;min-height:36px;}
+#rp-phone.rp-art-icons #rp-screen :is(#rp-composer,.rp-diary-compose,#rp-game-input-row,#g2048-input-row,#ggold-input-row,#gword-input-row,#rp-ts-composer,.rp-api-footer) {background:var(--rp-v-surface)!important;border-color:var(--rp-v-border)!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-translation-text,.rp-moment-comments-wrap,.rp-diary-reply,.rp-ts-typing) {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border-color:var(--rp-v-border)!important;border-radius:12px;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-img-bbl,.rp-pending-img,.rp-loc-card) {color:var(--rp-v-text);}
+#rp-phone.rp-art-icons #rp-screen .rp-hb-send-btn {background:#a33d46;color:#fff;box-shadow:none;}
+#rp-phone.rp-art-icons #rp-screen .rp-loc-send-btn {background:#49755a;box-shadow:none;}
+/* Moments and diary: subtle cards, author before metadata, no content folding. */
+#rp-phone.rp-art-icons #rp-screen .rp-moment {margin:10px 12px;padding:14px;background:var(--rp-v-surface)!important;border:1px solid var(--rp-v-border)!important;border-radius:16px;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-moment-bar {justify-content:flex-start;border-color:var(--rp-v-border);}
+#rp-phone.rp-art-icons #rp-screen .rp-moment-likes-row {color:var(--rp-v-muted);font-size:12px;}
+#rp-phone.rp-art-icons #rp-screen .rp-diary-entry {margin-bottom:12px;}
+#rp-phone.rp-art-icons #rp-screen .rp-diary-body {padding:4px 16px 14px;line-height:1.7;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-diary-empty,.rp-moments-empty,.rp-bank-empty,.rp-xhs-empty) {color:var(--rp-v-muted)!important;line-height:1.65;background:var(--rp-v-card)!important;border-color:var(--rp-v-border)!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen #rp-diary-status:not(:empty) {padding:10px 12px;margin:8px 14px;background:var(--rp-v-card);border:1px solid var(--rp-v-border);border-radius:12px;color:var(--rp-v-danger);}
+/* Theme management and forms keep their fields, prompts and complete privacy text. */
+#rp-phone.rp-art-icons #rp-screen .rp-theme-card.rp-tc-active,#rp-phone.rp-art-icons #rp-screen .rp-saved-card.rp-tc-active {border-color:var(--rp-r-accent)!important;box-shadow:0 0 0 1px var(--rp-r-accent)!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-theme-check {background:var(--rp-r-accent)!important;color:var(--rp-r-on-accent)!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-ts-welcome {padding:14px;}
+#rp-phone.rp-art-icons #rp-screen .rp-ts-tpl-btn {background:var(--rp-v-card)!important;border-color:var(--rp-v-border)!important;color:var(--rp-v-text)!important;box-shadow:none!important;font-weight:500;}
+#rp-phone.rp-art-icons #rp-screen .rp-ts-bubble-user {background:var(--rp-r-accent)!important;color:var(--rp-r-on-accent)!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-ts-bubble-ai {background:var(--rp-v-card)!important;border:1px solid var(--rp-v-border);box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen #rp-ts-tip {color:var(--rp-v-muted)!important;background:var(--rp-v-surface);padding:8px 12px;border-top:1px solid var(--rp-v-border);font-size:12px;font-weight:400;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-xhs-idea-card {box-shadow:none!important;border-radius:16px!important;}
+#rp-phone.rp-art-icons #rp-screen #rp-view-xhs-detail {background:var(--rp-xhs-card,var(--rp-v-surface))!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-bank-card {padding:14px;}
+#rp-phone.rp-art-icons #rp-screen .rp-asset-item {background:var(--rp-v-card)!important;border-color:var(--rp-v-border)!important;box-shadow:none!important;}
+/* Games share surfaces and hierarchy; canvas artwork, modes and rules are unchanged. */
+#rp-phone.rp-art-icons #rp-screen :is(#rp-ludo-spicy,.game-win-box,#rp-sq-event-box,#gword-mode-select) {background:var(--rp-v-surface)!important;color:var(--rp-v-text)!important;border-color:var(--rp-v-border)!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(#rp-ludo-spicy>div,.game-win-title,.game-win-sub,#rp-sq-event-text,#rp-sq-event-note,#gword-mode-select>div,#ggold-mode-select>div) {color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-spicy-btn,.gword-mode-btn,.ggold-mode-btn) {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border:1px solid var(--rp-v-border)!important;border-radius:14px!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.game-win-emoji,.ggold-over-emoji,.gword-over-emoji) {font-size:32px;}
+#rp-phone.rp-art-icons #rp-screen :is(#g2048-over,#ggold-over,#gword-over,#ggold-mode-select) {background:color-mix(in srgb,var(--rp-v-surface) 97%,transparent)!important;color:var(--rp-v-text)!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.g2048-over-title,.ggold-over-title,.gword-over-title,.g2048-over-sub,.ggold-over-sub,.gword-over-sub) {color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.g2048-over-btn,.ggold-over-btn,.gword-over-btn) {background:var(--rp-r-accent)!important;color:var(--rp-r-on-accent)!important;border-color:var(--rp-v-border)!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-call-av,.rp-call-dec,.rp-call-ans) {box-shadow:none;animation:none;}
+#rp-phone.rp-art-icons #rp-screen :is(.rp-call-sub,.rp-call-lbl) {color:#d0cbd9;font-size:12px;}
+/* Stable named controls, including the legacy inline-styled task dialog. */
+#rp-phone.rp-art-icons #rp-screen :is(#rp-sq-event-box,#rp-sq-task-bar) {background:var(--rp-v-surface)!important;color:var(--rp-v-text)!important;border-color:var(--rp-v-border)!important;border-radius:16px;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen :is(#rp-sq-event-text,#rp-sq-event-note,#rp-sq-event-sq,.rp-game-partner-help) {color:var(--rp-v-muted)!important;font-size:12px;}
+#rp-phone.rp-art-icons #rp-screen #rp-sq-event-text {color:var(--rp-v-text)!important;font-size:15px;}
+#rp-phone.rp-art-icons #rp-screen :is(#rp-sq-event-done,#rp-game-partner-save) {background:var(--rp-r-accent)!important;color:var(--rp-r-on-accent)!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen #rp-game-partner-cancel {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;box-shadow:none!important;}
+#rp-phone.rp-art-icons #rp-screen #rp-ts-composer {background:var(--rp-v-surface)!important;border-color:var(--rp-v-border)!important;}
+#rp-phone.rp-art-icons #rp-screen :is(.gword-mode-btn span,.ggold-mode-btn span) {color:var(--rp-v-muted)!important;opacity:1;}
+#rp-phone.rp-art-icons #rp-screen :is(#g2048-continue,#g2048-quit,#gword-quit) {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-moment {backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-moment-comments-wrap .rp-moment-cname {color:var(--rp-v-text)!important;font-weight:600;}
+#rp-phone.rp-art-icons #rp-screen :is(#rp-api-test-v,#rp-api-save-v) {border-color:var(--rp-v-border)!important;}
+#rp-phone.rp-art-icons #rp-screen #rp-bank-body {--bank-text:var(--rp-v-text);--bank-text-sub:var(--rp-v-muted);--bank-label:var(--rp-v-muted);}
+/* Repairs shared with custom themes, without assigning a theme palette. */
+#rp-phone #rp-screen :is(.rp-hb-sheet h3,.rp-loc-sheet h3,.rp-game-partner-title) {color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen :is(.rp-game-partner-sub,.rp-game-partner-hint) {color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen :is(#rp-add-name,#rp-add-initials,#rp-game-partner-name-input,#rp-game-partner-note-input)::placeholder {color:var(--rp-v-muted)!important;opacity:1;}
+#rp-phone #rp-screen #rp-pending-queue {max-height:96px;}
+#rp-phone #rp-screen .rp-pending-item {flex:0 0 auto;min-height:24px;font-size:12px;line-height:18px;padding:3px 10px;}
+#rp-phone #rp-screen .rp-pending-hint {flex:0 0 auto;min-height:20px;font-size:11px;line-height:17px;}
+#rp-phone #rp-screen #rp-view-xhs-compose .rp-nav-bar {position:relative;}
+#rp-phone #rp-screen #rp-view-xhs-compose .rp-nav-title {position:absolute!important;left:50%!important;right:auto!important;top:69px!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100% - 140px);pointer-events:none;white-space:nowrap;}
+#rp-phone #rp-screen #rp-view-xhs-compose #rp-xhs-post-btn {grid-column:3!important;justify-self:end!important;}
+#rp-phone #rp-screen .rp-game-resume {position:absolute;inset:0;z-index:130;background:var(--rp-v-surface);color:var(--rp-v-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+#rp-phone #rp-screen .rp-game-resume button {min-height:40px;padding:10px 22px;border-radius:12px;border:1px solid var(--rp-v-border);background:var(--rp-v-card);color:var(--rp-v-text);cursor:pointer;font-family:inherit;}
+#rp-phone.rp-art-icons #rp-screen .rp-game-resume-primary {background:var(--rp-r-accent);color:var(--rp-r-on-accent);}
+/* Fit the rendered canvas, not its simulation coordinates. */
+#rp-phone #rp-screen #ggold-canvas-wrap {flex:1 1 190px;min-height:72px;max-height:194px;padding:2px 12px;overflow:hidden;}
+#rp-phone #rp-screen #ggold-canvas {height:100%;width:auto;max-width:100%;max-height:190px;aspect-ratio:27/19;object-fit:contain;}
+#rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold) {overflow-y:auto;overscroll-behavior:contain;}
+#rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold)>.rp-nav-bar {height:80px;min-height:80px;padding-top:44px;}
+#rp-phone.rp-compact #rp-screen .rp-game-partner-bar {padding:2px 12px;min-height:28px;}
+#rp-phone.rp-compact #rp-screen #rp-game-board-wrap {flex:1 0 130px;min-height:130px;padding:0 12px;}
+#rp-phone.rp-compact #rp-screen #rp-game-controls {padding:4px 10px;min-height:58px;gap:6px;}
+#rp-phone.rp-compact #rp-screen .rp-game-players {font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#rp-phone.rp-compact #rp-screen :is(#rp-game-chat,#g2048-chat,#ggold-chat) {flex:0 0 32px;min-height:32px;max-height:32px;overflow-y:auto;}
+#rp-phone.rp-compact #rp-screen :is(#rp-game-input-row,#g2048-input-row,#ggold-input-row) {padding:4px 12px 8px;position:sticky;bottom:0;flex-shrink:0;background:var(--rp-v-surface);}
+#rp-phone.rp-compact #rp-screen #ggold-action-row {padding:3px 12px;}
+`;
 const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:9998; }
 
@@ -4952,6 +5061,7 @@ ${XHS_COVER_CSS}
 
 ${RP_VISUAL_CSS}
 ${RP_ART_CSS}
+${RP_REFINED_CSS}
 `;
 
 // ================================================================
@@ -5076,6 +5186,21 @@ function rpResumeGameAnimations() {
     if (GM.turn === 'char') gmScheduleCharShots();
   }
 }
+// Keep the draggable launcher away from the active page's primary controls.
+// This changes only transient position, not saved drag preferences or phone data.
+function rpAvoidFabControls() {
+  if (!IS_TOUCH_DEVICE) return;
+  const phone = document.getElementById('rp-phone'), fab = document.getElementById('rp-fab');
+  if (!phone || !fab || window.getComputedStyle(phone).display === 'none' || window.getComputedStyle(fab).display === 'none') return;
+  const rect = fab.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const controls = phone.querySelectorAll('#rp-send,#rp-game-send,#g2048-send,#ggold-send,#gword-send,#ggold-launch-btn,#rp-api-save-v');
+  const overlaps = [...controls].map(el => el.getBoundingClientRect()).filter(r => r.width && r.height && rect.left < r.right && rect.right > r.left && rect.top < r.bottom && rect.bottom > r.top);
+  if (!overlaps.length) return;
+  const top = Math.max(0, Math.min(...overlaps.map(r => r.top)) - rect.height - 12);
+  fab.style.setProperty('top', top + 'px', 'important');
+  fab.style.setProperty('bottom', 'auto', 'important');
+}
 function rpUpdateViewport() {
   IS_TOUCH_DEVICE = window.matchMedia('(hover: none) and (pointer: coarse)').matches || /Android|iPhone|iPod/i.test(navigator.userAgent);
   const frame = document.getElementById('rp-frame');
@@ -5083,7 +5208,9 @@ function rpUpdateViewport() {
   if (!frame || !phone) return;
   phone.classList.toggle('rp-mobile-pos', IS_TOUCH_DEVICE);
   rpApplyDesktopPhoneSize();
+  phone.classList.toggle('rp-compact', IS_TOUCH_DEVICE && (window.visualViewport?.height || window.innerHeight) < 500);
   rpFitLudoBoard();
+  rpFitGoldCanvas();
   if (!IS_TOUCH_DEVICE) return;
   const viewport = window.visualViewport;
   const width = viewport?.width || window.innerWidth;
@@ -5101,6 +5228,7 @@ function rpUpdateViewport() {
     const rect = fab.getBoundingClientRect();
     if (rect.top < 0 || rect.bottom > height) fab.style.setProperty('top', Math.max(0, height - 70) + 'px', 'important');
   }
+  rpAvoidFabControls();
 }
 // 通过 ST 模块系统加载 extension_settings(官方标准方式)
 // extension_settings 是 ES module export,不在 window 上
@@ -5411,15 +5539,17 @@ function injectMochiSettingsStyles() {
   const style = document.createElement('style');
   style.id = 'mochi-phone-settings-style';
   style.textContent = `
-    #mochi-phone-settings .mochi-launch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;padding:8px 12px;background:rgba(255,245,250,.58);border:1px solid rgba(190,120,150,.16);border-radius:8px}
-    #mochi-phone-settings .mochi-launch-row span{font-size:13px;font-weight:600;color:#8a5a6a}
-    #mochi-phone-settings .mochi-launch-switch{position:relative;display:inline-block;width:42px;height:22px;flex:0 0 42px;cursor:pointer}
+    #mochi-phone-settings .mochi-launch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;padding:8px 12px;background:color-mix(in srgb,currentColor 5%,transparent);border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:10px}
+    #mochi-phone-settings .mochi-launch-row span{font-size:13px;font-weight:600;color:inherit}
+    #mochi-phone-settings .mochi-launch-switch{position:relative;display:inline-block;width:42px;height:32px;flex:0 0 42px;cursor:pointer}
     #mochi-phone-settings .mochi-launch-switch input{opacity:0;width:0;height:0;position:absolute}
-    #mochi-phone-settings .mochi-launch-switch i{position:absolute;inset:0;border-radius:999px;background:rgba(120,90,110,.45);transition:.22s;box-shadow:inset 0 0 4px rgba(0,0,0,.18)}
+    #mochi-phone-settings .mochi-launch-switch i{position:absolute;inset:5px 0;border-radius:999px;background:color-mix(in srgb,currentColor 40%,transparent);transition:.15s;box-shadow:none}
     #mochi-phone-settings .mochi-launch-switch i:before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;border-radius:50%;background:#fff;transition:.22s;box-shadow:0 1px 5px rgba(0,0,0,.25)}
-    #mochi-phone-settings .mochi-launch-switch input:checked+i{background:linear-gradient(135deg,#f472b6,#a855f7)}
+    #mochi-phone-settings .mochi-launch-switch input:checked+i{background:#956174}
     #mochi-phone-settings .mochi-launch-switch input:checked+i:before{transform:translateX(20px)}
-    #mochi-phone-settings .mochi-launch-hint{font-size:12px;opacity:.72;line-height:1.45;margin:6px 12px 2px;color:#8a5a6a}
+    #mochi-phone-settings .mochi-launch-hint{font-size:12px;opacity:.85;line-height:1.6;margin:6px 12px 2px;color:inherit}
+    #mochi-phone-settings .mochi-launch-switch input:focus-visible+i{outline:2px solid currentColor;outline-offset:3px}
+    @media(prefers-reduced-motion:reduce){#mochi-phone-settings .mochi-launch-switch i,#mochi-phone-settings .mochi-launch-switch i:before{transition:none}}
   `;
   document.head.appendChild(style);
 }
@@ -5434,7 +5564,7 @@ function buildMochiSettingsHtml() {
           <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-          <div class="mochi-launch-row" style="background:rgba(255,230,240,.8);border-color:rgba(244,114,182,.35);">
+          <div class="mochi-launch-row">
             <span>启用手机（总开关）</span>
             <label class="mochi-launch-switch" title="关闭后停用 MochiPhone：隐藏悬浮球与手机、停止解析 PHONE 标签、清空手机规则提示注入；无需卸载扩展">
               <input id="mochi-phone-enabled-toggle" type="checkbox" ${st.enabled !== false ? 'checked' : ''}>
@@ -7995,6 +8125,7 @@ async function rpInitBody() {
         _fab.style.setProperty('left',       'auto',    'important');
         _fab.style.setProperty('display',    'flex',    'important');
         _fab.style.setProperty('visibility', 'visible', 'important');
+        rpAvoidFabControls();
       }
       _applyFabPos();
       setTimeout(_applyFabPos, 200);
@@ -10181,7 +10312,7 @@ function go(view) {
   if (view === 'themes') { lgRenderThemePicker(); }
   $('.rp-view').hide();
   // 需要 flex 布局的视图
-  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword'];
+  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold'];
   if (flexViews.includes(view)) {
     rpFindByDataAttr(null, '.rp-view', 'id', 'rp-view-' + view).css('display','flex');
   } else {
@@ -10189,6 +10320,8 @@ function go(view) {
   }
   $('#rp-home-ind').toggle(view !== 'lock');
   STATE.currentView = view;
+  rpFitGoldCanvas();
+  rpAvoidFabControls();
   rpResumeGameAnimations();
   // 记录“重新打开手机时应恢复到哪里”——锁屏不覆盖上次真实使用界面
   if (view !== 'lock') {
@@ -10456,8 +10589,20 @@ function rpNormalizeMessageMeta(wrap) {
   });
 }
 
-function renderBubbles(threadId) {
-  const area = $('#rp-bubbles').empty();
+function renderBubbles(threadId, options = {}) {
+  const area = $('#rp-bubbles'), el = area[0];
+  if (!el) return;
+  const previousScroll = el.scrollTop;
+  const followBottom = !options.preserveScroll;
+  const renderEpoch = el._rpScrollRenderEpoch = (el._rpScrollRenderEpoch || 0) + 1;
+  let expectedScroll = previousScroll;
+  // A late image/timer may follow initial layout, never a user's deliberate scroll.
+  const settleScroll = () => {
+    if (!followBottom || !el.isConnected || el._rpScrollRenderEpoch !== renderEpoch || Math.abs(el.scrollTop - expectedScroll) > 1) return;
+    el.scrollTop = el.scrollHeight;
+    expectedScroll = el.scrollTop;
+  };
+  area.empty();
   const thread = STATE.threads[threadId];
   if (!thread) return;
   // The stored array is the receive timeline. Display HH:mm and generated-image
@@ -10645,7 +10790,7 @@ function renderBubbles(threadId) {
         ? $(`<div class="rp-img-bbl" style="min-width:90px;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:12px 18px;font-size:12px;opacity:.7">图片已过期</div>`)
         : $(`<div class="rp-img-bbl"><img src="${escHtml(imgSrc)}" alt="图片"/></div>`);
       imgEl.find('img').on('load', function() {
-        const a = this.closest('#rp-bubbles'); if (a) a.scrollTop = a.scrollHeight;
+        if (this.closest('#rp-bubbles') === el) settleScroll();
       });
       const timeEl = $(`<div class="rp-bts">${escHtml(msg.time)}</div>`);
       const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
@@ -10751,11 +10896,9 @@ function renderBubbles(threadId) {
 
   // 先同步滚一次，再 setTimeout 等 DOM & 图片布局稳定后再滚一次
   area.children('.rp-bwrap').each(function() { rpNormalizeMessageMeta($(this)); });
-  area.scrollTop(area[0].scrollHeight);
-  setTimeout(function() {
-    var el = area[0];
-    if (el) el.scrollTop = el.scrollHeight;
-  }, 80);
+  el.scrollTop = followBottom ? el.scrollHeight : previousScroll;
+  expectedScroll = el.scrollTop;
+  if (followBottom) setTimeout(settleScroll, 80);
 }
 
 function dispatchSyntheticPrimaryClick(btn, opts) {
@@ -14827,7 +14970,7 @@ function playVoice(threadId, msgId) {
   if (!msg || msg.played) return;
   msg.played = true;
   saveState();
-  renderBubbles(threadId);
+  renderBubbles(threadId, { preserveScroll: true });
 }
 
 // ================================================================
@@ -20407,13 +20550,13 @@ function rpShowGameResume(key) {
   let overlay = document.getElementById('rp-game-resume-' + key);
   if (!overlay) {
     overlay = document.createElement('div'); overlay.id = 'rp-game-resume-' + key;
-    overlay.style.cssText = 'position:absolute;inset:0;z-index:130;background:var(--rp-bg,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--rp-text,#333)';
+    overlay.className = 'rp-game-resume';
     const label = document.createElement('div'); label.textContent = '已保存本局进度'; overlay.append(label);
     const resume = document.createElement('button'); resume.type = 'button'; resume.textContent = '继续本局';
+    resume.className = 'rp-game-resume-primary';
     resume.onclick = () => { overlay.style.display = 'none'; void rpResumeSavedGame(key); };
     const restart = document.createElement('button'); restart.type = 'button'; restart.textContent = '开始新局';
     restart.onclick = () => { overlay.style.display = 'none'; game._paused = false; if(key==='ludo')lgInit();else if(key==='g2048')g2048Init();else if(key==='gm')ggoldOpen();else gwordOpen(); };
-    for(const button of [resume,restart]) button.style.cssText='padding:10px 22px;border-radius:14px;border:1px solid #aaa;background:var(--rp-nav-btn,#c0306a);color:white;cursor:pointer';
     overlay.append(resume,restart); document.getElementById('rp-view-' + view)?.append(overlay);
   }
   overlay.style.display = 'flex';
@@ -21177,6 +21320,7 @@ function lgInitFabDrag() {
     if (!dragging) return;
     dragging = false;
     fab.style.cursor = 'grab'; fab.style.transition = '';
+    rpAvoidFabControls();
     if (moved) {
       const posKey = IS_TOUCH_DEVICE ? 'rp_fab_pos_mobile' : 'rp_fab_pos';
       localStorage.setItem(posKey, JSON.stringify({ left: fab.style.left, top: fab.style.top }));
@@ -21241,13 +21385,28 @@ function rpFitLudoBoard() {
 function rpInstallLudoBoardResize() {
   const wrap = document.getElementById('rp-game-board-wrap');
   if (!wrap) return;
+  const fit = () => { rpFitLudoBoard(); rpFitGoldCanvas(); };
   if (typeof window.ResizeObserver === 'function') {
-    const observer = new window.ResizeObserver(() => rpFitLudoBoard());
+    const observer = new window.ResizeObserver(fit);
     observer.observe(wrap);
+    const goldWrap = document.getElementById('ggold-canvas-wrap');
+    if (goldWrap) observer.observe(goldWrap);
     rpRuntime.own(() => observer.disconnect());
   }
-  rpRuntime.listenDOM(window, 'resize', rpFitLudoBoard);
-  rpFitLudoBoard();
+  rpRuntime.listenDOM(window, 'resize', fit);
+  fit();
+}
+function rpFitGoldCanvas() {
+  const wrap = document.getElementById('ggold-canvas-wrap'), canvas = document.getElementById('ggold-canvas');
+  if (!wrap || !canvas || wrap.clientWidth <= 0 || wrap.clientHeight <= 0) return;
+  const style = window.getComputedStyle(wrap);
+  const availableWidth = wrap.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+  const availableHeight = wrap.clientHeight - (parseFloat(style.paddingTop) || 0) - (parseFloat(style.paddingBottom) || 0);
+  const width = Math.min(270, availableWidth, availableHeight * 270 / 190);
+  if (width <= 0) return;
+  const w = width + 'px', h = (width * 190 / 270) + 'px';
+  if (canvas.style.width !== w) canvas.style.width = w;
+  if (canvas.style.height !== h) canvas.style.height = h;
 }
 function lgInit() {
   rpBeginGame('ludo');
