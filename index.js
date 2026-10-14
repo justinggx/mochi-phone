@@ -71,6 +71,10 @@ const RP_VISUAL_CSS = `
 /* Navigation: retain the safe top inset and centered titles. */
 #rp-phone #rp-screen .rp-nav-bar .rp-back,#rp-phone #rp-screen .rp-nav-bar .rp-nav-add,
 #rp-phone #rp-screen .rp-diary-gen-btn {min-width:40px;min-height:40px;align-items:center;justify-content:center;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-gen-diary {background:transparent!important;border:0!important;border-image:none!important;box-shadow:none!important;}
+#rp-phone #rp-screen #rp-gen-diary::before,#rp-phone #rp-screen #rp-gen-diary::after {content:none!important;}
+#rp-phone #rp-screen #rp-gen-diary:not(:focus-visible) {outline:none!important;}
+#rp-phone #rp-screen #rp-gen-diary:focus-visible {outline:2px solid var(--rp-v-text,var(--rp-nav-btn))!important;outline-offset:2px;}
 #rp-phone #rp-screen .rp-nav-bar .rp-nav-title {text-shadow:none!important;}
 #rp-phone.rp-theme-misty #rp-screen .rp-nav-bar .rp-nav-title,
 #rp-phone.rp-theme-misty #rp-screen .rp-nav-bar .rp-back,
@@ -98,6 +102,13 @@ const RP_VISUAL_CSS = `
 #rp-phone #rp-screen .rp-moment-reply-btn,#rp-phone #rp-screen .rp-moment-comment-del-btn {display:inline-flex;align-items:center;min-height:28px;padding:0 4px;font-size:12px;touch-action:manipulation;}
 #rp-phone #rp-screen .rp-moment .rp-moment-reply-btn {color:var(--rp-v-muted)!important;}
 #rp-phone #rp-screen .rp-moment .rp-moment-comments-wrap {background:var(--rp-v-card)!important;line-height:1.6;}
+/* Social reading hierarchy: continuous post, quiet inset comments, no nested frame. */
+#rp-phone #rp-screen #rp-moments-list .rp-moment-text {font-size:15px!important;font-weight:400!important;line-height:1.75!important;color:var(--rp-v-text)!important;opacity:1!important;margin-bottom:12px;}
+#rp-phone #rp-screen #rp-moments-list .rp-moment-comments-wrap {background:color-mix(in srgb,var(--rp-v-text) 6%,var(--rp-v-surface))!important;color:var(--rp-v-text)!important;border:0!important;box-shadow:none!important;padding:10px 12px!important;margin:12px 0 0 8px!important;border-radius:10px!important;gap:6px;min-width:0;}
+#rp-phone #rp-screen #rp-moments-list .rp-moment-comment {font-size:13px!important;font-weight:400!important;line-height:1.65!important;color:var(--rp-v-text)!important;opacity:1!important;padding:4px 0!important;overflow-wrap:anywhere;}
+#rp-phone #rp-screen #rp-moments-list .rp-moment-cname {font-size:inherit!important;font-weight:600!important;color:var(--rp-v-text)!important;margin-right:3px;}
+#rp-phone #rp-screen #rp-moments-list .rp-moment-comments-wrap .rp-translation-text {background:transparent!important;border:0!important;box-shadow:none!important;padding:4px 0!important;font-size:13px!important;line-height:1.65;}
+#rp-phone #rp-screen #rp-moments-list .rp-moment-comment :is(.rp-moment-reply-btn,.rp-moment-comment-del-btn) {font-size:12px!important;min-height:32px;}
 #rp-phone #rp-screen .rp-diary-empty {color:var(--rp-v-muted);line-height:1.7;padding:32px 10px;}
 #rp-phone #rp-screen .rp-diary-compose {padding-top:8px;gap:6px;}
 #rp-phone #rp-screen .rp-diary-input {height:80px;min-height:64px;}
@@ -204,6 +215,7 @@ const RP_VISUAL_CSS = `
 #rp-phone #rp-screen .rp-theme-mini-scene[data-preview-theme="star"] {--rp-mini-text:#e0d8ff;--rp-mini-panel:rgba(33,22,56,.94);--rp-mini-sent:#7534d4;--rp-mini-recv:#372452;}
 #rp-phone #rp-screen .rp-theme-mini-scene[data-preview-theme="misty"] {--rp-mini-text:#294c69;--rp-mini-panel:rgba(240,247,252,.94);--rp-mini-sent:#477fa5;--rp-mini-recv:#fff;}
 #rp-phone #rp-screen .rp-theme-mini-top {display:flex;justify-content:space-between;gap:4px;font-size:10px;font-weight:600;}
+#rp-phone #rp-screen .rp-theme-select-title {font-size:13px;font-weight:600;color:var(--rp-v-text,var(--rp-input-color))!important;text-align:center;margin-bottom:18px;opacity:1!important;letter-spacing:.4px;}
 #rp-phone #rp-screen .rp-theme-mini-recv,#rp-phone #rp-screen .rp-theme-mini-sent {max-width:90%;padding:4px 6px;font-size:10px;line-height:1.3;border-radius:7px;background:var(--rp-mini-recv);color:var(--rp-mini-text);}
 #rp-phone #rp-screen .rp-theme-mini-sent {align-self:flex-end;background:var(--rp-mini-sent);color:#fff;}
 #rp-phone #rp-screen .rp-theme-desc {font-size:11px;line-height:1.5;}
@@ -7577,7 +7589,7 @@ const HTML = `
             <span class="rp-nav-title">主题</span><span></span>
           </div>
           <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 28px">
-            <div style="font-size:13px;font-weight:600;color:var(--rp-themes-label);text-align:center;margin-bottom:18px;opacity:.75;letter-spacing:.4px">✨ 选择主题</div>
+            <div class="rp-theme-select-title">✨ 选择主题</div>
             <div id="rp-theme-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
             <div id="rp-saved-section" style="display:none">
               <div id="rp-saved-section-title">📌 已保存的方案</div>
