@@ -337,17 +337,21 @@ const RP_REFINED_CSS = `
 /* Gold miner has a distinct start screen, not a translucent layer over a round. */
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing :is(#ggold-header,#ggold-timer-wrap,#ggold-coop-bar,#ggold-canvas-wrap,#ggold-action-row,#ggold-chat-hint,#ggold-chat,#ggold-input-row) {display:none!important;}
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-newbtn {visibility:hidden;pointer-events:none;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {position:relative!important;inset:auto!important;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;align-items:stretch;justify-content:flex-start;gap:14px;padding:28px 20px 24px;background:transparent!important;border:0!important;border-radius:0;box-shadow:none!important;z-index:auto;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-intro {margin-bottom:10px;color:var(--rp-v-text)!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-title {font-size:20px;font-weight:600;line-height:1.4;margin:0 0 8px;color:var(--rp-v-text)!important;text-shadow:none!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-sub {font-size:13px;line-height:1.65;text-align:left;padding:0;margin:0;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn {width:100%;min-height:88px;flex:0 0 auto;padding:16px;text-align:left;white-space:normal;box-sizing:border-box;font-family:inherit;display:flex;flex-direction:column;align-items:stretch;gap:8px;background:color-mix(in srgb,var(--rp-v-text) 6%,var(--rp-v-surface))!important;border:0!important;border-radius:14px!important;box-shadow:none!important;color:var(--rp-v-text)!important;touch-action:manipulation;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-top {display:flex;align-items:center;justify-content:space-between;gap:8px;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-name {font-size:16px;font-weight:600;line-height:1.4;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-enter {font-size:12px;font-weight:500;color:var(--rp-v-text)!important;opacity:1;white-space:nowrap;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-desc {font-size:12px;font-weight:400;line-height:1.6;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:hover {background:color-mix(in srgb,var(--rp-v-text) 10%,var(--rp-v-surface))!important;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {position:relative!important;inset:auto!important;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;align-items:center;justify-content:flex-start;gap:6px;padding:32px 22px 24px;background:transparent!important;border:0!important;border-radius:0;box-shadow:none!important;z-index:auto;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-intro {width:100%;margin-bottom:22px;text-align:center;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-title {font-size:20px;font-weight:500;letter-spacing:.03em;line-height:1.4;margin:0 0 10px;color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-sub {font-size:12px;line-height:1.7;text-align:center;padding:0;margin:0;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn {width:100%;max-width:280px;min-height:88px;flex:0 0 auto;padding:18px 6px;text-align:left;white-space:normal;box-sizing:border-box;font-family:inherit;display:grid;grid-template-columns:38px minmax(0,1fr) 18px;align-items:center;gap:12px;background:transparent!important;border:0!important;border-radius:10px!important;box-shadow:none!important;color:var(--rp-v-text)!important;touch-action:manipulation;cursor:pointer;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-mark {width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--rp-nav-btn) 8%,transparent)!important;color:var(--rp-v-text)!important;font:17px/1 Georgia,"Times New Roman",serif;letter-spacing:.02em;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-copy {min-width:0;display:flex;flex-direction:column;gap:7px;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-top {display:block;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-name {font-size:17px;font-weight:500;line-height:1.4;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-enter {font-size:24px;font-weight:400;line-height:1;color:var(--rp-v-text)!important;opacity:1;white-space:nowrap;justify-self:end;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-desc {font-size:12px;font-weight:400;line-height:1.7;overflow-wrap:anywhere;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:hover {background:color-mix(in srgb,var(--rp-v-text) 3%,transparent)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:active {background:color-mix(in srgb,var(--rp-v-text) 6%,transparent)!important;}
 #rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:3px;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing .rp-game-partner-change {min-height:36px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;font-size:12px;padding:6px 8px;}
 #rp-phone #rp-screen #gword-status:empty {display:none;}
 #rp-phone #rp-screen #gword-hint-feedback {display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:8px 14px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;}
 #rp-phone #rp-screen #gword-hint-message {flex:1 1 auto;min-width:0;font-size:12px;line-height:1.6;font-weight:400;overflow-wrap:anywhere;color:var(--rp-v-text)!important;}
@@ -355,7 +359,8 @@ const RP_REFINED_CSS = `
 #rp-phone #rp-screen #gword-hint-feedback #gword-retry-hint {align-self:center;margin:0;}
 #rp-phone #rp-screen :is(#gword-retry-hint,#gword-retry-guess):focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:2px;}
 #rp-phone #rp-screen #gword-retry-hint:disabled {opacity:.7;cursor:wait;}
-#rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {flex:1 0 auto;padding:12px 20px 20px;gap:10px;}
+#rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {flex:1 0 auto;padding:12px 20px 20px;gap:6px;}
+#rp-phone.rp-compact #rp-screen #ggold-mode-select .ggold-mode-intro {margin-bottom:12px;}
 #rp-phone #rp-screen #ggold-canvas {height:100%;width:auto;max-width:100%;max-height:190px;aspect-ratio:27/19;object-fit:contain;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold) {overflow-y:auto;overscroll-behavior:contain;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold)>.rp-nav-bar {height:80px;min-height:80px;padding-top:44px;}
@@ -8023,10 +8028,10 @@ const HTML = `
           <div id="ggold-mode-select" role="region" aria-labelledby="ggold-mode-heading">
             <div class="ggold-mode-intro">
               <h2 class="ggold-mode-title" id="ggold-mode-heading">选择游戏模式</h2>
-              <p class="ggold-mode-sub">先选一种玩法，再和搭子开始挖矿。</p>
+              <p class="ggold-mode-sub">和搭子一起，开一局。</p>
             </div>
-            <button class="ggold-mode-btn" id="ggold-mode-vs" type="button"><span class="ggold-mode-top"><span class="ggold-mode-name">竞技模式</span><span class="ggold-mode-enter" aria-hidden="true">进入 ›</span></span><span class="ggold-mode-desc">3轮轮流挖矿，最后比拼总分。</span></button>
-            <button class="ggold-mode-btn" id="ggold-mode-co" type="button"><span class="ggold-mode-top"><span class="ggold-mode-name">合作模式</span><span class="ggold-mode-enter" aria-hidden="true">进入 ›</span></span><span class="ggold-mode-desc">一起达成目标，继续挑战下一层。</span></button>
+            <button class="ggold-mode-btn" id="ggold-mode-vs" type="button"><span class="ggold-mode-mark" aria-hidden="true">01</span><span class="ggold-mode-copy"><span class="ggold-mode-top"><span class="ggold-mode-name">竞技模式</span></span><span class="ggold-mode-desc">轮流挖矿，3轮比总分</span></span><span class="ggold-mode-enter" aria-hidden="true">›</span></button>
+            <button class="ggold-mode-btn" id="ggold-mode-co" type="button"><span class="ggold-mode-mark" aria-hidden="true">02</span><span class="ggold-mode-copy"><span class="ggold-mode-top"><span class="ggold-mode-name">合作模式</span></span><span class="ggold-mode-desc">共同达标，再挑战下一层</span></span><span class="ggold-mode-enter" aria-hidden="true">›</span></button>
           </div>
         </div>
         <!-- 你说我猜 -->
