@@ -570,6 +570,16 @@ const RP_REFINED_CSS = `
 #rp-phone.rp-art-icons #rp-screen :is(.rp-av,.rp-grp-av,.rp-moment-av,.rp-grp-pick-av,.rp-call-av,.rp-hd-av):not(.rp-av-img) {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border:none!important;box-shadow:none!important;}
 #rp-phone.rp-art-icons #rp-screen #rp-view-settings :is(.rp-set-hint,.rp-set-section-title),#rp-phone.rp-art-icons #rp-screen #rp-view-theme-studio #rp-ts-tip {color:var(--rp-v-muted)!important;opacity:1!important;text-shadow:none!important;}
 `;
+const RP_READING_CSS = `
+#rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:13px;}
+#rp-phone #rp-screen #rp-view-messages .rp-tp {font-size:11.5px;}
+#rp-phone #rp-screen #rp-view-thread .rp-bubble {font-size:13px!important;line-height:1.55;}
+#rp-phone #rp-screen #rp-view-thread .rp-translation-text {font-size:12px!important;line-height:1.55;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-name {font-size:13px;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text {font-size:13.5px!important;line-height:1.6!important;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment {font-size:12px!important;line-height:1.55!important;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-translation-text {font-size:12px!important;line-height:1.55!important;}
+`;
 const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:9998; }
 
@@ -5306,6 +5316,7 @@ ${XHS_COVER_CSS}
 ${RP_VISUAL_CSS}
 ${RP_ART_CSS}
 ${RP_REFINED_CSS}
+${RP_READING_CSS}
 `;
 
 // ================================================================
