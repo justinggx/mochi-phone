@@ -338,19 +338,19 @@ const RP_REFINED_CSS = `
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing :is(#ggold-header,#ggold-timer-wrap,#ggold-coop-bar,#ggold-canvas-wrap,#ggold-action-row,#ggold-chat-hint,#ggold-chat,#ggold-input-row) {display:none!important;}
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-newbtn {visibility:hidden;pointer-events:none;}
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {position:relative!important;inset:auto!important;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;align-items:center;justify-content:flex-start;gap:6px;padding:32px 22px 24px;background:transparent!important;border:0!important;border-radius:0;box-shadow:none!important;z-index:auto;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-intro {width:100%;margin-bottom:22px;text-align:center;color:var(--rp-v-text)!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-title {font-size:20px;font-weight:500;letter-spacing:.03em;line-height:1.4;margin:0 0 10px;color:var(--rp-v-text)!important;text-shadow:none!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-sub {font-size:12px;line-height:1.7;text-align:center;padding:0;margin:0;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn {width:100%;max-width:280px;min-height:88px;flex:0 0 auto;padding:18px 6px;text-align:left;white-space:normal;box-sizing:border-box;font-family:inherit;display:grid;grid-template-columns:38px minmax(0,1fr) 18px;align-items:center;gap:12px;background:transparent!important;border:0!important;border-radius:10px!important;box-shadow:none!important;color:var(--rp-v-text)!important;touch-action:manipulation;cursor:pointer;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-mark {width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--rp-nav-btn) 8%,transparent)!important;color:var(--rp-v-text)!important;font:17px/1 Georgia,"Times New Roman",serif;letter-spacing:.02em;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-copy {min-width:0;display:flex;flex-direction:column;gap:7px;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-top {display:block;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-name {font-size:17px;font-weight:500;line-height:1.4;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-enter {font-size:24px;font-weight:400;line-height:1;color:var(--rp-v-text)!important;opacity:1;white-space:nowrap;justify-self:end;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-desc {font-size:12px;font-weight:400;line-height:1.7;overflow-wrap:anywhere;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:hover {background:color-mix(in srgb,var(--rp-v-text) 3%,transparent)!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:active {background:color-mix(in srgb,var(--rp-v-text) 6%,transparent)!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:3px;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-intro,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-intro {width:100%;margin-bottom:22px;text-align:center;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-title,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-title {font-size:20px;font-weight:500;letter-spacing:.03em;line-height:1.4;margin:0 0 10px;color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-sub,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-sub {font-size:12px;line-height:1.7;text-align:center;padding:0;margin:0;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn {width:100%;max-width:280px;min-height:88px;flex:0 0 auto;padding:18px 6px;text-align:left;white-space:normal;box-sizing:border-box;font-family:inherit;display:grid;grid-template-columns:38px minmax(0,1fr) 18px;align-items:center;gap:12px;background:transparent!important;border:0!important;border-radius:10px!important;box-shadow:none!important;color:var(--rp-v-text)!important;touch-action:manipulation;cursor:pointer;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-mark,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-mark {width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--rp-nav-btn) 8%,transparent)!important;color:var(--rp-v-text)!important;font:17px/1 Georgia,"Times New Roman",serif;letter-spacing:.02em;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-copy,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-copy {min-width:0;display:flex;flex-direction:column;gap:7px;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-top,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-top {display:block;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-name,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-name {font-size:17px;font-weight:500;line-height:1.4;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-enter,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-enter {font-size:24px;font-weight:400;line-height:1;color:var(--rp-v-text)!important;opacity:1;white-space:nowrap;justify-self:end;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-desc,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-desc {font-size:12px;font-weight:400;line-height:1.7;overflow-wrap:anywhere;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:hover,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:hover {background:color-mix(in srgb,var(--rp-v-text) 3%,transparent)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:active,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:active {background:color-mix(in srgb,var(--rp-v-text) 6%,transparent)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:focus-visible,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:3px;}
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing .rp-game-partner-change {min-height:36px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;font-size:12px;padding:6px 8px;}
 #rp-phone #rp-screen #gword-status:empty {display:none;}
 #rp-phone #rp-screen #gword-hint-feedback {display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:8px 14px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;}
@@ -362,26 +362,36 @@ const RP_REFINED_CSS = `
 #rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {flex:1 0 auto;padding:12px 20px 20px;gap:6px;}
 #rp-phone.rp-compact #rp-screen #ggold-mode-select .ggold-mode-intro {margin-bottom:12px;}
 /* Approved A artwork: real text/actions stay above decorative raster assets. */
-#rp-phone #rp-screen .rp-gold-art,#rp-phone #rp-screen .rp-gold-mode-divider {display:none;}
-#rp-phone #rp-screen .rp-gold-art[hidden] {display:none!important;}
+#rp-phone #rp-screen :is(.rp-gold-art,.rp-ludo-art),#rp-phone #rp-screen :is(.rp-gold-mode-divider,.rp-ludo-mode-divider) {display:none;}
+#rp-phone #rp-screen :is(.rp-gold-art,.rp-ludo-art)[hidden] {display:none!important;}
 /* Include frame specificity so the illustrated paper wins over the shared non-home surface rule. */
-#rp-phone.rp-art-icons #rp-frame #rp-screen #rp-view-ggold.rp-gold-choosing.rp-gold-illustrated {background:var(--rp-v-surface) var(--rp-gold-paper,none) center/cover!important;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated>.rp-nav-bar,#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-game-partner-bar {background:transparent!important;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated #ggold-mode-select {padding:6px 16px 18px;gap:4px;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-gold-hero {display:block;width:100%;height:126px;min-height:126px;object-fit:contain;flex-shrink:0;margin:0;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-intro {margin:4px 0 6px;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-title {font-weight:600;margin:0;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-sub {display:none;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-gold-mode-divider {display:block;font-size:11px;color:var(--rp-v-text);margin:2px 0;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-btn {grid-template-columns:88px minmax(0,1fr) 16px;gap:10px;max-width:320px;min-height:96px;padding:6px 0;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-btn>.rp-gold-art {display:block;width:88px;height:84px;object-fit:contain;border:none;box-shadow:none;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-mark {display:none;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-btn>.rp-gold-art[hidden]+.ggold-mode-mark {display:flex;justify-self:center;}
-#rp-phone #rp-screen #ggold-mode-avatar {display:none;}
-#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated #ggold-mode-avatar {display:flex;position:relative;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--rp-v-card);color:var(--rp-v-text);font-size:11px;}
-#rp-phone #rp-screen #ggold-mode-avatar img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-#rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-gold-hero {height:100px;min-height:100px;}
+#rp-phone.rp-art-icons #rp-frame #rp-screen :is(#rp-view-ggold.rp-gold-choosing.rp-gold-illustrated,#rp-view-game.rp-ludo-choosing.rp-ludo-illustrated) {background:var(--rp-v-surface) var(--rp-gold-paper,none) center/cover!important;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated)>.rp-nav-bar,#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) .rp-game-partner-bar {background:transparent!important;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(#ggold-mode-select,#rp-ludo-spicy) {padding:6px 16px 18px;gap:4px;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.rp-gold-hero,.rp-ludo-hero) {display:block;width:100%;height:126px;min-height:126px;object-fit:contain;flex-shrink:0;margin:0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-intro,.rp-mode-intro) {margin:4px 0 6px;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-title,.rp-mode-title) {font-weight:600;margin:0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-sub,.rp-mode-sub) {display:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.rp-gold-mode-divider,.rp-ludo-mode-divider) {display:block;font-size:11px;color:var(--rp-v-text);margin:2px 0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-btn,.rp-mode-btn) {grid-template-columns:88px minmax(0,1fr) 16px;gap:10px;max-width:320px;min-height:96px;padding:6px 0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art) {display:block;width:88px;height:84px;object-fit:contain;border:none;box-shadow:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-mark,.rp-mode-mark) {display:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art)[hidden]+:is(.ggold-mode-mark,.rp-mode-mark) {display:flex;justify-self:center;}
+#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar) {display:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(#ggold-mode-avatar,#rp-ludo-mode-avatar) {display:flex;position:relative;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--rp-v-card);color:var(--rp-v-text);font-size:11px;}
+#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar) img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#rp-phone.rp-compact #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.rp-gold-hero,.rp-ludo-hero) {height:100px;min-height:100px;}
 #rp-phone #rp-screen #ggold-canvas {height:100%;width:auto;max-width:100%;max-height:190px;aspect-ratio:27/19;object-fit:contain;}
+/* Ludo has three existing scale levels: share rows/artwork, fit three entries without a blocking overlay. */
+#rp-phone #rp-screen #rp-ludo-spicy {display:none;}
+#rp-phone #rp-screen #rp-view-game.rp-ludo-choosing :is(#rp-game-board-wrap,#rp-game-controls,#rp-game-chat-hint,#rp-game-chat,#rp-game-input-row,#rp-game-win,#rp-sq-event,#rp-sq-task-bar) {display:none!important;}
+#rp-phone #rp-screen #rp-view-game.rp-ludo-choosing #rp-ludo-spicy {position:relative!important;inset:auto!important;display:flex;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:20px 16px;background:transparent!important;border:0!important;border-radius:0;box-shadow:none!important;z-index:auto;}
+#rp-phone #rp-screen #rp-view-game.rp-ludo-choosing .rp-game-partner-change {min-height:36px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;font-size:12px;padding:6px 8px;}
+#rp-phone #rp-screen #rp-view-game.rp-ludo-illustrated #rp-ludo-spicy .rp-ludo-hero {height:88px;min-height:88px;}
+#rp-phone #rp-screen #rp-view-game.rp-ludo-illustrated #rp-ludo-spicy .rp-mode-btn {grid-template-columns:72px minmax(0,1fr) 16px;min-height:76px;gap:10px;padding:6px 0;}
+#rp-phone #rp-screen #rp-view-game.rp-ludo-illustrated #rp-ludo-spicy .rp-mode-btn>.rp-ludo-art {width:68px;height:64px;}
+#rp-phone #rp-screen #rp-view-game.rp-ludo-illustrated #rp-ludo-spicy {padding:6px 16px 14px;}
+#rp-phone.rp-compact #rp-screen #rp-view-game.rp-ludo-illustrated #rp-ludo-spicy .rp-ludo-hero {height:70px;min-height:70px;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold) {overflow-y:auto;overscroll-behavior:contain;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold)>.rp-nav-bar {height:80px;min-height:80px;padding-top:44px;}
 #rp-phone.rp-compact #rp-screen .rp-game-partner-bar {padding:2px 12px;min-height:28px;}
@@ -8137,13 +8147,17 @@ const HTML = `
               <button class="game-win-btn" id="game-restart-btn" type="button">再来一局</button>
             </div>
           </div>
-          <div id="rp-ludo-spicy" style="position:absolute;inset:0;background:rgba(250,245,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:101;gap:12px;padding:20px">
-            <div style="font-size:20px">🎲</div>
-            <div style="font-size:15px;font-weight:700;color:#7c3aed">选择今晚的尺度</div>
-            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">任务会根据选择随机生成</div>
-            <button class="rp-spicy-btn" data-spicy="1" style="width:180px;padding:10px;border:2px solid #f9a8d4;border-radius:14px;background:#fdf2f8;font-size:14px;cursor:pointer;font-weight:600;color:#be185d">🌸 清纯版</button>
-            <button class="rp-spicy-btn" data-spicy="2" style="width:180px;padding:10px;border:2px solid #f87171;border-radius:14px;background:#fef2f2;font-size:14px;cursor:pointer;font-weight:600;color:#dc2626">🔥 普通版</button>
-            <button class="rp-spicy-btn" data-spicy="3" style="width:180px;padding:10px;border:2px solid #c084fc;border-radius:14px;background:#faf5ff;font-size:14px;cursor:pointer;font-weight:600;color:#7c3aed">💋 大胆版</button>
+          <div id="rp-ludo-spicy" role="region" aria-labelledby="rp-ludo-mode-heading">
+            <img class="rp-ludo-art rp-ludo-hero" data-ludo-art="hero" alt="" width="1536" height="1024" decoding="async" referrerpolicy="no-referrer" hidden>
+            <img class="rp-ludo-art" data-ludo-art="paper" alt="" style="display:none!important" referrerpolicy="no-referrer" hidden>
+            <div class="rp-mode-intro">
+              <h2 class="rp-mode-title" id="rp-ludo-mode-heading">选择今晚的尺度</h2>
+              <span class="rp-ludo-mode-divider" aria-hidden="true">✦</span>
+              <p class="rp-mode-sub">任务会根据选择随机生成</p>
+            </div>
+            <button class="rp-spicy-btn rp-mode-btn" data-spicy="1" type="button"><img class="rp-ludo-art" data-ludo-art="gentle" alt="" width="68" height="64" decoding="async" referrerpolicy="no-referrer" hidden><span class="rp-mode-mark" aria-hidden="true">01</span><span class="rp-mode-copy"><span class="rp-mode-name">清纯版</span><span class="rp-mode-desc">轻松互动，慢慢靠近</span></span><span class="rp-mode-enter" aria-hidden="true">›</span></button>
+            <button class="rp-spicy-btn rp-mode-btn" data-spicy="2" type="button"><img class="rp-ludo-art" data-ludo-art="classic" alt="" width="68" height="64" decoding="async" referrerpolicy="no-referrer" hidden><span class="rp-mode-mark" aria-hidden="true">02</span><span class="rp-mode-copy"><span class="rp-mode-name">普通版</span><span class="rp-mode-desc">多一点心动与默契</span></span><span class="rp-mode-enter" aria-hidden="true">›</span></button>
+            <button class="rp-spicy-btn rp-mode-btn" data-spicy="3" type="button"><img class="rp-ludo-art" data-ludo-art="bold" alt="" width="68" height="64" decoding="async" referrerpolicy="no-referrer" hidden><span class="rp-mode-mark" aria-hidden="true">03</span><span class="rp-mode-copy"><span class="rp-mode-name">大胆版</span><span class="rp-mode-desc">更大胆的互动挑战</span></span><span class="rp-mode-enter" aria-hidden="true">›</span></button>
           </div>
           <!-- API 设置面板 -->
           <div id="rp-api-panel" style="display:none">
@@ -16026,35 +16040,53 @@ function rpGoldModeArtUrl(theme, role, local = false) {
   const file = `mochi-phone-gold-a-${theme}-${role}-20261014.webp`;
   return local ? new URL(`scripts/extensions/third-party/mochi-phone/gold-art-20261014/${file}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${file}`;
 }
-function rpUpdateGoldModeAvatar() {
-  const view=document.getElementById('rp-view-ggold'),bar=view?.querySelector('.rp-game-partner-bar');
-  if (!bar || !view.classList.contains('rp-gold-illustrated')) return;
-  let avatar=document.getElementById('ggold-mode-avatar');
-  if (!avatar) { avatar=document.createElement('span');avatar.id='ggold-mode-avatar';avatar.setAttribute('aria-hidden','true');bar.prepend(avatar); }
-  const name=GM.charName || '对方',source=getAvatar(name) || '';
+function rpUpdateModeAvatar(viewId, avatarId, illustratedClass, partnerName) {
+  const view=document.getElementById(viewId),bar=view?.querySelector('.rp-game-partner-bar');
+  if (!bar || !view.classList.contains(illustratedClass)) return;
+  let avatar=document.getElementById(avatarId);
+  if (!avatar) { avatar=document.createElement('span');avatar.id=avatarId;avatar.setAttribute('aria-hidden','true');bar.prepend(avatar); }
+  const name=partnerName || '对方',source=getAvatar(name) || '';
   const key=name+'|'+source;if(avatar.dataset.key===key)return;avatar.dataset.key=key;avatar.textContent=Array.from(name).slice(0,2).join('');
   let url;try{url=new URL(source,document.baseURI);}catch{return;}
   if (!source || !['http:','https:','data:','blob:'].includes(url.protocol) || (url.protocol==='data:'&&!/^data:image\//i.test(source))) return;
   const image=document.createElement('img');image.alt='';image.referrerPolicy='no-referrer';image.onerror=()=>image.remove();image.src=url.href;avatar.append(image);
 }
-function rpRefreshGoldModeArt(force = false) {
-  const phone=document.getElementById('rp-phone'),view=document.getElementById('rp-view-ggold');if(!phone||!view)return;
-  const theme=phone.dataset.rpArtTheme,builtIn=phone.classList.contains('rp-art-icons')&&['candy','star','misty'].includes(theme),choosing=view.classList.contains('rp-gold-choosing');
-  view.classList.toggle('rp-gold-illustrated',builtIn&&choosing);
+function rpUpdateGoldModeAvatar() {
+  rpUpdateModeAvatar('rp-view-ggold','ggold-mode-avatar','rp-gold-illustrated',GM.charName);
+}
+function rpUpdateLudoModeAvatar() {
+  rpUpdateModeAvatar('rp-view-game','rp-ludo-mode-avatar','rp-ludo-illustrated',LG.charName);
+}
+function rpRefreshModeArt(viewId, choosingClass, illustratedClass, attribute, urlFor, refreshAvatar, force) {
+  const phone=document.getElementById('rp-phone'),view=document.getElementById(viewId);if(!phone||!view)return;
+  const theme=phone.dataset.rpArtTheme,builtIn=phone.classList.contains('rp-art-icons')&&['candy','star','misty'].includes(theme),choosing=view.classList.contains(choosingClass);
+  view.classList.toggle(illustratedClass,builtIn&&choosing);
   if (!builtIn || !choosing) {
     view.style.removeProperty('--rp-gold-paper');
-    view.querySelectorAll('[data-gold-art]').forEach(img=>{img.onload=null;img.onerror=null;img.removeAttribute('src');delete img.dataset.goldKey;img.hidden=true;});return;
+    view.querySelectorAll('['+attribute+']').forEach(img=>{img.onload=null;img.onerror=null;img.removeAttribute('src');delete img.dataset.goldKey;img.hidden=true;});return;
   }
   if(!force&&view.style.display==='none')return;
-  rpUpdateGoldModeAvatar();
-  view.querySelectorAll('[data-gold-art]').forEach(img=>{
-    const role=img.dataset.goldArt,key=theme+':'+role;if(img.dataset.goldKey===key)return;
+  refreshAvatar();
+  view.querySelectorAll('['+attribute+']').forEach(img=>{
+    const role=img.getAttribute(attribute),key=theme+':'+role;if(img.dataset.goldKey===key)return;
     img.dataset.goldKey=key;img.hidden=true;if(role==='paper')view.style.removeProperty('--rp-gold-paper');
-    let local=false;const valid=()=>img.isConnected&&img.dataset.goldKey===key&&view.classList.contains('rp-gold-illustrated')&&phone.dataset.rpArtTheme===theme;
+    let local=false;const valid=()=>img.isConnected&&img.dataset.goldKey===key&&view.classList.contains(illustratedClass)&&phone.dataset.rpArtTheme===theme;
     img.onload=()=>{if(!valid())return;if(role==='paper')view.style.setProperty('--rp-gold-paper','url("'+img.src+'")');else img.hidden=false;};
-    img.onerror=()=>{if(!valid())return;if(!local){local=true;img.src=rpGoldModeArtUrl(theme,role,true);}else{img.hidden=true;img.onload=null;img.onerror=null;}};
-    img.src=rpGoldModeArtUrl(theme,role);
+    img.onerror=()=>{if(!valid())return;if(!local){local=true;img.src=urlFor(theme,role,true);}else{img.hidden=true;img.onload=null;img.onerror=null;}};
+    img.src=urlFor(theme,role);
   });
+}
+function rpRefreshGoldModeArt(force = false) {
+  rpRefreshModeArt('rp-view-ggold','rp-gold-choosing','rp-gold-illustrated','data-gold-art',rpGoldModeArtUrl,rpUpdateGoldModeAvatar,force);
+}
+function rpLudoModeArtUrl(theme, role, local = false) {
+  if (!['candy','star','misty'].includes(theme) || !['hero','gentle','classic','bold','paper'].includes(role)) return '';
+  if (role==='paper') return rpGoldModeArtUrl(theme,role,local);
+  const file=`mochi-phone-ludo-a-${theme}-${role}-20261015.webp`;
+  return local ? new URL(`scripts/extensions/third-party/mochi-phone/ludo-art-20261015/${file}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${file}`;
+}
+function rpRefreshLudoModeArt(force = false) {
+  rpRefreshModeArt('rp-view-game','rp-ludo-choosing','rp-ludo-illustrated','data-ludo-art',rpLudoModeArtUrl,rpUpdateLudoModeAvatar,force);
 }
 const RP_ART_HOME_APPS = ['messages','moments','settings','folder-games','api-settings','themes','diary','xhs','bank'];
 const RP_ART_GAME_APPS = ['ludo','g2048','ggold','gword'];
@@ -16143,6 +16175,7 @@ function lgRenderHomeIcons() {
   if (builtIn) phone.dataset.rpArtTheme = theme;
   else delete phone.dataset.rpArtTheme;
   rpRefreshGoldModeArt();
+  rpRefreshLudoModeArt();
   // Legacy currentColor artwork stays available for custom themes/load failure.
   // Built-in themes replace it only after the matching raster atlas has loaded.
   document.querySelectorAll('#rp-app-grid [data-app]').forEach(el => {
@@ -19275,6 +19308,7 @@ function gameApplyPartnerToGames(partner) {
     $('#ggold-c-lbl').text(name);
     $('#rp-game-char-name').text(name);
     rpUpdateGoldModeAvatar();
+    rpUpdateLudoModeAvatar();
   } catch(e) {}
 }
 
@@ -20885,6 +20919,7 @@ function rpShowGameResume(key) {
   const game = getPhoneGameRecordSource(key);
   if (!game._paused) return false;
   if (key === 'gm') ggoldSetModeSelection(false);
+  if (key === 'ludo') rpSetLudoModeSelection(false);
   const legacy={ludo:'#rp-ludo-spicy,#rp-game-win,#rp-sq-event,#rp-sq-task-bar',g2048:'#g2048-over',gm:'#ggold-mode-select,#ggold-over,#ggold-chat-fs',gword:'#gword-mode-select,#gword-over'}[key];
   $(legacy).hide();
   const view = {ludo:'game',g2048:'g2048',gm:'ggold',gword:'gword'}[key];
@@ -20927,6 +20962,7 @@ async function rpResumeSavedGame(key) {
     GM._expectedSerial++; GM._loopSerial = GM._expectedSerial;
     rpResumeGameAnimations();
   } else {
+    rpSetLudoModeSelection(false);
     $('#rp-ludo-spicy, #rp-game-win').hide(); renderPhoneGameHistory(key); lgRender();
     const token = rpGameRuntime('ludo').task();
     try {
@@ -21778,14 +21814,19 @@ function rpFitGoldCanvas() {
   if (canvas.style.width !== w) canvas.style.width = w;
   if (canvas.style.height !== h) canvas.style.height = h;
 }
+function rpSetLudoModeSelection(selecting) {
+  document.getElementById('rp-view-game')?.classList.toggle('rp-ludo-choosing',selecting);
+  const overlay=document.getElementById('rp-ludo-spicy');
+  if(overlay){overlay.style.display=selecting?'flex':'none';overlay.setAttribute('aria-hidden',String(!selecting));}
+  rpRefreshLudoModeArt(selecting);
+}
 function lgInit() {
   rpBeginGame('ludo');
   LG.active = false; LG.rolling = false;
 
   gameApplyPartnerToGames(gameGetCurrentPartner());
   // Show spiciness selector
-  const overlay = document.getElementById('rp-ludo-spicy');
-  if (overlay) overlay.style.display = 'flex';
+  rpSetLudoModeSelection(true);
   saveState();
 }
 
@@ -21796,8 +21837,7 @@ function lgStartGame(spicyLevel) {
   const cancelAnimationFrame = id => gameRuntime.cancelFrame(id);
 
   // Hide selector
-  const overlay = document.getElementById('rp-ludo-spicy');
-  if (overlay) overlay.style.display = 'none';
+  rpSetLudoModeSelection(false);
 
   // Phase 2 Step 2: Generate random board + theme
   LUDO_PATH = lgGeneratePath();
