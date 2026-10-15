@@ -440,9 +440,6 @@ const RP_REFINED_CSS = `
 #rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art,.rp-word-art) {display:block;width:88px;height:84px;object-fit:contain;border:none;box-shadow:none;}
 #rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-mark,.rp-mode-mark) {display:none;}
 #rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art,.rp-word-art)[hidden]+:is(.ggold-mode-mark,.rp-mode-mark) {display:flex;justify-self:center;}
-#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar,#rp-word-mode-avatar) {display:none;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(#ggold-mode-avatar,#rp-ludo-mode-avatar,#rp-word-mode-avatar) {display:flex;position:relative;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--rp-v-card);color:var(--rp-v-text);font-size:11px;}
-#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar,#rp-word-mode-avatar) img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.rp-gold-hero,.rp-ludo-hero,.rp-word-hero) {height:100px;min-height:100px;}
 #rp-phone #rp-screen #ggold-canvas {height:100%;width:auto;max-width:100%;max-height:190px;aspect-ratio:27/19;object-fit:contain;}
 /* Word-game selection shares the A rows without covering navigation or showing inactive round controls. */
@@ -601,6 +598,18 @@ const RP_IMPROVEMENT_CSS = `
 #rp-phone .rp-feature-note {margin:8px 0;color:var(--rp-v-muted,#867882);font-size:12px;white-space:pre-wrap;}
 `;
 
+const RP_UI_FINISH_CSS = `
+#rp-phone.rp-mobile-pos:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
+#rp-phone.rp-mobile-pos.rp-dark:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#716d7d,#292835 20%,#585566 40%,#343340 62%,#171923 82%,#575262);--rp-art-edge:rgba(203,197,222,.37);--rp-art-screen-edge:rgba(0,0,0,.9);--rp-art-button:#585362;--rp-art-shadow:rgba(12,10,24,.45);}
+#rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame {padding:7px!important;border-radius:38px!important;background:var(--rp-art-metal)!important;box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)!important;}
+#rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame::after {content:'';position:absolute;inset:1px;border:1px solid var(--rp-art-edge);border-radius:37px;pointer-events:none;}
+#rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-screen {border-radius:31px!important;box-shadow:0 0 0 1px var(--rp-art-screen-edge);}
+#rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame .rp-btn {background:var(--rp-art-button);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
+#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar {padding-right:6px;}
+#rp-phone #rp-screen #rp-view-xhs .rp-xhs-nav-actions {display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:0 0 auto;margin-left:auto;height:40px;}
+#rp-phone #rp-screen #rp-view-xhs #rp-xhs-favorites {display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px;min-width:36px;height:36px;min-height:36px;padding:0!important;margin:0;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--rp-xhs-accent,var(--rp-nav-btn,#99677e))!important;font-family:inherit;font-size:11px!important;line-height:1!important;white-space:nowrap;word-break:keep-all;}
+#rp-phone #rp-screen #rp-view-xhs :is(#rp-xhs-compose,#rp-xhs-refresh) {display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;margin:0;}
+`;
 const RP_MOMENT_TRANSLATE_CSS = `
 #rp-phone #rp-screen #rp-view-moments .rp-moment-bar {flex-wrap:wrap;column-gap:4px;row-gap:0;}
 #rp-phone #rp-screen #rp-view-moments .rp-moment-delete-translate {display:inline-flex;align-items:center;vertical-align:middle;white-space:nowrap;gap:2px;}
@@ -5386,6 +5395,7 @@ ${RP_IMPROVEMENT_CSS}
 ${RP_PRIVATE_AVATAR_CSS}
 ${RP_MESSAGE_ACTIONS_CSS}
 ${RP_MOMENT_TRANSLATE_CSS}
+${RP_UI_FINISH_CSS}
 `;
 
 // ================================================================
@@ -8121,7 +8131,7 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title" id="rp-xhs-feed-title">发现</span>
-            <div style="display:flex;gap:4px;align-items:center">
+            <div class="rp-xhs-nav-actions">
               <button id="rp-xhs-favorites" class="rp-feature-pill" type="button" aria-pressed="false">收藏</button>
               <button id="rp-xhs-compose" title="发笔记" aria-label="发布笔记" style="border:none;cursor:pointer"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 10h14M10 3v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
               <button id="rp-xhs-refresh" title="刷新" style="width:28px;height:28px;border:none;background:transparent;font-size:18px;cursor:pointer;color:var(--rp-nav-btn,#c0306a)">↻</button>
@@ -16314,15 +16324,8 @@ function rpGoldModeArtUrl(theme, role, local = false) {
   return local ? new URL(`scripts/extensions/third-party/mochi-phone/gold-art-20261014/${file}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${file}`;
 }
 function rpUpdateModeAvatar(viewId, avatarId, illustratedClass, partnerName) {
-  const view=document.getElementById(viewId),bar=view?.querySelector('.rp-game-partner-bar');
-  if (!bar || !view.classList.contains(illustratedClass)) return;
-  let avatar=document.getElementById(avatarId);
-  if (!avatar) { avatar=document.createElement('span');avatar.id=avatarId;avatar.setAttribute('aria-hidden','true');bar.prepend(avatar); }
-  const name=partnerName || '对方',source=getAvatar(name) || '';
-  const key=name+'|'+source;if(avatar.dataset.key===key)return;avatar.dataset.key=key;avatar.textContent=Array.from(name).slice(0,2).join('');
-  let url;try{url=new URL(source,document.baseURI);}catch{return;}
-  if (!source || !['http:','https:','data:','blob:'].includes(url.protocol) || (url.protocol==='data:'&&!/^data:image\//i.test(source))) return;
-  const image=document.createElement('img');image.alt='';image.referrerPolicy='no-referrer';image.onerror=()=>image.remove();image.src=url.href;avatar.append(image);
+  // Retired from the partner bar; also clear any node retained by an older UI.
+  document.getElementById(avatarId)?.remove();
 }
 function rpUpdateGoldModeAvatar() {
   rpUpdateModeAvatar('rp-view-ggold','ggold-mode-avatar','rp-gold-illustrated',GM.charName);
@@ -16524,7 +16527,7 @@ function lgApplyTheme(id, opts) {
 function rpStripFrameRing() {
   const frame = document.getElementById('rp-frame');
   if (!frame) return;
-  if (document.getElementById('rp-phone')?.classList.contains('rp-art-icons')) {
+  if (document.getElementById('rp-phone')?.matches('.rp-art-icons,.rp-mobile-pos')) {
     frame.style.removeProperty('box-shadow');
     return;
   }
