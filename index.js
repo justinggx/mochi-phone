@@ -601,6 +601,13 @@ const RP_IMPROVEMENT_CSS = `
 #rp-phone .rp-feature-note {margin:8px 0;color:var(--rp-v-muted,#867882);font-size:12px;white-space:pre-wrap;}
 `;
 
+const RP_MESSAGE_ACTIONS_CSS = `
+#rp-phone #rp-screen #rp-view-messages>.rp-nav-bar {padding-right:6px;}
+#rp-phone #rp-screen #rp-view-messages .rp-feature-nav-actions {margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:2px;height:40px;flex:0 0 auto;}
+#rp-phone #rp-screen #rp-view-messages :is(#rp-local-search,#rp-add-btn) {display:inline-flex!important;align-items:center;justify-content:center;box-sizing:border-box;height:40px;min-height:40px;margin:0;padding:0!important;line-height:1!important;}
+#rp-phone #rp-screen #rp-view-messages #rp-local-search {width:32px;min-width:32px;font-size:11px;}
+#rp-phone #rp-screen #rp-view-messages #rp-add-btn {width:40px;min-width:40px;font-size:26px!important;}
+`;
 const RP_PRIVATE_AVATAR_CSS = `
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-private-row {flex-direction:row;align-items:flex-start;gap:7px;}
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-private-row.rp-out {flex-direction:row-reverse;}
@@ -5368,6 +5375,7 @@ ${RP_REFINED_CSS}
 ${RP_READING_CSS}
 ${RP_IMPROVEMENT_CSS}
 ${RP_PRIVATE_AVATAR_CSS}
+${RP_MESSAGE_ACTIONS_CSS}
 `;
 
 // ================================================================
