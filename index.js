@@ -605,10 +605,14 @@ const RP_UI_FINISH_CSS = `
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame::after {content:'';position:absolute;inset:1px;border:1px solid var(--rp-art-edge);border-radius:37px;pointer-events:none;}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-screen {border-radius:31px!important;box-shadow:0 0 0 1px var(--rp-art-screen-edge);}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame .rp-btn {background:var(--rp-art-button);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
-#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar {padding-right:6px;}
+#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar {padding-right:6px!important;padding-left:6px!important;grid-template-columns:100px minmax(0,1fr) 100px;}
 #rp-phone #rp-screen #rp-view-xhs .rp-xhs-nav-actions {display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:0 0 auto;margin-left:auto;height:40px;}
 #rp-phone #rp-screen #rp-view-xhs #rp-xhs-favorites {display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px;min-width:36px;height:36px;min-height:36px;padding:0!important;margin:0;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--rp-xhs-accent,var(--rp-nav-btn,#99677e))!important;font-family:inherit;font-size:11px!important;line-height:1!important;white-space:nowrap;word-break:keep-all;}
 #rp-phone #rp-screen #rp-view-xhs :is(#rp-xhs-compose,#rp-xhs-refresh) {display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;margin:0;}
+#rp-phone.rp-theme-misty.rp-dark #rp-screen :is(#rp-sbar,#rp-lock-time,#rp-lock-date) {color:var(--rp-v-text,#e7e0f4)!important;text-shadow:none!important;}
+#rp-phone #rp-screen #rp-xhs-detail-body {overflow-wrap:anywhere;}
+#rp-phone.rp-dark:not(.rp-art-icons) #rp-pending-queue {color:var(--rp-v-text,#e7e0f4);}
+#rp-phone.rp-dark:not(.rp-art-icons) .rp-pending-hint {color:var(--rp-v-muted,#b8b1c2);}
 `;
 const RP_MOMENT_TRANSLATE_CSS = `
 #rp-phone #rp-screen #rp-view-moments .rp-moment-bar {flex-wrap:wrap;column-gap:4px;row-gap:0;}
@@ -6530,7 +6534,7 @@ function _purgeBlockedContact(nameRaw) {
   const norm = normalizePhonePersonName(nameRaw);
   // 删除该联系人的 thread
   for (const [id, th] of Object.entries(STATE.threads)) {
-    if (normalizePhonePersonName(th.name || '') === norm) {
+    if (!rpIsGroupThread(th) && normalizePhonePersonName(th.name || '') === norm) {
       delete STATE.threads[id];
     }
   }
@@ -7175,6 +7179,7 @@ function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName,
   const name = groupName || makeAutoGroupName(fromRaw, targetName, text || '语音');
   const resolvedTime = resolvePhoneTime(time);
   const groupId = `grp_${name}`;
+  if (!rpCanReceiveGroup(groupId, name)) return;
   if (!STATE.threads[groupId]) {
     const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
     STATE.threads[groupId] = {
@@ -7211,6 +7216,7 @@ function incomingAutoGroupHongbao(fromRaw, toRaw, amount, note, groupName, time,
   const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
   const name = groupName || makeAutoGroupName(fromRaw, targetName, note || '红包');
   const groupId = `grp_${name}`;
+  if (!rpCanReceiveGroup(groupId, name)) return;
   if (!STATE.threads[groupId]) {
     const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
     STATE.threads[groupId] = {
@@ -7251,10 +7257,12 @@ function getGroupSenderThread(nameRaw) {
   const normalized = normalizePhonePersonName(canonicalName);
   if (!normalized) return null;
   for (const th of Object.values(STATE.threads || {})) {
+    if (rpIsGroupThread(th)) continue;
     const thNorm = normalizePhonePersonName(resolveCanonicalPhoneName(th && th.name || ''));
     if (thNorm === normalized) return th;
   }
   for (const th of Object.values(STATE.threads || {})) {
+    if (rpIsGroupThread(th)) continue;
     const thNorm = normalizePhonePersonName(resolveCanonicalPhoneName(th && th.name || ''));
     if (thNorm && (normalized.includes(thNorm) || thNorm.includes(normalized))) return th;
   }
@@ -7285,6 +7293,17 @@ function appendGroupSenderBody(wrap, msg, contentEl, btnRow, time) {
   wrap.append($(buildGroupSenderAvatarHtml(msg)), body);
 }
 
+function rpIsGroupThread(thread) {
+  return thread?.type === 'group' || String(thread?.id || '').startsWith('grp_');
+}
+function rpDeletedContactKey(thread) {
+  return rpIsGroupThread(thread) ? 'group:' + normalizePhonePersonName(thread.name) : normalizePhonePersonName(resolveCanonicalPhoneName(thread.name));
+}
+function rpCanReceiveGroup(id, name) {
+  if (STATE.threads[id]) return true;
+  const deleted = STATE.deletedContacts?.['group:' + normalizePhonePersonName(name)];
+  return !deleted || (Number.isInteger(STATE._parseMessageIndex) && STATE._parseMessageIndex > deleted.through);
+}
 function findOrCreateThread(nameRaw) {
   const ctx = getContext();
   const cleanedName = String(nameRaw || '')
@@ -7298,6 +7317,7 @@ function findOrCreateThread(nameRaw) {
   const canonicalName = resolveCanonicalPhoneName(cleanedName) || cleanedName;
   const normalized = normalizePhonePersonName(canonicalName);
   for (const th of Object.values(STATE.threads)) {
+    if (rpIsGroupThread(th)) continue;
     const thNorm = normalizePhonePersonName(resolveCanonicalPhoneName(th.name || ''));
     if (thNorm === normalized) {
       if (cleanedName !== th.name) rememberPhoneNameAlias(cleanedName, th.name || canonicalName);
@@ -9241,7 +9261,7 @@ function rpDeleteMoment(momentId) {
 function rpDeleteContacts(ids) {
   if(rpHostSubmission){toastr.info('请等当前发送确认完成后再删除好友。');return false;}
   const contacts=ids.map(id=>STATE.threads[id]).filter(Boolean); if(!contacts.length)return;
-  const names=new Set(contacts.map(t=>t.name)), momentsBefore=STATE.moments.slice();
+  const names=new Set(contacts.filter(t=>!rpIsGroupThread(t)).map(t=>t.name)), momentsBefore=STATE.moments.slice();
   const removedPosts=STATE.moments.filter(m=>m.from!=='user'&&names.has(m.name));
   const patches=[];
   for(const post of STATE.moments.filter(m=>!removedPosts.includes(m))){
@@ -9252,14 +9272,14 @@ function rpDeleteContacts(ids) {
   }
   const oldTombstones=new Map(), newTombstones=new Map(); STATE.deletedContacts ||= {};
   for(const contact of contacts){
-    const key=normalizePhonePersonName(resolveCanonicalPhoneName(contact.name));
+    const key=rpDeletedContactKey(contact);
     oldTombstones.set(key,{had:Object.hasOwn(STATE.deletedContacts,key),value:STATE.deletedContacts[key]});
     const record={through:(getContext()?.chat?.length||0)-1}; newTombstones.set(key,record);STATE.deletedContacts[key]=record;delete STATE.threads[contact.id];
   }
   STATE.moments=STATE.moments.filter(m=>!removedPosts.includes(m));
   if(contacts.some(t=>t.id===STATE.currentThread)){STATE.currentThread=null;STATE.pendingMessages=[];$('#rp-input').val('');renderPendingQueue();}
   $('#rp-del-picker').remove();renderThreadList();if(STATE.currentView==='moments')renderMoments();saveState();
-  rpOfferUndo('已删除 '+contacts.length+' 位好友及相关内容',()=>{
+  rpOfferUndo('已删除 '+contacts.length+' 个聊天及相关内容',()=>{
     if(contacts.some(t=>STATE.threads[t.id])||removedPosts.some(p=>STATE.moments.some(m=>m.id===p.id))||[...newTombstones].some(([key,value])=>STATE.deletedContacts[key]!==value))return false;
     for(const contact of contacts)STATE.threads[contact.id]=contact;
     for(const[key,old]of oldTombstones)if(old.had)STATE.deletedContacts[key]=old.value;else delete STATE.deletedContacts[key];
@@ -9273,11 +9293,11 @@ function rpDeleteContacts(ids) {
 }
 function rpConfirmDeleteContacts(ids) {
   const contacts=ids.map(id=>STATE.threads[id]).filter(Boolean);if(!contacts.length){toastr.info('请先选择好友。');return;}
-  const names=new Set(contacts.map(t=>t.name));
+  const names=new Set(contacts.filter(t=>!rpIsGroupThread(t)).map(t=>t.name));
   const messages=contacts.reduce((sum,t)=>sum+(t.messages||[]).length,0);
   const posts=STATE.moments.filter(m=>m.from!=='user'&&names.has(m.name)).length;
   const comments=STATE.moments.reduce((sum,m)=>sum+(m.comments||[]).filter(c=>names.has(c.name)).length,0);
-  const content=$('<div>').append($('<p>').text('将删除 '+contacts.length+' 位好友、其信息记录，以及相关朋友圈、点赞和评论。'),$('<p class="rp-feature-note">').text('当前涉及 '+messages+' 条信息、'+posts+' 条动态、'+comments+' 条评论。删除后 10 秒内可撤销。'));
+  const content=$('<div>').append($('<p>').text('将删除选中的 '+contacts.length+' 个聊天及其信息记录；删除联系人时，还会移除该联系人的朋友圈、点赞和评论。'),$('<p class="rp-feature-note">').text('当前涉及 '+messages+' 条信息、'+posts+' 条动态、'+comments+' 条评论。删除后 10 秒内可撤销。'));
   rpFeatureDialog('确认删除好友',content,[{label:'取消'},{label:'确认删除',danger:true,run:()=>rpDeleteContacts(ids)}]);
 }
 
@@ -9304,21 +9324,25 @@ function rpReadingRows(context) {
   if(context.kind==='xhs')return [...context.el.querySelectorAll('.rp-xhs-card')].map(row=>({row,item:STATE.xhsFeed.find(p=>String(p.id)===row.getAttribute('data-xhsid'))}));
   return [];
 }
+function rpScrollScale(el) {
+  const height = el?.getBoundingClientRect().height, layout = el?.offsetHeight;
+  return height > 0 && layout > 0 ? height / layout : 1;
+}
 function rpReadSnapshot(context, identify=false) {
   const el=context?.el;
   if(!el || !el.clientHeight)return null;
-  const snapshot={top:el.scrollTop,atBottom:el.scrollHeight-el.scrollTop-el.clientHeight<24};
-  const top=el.getBoundingClientRect().top;
+  const snapshot={top:el.scrollTop,atBottom:el.scrollHeight-el.scrollTop-el.clientHeight<24,offsetUnit:"css"};
+  const bounds=el.getBoundingClientRect(), top=bounds.top, scale=rpScrollScale(el);
   let selected=null,distance=Infinity;
   for(const entry of rpReadingRows(context)){
     if(!entry.item)continue;
     const rect=entry.row.getBoundingClientRect();
-    if(rect.bottom<=top || rect.top>=top+el.clientHeight)continue;
+    if(rect.bottom<=top || rect.top>=bounds.bottom)continue;
     if(Math.abs(rect.top-top)<distance){selected=entry;distance=Math.abs(rect.top-top);}
   }
   if(selected){
     if(identify&&!selected.item.id)selected.item.id='read_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
-    if(selected.item.id){snapshot.anchor=String(selected.item.id);snapshot.offset=selected.row.getBoundingClientRect().top-top;}
+    if(selected.item.id){snapshot.anchor=String(selected.item.id);snapshot.offset=(selected.row.getBoundingClientRect().top-top)/scale;}
   }
   return snapshot;
 }
@@ -9334,7 +9358,7 @@ function rpRestoreSnapshot(context,snapshot) {
   if(snapshot.atBottom&&context.kind==='thread')el.scrollTop=el.scrollHeight;
   else {
     const row=snapshot.anchor&&rpReadingRows(context).find(entry=>String(entry.item?.id)===snapshot.anchor)?.row;
-    if(row)el.scrollTop+=row.getBoundingClientRect().top-el.getBoundingClientRect().top-(Number(snapshot.offset)||0);
+    if(row && snapshot.offsetUnit === "css")el.scrollTop+=(row.getBoundingClientRect().top-el.getBoundingClientRect().top)/rpScrollScale(el)-(Number(snapshot.offset)||0);
     else el.scrollTop=Number.isFinite(snapshot.top)?Math.max(0,snapshot.top):0;
   }
   rpUpdateLatestButton();
@@ -9376,7 +9400,7 @@ function rpOpenLocalSearch() {
         if(message){
           const index=thread.messages.indexOf(message),el=document.getElementById('rp-bubbles');
           const row=[...el.children].find(child=>Number(child.dataset.rpReadingIndex)===index);
-          if(row){el.scrollTop+=row.getBoundingClientRect().top-el.getBoundingClientRect().top-12;row.classList.add('rp-search-match');setTimeout(()=>row.classList.remove('rp-search-match'),2000);}
+          if(row){el.scrollTop+=(row.getBoundingClientRect().top-el.getBoundingClientRect().top)/rpScrollScale(el)-12;row.classList.add('rp-search-match');setTimeout(()=>row.classList.remove('rp-search-match'),2000);}
         }
         rpRememberReading();saveState();rpUpdateLatestButton();
       });results.append(button);
@@ -9491,6 +9515,7 @@ function bindUI() {
 
   $(document).on("click.mochiPhone", '.rp-app[data-app]', function () {
     const app = $(this).data('app');
+    if (app === 'folder-games') return; // The folder opens over home; it is not a page.
     if (app === 'settings') { openSettings(); return; }
     go(app);
   });
@@ -10813,6 +10838,7 @@ function renderThreadList() {
 //  NAVIGATION
 // ================================================================
 function go(view) {
+  if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
   if(view==='xhs-detail' && !STATE.xhsFeed.some(post=>post.id===STATE.xhsCurrentPost))view='xhs';
   if(view!==STATE.currentView)rpRememberReading();
   rpPauseGameAnimations();
@@ -11165,11 +11191,17 @@ function renderBubbles(threadId, options = {}) {
   rpRenderHostOutbox(threadId);
   const area = $('#rp-bubbles'), el = area[0];
   if (!el) return;
+  const activeEditor = document.activeElement;
+  if (el.contains(activeEditor) && activeEditor._rpComposing && activeEditor.closest(".rp-inline-edit-wrap")) { activeEditor._rpNeedsRepaint = true; return; }
+  const edits = area.find(".rp-inline-edit-wrap").toArray().filter(node => node._rpMessageEdit && (node._rpMessageEdit.threadId === threadId || (!STATE.threads[node._rpMessageEdit.threadId] && STATE.threads[threadId]?.messages.includes(node._rpMessageEdit.message)))).map(node => {
+    const input = node.querySelector("textarea");
+    return {...node._rpMessageEdit, text:input.value, start:input.selectionStart, end:input.selectionEnd, direction:input.selectionDirection, focused:input === document.activeElement};
+  });
   const previousScroll = el.scrollTop;
   const readingContext={key:'thread:'+threadId,el,kind:'thread',id:threadId};
   const previousReading=el.dataset.readingThread===threadId?rpReadSnapshot(readingContext):null;
   const wasNearBottom=el.scrollHeight-el.scrollTop-el.clientHeight<30;
-  const followBottom = !options.preserveScroll && (el.dataset.readingThread!==threadId || wasNearBottom);
+  const followBottom = !edits.length && !options.preserveScroll && (el.dataset.readingThread!==threadId || wasNearBottom);
   const renderEpoch = el._rpScrollRenderEpoch = (el._rpScrollRenderEpoch || 0) + 1;
   let expectedScroll = previousScroll;
   // A late image/timer may follow initial layout, never a user's deliberate scroll.
@@ -11197,7 +11229,7 @@ function renderBubbles(threadId, options = {}) {
       return;
     }
     // ── 红包 ──
-    if (msg.type === 'hongbao') {
+    if (msg.type === 'hongbao' && msg.from !== 'user') {
       const openedHtml = msg.opened
         ? `<div class="rp-hb-amount"><small>¥</small>${escHtml(msg.amount)}</div>` : '';
       const wrap = $(`<div class="rp-bwrap rp-in"></div>`);
@@ -11389,28 +11421,6 @@ function renderBubbles(threadId, options = {}) {
       wrap.append(delBtn);
       area.append(wrap); return;
     }
-    // ── user 发的红包 ──
-    if (msg.type === 'hongbao' && msg.from === 'user') {
-      const wrap = $(`<div class="rp-bwrap rp-out"></div>`);
-      wrap.html(`
-        <div class="rp-hongbao opened" style="cursor:default">
-          <div class="rp-hb-top">
-            <div class="rp-hb-ico">🧧</div>
-            <div class="rp-hb-info">
-              <div class="rp-hb-from">我</div>
-              <div class="rp-hb-note">${escHtml(msg.note||'恭喜发财')}</div>
-            </div>
-          </div>
-          <div class="rp-hb-bot">
-            <div class="rp-hb-action">已发送</div>
-            <div class="rp-hb-amount"><small>¥</small>${escHtml(msg.amount)}</div>
-            <div class="rp-hb-tag">微信红包</div>
-          </div>
-        </div>
-        <div class="rp-bts">${escHtml(msg.time)}</div>
-      `);
-      area.append(wrap); return;
-    }
     // ── 普通消息 ──
     const isUser = msg.from === 'user';
     const isGrpThread = thread.type === 'group' || (threadId && threadId.startsWith('grp_'));
@@ -11479,6 +11489,13 @@ function renderBubbles(threadId, options = {}) {
     rpNormalizeMessageMeta(wrap);
     rpAttachPrivateAvatar(wrap, thread, thread.messages[Number(this.dataset.rpReadingIndex)]);
   });
+  for (const edit of edits) {
+    const index = thread.messages.indexOf(edit.message);
+    if (index < 0) continue;
+    const row = [...el.children].find(child => Number(child.dataset.rpReadingIndex) === index);
+    const bubble = row?.querySelector('.rp-bubble');
+    if (bubble) rpInlineEdit(bubble, threadId, edit.message, index, edit);
+  }
   el.scrollTop = followBottom ? el.scrollHeight : previousScroll;
   if(!followBottom&&previousReading)rpRestoreSnapshot(readingContext,previousReading);
   expectedScroll = el.scrollTop;
@@ -14158,7 +14175,7 @@ function rpParsePhoneOrdered(block, source = {}) {
       const ordinal = counters[kind] || 0; counters[kind] = ordinal + 1;
       const attrs = getTagAttrs(token[0].match(/^<\w+\b([^>]*)>/)?.[1] || '');
       const deleted = STATE.deletedContacts?.[normalizePhonePersonName(resolveCanonicalPhoneName(attrs.FROM || ''))];
-      const groupDeleted = STATE.deletedContacts?.[normalizePhonePersonName(resolveCanonicalPhoneName(attrs.GROUP || ''))];
+      const groupDeleted = STATE.deletedContacts?.['group:' + normalizePhonePersonName(attrs.GROUP || '')];
       if ([deleted, groupDeleted].some(record=>record && !(Number.isInteger(source.messageIndex) && source.messageIndex > record.through))) continue;
       const origin = { ...source, _parseContext: context, _ordinal: ordinal };
       if (kind === 'SMS' && !source._fragment) {
@@ -14749,10 +14766,12 @@ function matchThread(fromRaw) {
   const normalized = normalizePhonePersonName(canonical);
 
   for (const th of Object.values(STATE.threads)) {
+    if (rpIsGroupThread(th)) continue;
     if (normalizePhonePersonName(resolveCanonicalPhoneName(th.name || '')) === normalized) return th.id;
   }
 
   for (const th of Object.values(STATE.threads)) {
+    if (rpIsGroupThread(th)) continue;
     const thName = normalizePhonePersonName(resolveCanonicalPhoneName(th.name || ''));
     if (normalized.includes(thName) || thName.includes(normalized)) return th.id;
   }
@@ -14899,7 +14918,13 @@ function refreshLockNotifs() {
         const clamp = Math.max(-72, Math.min(0, dx - (card.hasClass('rp-ln-swiped') ? 72 : 0)));
         card.css({ transition: 'none', transform: `translateX(${clamp}px)` });
       }
-    }, { passive: false });
+    });
+
+    card.on('touchcancel', function() {
+      card.css({ transition: '', transform: '' });
+      wrap.toggleClass('rp-ln-wrap-active', card.hasClass('rp-ln-swiped'));
+      isSwiping = false; touchHandled = true;
+    });
 
     card.on('touchend', function(e) {
       touchHandled = true;
@@ -15530,6 +15555,7 @@ const GROUP_COLORS = ['#7c3aed','#0891b2','#0d9488','#b45309','#be185d','#1d4ed8
 function incomingGroupMsg(fromRaw, groupName, time, text, source) {
   const resolvedTime = resolvePhoneTime(time);
   const groupId = `grp_${groupName}`;
+  if (!rpCanReceiveGroup(groupId, groupName)) return;
   if (!STATE.threads[groupId]) {
     const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
     STATE.threads[groupId] = {
@@ -19142,6 +19168,12 @@ function escHtml(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+function rpUniqueMomentId(base, moments) {
+  const used = new Set(moments.map(item => item?.id));
+  let id = base, suffix = 1;
+  while (used.has(id)) id = base + '_' + suffix++;
+  return id;
+}
 function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgType, _skipAutoSocial) {
   if (isForbiddenPhoneContactName(fromRaw, getContext())) {
     return null;
@@ -19149,7 +19181,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
   time = resolvePhoneTime(time);
   // ── momentId：from + time + 毫秒戳，每条唯一，彻底避免同时刻不同角色/纯图片碰撞 ──
   const _idBase = fromRaw.toLowerCase().replace(/\s+/g,'_') + '_' + time.replace(':','');
-  const momentId = _idBase + '_' + Date.now();
+  let momentId = _idBase + '_' + Date.now();
 
   // ── FIX: chatId 一致性守卫 ──
   // CHAT_CHANGED 事件有时滞后，导致 STATE.chatId 还是旧窗口的 id，
@@ -19191,6 +19223,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
       });
 
       _slot.moments = _slot.moments || [];
+      momentId = rpUniqueMomentId(momentId, _slot.moments);
       const _dup = _slot.moments.find(m =>
         m.from === _threadId0 && m.time === time && m.text === (text || '')
       );
@@ -19274,6 +19307,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
   }
   const th = STATE.threads[threadId];
   STATE.moments = STATE.moments || [];
+  momentId = rpUniqueMomentId(momentId, STATE.moments);
   STATE.moments.push({
     id: momentId,
     from: threadId || fromRaw,
@@ -23356,14 +23390,17 @@ jQuery(async () => {
 // ================================================================
 
 // P1: 聊天气泡内联编辑
-function rpInlineEdit(bubbleEl, threadId, msg, msgIdx) {
+function rpInlineEdit(bubbleEl, threadId, msg, msgIdx, restored = null) {
+  const thread = STATE.threads[threadId], task = rpRuntime.task();
+  if (!thread?.messages.includes(msg)) return;
   if (bubbleEl.querySelector('.rp-inline-edit-wrap')) return; // 防重入
-  const origText = msg.text;
+  const origText = restored ? restored.originalText : msg.text;
   const wrap = document.createElement('div');
   wrap.className = 'rp-inline-edit-wrap';
+  wrap._rpMessageEdit = {threadId, message: msg, originalText: origText};
   const ta = document.createElement('textarea');
   ta.className = 'rp-inline-textarea';
-  ta.value = origText;
+  ta.value = restored ? restored.text : origText;
   ta.rows = 3;
   const btnRow = document.createElement('div');
   btnRow.className = 'rp-inline-edit-btns';
@@ -23377,27 +23414,31 @@ function rpInlineEdit(bubbleEl, threadId, msg, msgIdx) {
   wrap.addEventListener('click', function(e) { e.stopPropagation(); });
   wrap.addEventListener('touchend', function(e) { e.stopPropagation(); });
   ta.addEventListener('click', function(e) { e.stopPropagation(); });
+  ta.addEventListener('compositionstart', () => { ta._rpComposing = true; });
+  ta.addEventListener('compositionend', () => {
+    ta._rpComposing = false;
+    if (ta._rpNeedsRepaint && task.valid() && STATE.currentThread === threadId && STATE.currentView === 'thread') renderBubbles(threadId, {preserveScroll:true});
+  });
 
   // 隐藏原气泡文字,插入编辑区
   bubbleEl.style.display = 'none';
   bubbleEl.parentNode.insertBefore(wrap, bubbleEl.nextSibling);
-  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
-  btnRow.scrollIntoView?.({block:'nearest',inline:'nearest'});
+  if (!restored || restored.focused) {
+    ta.focus({preventScroll:!!restored});
+    ta.setSelectionRange(restored?.start ?? ta.value.length, restored?.end ?? ta.value.length, restored?.direction || 'none');
+  }
+  if (!restored) btnRow.scrollIntoView?.({block:'nearest',inline:'nearest'});
   rpAvoidFabControls();
 
   okBtn.onclick = function(e) {
     e.stopPropagation(); e.preventDefault();
     const newText = ta.value.trim();
     if (newText && newText !== origText) {
-      const th = STATE.threads[threadId];
-      if (th) {
-        // 优先用 msgIdx 精确定位（user 和 char 消息都支持）
-        const target = (typeof msgIdx === 'number' && th.messages[msgIdx])
-          ? th.messages[msgIdx]
-          : th.messages.find(function(m) { return m.text === origText; });
-        if (target) target.text = newText;
-        saveState();
+      if (!task.valid() || STATE.threads[threadId] !== thread || !thread.messages.includes(msg) || msg.text !== origText) {
+        toastr.info('该信息已变化，请重新打开编辑。'); return;
       }
+      msg.text = newText;
+      saveState();
       renderBubbles(threadId);
     } else {
       wrap.remove(); bubbleEl.style.display = '';
