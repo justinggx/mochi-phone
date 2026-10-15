@@ -5347,7 +5347,6 @@ runtime.own(() => { if (rpInitialized) flushStateNow(); });
 runtime.own(rpResetGameRuntimes);
 runtime.own(() => { void rpPhoneArchive.close(); });
 runtime.own(() => $(document).off('.mochiPhone'));
-runtime.listenDOM(document, 'click', rpHandlePhoneQuickReplyClick, true);
 runtime.own(() => {
   ['_rpImageSyncInstalled', '_rpChatu8ButtonBridgeInstalled', '__rpPhoneRenderObserverInstalled',
    '_rpHomeSwipeGoto', '__rpUserOocCleanupObserver', '__rpUserOocCleanupTimer'].forEach(key => { delete window[key]; });
@@ -5482,7 +5481,6 @@ function rpUpdateViewport() {
 let _rp_ext_settings = null;
 let _rp_save_fn = null;
 let _rp_script_mod = null;
-let _rp_slash_mods = null;
 const rpModulesReady = (async function _rpLoadModules() {
   try {
     const ext = await import('../../../extensions.js');
@@ -5510,19 +5508,7 @@ const rpModulesReady = (async function _rpLoadModules() {
       clearTimer: window.clearTimeout.bind(window),
     });
   } catch(e) { console.warn('[Phone] account-scoped archive unavailable; legacy storage retained'); }
-  try {
-    const [parserMod, commandMod] = await Promise.all([
-      import('../../../slash-commands/SlashCommandParser.js'),
-      import('../../../slash-commands/SlashCommand.js'),
-    ]);
-    _rp_slash_mods = {
-      SlashCommandParser: parserMod && parserMod.SlashCommandParser,
-      SlashCommand: commandMod && commandMod.SlashCommand,
-    };
-    registerPhoneSlashCommands();
-    injectMochiSettingsPanel();
-    applyMochiLaunchSettings();
-  } catch(e) { console.warn('[Phone] 无法加载 slash command 模块:', rpErrorInfo(e)); }
+
 })();
 
 const _extSettings = () =>
@@ -5560,7 +5546,7 @@ function rpInstallWandLauncher(runtime) {
       item.id = 'mochi-phone-wand-open';
       item.className = 'list-group-item flex-container flexGap5';
       item.setAttribute('role', 'button'); item.tabIndex = 0;
-      item.title = '打开 MochiPhone 小手机（无需 QR）';
+      item.title = '打开 MochiPhone 小手机';
       const icon = document.createElement('div');
       icon.className = 'fa-solid fa-mobile-screen-button extensionsMenuExtensionButton';
       icon.setAttribute('aria-hidden', 'true');
@@ -5574,7 +5560,7 @@ function rpInstallWandLauncher(runtime) {
           return;
         }
         // Let the click bubble: the host owns the menu's visible state and dismissal.
-        // Open directly, independent of QR settings and the shared slash-input queue.
+        // Open directly without using the shared slash-input queue.
         void openMochiPhoneFromExternal().catch(() => {
           if (runtime.stats().destroyed) return;
           console.warn('[Phone] wand launch unavailable');
@@ -5596,44 +5582,8 @@ function rpInstallWandLauncher(runtime) {
   runtime.own(() => { observer.disconnect(); item?.remove(); });
   mount();
 }
-function rpPhoneQuickReplyAction(button) {
-  const api = globalThis.quickReplyApi;
-  if (!api || typeof api.listSets !== 'function' || typeof api.getSetByName !== 'function') return null;
-  try {
-    const names = api.listSets();
-    if (!Array.isArray(names)) return null;
-    for (const name of names) {
-      const set = api.getSetByName(name);
-      if (!set || set.isDeleted || set.disableSend || set.injectInput || !Array.isArray(set.qrList)) continue;
-      // Match the actual host QR object; never guess from label/title or DOM text.
-      const qr = set.qrList.find(item => item?.dom === button);
-      if (!qr || typeof qr.message !== 'string') continue;
-      const match = /^\/(?:mochiphone|mochi-phone)(?:\s+(open|show|close|hide|toggle))?\s*$/i.exec(qr.message.trim());
-      return match ? (match[1] || 'open').toLowerCase() : null;
-    }
-  } catch(e) { /* Missing/incompatible QR API retains the host's original path. */ }
-  return null;
-}
-function rpHandlePhoneQuickReplyClick(event) {
-  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
-  const target = event.target instanceof Element ? event.target : event.target?.parentElement;
-  const button = target?.closest('.qr--button');
-  if (!button || target.closest('.qr--button-expander')) return;
-  const action = rpPhoneQuickReplyAction(button);
-  if (action === null) return;
-  // Only standalone phone actions bypass the shared busy script-input channel.
-  // No core methods/settings are patched; unrelated QR scripts remain untouched.
-  event.preventDefault(); event.stopImmediatePropagation();
-  const settings = getMochiLaunchSettings();
-  if (!settings.enabled || !settings.qrLaunch) {
-    globalThis.toastr?.info?.(!settings.enabled ? '小手机已停用，请先在扩展设置中启用。' : 'QR 启动已关闭，请在扩展设置中启用。');
-    return;
-  }
-  Promise.resolve(handleMochiPhoneSlashCommand(action)).catch(() => {
-    console.warn('[Phone] QR launch unavailable');
-    globalThis.toastr?.warning?.('手机未能打开，请刷新页面后重试。');
-  });
-}
+
+
 function rpSetPhoneOpen(open) {
   if (open && !isMochiPhoneEnabled()) return;
   const phone = $('#rp-phone');
@@ -5651,7 +5601,7 @@ function rpSetPhoneOpen(open) {
     }
     // 记录打开时间戳,防止 document click 在同一事件循环内把手机关掉（部分 Android 合成 click 问题）
     STATE._phoneOpenedAt = Date.now();
-    if (phone.is(':visible')) return; // Opening is idempotent, including repeated QR clicks.
+    if (phone.is(':visible')) return; // Repeated opens keep the current page.
     // 防御性同步:若 CHAT_CHANGED 未触发(用户直接切换了对话),此处补偿
     syncToCurrentChat();
     // 从聊天历史重建联系人(服务端数据,PC/手机共享同一份聊天记录)
@@ -5701,42 +5651,14 @@ async function toggleMochiPhoneFromExternal() {
   return '';
 }
 
-function handleMochiPhoneSlashCommand(value) {
-  const st = getMochiLaunchSettings();
-  if (!st.qrLaunch) return '';
-  const action = String(value || '').trim().toLowerCase();
-  if (action === 'close' || action === 'hide') return closeMochiPhoneFromExternal();
-  if (action === 'toggle') return toggleMochiPhoneFromExternal();
-  return openMochiPhoneFromExternal();
-}
 
-function registerPhoneSlashCommands() {
-  if (window.__mochiPhoneSlashRegistered) return;
-  const SlashCommandParser = _rp_slash_mods && _rp_slash_mods.SlashCommandParser;
-  const SlashCommand = _rp_slash_mods && _rp_slash_mods.SlashCommand;
-  if (!SlashCommandParser || !SlashCommand || typeof SlashCommand.fromProps !== 'function') return;
 
-  window.__mochiPhoneSlashRegistered = true;
-  try {
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-      name: 'mochiphone',
-      aliases: ['mochi-phone', 'phone', 'mp'],
-      // The parser keeps callbacks across extension hot reloads. Resolve the
-      // current implementation through globalThis instead of retaining a stale
-      // closure from the previous module instance.
-      callback: (_args, value) => globalThis.MochiPhoneCommand?.(value) ?? '',
-      helpString: '打开或关闭 MochiPhone 小手机。用法：/mochiphone、/mochiphone open、/mochiphone close、/mochiphone toggle。可放进 Quick Reply 按钮。',
-    }));
-  } catch(e) {
-    window.__mochiPhoneSlashRegistered = false;
-    console.error('[Phone] register slash command failed:', rpErrorInfo(e));
-  }
-}
+
 
 
 const EXT_KEY = 'ray_phone_v1'; // extension_settings 的命名空间键
 const EXT_LAUNCH_KEY = 'mochi_phone_launch_v1'; // MochiPhone 全局启动入口设置
-const DEFAULT_LAUNCH_SETTINGS = { enabled: true, qrLaunch: true, fabLaunch: true };
+const DEFAULT_LAUNCH_SETTINGS = { enabled: true, fabLaunch: true };
 const SAVE_DEBOUNCE_MS = 500;
 let rpDesktopPhoneScale = null;
 let rpDesktopAppliedScale = 1;
@@ -5906,8 +5828,6 @@ function applyMochiLaunchSettings() {
   }
   const enabledToggle = document.getElementById('mochi-phone-enabled-toggle');
   if (enabledToggle) enabledToggle.checked = enabled;
-  const qrToggle = document.getElementById('mochi-phone-qr-launch-toggle');
-  if (qrToggle) qrToggle.checked = !!st.qrLaunch;
   const fabToggle = document.getElementById('mochi-phone-fab-launch-toggle');
   if (fabToggle) fabToggle.checked = !!st.fabLaunch;
   refreshMochiPrompt();
@@ -5951,20 +5871,13 @@ function buildMochiSettingsHtml() {
             </label>
           </div>
           <div class="mochi-launch-row">
-            <span>QR启动</span>
-            <label class="mochi-launch-switch" title="勾选后 Quick Reply 中的 /mochiphone 可以打开小手机">
-              <input id="mochi-phone-qr-launch-toggle" type="checkbox" ${st.qrLaunch ? 'checked' : ''}>
-              <i></i>
-            </label>
-          </div>
-          <div class="mochi-launch-row">
             <span>悬浮球启动</span>
             <label class="mochi-launch-switch" title="勾选后显示右下角小手机悬浮球">
               <input id="mochi-phone-fab-launch-toggle" type="checkbox" ${st.fabLaunch ? 'checked' : ''}>
               <i></i>
             </label>
           </div>
-          <div class="mochi-launch-hint">总开关关闭＝停用手机：隐藏悬浮球与手机、不再解析 PHONE 标签、清空规则提示注入，无需卸载扩展。左下角魔法棒菜单的「打开小手机」不依赖 QR 或悬浮球开关。QR 按钮内容填 <code>/mochiphone</code>；关闭 QR 启动后该命令不再打开手机。</div>
+          <div class="mochi-launch-hint">总开关关闭＝停用手机：隐藏悬浮球与手机、不再解析 PHONE 标签、清空规则提示注入，无需卸载扩展。左下角魔法棒菜单的「打开小手机」不依赖悬浮球开关。</div>
         </div>
       </div>
     </div>`;
@@ -6000,14 +5913,7 @@ function bindMochiSettingsEvents() {
       }, 300);
     }
   });
-  const qr = document.getElementById('mochi-phone-qr-launch-toggle');
   const fab = document.getElementById('mochi-phone-fab-launch-toggle');
-  if (qr) qr.addEventListener('change', function() {
-    const st = getMochiLaunchSettings();
-    st.qrLaunch = !!qr.checked;
-    saveMochiLaunchSettings();
-    applyMochiLaunchSettings();
-  });
   if (fab) fab.addEventListener('change', function() {
     const st = getMochiLaunchSettings();
     st.fabLaunch = !!fab.checked;
@@ -22899,7 +22805,8 @@ Object.assign(window, {
   MochiPhoneOpen: openMochiPhoneFromExternal,
   MochiPhoneClose: closeMochiPhoneFromExternal,
   MochiPhoneToggle: toggleMochiPhoneFromExternal,
-  MochiPhoneCommand: handleMochiPhoneSlashCommand,
+  // Keep callbacks registered by a previous hot-loaded version inert.
+  MochiPhoneCommand: () => '',
 });
 
 // ================================================================
@@ -22908,7 +22815,6 @@ Object.assign(window, {
 jQuery(async () => {
   try {
     await init();
-    registerPhoneSlashCommands();
     injectMochiSettingsPanel();
     applyMochiLaunchSettings();
   } catch(e) {
