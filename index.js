@@ -601,6 +601,18 @@ const RP_IMPROVEMENT_CSS = `
 #rp-phone .rp-feature-note {margin:8px 0;color:var(--rp-v-muted,#867882);font-size:12px;white-space:pre-wrap;}
 `;
 
+const RP_PRIVATE_AVATAR_CSS = `
+#rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-private-row {flex-direction:row;align-items:flex-start;gap:7px;}
+#rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-private-row.rp-out {flex-direction:row-reverse;}
+#rp-phone #rp-screen #rp-view-thread .rp-private-body {flex:0 1 auto;max-width:72%;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+#rp-phone #rp-screen #rp-view-thread .rp-out>.rp-private-body {align-items:flex-end;}
+#rp-phone #rp-screen #rp-view-thread .rp-private-body>.rp-bubble,
+#rp-phone #rp-screen #rp-view-thread .rp-private-body>.rp-img-bbl,
+#rp-phone #rp-screen #rp-view-thread .rp-private-body>.rp-voice-wrap,
+#rp-phone #rp-screen #rp-view-thread .rp-private-body>.rp-hongbao,
+#rp-phone #rp-screen #rp-view-thread .rp-private-body>.rp-loc-card {max-width:100%;}
+#rp-phone #rp-screen #rp-view-thread .rp-private-avatar {margin-top:0;width:30px;height:30px;}
+`;
 const RP_READING_CSS = `
 #rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:12px;}
 #rp-phone #rp-screen #rp-view-messages .rp-tp {font-size:10.5px;}
@@ -5355,6 +5367,7 @@ ${RP_ART_CSS}
 ${RP_REFINED_CSS}
 ${RP_READING_CSS}
 ${RP_IMPROVEMENT_CSS}
+${RP_PRIVATE_AVATAR_CSS}
 `;
 
 // ================================================================
@@ -11061,9 +11074,26 @@ async function rpTogglePhoneTranslation(target) {
   }
 }
 
+function rpAttachPrivateAvatar(wrap, thread, message) {
+  if (!message || thread.type === 'group' || String(thread.id || '').startsWith('grp_') || wrap.hasClass('rp-grp') || wrap.children('.rp-private-body').length) return;
+  const isUser = message.from === 'user';
+  const key = isUser ? 'user' : thread.name;
+  const label = isUser ? '我' : String(thread.name || thread.initials || '联系人');
+  const initials = isUser ? '我' : String(thread.initials || label.slice(0,2));
+  const image = getAvatar(key) || (!isUser && getAvatar(thread.id));
+  const avatar = $('<div class="rp-private-avatar rp-grp-av" role="img">').attr('aria-label', label + '的头像').text(initials);
+  if (image) {
+    const photo = $('<img class="rp-av-photo" alt="">');
+    photo.on('error', () => avatar.removeClass('rp-av-img').empty().text(initials));
+    avatar.addClass('rp-av-img').empty().append(photo); photo.attr('src', image);
+  } else if (!isUser && thread.avatarBg) avatar.css('background',thread.avatarBg);
+  const body = $('<div class="rp-private-body">').append(wrap.contents());
+  wrap.addClass('rp-private-row').toggleClass('rp-out', isUser).toggleClass('rp-in', !isUser).append(avatar,body);
+}
+
 // Move existing metadata nodes only: preserve handlers, targets and receive order.
 function rpNormalizeMessageMeta(wrap) {
-  const groupBody = wrap.children('.rp-grp-body');
+  const groupBody = wrap.children('.rp-grp-body,.rp-private-body');
   const body = groupBody.length ? groupBody : wrap;
   if (body.children('.rp-message-meta').length) return;
   const time = body.children('.rp-bts');
@@ -11396,7 +11426,11 @@ function renderBubbles(threadId, options = {}) {
   // 先同步滚一次，再 setTimeout 等 DOM & 图片布局稳定后再滚一次
   area.children().each(function(index){ this.dataset.rpReadingIndex=String(index); });
   el.dataset.readingThread=threadId;
-  area.children('.rp-bwrap').each(function() { rpNormalizeMessageMeta($(this)); });
+  area.children('.rp-bwrap').each(function() {
+    const wrap = $(this);
+    rpNormalizeMessageMeta(wrap);
+    rpAttachPrivateAvatar(wrap, thread, thread.messages[Number(this.dataset.rpReadingIndex)]);
+  });
   el.scrollTop = followBottom ? el.scrollHeight : previousScroll;
   if(!followBottom&&previousReading)rpRestoreSnapshot(readingContext,previousReading);
   expectedScroll = el.scrollTop;
