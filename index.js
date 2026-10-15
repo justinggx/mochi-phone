@@ -1,4 +1,4 @@
-import { createPhoneRuntime } from './runtime.mjs?v=20261011-games1';
+import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
 
@@ -5387,7 +5387,10 @@ function rpAddImageWait(entry) {
   }, RP_IMAGE_WAIT_TTL);
 }
 function rpResetChatTasks() {
+  rpMergeDeferred = false;
+  rpResetApiTest(); rpResetModelRequest(); rpHideBanner();
   rpRuntime.advance();
+  rpAvatarEdits.clear(); rpWallpaperEdit = null;
   rpHostActionCallbacks.clear();
   clearTimeout(STATE._callTimer);
   STATE._callTimer = null;
@@ -6128,6 +6131,7 @@ function buildStatePayload() {
     themeStudioDraft: STATE.themeStudioDraft || '',
     diaryDraft: STATE.diaryDraft || '',
     xhsPostDraft: Object.assign({ title: '', body: '' }, STATE.xhsPostDraft),
+    commentDrafts: JSON.parse(JSON.stringify(STATE.commentDrafts || {})),
     deletedContacts: Object.assign({}, STATE.deletedContacts),
     recovery: Array.isArray(STATE.recovery) ? STATE.recovery : [],
   }, ctx);
@@ -6336,6 +6340,7 @@ const STATE = {
   themeStudioDraft: '',
   diaryDraft: '',
   xhsPostDraft: { title: '', body: '' },
+  commentDrafts: {},
   nameAliases: {},
   avatars: {},
   _lastAiFingerprint: null,
@@ -6535,7 +6540,11 @@ function getAvatar(key) {
   }
   return null;
 }
-function setAvatar(key, dataUrl) {
+const rpAvatarEdits = new Map();
+let rpWallpaperEdit = null;
+function setAvatar(key, dataUrl, editToken) {
+  if (editToken && rpAvatarEdits.get(key) !== editToken) return;
+  if (!editToken) rpAvatarEdits.set(key, Symbol('avatar'));
   window._rpAV = window._rpAV || {};
   window._rpAV[key] = dataUrl;
   _AV[key] = dataUrl;
@@ -6544,12 +6553,16 @@ function setAvatar(key, dataUrl) {
   saveGlobalAvatars();
 }
 
-async function setAvatarCompressed(key, dataUrl) {
+async function setAvatarCompressed(key, dataUrl, editToken) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
+  const ticket = editToken || Symbol('avatar');
+  if (!editToken) rpAvatarEdits.set(key, ticket);
+  if (rpAvatarEdits.get(key) !== ticket) return;
   const compressed = await rpGuardAwait(compressAvatar(dataUrl), rpTask);
-  setAvatar(key, compressed);
+  if (rpAvatarEdits.get(key) !== ticket) return;
+  setAvatar(key, compressed, ticket);
   saveGlobalAvatars();
   saveState();
   return compressed;
@@ -6599,6 +6612,8 @@ function cleanInvalidContacts() {
 }
 
 function mergeDuplicateThreads() {
+  // A host callback still owns its original thread object until acknowledgement.
+  if (rpHostSubmission) { rpMergeDeferred = true; return; }
   const threads = Object.values(STATE.threads || {});
   if (!threads.length) return;
   const seen = new Map();
@@ -6638,18 +6653,36 @@ function mergeDuplicateThreads() {
       return ak != null && bk != null ? (ak - bk || a.index - b.index) : a.index - b.index;
     }).map(x => x.msg);
     keep.unread = Math.max(keep.unread || 0, drop.unread || 0);
+    keep.pendingMessages = [...(Array.isArray(keep.pendingMessages) ? keep.pendingMessages : []), ...(Array.isArray(drop.pendingMessages) ? drop.pendingMessages : [])];
+    if (typeof drop.draft === 'string' && drop.draft) {
+      if (!keep.draft) keep.draft = drop.draft;
+      else keep.pendingMessages.push(drop.draft);
+    }
+    const actionIds = new Set();
+    keep.pendingHostActions = [...(keep.pendingHostActions || []), ...(drop.pendingHostActions || [])]
+      .filter(action => action && !actionIds.has(action.id) && actionIds.add(action.id));
     if ((!keep.avatarBg || keep.avatarBg.includes('#555')) && drop.avatarBg) keep.avatarBg = drop.avatarBg;
     if ((!keep.initials || keep.initials.length < 1) && drop.initials) keep.initials = drop.initials;
     if ((!STATE.avatars?.[keep.name]) && STATE.avatars?.[drop.name]) {
       STATE.avatars[keep.name] = STATE.avatars[drop.name];
     }
 
+    for (const group of Object.values(STATE.threads)) {
+      if (group.type === 'group' && Array.isArray(group.members)) group.members = [...new Set(group.members.map(id => id === drop.id ? keep.id : id))];
+    }
+    if (STATE._pendingPhoneReply?.threadId === drop.id) STATE._pendingPhoneReply.threadId = keep.id;
     delete STATE.threads[drop.id];
     if (STATE.currentThread === drop.id) STATE.currentThread = keep.id;
     changed = true;
   });
 
   if (changed) {
+    const current = STATE.threads[STATE.currentThread];
+    if (current) {
+      STATE.pendingMessages = (current.pendingMessages || []).slice();
+      $('#rp-input').val(current.draft || ''); renderPendingQueue();
+      if (STATE.currentView === 'thread') renderBubbles(current.id);
+    }
     renderThreadList();
     saveState();
   }
@@ -6677,6 +6710,8 @@ function restorePhoneChatState(saved) {
   STATE.composeDraft = typeof s.composeDraft === 'string' ? s.composeDraft : '';
   STATE.themeStudioDraft = typeof s.themeStudioDraft === 'string' ? s.themeStudioDraft : '';
   STATE.diaryDraft = typeof s.diaryDraft === 'string' ? s.diaryDraft : '';
+  STATE.xhsCurrentPost = null; STATE.xhsReplyToCidx = null;
+  STATE.commentDrafts = s.commentDrafts && typeof s.commentDrafts === 'object' && !Array.isArray(s.commentDrafts) ? JSON.parse(JSON.stringify(s.commentDrafts)) : {};
   STATE.xhsPostDraft = {
     title: typeof s.xhsPostDraft?.title === 'string' ? s.xhsPostDraft.title : '',
     body: typeof s.xhsPostDraft?.body === 'string' ? s.xhsPostDraft.body : '',
@@ -7043,7 +7078,7 @@ function incomingAutoGroupMsg(fromRaw, toRaw, time, text, groupName, source) {
   ensureGroupTargetMember(name, targetName, getContext());
 }
 
-function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName) {
+function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName, source) {
   const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
   const name = groupName || makeAutoGroupName(fromRaw, targetName, text || '语音');
   const resolvedTime = resolvePhoneTime(time);
@@ -7064,11 +7099,13 @@ function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName)
   if (!senderTh) return;
   if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
   ensureGroupTargetMember(name, targetName, getContext());
-  const isDup = grpThread.messages.slice(-6).some(msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === text && (!duration || msg.duration === duration));
+  const matches = msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === text && (!duration || msg.duration === duration);
+  const isDup = source ? rpPhoneMessageAlreadyReceived(grpThread, source, matches, resolvedTime) : grpThread.messages.slice(-6).some(msg => matches(msg) && msg.time === resolvedTime);
   if (isDup) return;
   grpThread.messages.push({
-    id: `ggv_${Date.now()}`, from: 'incoming',
+    id: `ggv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
     type: 'group_voice', name: fromRaw, time: resolvedTime, duration, voiceText: text,
+    ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}),
     initials: senderTh.initials, avatarBg: senderTh.avatarBg
   });
   if (!rpIsReadingThread(grpThread.id)) grpThread.unread = (grpThread.unread || 0) + 1;
@@ -7078,7 +7115,7 @@ function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName)
   saveState();
 }
 
-function incomingAutoGroupHongbao(fromRaw, toRaw, amount, note, groupName) {
+function incomingAutoGroupHongbao(fromRaw, toRaw, amount, note, groupName, time, source) {
   const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
   const name = groupName || makeAutoGroupName(fromRaw, targetName, note || '红包');
   const groupId = `grp_${name}`;
@@ -7098,11 +7135,14 @@ function incomingAutoGroupHongbao(fromRaw, toRaw, amount, note, groupName) {
   if (!senderTh) return;
   if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
   ensureGroupTargetMember(name, targetName, getContext());
-  const isDup = grpThread.messages.slice(-6).some(msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount && msg.note === note);
+  const resolvedTime = resolvePhoneTime(time);
+  const matches = msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount && msg.note === note;
+  const isDup = source ? rpPhoneMessageAlreadyReceived(grpThread, source, matches, resolvedTime) : grpThread.messages.slice(-6).some(msg => matches(msg) && msg.time === resolvedTime);
   if (isDup) return;
   grpThread.messages.push({
-    id: `ggh_${Date.now()}`, from: 'incoming',
-    type: 'group_hongbao', name: fromRaw, time: resolvePhoneTime(),
+    id: `ggh_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
+    type: 'group_hongbao', name: fromRaw, time: resolvedTime,
+    ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}),
     amount, note, opened: false,
     initials: senderTh.initials, avatarBg: senderTh.avatarBg
   });
@@ -7204,7 +7244,9 @@ function compressImage(dataUrl, maxW, maxH, quality) {
   return new Promise(function(resolve) {
     const img = new Image();
     img.onload = function() {
+      try {
       let w = img.width, h = img.height;
+      if (!(w > 0 && h > 0)) { resolve(dataUrl); return; }
       if (w > maxW || h > maxH) {
         const ratio = Math.min(maxW / w, maxH / h);
         w = Math.round(w * ratio);
@@ -7215,7 +7257,9 @@ function compressImage(dataUrl, maxW, maxH, quality) {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      const result = canvas.toDataURL('image/jpeg', quality);
+      resolve(result.startsWith('data:image/') ? result : dataUrl);
+      } catch (_) { resolve(dataUrl); }
     };
     img.onerror = function() {
       resolve(dataUrl);
@@ -7296,7 +7340,7 @@ async function compressPhoneImagesForPersistence() {
         if (!msg || msg.type !== 'image' || !isCompressiblePhoneImageSrc(msg.src)) continue;
         const oldSrc = msg.src;
         const compressed = await rpGuardAwait(compressPhoneContentImage(oldSrc), rpTask);
-        if (compressed && compressed.startsWith('data:image/') && compressed.length < oldSrc.length) {
+        if (th.messages.includes(msg) && msg.src === oldSrc && compressed && compressed.startsWith('data:image/') && compressed.length < oldSrc.length) {
           msg.src = compressed;
           changed = true;
         }
@@ -7306,7 +7350,7 @@ async function compressPhoneImagesForPersistence() {
       if (!moment || !isCompressiblePhoneImageSrc(moment.img)) continue;
       const oldImg = moment.img;
       const compressed = await rpGuardAwait(compressPhoneContentImage(oldImg), rpTask);
-      if (compressed && compressed.startsWith('data:image/') && compressed.length < oldImg.length) {
+      if (STATE.moments.includes(moment) && moment.img === oldImg && compressed && compressed.startsWith('data:image/') && compressed.length < oldImg.length) {
         moment.img = compressed;
         changed = true;
       }
@@ -7657,13 +7701,14 @@ async function migrateCompressAvatars() {
   for (const [key, val] of Object.entries(STATE.avatars)) {
     if (!val || typeof val !== 'string' || !val.startsWith('data:')) continue;
     if (val.length > 20000) {
-      STATE.avatars[key] = await rpGuardAwait(compressAvatar(val), rpTask);
-      changed = true;
+      const compressed = await rpGuardAwait(compressAvatar(val), rpTask);
+      if (STATE.avatars[key] === val) { STATE.avatars[key] = compressed; changed = true; }
     }
   }
   if (STATE.wallpaper && typeof STATE.wallpaper === 'string' && STATE.wallpaper.length > 50000) {
-    STATE.wallpaper = await rpGuardAwait(compressWallpaper(STATE.wallpaper), rpTask);
-    changed = true;
+    const previous = STATE.wallpaper;
+    const compressed = await rpGuardAwait(compressWallpaper(previous), rpTask);
+    if (STATE.wallpaper === previous) { STATE.wallpaper = compressed; changed = true; }
   }
   if (changed) {
     saveGlobalAvatars();
@@ -9217,6 +9262,7 @@ function bindUI() {
   $(document).on("input.mochiPhone", '#rp-xhs-detail-input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 72) + 'px';
+    if (rpIsCurrentCommentInput(this, 'xhs')) { rpCommentDraft('xhs', STATE.xhsCurrentPost).text = this.value; saveState(); }
   });
 
   // 小红书 - 点击评论中的"回复"
@@ -9224,7 +9270,11 @@ function bindUI() {
     const cidx = parseInt($(this).data('reply-cidx'));
     const uname = $(this).data('reply-uname');
     STATE.xhsReplyToCidx = cidx;
-    $('#rp-xhs-detail-input').val('').attr('placeholder', `回复 @${uname}...`).focus();
+    const post = STATE.xhsFeed.find(p => p.id === STATE.xhsCurrentPost);
+    const target = post?.comments?.[cidx];
+    if (target) rpCommentDraft('xhs', post.id).replyId = rpCommentIdentity(target);
+    $('#rp-xhs-detail-input').attr('placeholder', `回复 @${uname}...`).focus();
+    saveState();
   });
 
   // 小红书 - 删除帖子
@@ -9249,59 +9299,50 @@ function bindUI() {
     if ($(this).val() === 'custom') $('#rp-api-custom-fields-v').css('display','flex');
     else $('#rp-api-custom-fields-v').hide();
   });
-  $(document).on("click.mochiPhone", '#rp-api-test-v', function() {
-    var $btn = $(this);
-    var mode = $('input[name="rp-api-mode-v"]:checked').val();
-    if (mode !== 'custom') { $btn.text('⚠️ 请先选择「接入其他 API」'); setTimeout(function(){ $btn.text('📡 测试连通性'); }, 2500); return; }
-    var url  = ($('#rp-api-url-v').val() || '').trim().replace(/\/+$/, '');
-    var key  = ($('#rp-api-key-v').val() || '').trim();
-    var model= ($('#rp-api-model-v').val() || 'gpt-3.5-turbo').trim();
-    if (!url || !key) { $btn.text('⚠️ 请先填写URL和Key'); setTimeout(function(){ $btn.text('📡 测试连通性'); }, 2500); return; }
-    $btn.addClass('testing').text('连接中...');
-    var t0 = Date.now();
-    var endpoint;
-    try { endpoint = buildCustomApiEndpoint(url, 'chat/completions'); }
-    catch(e) { $btn.removeClass('testing').addClass('fail').text('❌ ' + e.message); return; }
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify(rpCustomApiRequestBody({ url, model }, [{ role: 'user', content: '只回复 OK' }], 32, { structured: true })),
-      signal: AbortSignal.timeout(8000)
-    }).then(rpRuntime.guard(function(r) {
-      var status = r.status;
-      return r.json().then(rpRuntime.guard(function(d) {
-        var ms = Date.now() - t0;
-        // HTTP 非 2xx 视为失败（401=Key错误, 403=无权限, 404=路径错误等）
-        if (!r.ok) {
-          $btn.removeClass('testing').addClass('fail').text('❌ HTTP ' + status);
-          setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
-          return;
-        }
-        // 有 error 字段也算失败（部分服务 200 返回 error body）
-        if (d.error) {
-          $btn.removeClass('testing').addClass('fail').text('❌ 接口返回错误');
-          setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
-          return;
-        }
-        var choice = d.choices && d.choices[0];
-        var content = choice && choice.message && choice.message.content;
-        var hasText = Array.isArray(content)
-          ? content.some(p => typeof p === 'string' ? p.trim() : typeof p?.text === 'string' && p.text.trim())
-          : typeof content === 'string' && content.trim();
-        if (!hasText || (choice.finish_reason && choice.finish_reason !== 'stop')) {
-          $btn.removeClass('testing').addClass('fail').text('⚠️ 接口可连接，但未完成正文生成');
-          setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
-          return;
-        }
-        var m = String(d.model || model).replace(/^.+\//, '');
-        $btn.removeClass('testing').addClass('ok').text('✅ ' + m + ' ' + ms + 'ms');
-        $('#rp-api-status-v').text('连接与正文生成正常；更改配置后仍需点击「保存设置」');
-        setTimeout(function(){ $btn.removeClass('ok').text('📡 测试连通性'); }, 8000);
-      }));
-    })).catch(rpRuntime.guard(function(e) {
-      $btn.removeClass('testing').addClass('fail').text('❌ 请求失败或超时');
-      setTimeout(function(){ $btn.removeClass('fail').text('📡 测试连通性'); }, 8000);
-    }));
+  $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, #rp-api-model-v, input[name="rp-api-mode-v"]', () => rpResetApiTest());
+  $(document).on("click.mochiPhone", '#rp-api-test-v', async function() {
+    rpResetApiTest();
+    const $btn = $(this), fingerprint = rpApiTestFingerprint(), task = rpRuntime.task();
+    const test = { request: new AbortController(), fingerprint, task };
+    rpApiTest = test;
+    const current = () => rpApiTest === test && task.valid() && fingerprint === rpApiTestFingerprint();
+    const finish = (kind, text) => {
+      if (!current()) return;
+      clearTimeout(test.timeout);
+      $btn.prop('disabled', false).removeClass('testing ok fail').addClass(kind).text(text);
+      test.resetTimer = setTimeout(() => { if (rpApiTest === test) rpResetApiTest(); }, 8000);
+    };
+    const mode = $('input[name="rp-api-mode-v"]:checked').val();
+    if (mode !== 'custom') { finish('fail', '⚠️ 请先选择「接入其他 API」'); return; }
+    const url = ($('#rp-api-url-v').val() || '').trim().replace(/\/+$/, '');
+    const key = ($('#rp-api-key-v').val() || '').trim();
+    const model = ($('#rp-api-model-v').val() || 'gpt-3.5-turbo').trim();
+    if (!url || !key) { finish('fail', '⚠️ 请先填写URL和Key'); return; }
+    const t0 = Date.now();
+    try {
+      const endpoint = buildCustomApiEndpoint(url, 'chat/completions');
+      $btn.prop('disabled', true).addClass('testing').text('连接中...');
+      test.timeout = setTimeout(() => test.request.abort(), 8000);
+      const r = await fetch(endpoint, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(rpCustomApiRequestBody({ url, model }, [{ role: 'user', content: '只回复 OK' }], 32, { structured: true })),
+        signal: test.request.signal
+      });
+      if (!current()) return;
+      if (!r.ok) { finish('fail', '❌ HTTP ' + r.status); return; }
+      const d = await r.json();
+      if (!current()) return;
+      if (d?.error) { finish('fail', '❌ 接口返回错误'); return; }
+      const choice = d?.choices?.[0], content = choice?.message?.content;
+      const hasText = Array.isArray(content)
+        ? content.some(p => typeof p === 'string' ? p.trim() : typeof p?.text === 'string' && p.text.trim())
+        : typeof content === 'string' && content.trim();
+      if (!hasText || (choice.finish_reason && choice.finish_reason !== 'stop')) { finish('fail', '⚠️ 接口可连接，但未完成正文生成'); return; }
+      finish('ok', '✅ ' + String(d.model || model).replace(/^.+\//, '') + ' ' + (Date.now() - t0) + 'ms');
+      $('#rp-api-status-v').text('连接与正文生成正常；更改配置后仍需点击「保存设置」');
+    } catch (error) {
+      if (current()) finish('fail', '❌ 请求失败或超时');
+    }
   });
 
   $(document).on("click.mochiPhone", '#rp-api-save-v', function() {
@@ -9318,7 +9359,7 @@ function bindUI() {
       try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); }
       catch(e) { $('#rp-api-status-v').text(e.message); return; }
     }
-    localStorage.setItem('rp_ludo_api', JSON.stringify(cfg));
+    if (!rpSaveCustomApiConfig(cfg)) return;
     // 保存成功 toast
     const $btn = $('#rp-api-save-v');
     const origText = $btn.text();
@@ -9372,7 +9413,7 @@ function bindUI() {
       try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); }
       catch(e) { lgMsg('sys', e.message); return; }
     }
-    localStorage.setItem('rp_ludo_api', JSON.stringify(cfg));
+    if (!rpSaveCustomApiConfig(cfg)) { lgMsg('sys', 'API设置未保存，请检查浏览器存储空间后重试。'); return; }
     $('#rp-api-panel').hide();
     lgMsg('sys', mode === 'custom'
       ? `⚡ 已切换到 ${cfg.model}(自定义 API)`
@@ -9383,42 +9424,32 @@ function bindUI() {
   });
 
   // 获取模型列表
+  $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, input[name="rp-api-mode-v"]', () => rpResetModelRequest());
   $(document).on("click.mochiPhone", '#rp-api-fetch-models', async function() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-    const url   = $('#rp-api-url-v').val().trim();
-    const key   = $('#rp-api-key-v').val().trim();
-    const $btn  = $(this);
-    const $list = $('#rp-model-list');
-    if (!url || !key) {
-      $('#rp-api-status-v').text('请先填写 API 地址和 Key');
-      return;
-    }
-    $btn.text('获取中...').prop('disabled', true);
-    $list.hide().empty();
+    rpResetModelRequest();
+    const task = rpRuntime.task(), request = new AbortController();
+    rpModelRequest = request;
+    const url = $('#rp-api-url-v').val().trim(), key = $('#rp-api-key-v').val().trim();
+    const current = () => rpModelRequest === request && task.valid() && url === $('#rp-api-url-v').val().trim() && key === $('#rp-api-key-v').val().trim();
+    const $btn = $(this), $list = $('#rp-model-list');
     try {
+      if (!url || !key) { $('#rp-api-status-v').text('请先填写 API 地址和 Key'); return; }
+      $btn.text('获取中...').prop('disabled', true);
       const data = await rpGuardAwait(rpRuntime.fetchJSON(buildCustomApiEndpoint(url, 'models'), {
-        headers: { 'Authorization': `Bearer ${key}` }
-      }), rpTask);
+        headers: { 'Authorization': 'Bearer ' + key }, signal: request.signal
+      }), task);
+      if (!current()) return;
       const models = parseCustomApiModels(data);
-      if (models.length === 0) { $('#rp-api-status-v').text('未获取到模型,请检查 URL/Key'); }
-      else {
-        models.forEach(m => appendModelListItem($list, m));
-        $list.show();
-        $('#rp-api-status-v').text(`找到 ${models.length} 个模型,点击选择`);
-      }
-    } catch(e) {
-    if (!rpTask.valid()) return;
-
-      $('#rp-api-status-v').text('请求失败:' + e.message);
+      if (!models.length) $('#rp-api-status-v').text('未获取到模型,请检查 URL/Key');
+      else { models.forEach(m => appendModelListItem($list, m)); $list.show(); $('#rp-api-status-v').text('找到 ' + models.length + ' 个模型,点击选择'); }
+    } catch(error) {
+      if (current()) $('#rp-api-status-v').text('请求失败:' + error.message);
+    } finally {
+      if (rpModelRequest === request) { rpModelRequest = null; $btn.text('获取模型').prop('disabled', false); }
     }
-    $btn.text('获取模型').prop('disabled', false);
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
-});
+  });
   $(document).on("click.mochiPhone", '.rp-model-item', function() {
-    $('#rp-api-model-v').val($(this).attr('data-model'));
+    $('#rp-api-model-v').val($(this).attr('data-model')).trigger('input');
     $('#rp-model-list').hide();
     $('#rp-api-status-v').text('已选择:' + $(this).data('model'));
   });
@@ -9715,68 +9746,6 @@ function bindUI() {
     $('#rp-avatar-file-input').val('').trigger('click');
   });
 
-  // Settings: file input change - read image, resize to max 200px, then store
-  $(document).on("change.mochiPhone", '#rp-avatar-file-input', function(e) {
-    const file = e.target.files && e.target.files[0];
-    const who = $('#rp-avatar-select').val();
-    const reader = new FileReader();
-    reader.onerror = rpRuntime.guard(function(err) { console.error('[Phone:av] FileReader error:', rpErrorInfo(err)); });
-    reader.onload = rpRuntime.guard(function(ev) {
-      // Resize to max 200x200 to avoid localStorage quota issues
-      const img = new Image();
-      img.onerror = rpRuntime.guard(function(err) { console.error('[Phone:av] Image load error:', rpErrorInfo(err)); });
-      img.onload = rpRuntime.guard(function() {
-        try {
-          const MAX = 200;
-          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setAvatarCompressed(who, dataUrl).then(rpRuntime.guard(function(finalUrl) {
-            updateAvatarPreviewSwatch(who);
-            renderMoments();
-            renderThreadList();
-            renderDiary();
-            if (STATE.currentView === 'thread' && STATE.currentThread) {
-              openThread(STATE.currentThread);
-            }
-          })).catch(rpRuntime.guard(function() {
-            setAvatar(who, dataUrl);
-            saveState();
-            updateAvatarPreviewSwatch(who);
-            renderMoments();
-            renderThreadList();
-            renderDiary();
-            if (STATE.currentView === 'thread' && STATE.currentThread) {
-              openThread(STATE.currentThread);
-            }
-          }));
-          updateAvatarPreviewSwatch(who);
-          // 已移到异步压缩回调内刷新
-        } catch(canvasErr) {
-          console.error('[Phone:av] canvas error:', rpErrorInfo(canvasErr));
-          // Fallback: save original dataURL directly
-          setAvatarCompressed(who, ev.target.result).then(rpRuntime.guard(function() {
-            updateAvatarPreviewSwatch(who);
-            renderMoments(); renderThreadList(); renderDiary();
-          })).catch(rpRuntime.guard(function() {
-            setAvatar(who, ev.target.result);
-            saveState();
-            updateAvatarPreviewSwatch(who);
-            renderMoments(); renderThreadList(); renderDiary();
-          }));
-        }
-      });
-      img.src = ev.target.result;
-    });
-    reader.readAsDataURL(file);
-    // Reset input so same file can be selected again
-    $(this).val('');
-  });
-
   // Settings app - go to settings view (override data-app handler)
   $(document).on("click.mochiPhone", '[data-app="settings"]', function(e) {
     e.stopPropagation();
@@ -9865,12 +9834,28 @@ function bindUI() {
     );
   });
 
+  // Keep native composition attached to its original input until it commits.
+  $(document).on('compositionstart.mochiPhone', '.rp-moment-cinput', function() { this._rpComposing = true; });
+  $(document).on('compositionend.mochiPhone focusout.mochiPhone', '.rp-moment-cinput', function() {
+    this._rpComposing = false;
+    if (!rpIsCurrentCommentInput(this, 'moments')) return;
+    $(this).trigger('input');
+    if (this._rpNeedsRepaint) { this._rpNeedsRepaint = false; setTimeout(() => renderMoments(), 0); }
+  });
   // Moments: comment toggle
+  $(document).on('input.mochiPhone', '.rp-moment-cinput', function() {
+    const id = $(this).closest('.rp-moment').data('mid');
+    if (id && rpIsCurrentCommentInput(this, 'moments')) { const draft = rpCommentDraft('moments', id); draft.text = this.value; draft.open = true; saveState(); }
+  });
   $(document).on("click.mochiPhone", '.rp-comment-toggle', function(e) {
     e.stopPropagation();
     const id = $(this).data('moment');
     const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', id);
     row.toggle();
+    const draft = rpCommentDraft('moments', id);
+    draft.open = row[0]?.style.display !== 'none';
+    if (draft.open) draft.replyId = null;
+    saveState();
     if (row.is(':visible')) {
       row.find('.rp-moment-cinput').removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder','发表评论...').focus();
     }
@@ -9881,6 +9866,7 @@ function bindUI() {
     e.stopPropagation();
     const momentId = $(this).data('moment');
     STATE.moments = (STATE.moments || []).filter(function(m) { return m.id !== momentId; });
+    if (STATE.commentDrafts.moments) delete STATE.commentDrafts.moments[momentId];
     renderMoments();
     saveState();
   });
@@ -9894,6 +9880,9 @@ function bindUI() {
     const oldIdx = oldIdxRaw !== undefined && oldIdxRaw !== '' ? parseInt(oldIdxRaw, 10) : null;
     const moment = STATE.moments && STATE.moments.find(m => m.id === momentId);
     const targetComment = moment && Number.isFinite(oldIdx) ? (moment.comments || [])[oldIdx] : null;
+    const draft = rpCommentDraft('moments', momentId);
+    draft.replyId = targetComment ? rpCommentIdentity(targetComment) : null; draft.open = true;
+    saveState();
     const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId);
     row.show();
     row.find('.rp-moment-cinput')
@@ -10067,13 +10056,17 @@ function bindUI() {
   $(document).on("change.mochiPhone", '#rp-wall-file', function() {
     const file = this.files[0];
     if (!file) return;
+    const ticket = rpWallpaperEdit = Symbol('wallpaper');
     const reader = new FileReader();
     reader.onload = rpRuntime.guard((e) => {
+      if (rpWallpaperEdit !== ticket) return;
       compressWallpaper(e.target.result).then(rpRuntime.guard(function(compressed) {
+        if (rpWallpaperEdit !== ticket) return;
         STATE.wallpaper = compressed;
         saveState();
         applyWallpaper();
       })).catch(rpRuntime.guard(function() {
+        if (rpWallpaperEdit !== ticket) return;
         STATE.wallpaper = e.target.result;
         saveState();
         applyWallpaper();
@@ -10083,6 +10076,7 @@ function bindUI() {
     this.value = '';
   });
   $(document).on("click.mochiPhone", '#rp-wall-reset', () => {
+    rpWallpaperEdit = null;
     STATE.wallpaper = null;
     saveState();
     applyWallpaper();
@@ -10137,6 +10131,15 @@ function readCustomApiConfig() {
     const cfg = JSON.parse(localStorage.getItem('rp_ludo_api') || '{}');
     return cfg && typeof cfg === 'object' && !Array.isArray(cfg) ? cfg : {};
   } catch(e) { return {}; }
+}
+
+function rpSaveCustomApiConfig(cfg) {
+  try { localStorage.setItem('rp_ludo_api', JSON.stringify(cfg)); return true; }
+  catch (_) {
+    $('#rp-api-status-v').text('设置未保存：本机存储不可用，请检查空间后重试。');
+    toastr.warning('API设置保存失败，输入已保留，请检查浏览器存储后重试。');
+    return false;
+  }
 }
 
 function buildCustomApiEndpoint(rawUrl, endpoint) {
@@ -10488,9 +10491,9 @@ function go(view) {
     renderBankView();
   }
   if (view === 'xhs-detail') {
-    // xhsCurrentPost 已在 openXHSDetail 中设置,这里只确保输入框重置
-    STATE.xhsReplyToCidx = null;
-    $('#rp-xhs-detail-input').val('').attr('placeholder','发表评论...');
+    const post = STATE.xhsFeed.find(p => p.id === STATE.xhsCurrentPost);
+    if (post) rpPaintXHSCommentDraft(post);
+    else { STATE.xhsReplyToCidx = null; $('#rp-xhs-detail-input').val('').attr('placeholder','发表评论...'); }
     // Bug1 fix: 每次打开帖子详情都回到顶部
     setTimeout(function(){ var el = document.getElementById('rp-xhs-detail-body'); if(el) el.scrollTop = 0; }, 0);
   }
@@ -10499,8 +10502,25 @@ function go(view) {
   }
 }
 
+let rpApiTest = null, rpModelRequest = null;
+function rpResetModelRequest() {
+  const request = rpModelRequest; rpModelRequest = null;
+  request?.abort();
+  $('#rp-api-fetch-models').text('获取模型').prop('disabled', false);
+  $('#rp-model-list').hide().empty();
+}
+function rpApiTestFingerprint() {
+  return JSON.stringify([$('input[name="rp-api-mode-v"]:checked').val(), ...['url', 'key', 'model'].map(k => $('#rp-api-' + k + '-v').val())]);
+}
+function rpResetApiTest() {
+  const test = rpApiTest; rpApiTest = null;
+  if (test) { clearTimeout(test.timeout); clearTimeout(test.resetTimer); test.request.abort(); }
+  $('#rp-api-test-v').prop('disabled', false).removeClass('testing ok fail').text('📡 测试连通性');
+  if (test) $('#rp-api-status-v').text('');
+}
 // 读取已保存 API 配置并填入 view 表单
 function lgFillAPIView() {
+  rpResetApiTest(); rpResetModelRequest();
   const cfg = readCustomApiConfig();
   if (cfg.mode === 'custom') {
     $('#rp-api-mode-custom-v').prop('checked', true);
@@ -11632,7 +11652,7 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
 // ================================================================
 //  SEND SMS
 // ================================================================
-let rpHostSubmission = null;
+let rpHostSubmission = null, rpMergeDeferred = false;
 const rpHostActionCallbacks = new Map();
 function rpRenderHostOutbox(threadId) {
   $('#rp-host-outbox').remove();
@@ -11703,6 +11723,7 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
   const release = () => {
     stop?.(); clearTimeout(timer); task.signal.removeEventListener('abort', cancel);
     if (rpHostSubmission === job) { rpHostSubmission = null; $('#rp-send').prop('disabled', false); }
+    if (rpMergeDeferred) { rpMergeDeferred = false; setTimeout(() => mergeDuplicateThreads(), 0); }
   };
   const cancel = () => { if (getPhoneChatSlotKey(getContext()) === originSlot && ta.value === content) { ta.value = original; ta.dispatchEvent(new Event('input', {bubbles:true})); } release(); };
   const accepted = () => {
@@ -11735,7 +11756,8 @@ function sendSMS() {
 
   // 写入手机 UI(全部排队消息)
   const queuedCount = STATE.pendingMessages.length;
-  const allMessages = [...STATE.pendingMessages, ...(currentText ? [currentText] : [])];
+  const submittedQueue = STATE.pendingMessages.slice();
+  const allMessages = [...submittedQueue, ...(currentText ? [currentText] : [])];
 
   const ta = document.querySelector('#send_textarea');
   if (!ta) return;
@@ -11820,7 +11842,7 @@ ${smsLine}
   rpSubmitHostAction(requestWrappedText, hostIndex => {
     if (th.messages.some(m => m.hostIndex === hostIndex && m.from === 'user')) return;
     allMessages.forEach(text => th.messages.push({from:'user', text, time:ts, hostIndex}));
-    const remaining = (th.pendingMessages || STATE.pendingMessages).slice(queuedCount);
+    const remaining = (Array.isArray(th.pendingMessages) ? th.pendingMessages : submittedQueue).slice(queuedCount);
     th.pendingMessages = remaining;
     if (th.draft === currentText) th.draft = '';
     if (STATE.currentThread === th.id) {
@@ -14090,7 +14112,7 @@ function rpParsePhoneAtom(block, source = {}) {
   const callRe = /<CALL\s+FROM="([^"]+)"\s+TIME="([^"]+)"\s*\/?>/gi;
   while ((m = callRe.exec(block)) !== null) {
     const callFrom = m[1].trim();
-    incomingCall(callFrom, m[2].trim());
+    incomingCall(callFrom, m[2].trim(), messageSource('CALL', 0, callFrom, m[2].trim(), 'call'));
     parsedCount++;
   }
   // ── HONGBAO ──
@@ -14104,7 +14126,8 @@ function rpParsePhoneAtom(block, source = {}) {
     const note = (hAttrs.NOTE || '').trim() || '恭喜发财';
     // 跳过 user 自己发出的红包(AI 确认回显),只处理 char/NPC 发来的
     if (!fromName || isPhoneUserName(fromName, ctx) || (_userName && fromName.toLowerCase() === _userName.toLowerCase())) { parsedCount++; continue; }
-    if (isPhoneToNonUser(toRaw, ctx)) incomingAutoGroupHongbao(fromName, toRaw, amount, note, null);
+    if (isPhoneToNonUser(toRaw, ctx)) incomingAutoGroupHongbao(fromName, toRaw, amount, note, null, hAttrs.TIME || null,
+      messageSource('HONGBAO', 0, fromName, hAttrs.TIME || '', amount + '|' + note));
     else incomingHongbao(fromName, amount, note, hAttrs.TIME || null,
       messageSource('HONGBAO', 0, fromName, hAttrs.TIME || '', amount + '|' + note));
     parsedCount++;
@@ -14119,8 +14142,9 @@ function rpParsePhoneAtom(block, source = {}) {
     const duration = (vAttrs.DURATION || '').trim();
     const voiceText = String(m[2] || '').trim();
     if (!voiceFrom || isPhoneUserName(voiceFrom, ctx) || _isUserFrom(voiceFrom)) { parsedCount++; continue; }
-    if (isPhoneToNonUser(toRaw, ctx)) incomingAutoGroupVoice(voiceFrom, toRaw, vTime, duration, voiceText, null);
-    else incomingVoice(voiceFrom, vTime, duration, voiceText);
+    const voiceSource = messageSource('VOICE', 0, voiceFrom, vTime, duration + '|' + voiceText);
+    if (isPhoneToNonUser(toRaw, ctx)) incomingAutoGroupVoice(voiceFrom, toRaw, vTime, duration, voiceText, null, voiceSource);
+    else incomingVoice(voiceFrom, vTime, duration, voiceText, voiceSource);
     parsedCount++;
   }
   // ── GROUP MSG ──
@@ -14161,14 +14185,17 @@ function rpParsePhoneAtom(block, source = {}) {
     }
     const grpThread = STATE.threads[groupId];
     if (!grpThread.members) grpThread.members = ['user'];
-    const isDupGV = grpThread.messages.slice(-6).some(msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === voiceText && (!duration || msg.duration === duration));
+    const voiceSource = messageSource('GVOICE', 0, fromRaw, time, duration + '|' + voiceText);
+    const matches = msg => msg.type === 'group_voice' && msg.name === fromRaw && msg.voiceText === voiceText && (!duration || msg.duration === duration);
+    const isDupGV = voiceSource ? rpPhoneMessageAlreadyReceived(grpThread, voiceSource, matches, resolvePhoneTime(time)) : grpThread.messages.slice(-6).some(msg => matches(msg) && msg.time === resolvePhoneTime(time));
     if (!isDupGV) {
       const senderTh = findOrCreateThread(fromRaw);
       if (!senderTh) continue;
       if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
       grpThread.messages.push({
-        id: `ggv_${Date.now()}`, from: 'incoming',
+        id: `ggv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
         type: 'group_voice', name: fromRaw, time, duration, voiceText,
+        ...(voiceSource ? { phoneSource: { key: voiceSource.key, signature: voiceSource.signature } } : {}),
         initials: senderTh.initials, avatarBg: senderTh.avatarBg
       });
           if (!rpIsReadingThread(grpThread.id)) grpThread.unread = (grpThread.unread || 0) + 1;
@@ -14201,14 +14228,18 @@ function rpParsePhoneAtom(block, source = {}) {
     }
     const grpThread = STATE.threads[groupId];
     if (!grpThread.members) grpThread.members = ['user'];
-    const isDupGH = grpThread.messages.slice(-6).some(msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount && msg.note === note);
+    const resolvedTime = resolvePhoneTime(gAttrs.TIME);
+    const giftSource = messageSource('GHONGBAO', 0, fromRaw, gAttrs.TIME || '', amount + '|' + note);
+    const matches = msg => msg.type === 'group_hongbao' && msg.name === fromRaw && msg.amount === amount && msg.note === note;
+    const isDupGH = giftSource ? rpPhoneMessageAlreadyReceived(grpThread, giftSource, matches, resolvedTime) : grpThread.messages.slice(-6).some(msg => matches(msg) && msg.time === resolvedTime);
     if (!isDupGH) {
       const senderTh = findOrCreateThread(fromRaw);
       if (!senderTh) continue;
       if (!grpThread.members.includes(senderTh.id)) grpThread.members.push(senderTh.id);
       grpThread.messages.push({
-        id: `ggh_${Date.now()}`, from: 'incoming',
-        type: 'group_hongbao', name: fromRaw, time: resolvePhoneTime(),
+        id: `ggh_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
+        type: 'group_hongbao', name: fromRaw, time: resolvedTime,
+        ...(giftSource ? { phoneSource: { key: giftSource.key, signature: giftSource.signature } } : {}),
         amount, note, opened: false,
         initials: senderTh.initials, avatarBg: senderTh.avatarBg
       });
@@ -14340,6 +14371,13 @@ function incomingMsg(threadId, text, time, source) {
 // ================================================================
 //  NOTIFICATION BANNER
 // ================================================================
+function rpHideBanner() {
+  clearTimeout(STATE._bannerTimer); clearTimeout(STATE._bannerHideTimer);
+  STATE._bannerTimer = null; STATE._bannerHideTimer = null;
+  STATE._lastBannerKey = null; STATE._lastBannerAt = 0;
+  $('#rp-notif-banner').stop(true).removeClass('rp-nb-in').hide();
+  $('#rp-live-chat').empty();
+}
 function showBanner(from, text, time) {
   // 短时去重:同 from+text 在 3s 内不重复弹出
   const key = from + '|' + text;
@@ -14352,10 +14390,12 @@ function showBanner(from, text, time) {
   $('#rp-nb-text').text(text.length > 45 ? text.slice(0, 45) + '...' : text);
   $('#rp-nb-time').text(time);
 
+  clearTimeout(STATE._bannerTimer); clearTimeout(STATE._bannerHideTimer);
   b.stop(true).show().addClass('rp-nb-in');
-  setTimeout(() => {
+  STATE._bannerTimer = setTimeout(() => {
+    STATE._bannerTimer = null;
     b.removeClass('rp-nb-in');
-    setTimeout(() => b.hide(), 400);
+    STATE._bannerHideTimer = setTimeout(() => { STATE._bannerHideTimer = null; b.hide(); }, 400);
   }, 3500);
 }
 
@@ -14802,6 +14842,7 @@ async function postUserMoment() {
   closeCompose();
   STATE.composeDraft = '';
   go('moments');
+  $('#rp-moments-list').scrollTop(0);
   saveState();
   // 先强制主角评论,再让 NPC 们自由互动
   setTimeout(() => { momentsDiag('postUserMoment:runCharRespond', { momentId }); charRespondToUserMoment(momentId); }, 800);
@@ -14816,6 +14857,7 @@ async function postUserMoment() {
 function _bindAvatarUpload() {
   const fileInput = document.getElementById('rp-avatar-file-input');
   const uploadBtn = document.getElementById('rp-avatar-upload-btn');
+  if (!fileInput || !uploadBtn) return;
   const newInput = fileInput.cloneNode(true);
   fileInput.parentNode.replaceChild(newInput, fileInput);
   uploadBtn.onclick = function(e) {
@@ -14826,44 +14868,25 @@ function _bindAvatarUpload() {
     const file = this.files && this.files[0];
     if (!file) return;
     const who = document.getElementById('rp-avatar-select')?.value || 'user';
+    const ticket = Symbol('avatar'); rpAvatarEdits.set(who, ticket);
     const reader = new FileReader();
+    reader.onerror = rpRuntime.guard(() => {
+      if (rpAvatarEdits.get(who) === ticket) toastr.warning('头像读取失败，请重新选择图片。');
+    });
     reader.onload = rpRuntime.guard(function(ev) {
-      const img = new Image();
-      img.onload = rpRuntime.guard(function() {
-        const MAX = 200;
-        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setAvatarCompressed(who, dataUrl).then(rpRuntime.guard(function() {
-          updateAvatarPreviewSwatch(who);
-          renderMoments(); renderThreadList(); renderDiary();
-          if (STATE.currentView === 'thread' && STATE.currentThread) openThread(STATE.currentThread);
-        })).catch(rpRuntime.guard(function() {
-          setAvatar(who, dataUrl);
-          saveState();
-          updateAvatarPreviewSwatch(who);
-          renderMoments(); renderThreadList(); renderDiary();
-          if (STATE.currentView === 'thread' && STATE.currentThread) openThread(STATE.currentThread);
-        }));
-      });
-      img.onerror = rpRuntime.guard(function() {
-        const dataUrl = ev.target.result;
-        setAvatarCompressed(who, dataUrl).then(rpRuntime.guard(function() {
-          updateAvatarPreviewSwatch(who);
-          renderMoments(); renderThreadList(); renderDiary();
-        })).catch(rpRuntime.guard(function() {
-          setAvatar(who, dataUrl);
-          saveState();
-          updateAvatarPreviewSwatch(who);
-          renderMoments(); renderThreadList(); renderDiary();
-        }));
-      });
-      img.src = ev.target.result;
+      if (rpAvatarEdits.get(who) !== ticket) return;
+      // One selection, one reader and one compression pass to the existing 128px limit.
+      void setAvatarCompressed(who, ev.target.result, ticket).then(rpRuntime.guard(function(value) {
+        if (!value || rpAvatarEdits.get(who) !== ticket) return;
+        updateAvatarPreviewSwatch(who);
+        renderMoments(); renderThreadList(); renderDiary();
+        if (STATE.currentView === 'thread' && STATE.currentThread) openThread(STATE.currentThread);
+      })).catch(rpRuntime.guard(() => {
+        if (rpAvatarEdits.get(who) === ticket) toastr.warning('头像未能保存，请重新选择图片。');
+      }));
     });
     reader.readAsDataURL(file);
+    this.value = '';
   };
 }
 
@@ -14907,9 +14930,11 @@ function updateAvatarPreviewSwatch(who) {
 // ================================================================
 //  CALL
 // ================================================================
-function incomingCall(fromRaw, time) {
+function incomingCall(fromRaw, time, source) {
   const thread = findOrCreateThread(fromRaw);
   if (!thread) return;
+  if (source && (rpPhoneMessageAlreadyReceived(thread, source, m => m.type === 'call_rec', resolvePhoneTime(time))
+      || (STATE._pendingCall?.source?.key === source.key && STATE._pendingCall?.source?.signature === source.signature))) return;
   const customImg = STATE.avatars && STATE.avatars[thread.name];
   const avHtml = customImg
     ? `<div class="rp-call-av rp-av-img" style="background:transparent;overflow:hidden"><img class="rp-av-photo" src="${escHtml(customImg)}" alt=""/></div>`
@@ -14931,7 +14956,7 @@ function incomingCall(fromRaw, time) {
       </div>
     </div>
   `).show();
-  STATE._pendingCall = { fromRaw, time, threadId: thread.id, chatSlot: STATE.chatId };
+  STATE._pendingCall = { fromRaw, time, threadId: thread.id, chatSlot: STATE.chatId, source };
   clearTimeout(STATE._callTimer);
   STATE._callTimer = setTimeout(() => resolveCall('missed'), 15000);
   showBanner(thread.name, '📞 来电中...');
@@ -14947,8 +14972,9 @@ function resolveCall(result) {
   if (!thread) return;
   const labels = { missed: '未接来电', declined: '已拒绝', answered: '已接听' };
   thread.messages.push({
-    id: `call_${Date.now()}`, from: 'system',
+    id: `call_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'system',
     type: 'call_rec', result, time: call.time,
+    ...(call.source ? { phoneSource: { key: call.source.key, signature: call.source.signature } } : {}),
     label: labels[result]
   });
   if (result === 'missed') {
@@ -14982,7 +15008,7 @@ function incomingHongbao(fromRaw, amount, note, time, source) {
     : thread.messages.slice(-6).some(m => matches(m) && m.time === ts);
   if (isDup) return;
   thread.messages.push({
-    id: `hb_${Date.now()}`, from: 'incoming',
+    id: `hb_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
     type: 'hongbao', name: fromRaw, time: ts,
     amount, note, opened: false,
     ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {})
@@ -15013,16 +15039,18 @@ function openHongbao(threadId, msgId) {
 // ================================================================
 //  VOICE MESSAGE
 // ================================================================
-function incomingVoice(fromRaw, time, duration, text) {
+function incomingVoice(fromRaw, time, duration, text, source) {
   const thread = findOrCreateThread(fromRaw);
   if (!thread) return;
   const resolvedTime = resolvePhoneTime(time);
   // 去重:同 from+duration+text 已存在则跳过
-  const isDup = thread.messages.some(m => m.type === 'voice' && m.name === fromRaw && m.duration === duration && m.text === text && (!resolvedTime || !m.time || m.time === resolvedTime));
+  const matches = m => m.type === 'voice' && m.name === fromRaw && m.duration === duration && m.text === text;
+  const isDup = source ? rpPhoneMessageAlreadyReceived(thread, source, matches, resolvedTime) : thread.messages.some(m => matches(m) && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) return;
   thread.messages.push({
-    id: `vc_${Date.now()}`, from: 'incoming',
+    id: `vc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
     type: 'voice', name: fromRaw, time: resolvedTime,
+    ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}),
     duration, text, played: false
   });
   if (!rpIsReadingThread(thread.id)) thread.unread = (thread.unread || 0) + 1;
@@ -15072,7 +15100,7 @@ function incomingGroupMsg(fromRaw, groupName, time, text, source) {
     : thread.messages.slice(-8).some(m => matches(m) && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) return;
   thread.messages.push({
-    id: `gm_${Date.now()}`, from: 'incoming',
+    id: `gm_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
     type: 'group_msg', name: fromRaw, time: resolvedTime, text,
     ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}),
     initials: senderTh.initials, avatarBg: senderTh.avatarBg
@@ -15127,7 +15155,7 @@ function sendUserHongbao() {
   const note = String($('#rp-hb-note').val() || '').trim() || '恭喜发财';
   if (!/^\d+(?:\.\d{1,2})?$/.test(amount) || !Number.isFinite(Number(amount)) || Number(amount)<=0) { toastr.warning('请输入大于 0、最多两位小数的红包金额'); return; }
   const thread = STATE.threads[STATE.currentThread]; if (!thread) return;
-  const message = {id:'uhb_'+Date.now(),from:'user',type:'hongbao',name:'我',time:resolvePhoneTime(),amount,note,opened:true};
+  const message = {id:'uhb_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),from:'user',type:'hongbao',name:'我',time:resolvePhoneTime(),amount,note,opened:true};
   rpSubmitThreadAction(thread, '*{{user}}发给'+thread.name+'一个¥'+amount+'的红包,备注"'+note+'"*', message);
   $('#rp-hb-modal').remove();
 }
@@ -15152,7 +15180,7 @@ function triggerImagePick() {
       if (!task.valid() || thread !== targetThread) { cleanup(); return; }
       const ts  = resolvePhoneTime();
       const src = e.target.result;
-      thread.messages.push({ id: `uimg_${Date.now()}`, from: 'user', type: 'image', time: ts, src, delivery:'pending' });
+      thread.messages.push({ id: `uimg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'user', type: 'image', time: ts, src, delivery:'pending' });
       if (STATE.currentThread === targetId && STATE.currentView === 'thread') renderBubbles(thread.id);
       saveState();
       cleanup();
@@ -15198,7 +15226,7 @@ function showLocationInput() {
 function sendLocation() {
   const place = String($('#rp-loc-inp').val() || '').trim();
   const thread = STATE.threads[STATE.currentThread]; if (!place || !thread) return;
-  const message = {id:'uloc_'+Date.now(),from:'user',type:'location',time:resolvePhoneTime(),place};
+  const message = {id:'uloc_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),from:'user',type:'location',time:resolvePhoneTime(),place};
   rpSubmitThreadAction(thread, '*{{user}}向'+thread.name+'共享了位置:'+place+'*', message);
   $('#rp-loc-modal').remove(); $('#rp-attach-panel').hide();
 }
@@ -17335,7 +17363,61 @@ function cleanMomentText(text) {
     .replace(/<pic\b[^>]*>/gi, '')
     .trim();
 }
+
+function rpIsCurrentCommentInput(input, kind) {
+  if (!input || $(input).data('rp-chat-slot') !== STATE.chatId) return false;
+  if (kind === 'moments') return STATE.currentView === 'moments' && STATE.moments.some(m => m.id === $(input).closest('.rp-moment').data('mid'));
+  return STATE.currentView === 'xhs-detail' && STATE.xhsFeed.some(p => p.id === STATE.xhsCurrentPost) && $(input).data('rp-post-id') === STATE.xhsCurrentPost;
+}
+function rpCommentIdentity(comment) {
+  if (!comment.id) comment.id = 'comment_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+  return String(comment.id);
+}
+function rpCommentDraft(kind, id, create = true) {
+  if (!create) {
+    const map = STATE.commentDrafts?.[kind], draft = map && Object.hasOwn(map, id) ? map[id] : null;
+    return draft && typeof draft === 'object' && !Array.isArray(draft) && typeof draft.text === 'string' ? draft : { text: '', replyId: null, open: false };
+  }
+  if (!STATE.commentDrafts || typeof STATE.commentDrafts !== 'object' || Array.isArray(STATE.commentDrafts)) STATE.commentDrafts = {};
+  let map = STATE.commentDrafts[kind];
+  if (!map || typeof map !== 'object' || Array.isArray(map)) map = STATE.commentDrafts[kind] = {};
+  let draft = Object.hasOwn(map, id) ? map[id] : null;
+  if (!draft || typeof draft !== 'object' || Array.isArray(draft)) {
+    draft = { text: '', replyId: null, open: false };
+    Object.defineProperty(map, id, { value: draft, writable: true, enumerable: true, configurable: true });
+  }
+  if (typeof draft.text !== 'string') draft.text = '';
+  return draft;
+}
+function rpPaintMomentCommentDraft(moment, node) {
+  const draft = rpCommentDraft('moments', moment.id, false), input = node.find('.rp-moment-cinput');
+  const index = draft.replyId ? moment.comments.findIndex(c => String(c.id) === draft.replyId) : -1;
+  const target = index >= 0 ? moment.comments[index] : null;
+  input.data('rp-chat-slot', STATE.chatId).val(draft.text);
+  if (target) input.data('reply-to', target.name).data('reply-to-idx', index).data('reply-to-text', target.text).attr('placeholder', `回复 ${target.name}...`);
+  else { draft.replyId = null; input.removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder', '发表评论...'); }
+  node.find('.rp-moment-input-row').toggle(!!(draft.open || draft.text || target));
+}
+function rpPaintXHSCommentDraft(post) {
+  if (STATE.xhsCurrentPost !== post.id) return;
+  const draft = rpCommentDraft('xhs', post.id, false), input = $('#rp-xhs-detail-input');
+  input.data('rp-chat-slot', STATE.chatId).data('rp-post-id', post.id);
+  const index = draft.replyId ? (post.comments || []).findIndex(c => String(c.id) === draft.replyId) : -1;
+  const target = index >= 0 ? post.comments[index] : null;
+  STATE.xhsReplyToCidx = target ? index : null;
+  if (!target) draft.replyId = null;
+  if (input.val() !== draft.text) {
+    input.val(draft.text);
+    if (input[0]) { input[0].style.height = 'auto'; input[0].style.height = Math.min(input[0].scrollHeight, 72) + 'px'; }
+  }
+  input.attr('placeholder', target ? `回复 @${target.user}...` : '发表评论...');
+}
 function renderMoments() {
+  const active = document.activeElement;
+  if (active?._rpComposing && rpIsCurrentCommentInput(active, 'moments')) { active._rpNeedsRepaint = true; return; }
+  const focusedId = active?.classList?.contains('rp-moment-cinput') ? $(active).closest('.rp-moment').data('mid') : null;
+  const selection = focusedId ? [active.selectionStart, active.selectionEnd] : null;
+  const oldScroll = $('#rp-moments-list').scrollTop();
   const momentImgSnap = (STATE.moments||[]).map(m=>({id:m.id,hasImg:!!m.img,pendingImg:m.pendingImg?.slice(0,20)}));
   const container = $('#rp-moments-list').empty();
   if (!STATE.moments || STATE.moments.length === 0) {
@@ -17402,7 +17484,13 @@ function renderMoments() {
       const item = moment.comments[cm.__oldIdx];
       if (item) momentNode.find('.rp-moment-comment').eq(idx).append(rpMakePhoneTranslationControl({ kind: 'comment', item, moment }));
     });
+    rpPaintMomentCommentDraft(moment, momentNode);
   });
+  $('#rp-moments-list').scrollTop(oldScroll);
+  if (focusedId && STATE.currentView === 'moments') {
+    const input = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', focusedId).find('.rp-moment-cinput')[0];
+    if (input) { input.focus({ preventScroll: true }); input.setSelectionRange(...selection); }
+  }
 }
 
 // ================================================================
@@ -18223,6 +18311,7 @@ function renderXHSDetail(post) {
       <div id="rp-xhs-comments-list">${commentsHtml}</div>
     </div>
   `);
+  rpPaintXHSCommentDraft(post);
 }
 
 // 用户发小红书帖子
@@ -18406,6 +18495,7 @@ async function sendXHSComment(postId, text, replyToCidx) {
   const replyToIdx = (replyToCidx !== null && replyToCidx !== undefined && post.comments[replyToCidx]) ? replyToCidx : null;
   const commentId = 'xhsc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
   post.comments.push({ id: commentId, from: 'user', user: userName, text: text.trim(), time: ts, replyTo: replyToIdx });
+  Object.assign(rpCommentDraft('xhs', postId), { text: '', replyId: null, open: false });
   STATE.xhsReplyToCidx = null;
   $('#rp-xhs-detail-input').val('').attr('placeholder','发表评论...');
   saveState();
@@ -18558,6 +18648,7 @@ function deleteXHSPost(postId) {
   const idx = list.findIndex(p => p.id === postId);
   if (idx < 0) return;
   list.splice(idx, 1);
+  if (STATE.commentDrafts.xhs) delete STATE.commentDrafts.xhs[postId];
   STATE.xhsFeed = list;
   if (STATE.xhsCurrentPost === postId) {
     STATE.xhsCurrentPost = null;
@@ -18935,6 +19026,7 @@ async function sendMomentComment(momentId, text, replyToName) {
   const userCommentIdx = moment.comments.length;
   const userCommentText = text.trim();
   const userCommentId = 'mc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+  Object.assign(rpCommentDraft('moments', momentId), { text: '', replyId: null, open: false });
   moment.comments.push({ id: userCommentId, from: 'user', name: '我', text: userCommentText, time: ts, replyTo: replyToIdx, source: 'manual', manual: true });
   renderMoments();
   saveState();

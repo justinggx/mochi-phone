@@ -103,7 +103,12 @@ export function createPhoneRuntime(host, getSlot, isEnabled = () => true) {
             super((...args) => { if (!destroyed && isEnabled()) callback(...args); });
             if (!destroyed) observers.add(this);
         }
-        observe(...args) { if (!destroyed) return super.observe(...args); }
+        observe(...args) {
+            if (destroyed) return;
+            const result = super.observe(...args);
+            observers.add(this);
+            return result;
+        }
         disconnect() { super.disconnect(); observers.delete(this); }
     }
     const waitForClick = (button, overlay) => new Promise(resolve => {
