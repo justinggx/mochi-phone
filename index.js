@@ -5285,6 +5285,7 @@ runtime.own(() => {
   $('#rp-wrapper, #rp-fab, #rp-live-chat, #mochi-phone-settings, #rp-phone-css, #rp-custom-theme-style').remove();
 });
 window.__mochiPhoneRuntime = runtime;
+rpInstallWandLauncher(runtime);
 return runtime;
 }
 rpRuntime = rpCreateRuntime();
@@ -5470,6 +5471,60 @@ const _saveSettings = () => {
   } catch(e) {}
 };
 
+function rpInstallWandLauncher(runtime) {
+  let item, watchedMenu;
+  const root = document.body || document.documentElement;
+  const mount = () => {
+    if (runtime.stats().destroyed) return;
+    const menu = document.getElementById('extensionsMenu');
+    if (menu !== watchedMenu) {
+      observer.disconnect();
+      if (root) observer.observe(root, { childList: true });
+      if (menu) observer.observe(menu, { childList: true });
+      watchedMenu = menu;
+    }
+    if (!menu || item?.parentElement === menu) return;
+    if (!item) {
+      item = document.createElement('div');
+      item.id = 'mochi-phone-wand-open';
+      item.className = 'list-group-item flex-container flexGap5';
+      item.setAttribute('role', 'button'); item.tabIndex = 0;
+      item.title = '打开 MochiPhone 小手机（无需 QR）';
+      const icon = document.createElement('div');
+      icon.className = 'fa-solid fa-mobile-screen-button extensionsMenuExtensionButton';
+      icon.setAttribute('aria-hidden', 'true');
+      const label = document.createElement('span'); label.textContent = '打开小手机';
+      item.append(icon, label);
+      runtime.listenDOM(item, 'click', event => {
+        event.preventDefault();
+        if (runtime.stats().destroyed || globalThis.__mochiPhoneRuntime !== runtime) return;
+        if (!isMochiPhoneEnabled()) {
+          globalThis.toastr?.info?.('小手机已停用，请先在扩展设置中启用。');
+          return;
+        }
+        // Let the click bubble: the host owns the menu's visible state and dismissal.
+        // Open directly, independent of QR settings and the shared slash-input queue.
+        void openMochiPhoneFromExternal().catch(() => {
+          if (runtime.stats().destroyed) return;
+          console.warn('[Phone] wand launch unavailable');
+          globalThis.toastr?.warning?.('手机未能打开，请刷新页面后重试。');
+        });
+      });
+      runtime.listenDOM(item, 'keydown', event => {
+        if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+          event.preventDefault(); item.click();
+        }
+      });
+    }
+    menu.appendChild(item);
+  };
+  // Observe only body/menu child lists, not streamed chat mutations. Rebinding
+  // releases detached menus and also repairs a removed launcher without polling.
+  const observer = new window.MutationObserver(mount);
+  if (root) observer.observe(root, { childList: true });
+  runtime.own(() => { observer.disconnect(); item?.remove(); });
+  mount();
+}
 function rpPhoneQuickReplyAction(button) {
   const api = globalThis.quickReplyApi;
   if (!api || typeof api.listSets !== 'function' || typeof api.getSetByName !== 'function') return null;
@@ -5838,7 +5893,7 @@ function buildMochiSettingsHtml() {
               <i></i>
             </label>
           </div>
-          <div class="mochi-launch-hint">总开关关闭＝停用手机：隐藏悬浮球与手机、不再解析 PHONE 标签、清空规则提示注入，无需卸载扩展。QR 按钮内容填 <code>/mochiphone</code>；关闭 QR 启动后该命令不再打开手机。</div>
+          <div class="mochi-launch-hint">总开关关闭＝停用手机：隐藏悬浮球与手机、不再解析 PHONE 标签、清空规则提示注入，无需卸载扩展。左下角魔法棒菜单的「打开小手机」不依赖 QR 或悬浮球开关。QR 按钮内容填 <code>/mochiphone</code>；关闭 QR 启动后该命令不再打开手机。</div>
         </div>
       </div>
     </div>`;
@@ -9133,7 +9188,7 @@ function bindUI() {
     if ($('#rp-add-choice, #rp-grp-create, #rp-del-picker, #rp-add-modal:visible, #rp-group-members-modal:visible, #rp-compose-modal:visible').length) return;
     // 若 e.target 已被从 DOM 移除(事件传播期间被删),跳过
     if (!document.contains(e.target)) return;
-    if (!$(e.target).closest('#rp-phone, #rp-fab').length) {
+    if (!$(e.target).closest('#rp-phone, #rp-fab, #mochi-phone-wand-open').length) {
       if (STATE.currentView && STATE.currentView !== 'lock') {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
