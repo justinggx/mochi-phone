@@ -361,6 +361,26 @@ const RP_REFINED_CSS = `
 #rp-phone #rp-screen #gword-retry-hint:disabled {opacity:.7;cursor:wait;}
 #rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {flex:1 0 auto;padding:12px 20px 20px;gap:6px;}
 #rp-phone.rp-compact #rp-screen #ggold-mode-select .ggold-mode-intro {margin-bottom:12px;}
+/* Approved A artwork: real text/actions stay above decorative raster assets. */
+#rp-phone #rp-screen .rp-gold-art,#rp-phone #rp-screen .rp-gold-mode-divider {display:none;}
+#rp-phone #rp-screen .rp-gold-art[hidden] {display:none!important;}
+/* Include frame specificity so the illustrated paper wins over the shared non-home surface rule. */
+#rp-phone.rp-art-icons #rp-frame #rp-screen #rp-view-ggold.rp-gold-choosing.rp-gold-illustrated {background:var(--rp-v-surface) var(--rp-gold-paper,none) center/cover!important;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated>.rp-nav-bar,#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-game-partner-bar {background:transparent!important;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated #ggold-mode-select {padding:6px 16px 18px;gap:4px;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-gold-hero {display:block;width:100%;height:126px;min-height:126px;object-fit:contain;flex-shrink:0;margin:0;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-intro {margin:4px 0 6px;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-title {font-weight:600;margin:0;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-sub {display:none;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-gold-mode-divider {display:block;font-size:11px;color:var(--rp-v-text);margin:2px 0;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-btn {grid-template-columns:88px minmax(0,1fr) 16px;gap:10px;max-width:320px;min-height:96px;padding:6px 0;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-btn>.rp-gold-art {display:block;width:88px;height:84px;object-fit:contain;border:none;box-shadow:none;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-mark {display:none;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated .ggold-mode-btn>.rp-gold-art[hidden]+.ggold-mode-mark {display:flex;justify-self:center;}
+#rp-phone #rp-screen #ggold-mode-avatar {display:none;}
+#rp-phone #rp-screen #rp-view-ggold.rp-gold-illustrated #ggold-mode-avatar {display:flex;position:relative;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--rp-v-card);color:var(--rp-v-text);font-size:11px;}
+#rp-phone #rp-screen #ggold-mode-avatar img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-illustrated .rp-gold-hero {height:100px;min-height:100px;}
 #rp-phone #rp-screen #ggold-canvas {height:100%;width:auto;max-width:100%;max-height:190px;aspect-ratio:27/19;object-fit:contain;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold) {overflow-y:auto;overscroll-behavior:contain;}
 #rp-phone.rp-compact #rp-screen :is(#rp-view-game,#rp-view-g2048,#rp-view-ggold)>.rp-nav-bar {height:80px;min-height:80px;padding-top:44px;}
@@ -8026,12 +8046,15 @@ const HTML = `
             <button class="ggold-over-btn" id="ggold-reset-tower-btn" type="button" style="display:none;background:linear-gradient(135deg,#6366f1,#4338ca)">重置爬塔</button>
           </div>
           <div id="ggold-mode-select" role="region" aria-labelledby="ggold-mode-heading">
+            <img class="rp-gold-art rp-gold-hero" data-gold-art="hero" alt="" width="1536" height="1024" decoding="async" referrerpolicy="no-referrer" hidden>
+            <img class="rp-gold-art" data-gold-art="paper" alt="" style="display:none!important" referrerpolicy="no-referrer" hidden>
             <div class="ggold-mode-intro">
               <h2 class="ggold-mode-title" id="ggold-mode-heading">选择游戏模式</h2>
+              <span class="rp-gold-mode-divider" aria-hidden="true">✦</span>
               <p class="ggold-mode-sub">和搭子一起，开一局。</p>
             </div>
-            <button class="ggold-mode-btn" id="ggold-mode-vs" type="button"><span class="ggold-mode-mark" aria-hidden="true">01</span><span class="ggold-mode-copy"><span class="ggold-mode-top"><span class="ggold-mode-name">竞技模式</span></span><span class="ggold-mode-desc">轮流挖矿，3轮比总分</span></span><span class="ggold-mode-enter" aria-hidden="true">›</span></button>
-            <button class="ggold-mode-btn" id="ggold-mode-co" type="button"><span class="ggold-mode-mark" aria-hidden="true">02</span><span class="ggold-mode-copy"><span class="ggold-mode-top"><span class="ggold-mode-name">合作模式</span></span><span class="ggold-mode-desc">共同达标，再挑战下一层</span></span><span class="ggold-mode-enter" aria-hidden="true">›</span></button>
+            <button class="ggold-mode-btn" id="ggold-mode-vs" type="button"><img class="rp-gold-art" data-gold-art="vs" alt="" width="88" height="84" decoding="async" referrerpolicy="no-referrer" hidden><span class="ggold-mode-mark" aria-hidden="true">01</span><span class="ggold-mode-copy"><span class="ggold-mode-top"><span class="ggold-mode-name">竞技模式</span></span><span class="ggold-mode-desc">轮流挖矿，3轮比总分</span></span><span class="ggold-mode-enter" aria-hidden="true">›</span></button>
+            <button class="ggold-mode-btn" id="ggold-mode-co" type="button"><img class="rp-gold-art" data-gold-art="coop" alt="" width="88" height="84" decoding="async" referrerpolicy="no-referrer" hidden><span class="ggold-mode-mark" aria-hidden="true">02</span><span class="ggold-mode-copy"><span class="ggold-mode-top"><span class="ggold-mode-name">合作模式</span></span><span class="ggold-mode-desc">共同达标，再挑战下一层</span></span><span class="ggold-mode-enter" aria-hidden="true">›</span></button>
           </div>
         </div>
         <!-- 你说我猜 -->
@@ -15998,6 +16021,41 @@ const RP_ICON_COLORS = {
   custom: null
 };
 
+function rpGoldModeArtUrl(theme, role, local = false) {
+  if (!['candy','star','misty'].includes(theme) || !['hero','vs','coop','paper'].includes(role)) return '';
+  const file = `mochi-phone-gold-a-${theme}-${role}-20261014.webp`;
+  return local ? new URL(`scripts/extensions/third-party/mochi-phone/gold-art-20261014/${file}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${file}`;
+}
+function rpUpdateGoldModeAvatar() {
+  const view=document.getElementById('rp-view-ggold'),bar=view?.querySelector('.rp-game-partner-bar');
+  if (!bar || !view.classList.contains('rp-gold-illustrated')) return;
+  let avatar=document.getElementById('ggold-mode-avatar');
+  if (!avatar) { avatar=document.createElement('span');avatar.id='ggold-mode-avatar';avatar.setAttribute('aria-hidden','true');bar.prepend(avatar); }
+  const name=GM.charName || '对方',source=getAvatar(name) || '';
+  const key=name+'|'+source;if(avatar.dataset.key===key)return;avatar.dataset.key=key;avatar.textContent=Array.from(name).slice(0,2).join('');
+  let url;try{url=new URL(source,document.baseURI);}catch{return;}
+  if (!source || !['http:','https:','data:','blob:'].includes(url.protocol) || (url.protocol==='data:'&&!/^data:image\//i.test(source))) return;
+  const image=document.createElement('img');image.alt='';image.referrerPolicy='no-referrer';image.onerror=()=>image.remove();image.src=url.href;avatar.append(image);
+}
+function rpRefreshGoldModeArt(force = false) {
+  const phone=document.getElementById('rp-phone'),view=document.getElementById('rp-view-ggold');if(!phone||!view)return;
+  const theme=phone.dataset.rpArtTheme,builtIn=phone.classList.contains('rp-art-icons')&&['candy','star','misty'].includes(theme),choosing=view.classList.contains('rp-gold-choosing');
+  view.classList.toggle('rp-gold-illustrated',builtIn&&choosing);
+  if (!builtIn || !choosing) {
+    view.style.removeProperty('--rp-gold-paper');
+    view.querySelectorAll('[data-gold-art]').forEach(img=>{img.onload=null;img.onerror=null;img.removeAttribute('src');delete img.dataset.goldKey;img.hidden=true;});return;
+  }
+  if(!force&&view.style.display==='none')return;
+  rpUpdateGoldModeAvatar();
+  view.querySelectorAll('[data-gold-art]').forEach(img=>{
+    const role=img.dataset.goldArt,key=theme+':'+role;if(img.dataset.goldKey===key)return;
+    img.dataset.goldKey=key;img.hidden=true;if(role==='paper')view.style.removeProperty('--rp-gold-paper');
+    let local=false;const valid=()=>img.isConnected&&img.dataset.goldKey===key&&view.classList.contains('rp-gold-illustrated')&&phone.dataset.rpArtTheme===theme;
+    img.onload=()=>{if(!valid())return;if(role==='paper')view.style.setProperty('--rp-gold-paper','url("'+img.src+'")');else img.hidden=false;};
+    img.onerror=()=>{if(!valid())return;if(!local){local=true;img.src=rpGoldModeArtUrl(theme,role,true);}else{img.hidden=true;img.onload=null;img.onerror=null;}};
+    img.src=rpGoldModeArtUrl(theme,role);
+  });
+}
 const RP_ART_HOME_APPS = ['messages','moments','settings','folder-games','api-settings','themes','diary','xhs','bank'];
 const RP_ART_GAME_APPS = ['ludo','g2048','ggold','gword'];
 const rpArtImageCache = new Map();
@@ -16084,6 +16142,7 @@ function lgRenderHomeIcons() {
   phone.classList.toggle('rp-art-icons',builtIn);
   if (builtIn) phone.dataset.rpArtTheme = theme;
   else delete phone.dataset.rpArtTheme;
+  rpRefreshGoldModeArt();
   // Legacy currentColor artwork stays available for custom themes/load failure.
   // Built-in themes replace it only after the matching raster atlas has loaded.
   document.querySelectorAll('#rp-app-grid [data-app]').forEach(el => {
@@ -19215,6 +19274,7 @@ function gameApplyPartnerToGames(partner) {
     $('#g2048-partner-name,#ggold-partner-name,#gword-partner-name,#rp-game-partner-name').text(name);
     $('#ggold-c-lbl').text(name);
     $('#rp-game-char-name').text(name);
+    rpUpdateGoldModeAvatar();
   } catch(e) {}
 }
 
@@ -20085,6 +20145,7 @@ function ggoldSetModeSelection(selecting) {
   if (modeEl) { modeEl.style.display = selecting ? 'flex' : 'none'; modeEl.setAttribute('aria-hidden', String(!selecting)); }
   const newBtn = document.getElementById('ggold-newbtn');
   if (newBtn) newBtn.disabled = selecting;
+  rpRefreshGoldModeArt(selecting);
 }
 function ggoldOpen() {
   rpBeginGame('gm');
