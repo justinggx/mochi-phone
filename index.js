@@ -1,5 +1,5 @@
 import { createPhoneRuntime } from './runtime.mjs?v=20261011-games1';
-import { createPhoneArchive } from './archive.mjs?v=20261011-persist1';
+import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
 
 let rpPhoneArchive = createPhoneArchive();
@@ -7600,6 +7600,9 @@ function rpNormalizePhoneState(state) {
   if (!state || typeof state !== 'object') return {};
   const recovery = Array.isArray(state.recovery) ? state.recovery : [];
   const preserve = (path, value) => { recovery.push({ path, value }); };
+  if (state.threads != null && (typeof state.threads !== 'object' || Array.isArray(state.threads))) {
+    preserve('threads', state.threads); state.threads = {};
+  }
   const array = (object, field, path, accept = value => value && typeof value === 'object' && !Array.isArray(value)) => {
     if (!Array.isArray(object[field])) {
       if (object[field] !== undefined) preserve(path, object[field]);
@@ -7656,6 +7659,8 @@ function loadState(chatId) {
 
     const _normalizeLoaded = function(parsed, sourceKey, isLegacyMigration) {
       if (!parsed) return null;
+      // Preserve malformed collections before substituting safe renderable values.
+      rpNormalizePhoneState(parsed);
       // slotVersion 3 的 key 已同时包含角色与聊天标识，正常加载时必须完整保留
       // 群聊和手工联系人。只有从旧 raw chatId key 迁移时才做防串台过滤。
       const loadedThreads = (parsed.threads && typeof parsed.threads === 'object' && !Array.isArray(parsed.threads)) ? parsed.threads : {};
@@ -7664,7 +7669,6 @@ function loadState(chatId) {
       parsed.moments = Array.isArray(parsed.moments) ? parsed.moments : [];
       parsed.diary = Array.isArray(parsed.diary) ? parsed.diary : [];
       parsed.xhsFeed = Array.isArray(parsed.xhsFeed) ? parsed.xhsFeed : [];
-      rpNormalizePhoneState(parsed);
       parsed.sync = (parsed.sync && typeof parsed.sync === 'object') ? parsed.sync : { stage: 1, progress: 0, status: '乖巧' };
       parsed.darkMode = !!parsed.darkMode;
       parsed.nameAliases = (parsed.nameAliases && typeof parsed.nameAliases === 'object') ? parsed.nameAliases : {};
@@ -11772,6 +11776,7 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
     toastr.warning('酒馆正在忙或暂不可发送，内容已保留，请稍后再点发送。'); return false;
   }
   const task = rpRuntime.task(), ctx = getContext(), ta = document.getElementById('send_textarea');
+  const originSlot = getPhoneChatSlotKey(ctx);
   const original = ta.value, content = replace ? text : (original.trim() ? original.trim() + '\n' + text : text);
   const source = ctx?.eventSource || eventSource, types = ctx?.eventTypes || ctx?.event_types || event_types;
   if (!source || !types?.USER_MESSAGE_RENDERED) { toastr.warning('无法确认酒馆发送状态，内容已保留。'); return false; }
@@ -11782,7 +11787,7 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
     stop?.(); clearTimeout(timer); task.signal.removeEventListener('abort', cancel);
     if (rpHostSubmission === job) { rpHostSubmission = null; $('#rp-send').prop('disabled', false); }
   };
-  const cancel = () => { if (ta.value === content) { ta.value = original; ta.dispatchEvent(new Event('input', {bubbles:true})); } release(); };
+  const cancel = () => { if (getPhoneChatSlotKey(getContext()) === originSlot && ta.value === content) { ta.value = original; ta.dispatchEvent(new Event('input', {bubbles:true})); } release(); };
   const accepted = () => {
     if (job.done || !task.valid()) return;
     const chat = getContext()?.chat || [];
@@ -12076,9 +12081,13 @@ function rpConsumeGeneratedImage(img, messageIndex) {
     if (STATE.currentView === 'moments') renderMoments();
   } else {
     const thread = STATE.threads[target.threadId];
-    if (!thread || thread.messages.some(m => m.type === 'image' && m.src === src)) return false;
+    if (!thread) return false;
     const index = target.pendingMsgId ? thread.messages.findIndex(m => m.id === target.pendingMsgId) : -1;
     const previous = index >= 0 ? thread.messages[index] : null;
+    // Match the pending request first; separate requests may produce the same URL.
+    // A deleted or already completed placeholder must never be resurrected.
+    if (target.pendingMsgId ? previous?.type !== 'pending_image' : thread.messages.some(m => m.type === 'image' && m.src === src)) return false;
+    if (!prompt && thread.messages.some(m => m.type === 'image' && m.src === src)) return false;
     const message = { ...previous, id: previous?.id || 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), from: target.threadId, type: 'image', time: previous?.time || target.time || resolvePhoneTime(), src };
     if (index >= 0) thread.messages.splice(index, 1, message); else thread.messages.push(message);
     if (!previous && !rpIsReadingThread(thread.id)) thread.unread = (thread.unread || 0) + 1;
@@ -12140,15 +12149,12 @@ function onAIMessage(_retryCount) {
       }
     }
     const last = chat[lastAiIdx];
+    if (!last || typeof last.mes !== 'string') return;
     if (rpShouldHardSkipNativeMainChatu8Mes(lastAiIdx)) return;
 
     const raw = last.mes;
-    // 指纹:只用于成功解析后去重,流式中间态不记录
-    // 旧版只看长度 + 首尾 24 字，reroll 时如果壳子相似、只改中段内容，
-    // 会误判成“同一条消息”，导致主楼已更新但手机不重解析。
-    const midStart = Math.max(0, Math.floor(raw.length / 2) - 24);
-    const midSlice = raw.slice(midStart, midStart + 48);
-    const fp = `${ctx?.chatId || ''}|${raw.length}|${raw.slice(0, 48)}|${midSlice}|${raw.slice(-48)}`;
+    // Fingerprint the whole floor; sampled slices miss edits elsewhere in long replies.
+    const fp = `${STATE.chatId}|${lastAiIdx}|${rpPhoneTextFingerprint(raw)}`;
     const targetTextEl = document.querySelector(`.mes[mesid="${lastAiIdx}"]:not([is_user="true"]) .mes_text`);
     const hasRenderedPhoneUi = !!targetTextEl?.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     const normalizedPreview = normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi, ''));
@@ -17317,6 +17323,15 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
   const moment = STATE.moments?.find(m => m.id === momentId);
   if (!moment) { momentsDiag('generateAIReply:skipMissingMoment', { momentId }); return; }
   opts = opts || {};
+  let targetCommentId = null;
+  if (opts.replyToUser) {
+    const target = opts.replyToUserId
+      ? moment.comments?.find(c => c.id === opts.replyToUserId)
+      : moment.comments?.[opts.replyToUserIndex];
+    if (!target || !isPhoneUserName(target.name || target.from, getContext()) || target.text !== (opts.replyToUserText || userCommentText)) return;
+    if (!target.id) target.id = 'mc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    targetCommentId = target.id;
+  }
   const authorName = fromName || moment.name;
   const { charName, charPersona, npcPersonaMap, recentChat } = await rpGuardAwait(getMomentsCtx(), rpTask);
   let sysMsg3 = '';
@@ -17376,12 +17391,15 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     + '请基于人设/世界书/最近5楼/朋友圈主楼/评论串，写出一句贴着这条评论链的回复:';
   const resp = await rpGuardAwait(lgCallAPI(prompt3, 120, sysMsg3), rpTask);
   if (!resp) return;
+  if (!STATE.moments.includes(moment)) return;
+  const targetIndex = targetCommentId ? moment.comments.findIndex(c => c.id === targetCommentId) : null;
+  if (targetCommentId && targetIndex < 0) return;
   const ts = resolvePhoneTime();
   const cleaned = resp.trim().replace(/^[「"']|[」"']$/g, '');
   incomingComment(momentId, authorName, ts, cleaned, opts.replyToUser ? '我' : null, {
     allowReplyToUser: !!opts.replyToUser,
     allowAuthorReply: true,
-    replyToIndex: opts.replyToUserIndex,
+    replyToIndex: targetIndex,
     replyToText: opts.replyToUserText || userCommentText
   });
 
@@ -18999,7 +19017,8 @@ async function sendMomentComment(momentId, text, replyToName) {
   const targetComment = replyToIdx !== null ? moment.comments[replyToIdx] : null;
   const userCommentIdx = moment.comments.length;
   const userCommentText = text.trim();
-  moment.comments.push({ from: 'user', name: '我', text: userCommentText, time: ts, replyTo: replyToIdx, source: 'manual', manual: true });
+  const userCommentId = 'mc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+  moment.comments.push({ id: userCommentId, from: 'user', name: '我', text: userCommentText, time: ts, replyTo: replyToIdx, source: 'manual', manual: true });
   renderMoments();
   saveState();
   // 直接调 API 生成回复,不走 ST send_textarea
@@ -19013,6 +19032,7 @@ async function sendMomentComment(momentId, text, replyToName) {
       replyToName: targetName,
       replyToText: targetComment ? targetComment.text : '',
       replyToUser: true,
+      replyToUserId: userCommentId,
       replyToUserIndex: userCommentIdx,
       replyToUserText: userCommentText
     }), 600);
