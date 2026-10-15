@@ -601,6 +601,15 @@ const RP_IMPROVEMENT_CSS = `
 #rp-phone .rp-feature-note {margin:8px 0;color:var(--rp-v-muted,#867882);font-size:12px;white-space:pre-wrap;}
 `;
 
+const RP_MOMENT_TRANSLATE_CSS = `
+#rp-phone #rp-screen #rp-view-moments .rp-moment-bar {flex-wrap:wrap;column-gap:4px;row-gap:0;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-delete-translate {display:inline-flex;align-items:center;vertical-align:middle;white-space:nowrap;gap:2px;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-translate-btn {display:inline-flex;align-items:center;justify-content:center;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#2878c8!important;opacity:1;font-family:inherit;font-size:10.5px!important;line-height:1.5;min-height:32px;padding:0 4px!important;margin-left:6px;white-space:nowrap;cursor:pointer;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-bar .rp-moment-translate-btn {font-size:12px!important;min-height:34px;padding:5px 7px!important;margin-left:0;}
+#rp-phone.rp-theme-star #rp-screen #rp-view-moments .rp-moment-translate-btn,
+#rp-phone.rp-dark #rp-screen #rp-view-moments .rp-moment-translate-btn {color:#70aaff!important;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-translate-btn:disabled {opacity:.55;cursor:wait;}
+`;
 const RP_MESSAGE_ACTIONS_CSS = `
 #rp-phone #rp-screen #rp-view-messages>.rp-nav-bar {padding-right:6px;}
 #rp-phone #rp-screen #rp-view-messages .rp-feature-nav-actions {margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:2px;height:40px;flex:0 0 auto;}
@@ -5376,6 +5385,7 @@ ${RP_READING_CSS}
 ${RP_IMPROVEMENT_CSS}
 ${RP_PRIVATE_AVATAR_CSS}
 ${RP_MESSAGE_ACTIONS_CSS}
+${RP_MOMENT_TRANSLATE_CSS}
 `;
 
 // ================================================================
@@ -9386,7 +9396,7 @@ function bindUI() {
   // Click also covers native touch activation; do not double-submit touchend + click.
   $(document).on('click.mochiPhone', '#rp-phone .rp-translation-btn', function(e) {
     e.preventDefault(); e.stopPropagation();
-    const target = $(this).closest('.rp-translation-control').data('phoneTranslationTarget');
+    const target = $(this).data('phoneTranslationTarget') || $(this).closest('.rp-translation-control').data('phoneTranslationTarget');
     void rpTogglePhoneTranslation(target).catch(() => console.warn('[Phone] translation action failed'));
   });
   // 铅笔编辑按钮:事件委托,同时处理 click 和 touchend,兼容触屏和桌面
@@ -11009,10 +11019,17 @@ function rpPaintPhoneTranslation(control, target) {
   const job = rpPhoneTranslationJobs.get(target.item);
   const currentJob = job && job.task.valid() && job.source === source ? job : null;
   const pending = currentJob?.pending === true;
-  const button = control.find('.rp-translation-btn');
+  const button = control.data('phoneTranslationButton') || control.find('.rp-translation-btn');
   button.prop('disabled', pending || source.length > 8000);
   button.attr('aria-expanded', cache?.expanded ? 'true' : 'false');
-  button.text(pending ? '翻译中…' : source.length > 8000 ? '文字过长' : cache ? (cache.expanded ? '收起译文' : '显示译文') : currentJob?.error ? '翻译失败，重试' : '译');
+  const label = pending ? '翻译中…' : source.length > 8000 ? '文字过长' : cache ? (cache.expanded ? '收起译文' : '显示译文') : currentJob?.error ? '翻译失败，重试' : '译';
+  const inlineMoment = control.hasClass('rp-moment-inline-control');
+  button.text(inlineMoment ? '翻译' : label);
+  if (inlineMoment) {
+    const hint = label === '译' ? '将本条文字发送至当前配置的 API 翻译' : label;
+    button.attr('aria-label', hint).attr('title', hint).attr('aria-busy', String(pending));
+    control.prop('hidden', !cache?.expanded);
+  }
   const body = control.find('.rp-translation-text');
   // Never run the conversation/action sanitizer on translated text.
   body.text(cache ? (cache.target === 'zh' ? '中文译文：\n' : 'English：\n') + cache.text : '');
@@ -11024,6 +11041,19 @@ function rpMakePhoneTranslationControl(target) {
   if (!rpPhoneTranslationSource(target)) return $();
   const control = $('<div class="rp-translation-control"><button type="button" class="rp-translation-btn" title="将本条文字发送至当前配置的 API 翻译" aria-expanded="false">译</button><div class="rp-translation-text" hidden></div></div>');
   control.data('phoneTranslationTarget', target);
+  rpPaintPhoneTranslation(control, target);
+  return control;
+}
+
+function rpMountMomentTranslation(deleteButton, target) {
+  const control = rpMakePhoneTranslationControl(target);
+  if (!control.length || !deleteButton.length) return control;
+  const button = control.find('.rp-translation-btn').addClass('rp-moment-translate-btn');
+  if (target.kind === 'moment') button.addClass('rp-moment-act');
+  control.addClass('rp-moment-inline-control').data('phoneTranslationButton', button);
+  button.data('phoneTranslationTarget', target);
+  const actions = $('<span class="rp-moment-delete-translate">').insertBefore(deleteButton);
+  actions.append(deleteButton, button);
   rpPaintPhoneTranslation(control, target);
   return control;
 }
@@ -17891,10 +17921,14 @@ function renderMoments() {
       </div>
     `);
     const momentNode = container.children('.rp-moment').last();
-    momentNode.children('.rp-moment-text').after(rpMakePhoneTranslationControl({ kind: 'moment', item: moment, moment }));
+    const postTranslation = rpMountMomentTranslation(momentNode.find('.rp-moment-del-btn').first(), { kind: 'moment', item: moment, moment });
+    momentNode.children('.rp-moment-text').after(postTranslation);
     visibleComments.forEach((cm, idx) => {
       const item = moment.comments[cm.__oldIdx];
-      if (item) momentNode.find('.rp-moment-comment').eq(idx).append(rpMakePhoneTranslationControl({ kind: 'comment', item, moment }));
+      if (item) {
+        const commentNode = momentNode.find('.rp-moment-comment').eq(idx);
+        commentNode.append(rpMountMomentTranslation(commentNode.children('.rp-moment-comment-del-btn'), { kind: 'comment', item, moment }));
+      }
     });
     rpPaintMomentCommentDraft(moment, momentNode);
   });
