@@ -338,19 +338,19 @@ const RP_REFINED_CSS = `
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing :is(#ggold-header,#ggold-timer-wrap,#ggold-coop-bar,#ggold-canvas-wrap,#ggold-action-row,#ggold-chat-hint,#ggold-chat,#ggold-input-row) {display:none!important;}
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-newbtn {visibility:hidden;pointer-events:none;}
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {position:relative!important;inset:auto!important;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;align-items:center;justify-content:flex-start;gap:6px;padding:32px 22px 24px;background:transparent!important;border:0!important;border-radius:0;box-shadow:none!important;z-index:auto;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-intro,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-intro {width:100%;margin-bottom:22px;text-align:center;color:var(--rp-v-text)!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-title,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-title {font-size:20px;font-weight:500;letter-spacing:.03em;line-height:1.4;margin:0 0 10px;color:var(--rp-v-text)!important;text-shadow:none!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-sub,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-sub {font-size:12px;line-height:1.7;text-align:center;padding:0;margin:0;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn {width:100%;max-width:280px;min-height:88px;flex:0 0 auto;padding:18px 6px;text-align:left;white-space:normal;box-sizing:border-box;font-family:inherit;display:grid;grid-template-columns:38px minmax(0,1fr) 18px;align-items:center;gap:12px;background:transparent!important;border:0!important;border-radius:10px!important;box-shadow:none!important;color:var(--rp-v-text)!important;touch-action:manipulation;cursor:pointer;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-mark,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-mark {width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--rp-nav-btn) 8%,transparent)!important;color:var(--rp-v-text)!important;font:17px/1 Georgia,"Times New Roman",serif;letter-spacing:.02em;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-copy,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-copy {min-width:0;display:flex;flex-direction:column;gap:7px;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-top,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-top {display:block;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-name,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-name {font-size:17px;font-weight:500;line-height:1.4;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-enter,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-enter {font-size:24px;font-weight:400;line-height:1;color:var(--rp-v-text)!important;opacity:1;white-space:nowrap;justify-self:end;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-desc,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-desc {font-size:12px;font-weight:400;line-height:1.7;overflow-wrap:anywhere;color:var(--rp-v-text)!important;opacity:1;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:hover,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:hover {background:color-mix(in srgb,var(--rp-v-text) 3%,transparent)!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:active,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:active {background:color-mix(in srgb,var(--rp-v-text) 6%,transparent)!important;}
-#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:focus-visible,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:3px;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-intro,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-intro,#rp-phone #rp-screen #gword-mode-select .rp-mode-intro {width:100%;margin-bottom:22px;text-align:center;color:var(--rp-v-text)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-title,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-title,#rp-phone #rp-screen #gword-mode-select .rp-mode-title {font-size:20px;font-weight:500;letter-spacing:.03em;line-height:1.4;margin:0 0 10px;color:var(--rp-v-text)!important;text-shadow:none!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-sub,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-sub,#rp-phone #rp-screen #gword-mode-select .rp-mode-sub {font-size:12px;line-height:1.7;text-align:center;padding:0;margin:0;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn,#rp-phone #rp-screen #gword-mode-select .rp-mode-btn {width:100%;max-width:280px;min-height:88px;flex:0 0 auto;padding:18px 6px;text-align:left;white-space:normal;box-sizing:border-box;font-family:inherit;display:grid;grid-template-columns:38px minmax(0,1fr) 18px;align-items:center;gap:12px;background:transparent!important;border:0!important;border-radius:10px!important;box-shadow:none!important;color:var(--rp-v-text)!important;touch-action:manipulation;cursor:pointer;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-mark,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-mark,#rp-phone #rp-screen #gword-mode-select .rp-mode-mark {width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--rp-nav-btn) 8%,transparent)!important;color:var(--rp-v-text)!important;font:17px/1 Georgia,"Times New Roman",serif;letter-spacing:.02em;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-copy,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-copy,#rp-phone #rp-screen #gword-mode-select .rp-mode-copy {min-width:0;display:flex;flex-direction:column;gap:7px;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-top,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-top,#rp-phone #rp-screen #gword-mode-select .rp-mode-top {display:block;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-name,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-name,#rp-phone #rp-screen #gword-mode-select .rp-mode-name {font-size:17px;font-weight:500;line-height:1.4;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-enter,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-enter,#rp-phone #rp-screen #gword-mode-select .rp-mode-enter {font-size:24px;font-weight:400;line-height:1;color:var(--rp-v-text)!important;opacity:1;white-space:nowrap;justify-self:end;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-desc,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-desc,#rp-phone #rp-screen #gword-mode-select .rp-mode-desc {font-size:12px;font-weight:400;line-height:1.7;overflow-wrap:anywhere;color:var(--rp-v-text)!important;opacity:1;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:hover,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:hover,#rp-phone #rp-screen #gword-mode-select .rp-mode-btn:hover {background:color-mix(in srgb,var(--rp-v-text) 3%,transparent)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:active,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:active,#rp-phone #rp-screen #gword-mode-select .rp-mode-btn:active {background:color-mix(in srgb,var(--rp-v-text) 6%,transparent)!important;}
+#rp-phone #rp-screen #ggold-mode-select .ggold-mode-btn:focus-visible,#rp-phone #rp-screen #rp-ludo-spicy .rp-mode-btn:focus-visible,#rp-phone #rp-screen #gword-mode-select .rp-mode-btn:focus-visible {outline:2px solid var(--rp-v-text)!important;outline-offset:3px;}
 #rp-phone #rp-screen #rp-view-ggold.rp-gold-choosing .rp-game-partner-change {min-height:36px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;font-size:12px;padding:6px 8px;}
 #rp-phone #rp-screen #gword-status:empty {display:none;}
 #rp-phone #rp-screen #gword-hint-feedback {display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:8px 14px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;}
@@ -362,26 +362,32 @@ const RP_REFINED_CSS = `
 #rp-phone.rp-compact #rp-screen #rp-view-ggold.rp-gold-choosing #ggold-mode-select {flex:1 0 auto;padding:12px 20px 20px;gap:6px;}
 #rp-phone.rp-compact #rp-screen #ggold-mode-select .ggold-mode-intro {margin-bottom:12px;}
 /* Approved A artwork: real text/actions stay above decorative raster assets. */
-#rp-phone #rp-screen :is(.rp-gold-art,.rp-ludo-art),#rp-phone #rp-screen :is(.rp-gold-mode-divider,.rp-ludo-mode-divider) {display:none;}
-#rp-phone #rp-screen :is(.rp-gold-art,.rp-ludo-art)[hidden] {display:none!important;}
+#rp-phone #rp-screen :is(.rp-gold-art,.rp-ludo-art,.rp-word-art),#rp-phone #rp-screen :is(.rp-gold-mode-divider,.rp-ludo-mode-divider,.rp-word-mode-divider) {display:none;}
+#rp-phone #rp-screen :is(.rp-gold-art,.rp-ludo-art,.rp-word-art)[hidden] {display:none!important;}
 /* Include frame specificity so the illustrated paper wins over the shared non-home surface rule. */
-#rp-phone.rp-art-icons #rp-frame #rp-screen :is(#rp-view-ggold.rp-gold-choosing.rp-gold-illustrated,#rp-view-game.rp-ludo-choosing.rp-ludo-illustrated) {background:var(--rp-v-surface) var(--rp-gold-paper,none) center/cover!important;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated)>.rp-nav-bar,#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) .rp-game-partner-bar {background:transparent!important;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(#ggold-mode-select,#rp-ludo-spicy) {padding:6px 16px 18px;gap:4px;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.rp-gold-hero,.rp-ludo-hero) {display:block;width:100%;height:126px;min-height:126px;object-fit:contain;flex-shrink:0;margin:0;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-intro,.rp-mode-intro) {margin:4px 0 6px;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-title,.rp-mode-title) {font-weight:600;margin:0;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-sub,.rp-mode-sub) {display:none;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.rp-gold-mode-divider,.rp-ludo-mode-divider) {display:block;font-size:11px;color:var(--rp-v-text);margin:2px 0;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-btn,.rp-mode-btn) {grid-template-columns:88px minmax(0,1fr) 16px;gap:10px;max-width:320px;min-height:96px;padding:6px 0;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art) {display:block;width:88px;height:84px;object-fit:contain;border:none;box-shadow:none;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-mark,.rp-mode-mark) {display:none;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art)[hidden]+:is(.ggold-mode-mark,.rp-mode-mark) {display:flex;justify-self:center;}
-#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar) {display:none;}
-#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(#ggold-mode-avatar,#rp-ludo-mode-avatar) {display:flex;position:relative;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--rp-v-card);color:var(--rp-v-text);font-size:11px;}
-#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar) img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-#rp-phone.rp-compact #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated) :is(.rp-gold-hero,.rp-ludo-hero) {height:100px;min-height:100px;}
+#rp-phone.rp-art-icons #rp-frame #rp-screen :is(#rp-view-ggold.rp-gold-choosing.rp-gold-illustrated,#rp-view-game.rp-ludo-choosing.rp-ludo-illustrated,#rp-view-gword.rp-word-choosing.rp-word-illustrated) {background:var(--rp-v-surface) var(--rp-gold-paper,none) center/cover!important;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated)>.rp-nav-bar,#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) .rp-game-partner-bar {background:transparent!important;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(#ggold-mode-select,#rp-ludo-spicy,#gword-mode-select) {padding:6px 16px 18px;gap:4px;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.rp-gold-hero,.rp-ludo-hero,.rp-word-hero) {display:block;width:100%;height:126px;min-height:126px;object-fit:contain;flex-shrink:0;margin:0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-intro,.rp-mode-intro) {margin:4px 0 6px;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-title,.rp-mode-title) {font-weight:600;margin:0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-sub,.rp-mode-sub) {display:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.rp-gold-mode-divider,.rp-ludo-mode-divider,.rp-word-mode-divider) {display:block;font-size:11px;color:var(--rp-v-text);margin:2px 0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-btn,.rp-mode-btn) {grid-template-columns:88px minmax(0,1fr) 16px;gap:10px;max-width:320px;min-height:96px;padding:6px 0;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art,.rp-word-art) {display:block;width:88px;height:84px;object-fit:contain;border:none;box-shadow:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-mark,.rp-mode-mark) {display:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.ggold-mode-btn,.rp-mode-btn)>:is(.rp-gold-art,.rp-ludo-art,.rp-word-art)[hidden]+:is(.ggold-mode-mark,.rp-mode-mark) {display:flex;justify-self:center;}
+#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar,#rp-word-mode-avatar) {display:none;}
+#rp-phone #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(#ggold-mode-avatar,#rp-ludo-mode-avatar,#rp-word-mode-avatar) {display:flex;position:relative;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--rp-v-card);color:var(--rp-v-text);font-size:11px;}
+#rp-phone #rp-screen :is(#ggold-mode-avatar,#rp-ludo-mode-avatar,#rp-word-mode-avatar) img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#rp-phone.rp-compact #rp-screen :is(#rp-view-ggold.rp-gold-illustrated,#rp-view-game.rp-ludo-illustrated,#rp-view-gword.rp-word-illustrated) :is(.rp-gold-hero,.rp-ludo-hero,.rp-word-hero) {height:100px;min-height:100px;}
 #rp-phone #rp-screen #ggold-canvas {height:100%;width:auto;max-width:100%;max-height:190px;aspect-ratio:27/19;object-fit:contain;}
+/* Word-game selection shares the A rows without covering navigation or showing inactive round controls. */
+#rp-phone #rp-screen #gword-mode-select {display:none;}
+#rp-phone #rp-screen #rp-view-gword.rp-word-choosing :is(#gword-header,#gword-status,#gword-hint-feedback,#gword-chat-hint,#gword-chat,#gword-input-row,#gword-over) {display:none!important;}
+#rp-phone #rp-screen #rp-view-gword.rp-word-choosing #gword-newbtn {visibility:hidden;pointer-events:none;}
+#rp-phone #rp-screen #rp-view-gword.rp-word-choosing #gword-mode-select {position:relative!important;inset:auto!important;display:flex;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:20px 16px;background:transparent!important;border:0!important;border-radius:0;box-shadow:none!important;z-index:auto;}
+#rp-phone #rp-screen #rp-view-gword.rp-word-choosing .rp-game-partner-change {min-height:36px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--rp-v-text)!important;font-size:12px;padding:6px 8px;}
 /* Ludo has three existing scale levels: share rows/artwork, fit three entries without a blocking overlay. */
 #rp-phone #rp-screen #rp-ludo-spicy {display:none;}
 #rp-phone #rp-screen #rp-view-game.rp-ludo-choosing :is(#rp-game-board-wrap,#rp-game-controls,#rp-game-chat-hint,#rp-game-chat,#rp-game-input-row,#rp-game-win,#rp-sq-event,#rp-sq-task-bar) {display:none!important;}
@@ -8161,11 +8167,16 @@ const HTML = `
               <button class="gword-over-btn" id="gword-quit" style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.25)">不玩啦</button>
             </div>
           </div>
-          <div id="gword-mode-select">
-            <div class="gword-mode-title">🎯 你说我猜</div>
-            <div class="gword-mode-sub">选择游戏模式</div>
-            <button class="gword-mode-btn" id="gword-mode-char" type="button">🗣️ 你说我猜<br><span style="font-size:10px;font-weight:400;opacity:.85">角色描述，你来猜</span></button>
-            <button class="gword-mode-btn" id="gword-mode-user" type="button">💬 我说你猜<br><span style="font-size:10px;font-weight:400;opacity:.85">你来描述，角色猜</span></button>
+          <div id="gword-mode-select" role="region" aria-labelledby="rp-word-mode-heading">
+            <img class="rp-word-art rp-word-hero" data-word-art="hero" alt="" width="1536" height="1024" decoding="async" referrerpolicy="no-referrer" hidden>
+            <img class="rp-word-art" data-word-art="paper" alt="" style="display:none!important" referrerpolicy="no-referrer" hidden>
+            <div class="rp-mode-intro">
+              <h2 class="rp-mode-title" id="rp-word-mode-heading">谁来描述，谁来猜</h2>
+              <span class="rp-word-mode-divider" aria-hidden="true">✦</span>
+              <p class="rp-mode-sub">选一种玩法，交换彼此的灵感</p>
+            </div>
+            <button class="gword-mode-btn rp-mode-btn" id="gword-mode-char" type="button"><img class="rp-word-art" data-word-art="guess" alt="" width="88" height="84" decoding="async" referrerpolicy="no-referrer" hidden><span class="rp-mode-mark" aria-hidden="true">01</span><span class="rp-mode-copy"><span class="rp-mode-name">你说我猜</span><span class="rp-mode-desc">角色给提示，你来猜答案</span></span><span class="rp-mode-enter" aria-hidden="true">›</span></button>
+            <button class="gword-mode-btn rp-mode-btn" id="gword-mode-user" type="button"><img class="rp-word-art" data-word-art="describe" alt="" width="88" height="84" decoding="async" referrerpolicy="no-referrer" hidden><span class="rp-mode-mark" aria-hidden="true">02</span><span class="rp-mode-copy"><span class="rp-mode-name">我说你猜</span><span class="rp-mode-desc">你来描述，让角色猜答案</span></span><span class="rp-mode-enter" aria-hidden="true">›</span></button>
           </div>
         </div>
         <!-- 飞行棋 -->
@@ -16112,6 +16123,9 @@ function rpUpdateGoldModeAvatar() {
 function rpUpdateLudoModeAvatar() {
   rpUpdateModeAvatar('rp-view-game','rp-ludo-mode-avatar','rp-ludo-illustrated',LG.charName);
 }
+function rpUpdateWordModeAvatar() {
+  rpUpdateModeAvatar('rp-view-gword','rp-word-mode-avatar','rp-word-illustrated',GWORD.charName);
+}
 function rpRefreshModeArt(viewId, choosingClass, illustratedClass, attribute, urlFor, refreshAvatar, force) {
   const phone=document.getElementById('rp-phone'),view=document.getElementById(viewId);if(!phone||!view)return;
   const theme=phone.dataset.rpArtTheme,builtIn=phone.classList.contains('rp-art-icons')&&['candy','star','misty'].includes(theme),choosing=view.classList.contains(choosingClass);
@@ -16142,6 +16156,15 @@ function rpLudoModeArtUrl(theme, role, local = false) {
 }
 function rpRefreshLudoModeArt(force = false) {
   rpRefreshModeArt('rp-view-game','rp-ludo-choosing','rp-ludo-illustrated','data-ludo-art',rpLudoModeArtUrl,rpUpdateLudoModeAvatar,force);
+}
+function rpWordModeArtUrl(theme, role, local = false) {
+  if (!['candy','star','misty'].includes(theme) || !['hero','guess','describe','paper'].includes(role)) return '';
+  if (role==='paper') return rpGoldModeArtUrl(theme,role,local);
+  const file=`mochi-phone-word-a-${theme}-${role}-20261015.webp`;
+  return local ? new URL(`scripts/extensions/third-party/mochi-phone/word-art-20261015/${file}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${file}`;
+}
+function rpRefreshWordModeArt(force = false) {
+  rpRefreshModeArt('rp-view-gword','rp-word-choosing','rp-word-illustrated','data-word-art',rpWordModeArtUrl,rpUpdateWordModeAvatar,force);
 }
 const RP_ART_HOME_APPS = ['messages','moments','settings','folder-games','api-settings','themes','diary','xhs','bank'];
 const RP_ART_GAME_APPS = ['ludo','g2048','ggold','gword'];
@@ -16231,6 +16254,7 @@ function lgRenderHomeIcons() {
   else delete phone.dataset.rpArtTheme;
   rpRefreshGoldModeArt();
   rpRefreshLudoModeArt();
+  rpRefreshWordModeArt();
   // Legacy currentColor artwork stays available for custom themes/load failure.
   // Built-in themes replace it only after the matching raster atlas has loaded.
   document.querySelectorAll('#rp-app-grid [data-app]').forEach(el => {
@@ -19364,6 +19388,7 @@ function gameApplyPartnerToGames(partner) {
     $('#rp-game-char-name').text(name);
     rpUpdateGoldModeAvatar();
     rpUpdateLudoModeAvatar();
+    rpUpdateWordModeAvatar();
   } catch(e) {}
 }
 
@@ -20371,6 +20396,12 @@ const GWORD = {
 };
 let _gwordBound = false;
 
+function rpSetWordModeSelection(selecting) {
+  const view=document.getElementById('rp-view-gword'),mode=document.getElementById('gword-mode-select');
+  view?.classList.toggle('rp-word-choosing',selecting);
+  if(mode){mode.style.display=selecting?'flex':'none';mode.setAttribute('aria-hidden',String(!selecting));}
+  rpRefreshWordModeArt(true);
+}
 function gwordOpen() {
   rpBeginGame('gword');
 
@@ -20387,10 +20418,9 @@ function gwordOpen() {
   GWORD.guesses = [];
   if (!Array.isArray(GWORD.chatLog)) GWORD.chatLog = [];
   GWORD.round = 0;
-  const modeEl = document.getElementById('gword-mode-select');
   const overEl = document.getElementById('gword-over');
   const chatEl = document.getElementById('gword-chat');
-  if (modeEl) modeEl.style.display = 'flex';
+  rpSetWordModeSelection(true);
   if (overEl) overEl.style.display = 'none';
   renderPhoneGameHistory('gword');
   $('#gword-status').text('');
@@ -20412,10 +20442,9 @@ async function gwordStartGame(mode) {
   GWORD.round = 0;
   GWORD.processing = true;
   GWORD.charGiveUpRound = Math.floor(Math.random() * 5) + 5;
-  const modeEl = document.getElementById('gword-mode-select');
   const overEl = document.getElementById('gword-over');
   const chatEl = document.getElementById('gword-chat');
-  if (modeEl) modeEl.style.display = 'none';
+  rpSetWordModeSelection(false);
   if (overEl) overEl.style.display = 'none';
   renderPhoneGameHistory('gword');
   $('#gword-input').attr('placeholder', mode === 'char-describe' ? '猜答案、提问或聊天...' : '输入描述提示...');
@@ -20975,6 +21004,7 @@ function rpShowGameResume(key) {
   if (!game._paused) return false;
   if (key === 'gm') ggoldSetModeSelection(false);
   if (key === 'ludo') rpSetLudoModeSelection(false);
+  if (key === 'gword') rpSetWordModeSelection(false);
   const legacy={ludo:'#rp-ludo-spicy,#rp-game-win,#rp-sq-event,#rp-sq-task-bar',g2048:'#g2048-over',gm:'#ggold-mode-select,#ggold-over,#ggold-chat-fs',gword:'#gword-mode-select,#gword-over'}[key];
   $(legacy).hide();
   const view = {ludo:'game',g2048:'g2048',gm:'ggold',gword:'gword'}[key];
@@ -21002,6 +21032,7 @@ async function rpResumeSavedGame(key) {
     renderPhoneGameHistory(key); g2048Render();
     if (game.turn === 'char') rpGameTimer(key, g2048CharTurn, 500);
   } else if (key === 'gword') {
+    rpSetWordModeSelection(false);
     gwordBindOnce(); renderPhoneGameHistory(key);
     $('#gword-mode-select, #gword-over').hide();
     $('#gword-status').text(game.mode === 'user-describe' ? '答案：' + game.answer : '');
