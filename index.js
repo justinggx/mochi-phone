@@ -602,14 +602,20 @@ const RP_IMPROVEMENT_CSS = `
 `;
 
 const RP_READING_CSS = `
-#rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:13px;}
-#rp-phone #rp-screen #rp-view-messages .rp-tp {font-size:11.5px;}
-#rp-phone #rp-screen #rp-view-thread .rp-bubble {font-size:13px!important;line-height:1.55;}
-#rp-phone #rp-screen #rp-view-thread .rp-translation-text {font-size:12px!important;line-height:1.55;}
-#rp-phone #rp-screen #rp-view-moments .rp-moment-name {font-size:13px;}
-#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text {font-size:13.5px!important;line-height:1.6!important;}
-#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment {font-size:12px!important;line-height:1.55!important;}
-#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-translation-text {font-size:12px!important;line-height:1.55!important;}
+#rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:12px;}
+#rp-phone #rp-screen #rp-view-messages .rp-tp {font-size:10.5px;}
+#rp-phone #rp-screen #rp-view-thread .rp-bubble {font-size:11.5px!important;line-height:1.5;}
+#rp-phone #rp-screen #rp-view-thread .rp-translation-text {font-size:10.5px!important;line-height:1.5;}
+#rp-phone #rp-screen #rp-view-thread :is(.rp-grp-sender,.rp-voice-dur) {font-size:10.5px;}
+#rp-phone #rp-screen #rp-view-thread .rp-bts {font-size:10px;}
+#rp-phone #rp-screen #rp-view-thread .rp-translation-btn {font-size:10.5px;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-name {font-size:11.5px;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-time {font-size:10px;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text {font-size:12px!important;line-height:1.55!important;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment {font-size:10.5px!important;line-height:1.5!important;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-translation-text {font-size:10.5px!important;line-height:1.5!important;}
+#rp-phone #rp-screen #rp-view-moments :is(.rp-moment-reply-btn,.rp-moment-comment-del-btn) {font-size:10.5px!important;}
+#rp-phone #rp-screen #rp-view-moments .rp-moment-likes-row {font-size:10.5px;}
 `;
 const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:9998; }
