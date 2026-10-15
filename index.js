@@ -570,6 +570,37 @@ const RP_REFINED_CSS = `
 #rp-phone.rp-art-icons #rp-screen :is(.rp-av,.rp-grp-av,.rp-moment-av,.rp-grp-pick-av,.rp-call-av,.rp-hd-av):not(.rp-av-img) {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border:none!important;box-shadow:none!important;}
 #rp-phone.rp-art-icons #rp-screen #rp-view-settings :is(.rp-set-hint,.rp-set-section-title),#rp-phone.rp-art-icons #rp-screen #rp-view-theme-studio #rp-ts-tip {color:var(--rp-v-muted)!important;opacity:1!important;text-shadow:none!important;}
 `;
+const RP_IMPROVEMENT_CSS = `
+#rp-phone .rp-feature-nav-actions {display:flex;align-items:center;gap:4px;}
+#rp-phone .rp-feature-nav {border:0;background:transparent;color:var(--rp-nav-btn,#99677e);font:inherit;font-size:11px;min-height:30px;padding:0 2px;cursor:pointer;}
+#rp-phone .rp-feature-results {max-height:260px;overflow:auto;}
+#rp-phone .rp-feature-result {display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--rp-v-border,rgba(90,60,80,.13));padding:10px 4px;color:inherit;background:transparent;cursor:pointer;white-space:normal;overflow-wrap:anywhere;font:inherit;}
+#rp-phone .rp-feature-result strong {display:block;font-size:12px;}
+#rp-phone .rp-feature-preview {display:block;color:var(--rp-v-muted,#867882);font-size:12px;margin-top:3px;}
+#rp-phone #rp-go-latest {position:absolute;right:12px;bottom:84px;z-index:30;font-size:11px;background:var(--rp-v-surface,#fffaf8);color:var(--rp-v-text,#493e46);}
+#rp-phone .rp-search-match {outline:1px solid var(--rp-nav-btn,#99677e);outline-offset:2px;border-radius:10px;}
+
+#rp-phone #rp-screen.rp-undo-active > .rp-view {height:calc(100% - 64px)!important;bottom:64px!important;}
+#rp-phone #rp-undo-banner {position:absolute;bottom:14px;height:46px;box-sizing:border-box;left:12px;right:12px;z-index:650;display:flex;align-items:center;gap:6px;background:var(--rp-v-surface,#fffaf8);color:var(--rp-v-text,#493e46);padding:8px 10px;border:1px solid var(--rp-v-border,rgba(90,60,80,.18));border-radius:12px;font-size:12px;line-height:1.4;}
+#rp-phone #rp-undo-banner span {flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#rp-phone #rp-undo-banner button {border:0;background:transparent;color:var(--rp-nav-btn,#99677e);font:inherit;min-height:30px;cursor:pointer;}
+#rp-phone .rp-diary-retry-row {margin-top:8px;}
+#rp-phone .rp-diary-retry:disabled {opacity:.6;cursor:wait;}
+
+#rp-phone .rp-feature-layer {position:absolute;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.18);box-sizing:border-box;}
+#rp-phone .rp-feature-panel {width:100%;max-height:88%;overflow:auto;padding:15px;border-radius:18px;background:var(--rp-v-surface,#fffaf8);color:var(--rp-v-text,#493e46);border:1px solid var(--rp-v-border,rgba(90,60,80,.14));box-sizing:border-box;font-size:13px;line-height:1.5;}
+#rp-phone .rp-feature-header {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+#rp-phone .rp-feature-close {border:0;background:transparent;color:inherit;min-width:30px;min-height:30px;font-size:20px;cursor:pointer;}
+#rp-phone .rp-feature-actions {display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:12px;}
+#rp-phone .rp-feature-actions button,#rp-phone .rp-feature-pill {border:1px solid var(--rp-v-border,rgba(90,60,80,.15));border-radius:12px;padding:7px 10px;background:var(--rp-v-card,rgba(120,90,110,.06));color:inherit;font:inherit;cursor:pointer;min-height:32px;}
+#rp-phone .rp-feature-actions .rp-feature-primary {background:var(--rp-r-accent,var(--rp-nav-btn,#99677e));color:#fff;border-color:transparent;}
+#rp-phone .rp-feature-actions .rp-feature-danger {color:var(--rp-v-danger,#b53f55);}
+#rp-phone .rp-feature-input {width:100%;resize:vertical;box-sizing:border-box;border:1px solid var(--rp-v-border,rgba(90,60,80,.15));border-radius:12px;background:var(--rp-v-card,rgba(120,90,110,.04));padding:9px;color:inherit;font:inherit;line-height:1.55;}
+#rp-phone button.rp-pending-item {display:block;width:100%;text-align:left;cursor:pointer;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;padding:5px 7px;min-height:28px;}
+#rp-phone button.rp-pending-item:disabled {opacity:.6;cursor:wait;}
+#rp-phone .rp-feature-note {margin:8px 0;color:var(--rp-v-muted,#867882);font-size:12px;white-space:pre-wrap;}
+`;
+
 const RP_READING_CSS = `
 #rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:13px;}
 #rp-phone #rp-screen #rp-view-messages .rp-tp {font-size:11.5px;}
@@ -5317,6 +5348,7 @@ ${RP_VISUAL_CSS}
 ${RP_ART_CSS}
 ${RP_REFINED_CSS}
 ${RP_READING_CSS}
+${RP_IMPROVEMENT_CSS}
 `;
 
 // ================================================================
@@ -5387,6 +5419,9 @@ function rpAddImageWait(entry) {
   }, RP_IMAGE_WAIT_TTL);
 }
 function rpResetChatTasks() {
+  clearTimeout(rpReadingTimer); rpReadingTimer=null;
+  rpFinishUndo(); rpXhsFavoritesOnly=false;
+  rpCloseFeatureDialog(); rpSmsQueueLock = null; rpUiUpdates.clear();
   rpMergeDeferred = false;
   rpResetApiTest(); rpResetModelRequest(); rpHideBanner();
   rpRuntime.advance();
@@ -5608,6 +5643,7 @@ function rpSetPhoneOpen(open) {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
+      rpRememberReading();
       saveState();
       phone.hide();
       rpPauseGameAnimations();
@@ -5638,6 +5674,7 @@ function rpSetPhoneOpen(open) {
       go('lock');
       phone.show();
     }
+    rpRestoreReadingPosition();
     rpResumeGameAnimations();
     if (IS_TOUCH_DEVICE) setTimeout(rpUpdateViewport, 0);
     else rpApplyDesktopPhoneSize();
@@ -6123,6 +6160,7 @@ function buildStatePayload() {
     wallpaper: STATE.wallpaper || null,
     currentView: STATE.currentView || 'home',
     currentThread: STATE.currentThread || null,
+    xhsCurrentPost: STATE.xhsCurrentPost || null,
     bankData: STATE.bankData || null,
     blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     gameState: getPhoneGameStateSnapshot(),
@@ -6132,6 +6170,7 @@ function buildStatePayload() {
     diaryDraft: STATE.diaryDraft || '',
     xhsPostDraft: Object.assign({ title: '', body: '' }, STATE.xhsPostDraft),
     commentDrafts: JSON.parse(JSON.stringify(STATE.commentDrafts || {})),
+    readingPositions: JSON.parse(JSON.stringify(STATE.readingPositions || {})),
     deletedContacts: Object.assign({}, STATE.deletedContacts),
     recovery: Array.isArray(STATE.recovery) ? STATE.recovery : [],
   }, ctx);
@@ -6267,6 +6306,7 @@ function restorePhoneGameState(saved) {
 }
 
 function flushStateNow() {
+  rpRememberReading();
   if (!STATE.chatId) return;
   if (PHONE_STATE_BLOCKED_SLOTS.has(STATE.chatId)) {
     warnPhoneStateRecovery();
@@ -6341,6 +6381,7 @@ const STATE = {
   diaryDraft: '',
   xhsPostDraft: { title: '', body: '' },
   commentDrafts: {},
+  readingPositions: {},
   nameAliases: {},
   avatars: {},
   _lastAiFingerprint: null,
@@ -6703,6 +6744,7 @@ function restorePhoneChatState(saved) {
     STATE[field] = Array.isArray(s[field]) ? JSON.parse(JSON.stringify(s[field])) : [];
   }
   for (const post of STATE.xhsFeed) if (post.commentStatus === 'loading' && !rpAppJobs.has('xhs-comments:' + post.id)) post.commentStatus = 'idle';
+  for (const entry of STATE.diary) if (entry.replyStatus === 'loading') entry.replyStatus = 'idle';
   STATE.avatars = Object.assign({}, s.avatars || {});
   STATE.wallpaper = s.wallpaper || null;
   STATE.darkMode = !!s.darkMode;
@@ -6710,7 +6752,9 @@ function restorePhoneChatState(saved) {
   STATE.composeDraft = typeof s.composeDraft === 'string' ? s.composeDraft : '';
   STATE.themeStudioDraft = typeof s.themeStudioDraft === 'string' ? s.themeStudioDraft : '';
   STATE.diaryDraft = typeof s.diaryDraft === 'string' ? s.diaryDraft : '';
-  STATE.xhsCurrentPost = null; STATE.xhsReplyToCidx = null;
+  STATE.xhsCurrentPost = STATE.xhsFeed.some(post => post.id === s.xhsCurrentPost) ? s.xhsCurrentPost : null;
+  STATE.xhsReplyToCidx = null;
+  STATE.readingPositions = s.readingPositions && typeof s.readingPositions==='object' && !Array.isArray(s.readingPositions) ? JSON.parse(JSON.stringify(s.readingPositions)) : {};
   STATE.commentDrafts = s.commentDrafts && typeof s.commentDrafts === 'object' && !Array.isArray(s.commentDrafts) ? JSON.parse(JSON.stringify(s.commentDrafts)) : {};
   STATE.xhsPostDraft = {
     title: typeof s.xhsPostDraft?.title === 'string' ? s.xhsPostDraft.title : '',
@@ -6727,6 +6771,7 @@ function restorePhoneChatState(saved) {
 
 function switchPhoneChatSlot(newChatId) {
   if (newChatId === STATE.chatId) return false;
+  rpRememberReading();
   resetMomentsCtxCache();
   Object.assign(_AV, STATE.avatars || {});
   if (STATE.chatId) {
@@ -7964,7 +8009,7 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title">信息</span>
-            <button class="rp-nav-add" id="rp-add-btn">+</button>
+            <div class="rp-feature-nav-actions"><button type="button" class="rp-feature-nav" id="rp-local-search">搜索</button><button class="rp-nav-add" id="rp-add-btn">+</button></div>
           </div>
           <div id="rp-thread-list"></div>
         </div>
@@ -7977,9 +8022,10 @@ const HTML = `
               <div class="rp-hd-av" id="rp-hd-av"></div>
               <span class="rp-hd-name" id="rp-hd-name"></span>
             </div>
-            <span></span>
+            <button type="button" class="rp-feature-nav" id="rp-thread-search">搜索</button>
           </div>
           <div id="rp-bubbles"></div>
+          <button id="rp-go-latest" type="button" class="rp-feature-pill" style="display:none">↓ 最新</button>
           <!-- FIX3: 待发消息队列预览区 -->
           <div id="rp-pending-queue" style="display:none"></div>
           <div id="rp-composer">
@@ -8037,8 +8083,9 @@ const HTML = `
         <div id="rp-view-xhs" class="rp-view" style="display:none;flex-direction:column">
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
-            <span class="rp-nav-title">发现</span>
+            <span class="rp-nav-title" id="rp-xhs-feed-title">发现</span>
             <div style="display:flex;gap:4px;align-items:center">
+              <button id="rp-xhs-favorites" class="rp-feature-pill" type="button" aria-pressed="false">收藏</button>
               <button id="rp-xhs-compose" title="发笔记" aria-label="发布笔记" style="border:none;cursor:pointer"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 10h14M10 3v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
               <button id="rp-xhs-refresh" title="刷新" style="width:28px;height:28px;border:none;background:transparent;font-size:18px;cursor:pointer;color:var(--rp-nav-btn,#c0306a)">↻</button>
             </div>
@@ -8979,7 +9026,335 @@ function updateClock() {
 // ================================================================
 //  UI BINDING
 // ================================================================
+let rpUiBatchDepth = 0;
+const rpUiUpdates = new Map();
+function rpDeferUi(key, action) {
+  if (!rpUiBatchDepth) return false;
+  rpUiUpdates.set(key, action); return true;
+}
+function rpBatchPhoneUi(action) {
+  rpUiBatchDepth++;
+  try { return action(); }
+  finally {
+    if (--rpUiBatchDepth === 0) {
+      const updates = [...rpUiUpdates.values()]; rpUiUpdates.clear();
+      for (const update of updates) update();
+    }
+  }
+}
+
+function rpCloseFeatureDialog() { $('#rp-feature-layer').remove(); }
+function rpFeatureDialog(title, content, actions = []) {
+  rpCloseFeatureDialog();
+  const task = rpRuntime.task(), previous = document.activeElement;
+  const layer = $('<div id="rp-feature-layer" class="rp-feature-layer">');
+  const panel = $('<section class="rp-feature-panel" role="dialog" aria-modal="true" aria-labelledby="rp-feature-title">');
+  const close = () => { layer.remove(); if (task.valid() && previous?.isConnected) previous.focus?.({preventScroll:true}); };
+  const header = $('<div class="rp-feature-header">').append($('<strong id="rp-feature-title">').text(title));
+  header.append($('<button type="button" class="rp-feature-close" aria-label="关闭">').text('×').on('click', close));
+  panel.append(header, content);
+  const buttons = $('<div class="rp-feature-actions">');
+  for (const action of actions) buttons.append($('<button type="button">').text(action.label).toggleClass('rp-feature-primary', !!action.primary).toggleClass('rp-feature-danger', !!action.danger).on('click', () => {
+    if (!task.valid()) { close(); return; }
+    if (action.run?.() !== false) close();
+  }));
+  panel.append(buttons); layer.append(panel).on('click', event => { if (event.target === layer[0]) close(); });
+  layer.on('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
+    if (event.key === 'Tab') {
+      const controls = panel.find('button:enabled,input:enabled,textarea:enabled,[tabindex="0"]').toArray();
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+  });
+  $('#rp-screen').append(layer); panel.find('textarea,input,button').first().trigger('focus');
+  return panel;
+}
+
+let rpSmsQueueLock = null;
+function rpOpenQueueEditor(index) {
+  const thread = STATE.threads[STATE.currentThread];
+  if (!thread || !Number.isInteger(index) || index < 0 || index >= STATE.pendingMessages.length) return;
+  if (rpSmsQueueLock?.thread === thread && index < rpSmsQueueLock.count) return;
+  const original = STATE.pendingMessages[index], task = rpRuntime.task();
+  const input = $('<textarea class="rp-feature-input" rows="4" aria-label="暂存消息内容">').val(original);
+  const valid = () => task.valid() && STATE.threads[thread.id] === thread && STATE.currentThread === thread.id && STATE.pendingMessages[index] === original && !(rpSmsQueueLock?.thread === thread && index < rpSmsQueueLock.count);
+  const commit = remove => {
+    if (!valid()) { toastr.info('暂存内容已变化，请重新打开。'); return; }
+    const value = String(input.val() || '').trim();
+    if (!remove && !value) { input.trigger('focus'); return false; }
+    if (remove) STATE.pendingMessages.splice(index, 1); else STATE.pendingMessages[index] = value;
+    thread.pendingMessages = STATE.pendingMessages.slice(); renderPendingQueue(); saveState();
+  };
+  rpFeatureDialog('编辑暂存消息', input, [
+    {label:'移除此条', danger:true, run:()=>commit(true)}, {label:'取消'}, {label:'保存', primary:true, run:()=>commit(false)}
+  ]);
+  input.trigger('focus');
+}
+
+let rpUndoAction = null;
+function rpFinishUndo() {
+  const action = rpUndoAction; rpUndoAction = null;
+  if (action) { clearTimeout(action.timer); action.task.signal.removeEventListener('abort', rpFinishUndo); }
+  rpRememberReading();
+  $('#rp-undo-banner').remove(); $('#rp-screen').removeClass('rp-undo-active');
+  rpRestoreReadingPosition();
+}
+function rpOfferUndo(label, restore) {
+  rpFinishUndo();
+  const task = rpRuntime.task(), action = {task, restore, deadline:Date.now()+10000}; rpUndoAction = action;
+  const banner = $('<div id="rp-undo-banner" role="status" aria-live="polite">').append($('<span>').text(label));
+  banner.append($('<button type="button">').text('撤销').on('click', () => {
+    if (rpUndoAction !== action || !task.valid() || Date.now() > action.deadline) { rpFinishUndo(); return; }
+    rpFinishUndo();
+    if (restore() === false) toastr.info('相关内容已有变化，未覆盖新内容。');
+    else { saveState(); refreshBadges(); updatePreviews(); }
+  }), $('<button type="button" aria-label="关闭撤销提示">').text('×').on('click', rpFinishUndo));
+  rpRememberReading();
+  $('#rp-screen').addClass('rp-undo-active').append(banner);
+  rpRestoreReadingPosition();
+  task.signal.addEventListener('abort', rpFinishUndo, {once:true});
+  action.timer = setTimeout(rpFinishUndo, 10000);
+}
+function rpInsertRemovedItem(list, item, before) {
+  if (list.includes(item)) return true;
+  if (item.id && list.some(other => other.id === item.id)) return false;
+  const old = before.indexOf(item);
+  let index = -1;
+  for (let i=old+1;i<before.length && index<0;i++) index = list.indexOf(before[i]);
+  if (index < 0) {
+    for (let i=old-1;i>=0 && index<0;i--) { const previous = list.indexOf(before[i]); if (previous>=0) index=previous+1; }
+  }
+  list.splice(index<0 ? Math.min(Math.max(old,0),list.length) : index, 0, item); return true;
+}
+function rpDeletePhoneMessage(threadId, index) {
+  const thread = STATE.threads[threadId], message = thread?.messages?.[index];
+  if (!message) return;
+  const before = thread.messages.slice(); thread.messages.splice(index,1);
+  saveState(); updatePreviews(); renderBubbles(threadId,{preserveScroll:true});
+  rpOfferUndo('已删除这条信息', () => {
+    if (STATE.threads[threadId]!==thread || !rpInsertRemovedItem(thread.messages,message,before)) return false;
+    if (STATE.currentThread===threadId) renderBubbles(threadId,{preserveScroll:true});
+  });
+}
+function rpCommentTargets(comments) {
+  comments.forEach(rpCommentIdentity);
+  return new Map(comments.map(comment => [String(comment.id), comments[comment.replyTo]?.id && comment.replyTo!=null ? String(comments[comment.replyTo].id) : null]));
+}
+function rpApplyCommentTargets(comments, targets) {
+  const positions = new Map(comments.map((comment,index)=>[String(comment.id),index]));
+  for (const comment of comments) {
+    const target=targets.get(String(comment.id)); comment.replyTo = target && positions.has(target) ? positions.get(target) : null;
+  }
+}
+function rpRemoveComments(post, predicate) {
+  const before = (post.comments || []).slice(), removed = before.filter(predicate);
+  if (!removed.length) return {removed, restore:()=>true};
+  const original = rpCommentTargets(before);
+  post.comments = before.filter(comment=>!removed.includes(comment));
+  rpApplyCommentTargets(post.comments, original);
+  const after = rpCommentTargets(post.comments);
+  return {removed, restore() {
+    if (removed.some(item=>post.comments.some(c=>c.id===item.id && c!==item))) return false;
+    const current = rpCommentTargets(post.comments);
+    for (const item of removed) if (!rpInsertRemovedItem(post.comments,item,before)) return false;
+    for (const comment of post.comments) {
+      const id=String(comment.id);
+      if (removed.includes(comment) || (original.has(id) && current.get(id)===after.get(id))) current.set(id,original.get(id));
+    }
+    rpApplyCommentTargets(post.comments,current); return true;
+  }};
+}
+function rpDeleteComment(kind, postId, index) {
+  const list = kind==='moments' ? STATE.moments : STATE.xhsFeed;
+  const post = list.find(item=>item.id===postId);
+  if (!post || !Number.isInteger(index) || index<0 || index>=(post.comments||[]).length) return;
+  const draft=rpCommentDraft(kind,postId,false), replyId=draft.replyId, text=draft.text;
+  const change=rpRemoveComments(post,(_,i)=>i===index);
+  const render=()=>{ if(kind==='moments') renderMoments(); else if(STATE.xhsCurrentPost===postId&&STATE.currentView==='xhs-detail')renderXHSDetail(post); else if(STATE.currentView==='xhs')_renderXHSList(); };
+  render(); saveState();
+  rpOfferUndo('已删除这条评论',()=>{
+    if (!list.includes(post) || !change.restore()) return false;
+    if (replyId && !draft.replyId && draft.text===text) draft.replyId=replyId;
+    render();
+  });
+}
+function rpDeleteMoment(momentId) {
+  const list=STATE.moments, item=list.find(m=>m.id===momentId); if(!item)return;
+  const before=list.slice(), draft=STATE.commentDrafts.moments?.[momentId];
+  list.splice(list.indexOf(item),1); if(STATE.commentDrafts.moments)delete STATE.commentDrafts.moments[momentId];
+  renderMoments(); saveState();
+  rpOfferUndo('已删除这条动态',()=>{
+    if(!rpInsertRemovedItem(STATE.moments,item,before))return false;
+    if(draft && !Object.hasOwn(STATE.commentDrafts.moments||{},momentId))Object.defineProperty(STATE.commentDrafts.moments ||= {},momentId,{value:draft,writable:true,configurable:true,enumerable:true});
+    renderMoments();
+  });
+}
+function rpDeleteContacts(ids) {
+  if(rpHostSubmission){toastr.info('请等当前发送确认完成后再删除好友。');return false;}
+  const contacts=ids.map(id=>STATE.threads[id]).filter(Boolean); if(!contacts.length)return;
+  const names=new Set(contacts.map(t=>t.name)), momentsBefore=STATE.moments.slice();
+  const removedPosts=STATE.moments.filter(m=>m.from!=='user'&&names.has(m.name));
+  const patches=[];
+  for(const post of STATE.moments.filter(m=>!removedPosts.includes(m))){
+    const removedLikes=(post.likes||[]).filter(name=>names.has(name));
+    const comments=rpRemoveComments(post,c=>names.has(c.name));
+    post.likes=(post.likes||[]).filter(name=>!names.has(name));
+    if(removedLikes.length||comments.removed.length)patches.push({post,removedLikes,comments});
+  }
+  const oldTombstones=new Map(), newTombstones=new Map(); STATE.deletedContacts ||= {};
+  for(const contact of contacts){
+    const key=normalizePhonePersonName(resolveCanonicalPhoneName(contact.name));
+    oldTombstones.set(key,{had:Object.hasOwn(STATE.deletedContacts,key),value:STATE.deletedContacts[key]});
+    const record={through:(getContext()?.chat?.length||0)-1}; newTombstones.set(key,record);STATE.deletedContacts[key]=record;delete STATE.threads[contact.id];
+  }
+  STATE.moments=STATE.moments.filter(m=>!removedPosts.includes(m));
+  if(contacts.some(t=>t.id===STATE.currentThread)){STATE.currentThread=null;STATE.pendingMessages=[];$('#rp-input').val('');renderPendingQueue();}
+  $('#rp-del-picker').remove();renderThreadList();if(STATE.currentView==='moments')renderMoments();saveState();
+  rpOfferUndo('已删除 '+contacts.length+' 位好友及相关内容',()=>{
+    if(contacts.some(t=>STATE.threads[t.id])||removedPosts.some(p=>STATE.moments.some(m=>m.id===p.id))||[...newTombstones].some(([key,value])=>STATE.deletedContacts[key]!==value))return false;
+    for(const contact of contacts)STATE.threads[contact.id]=contact;
+    for(const[key,old]of oldTombstones)if(old.had)STATE.deletedContacts[key]=old.value;else delete STATE.deletedContacts[key];
+    for(const post of removedPosts)rpInsertRemovedItem(STATE.moments,post,momentsBefore);
+    for(const patch of patches)if(STATE.moments.includes(patch.post)){
+      for(const name of patch.removedLikes)if(!patch.post.likes.includes(name))patch.post.likes.push(name);
+      patch.comments.restore();
+    }
+    renderThreadList();if(STATE.currentView==='moments')renderMoments();
+  });
+}
+function rpConfirmDeleteContacts(ids) {
+  const contacts=ids.map(id=>STATE.threads[id]).filter(Boolean);if(!contacts.length){toastr.info('请先选择好友。');return;}
+  const names=new Set(contacts.map(t=>t.name));
+  const messages=contacts.reduce((sum,t)=>sum+(t.messages||[]).length,0);
+  const posts=STATE.moments.filter(m=>m.from!=='user'&&names.has(m.name)).length;
+  const comments=STATE.moments.reduce((sum,m)=>sum+(m.comments||[]).filter(c=>names.has(c.name)).length,0);
+  const content=$('<div>').append($('<p>').text('将删除 '+contacts.length+' 位好友、其信息记录，以及相关朋友圈、点赞和评论。'),$('<p class="rp-feature-note">').text('当前涉及 '+messages+' 条信息、'+posts+' 条动态、'+comments+' 条评论。删除后 10 秒内可撤销。'));
+  rpFeatureDialog('确认删除好友',content,[{label:'取消'},{label:'确认删除',danger:true,run:()=>rpDeleteContacts(ids)}]);
+}
+
+let rpXhsFavoritesOnly = false;
+function rpSetFavoritesOnly(value) { rpRememberReading(); rpXhsFavoritesOnly=!!value; renderXHSFeed(false); rpRestoreReadingPosition(); }
+
+let rpReadingTimer = null;
+function rpReadingContext() {
+  if(document.getElementById('rp-phone')?.dataset.readingSlot!==STATE.chatId)return null;
+  const view=STATE.currentView;
+  if(view==='thread')return {key:'thread:'+STATE.currentThread,el:document.getElementById('rp-bubbles'),kind:'thread',id:STATE.currentThread};
+  if(view==='moments')return {key:'moments',el:document.getElementById('rp-moments-list'),kind:'moments'};
+  if(view==='diary')return {key:'diary',el:document.getElementById('rp-diary-list'),kind:'diary'};
+  if(view==='xhs')return {key:'xhs:'+(rpXhsFavoritesOnly?'favorites':'all'),el:document.getElementById('rp-xhs-list'),kind:'xhs'};
+  if(view==='xhs-detail')return {key:'xhs-detail:'+STATE.xhsCurrentPost,el:document.getElementById('rp-xhs-detail-body'),kind:'detail',id:STATE.xhsCurrentPost};
+  if(view==='messages')return {key:'contacts',el:document.getElementById('rp-thread-list'),kind:'contacts'};
+  return null;
+}
+function rpReadingRows(context) {
+  if(!context?.el)return [];
+  if(context.kind==='thread')return [...context.el.children].map(row=>({row,item:STATE.threads[context.id]?.messages?.[Number(row.dataset.rpReadingIndex)]}));
+  if(context.kind==='moments')return [...context.el.querySelectorAll('.rp-moment')].map(row=>({row,item:STATE.moments.find(m=>String(m.id)===row.getAttribute('data-mid'))}));
+  if(context.kind==='diary')return [...context.el.querySelectorAll('.rp-diary-entry')].map(row=>({row,item:STATE.diary[Number(row.dataset.diaryIndex)]}));
+  if(context.kind==='xhs')return [...context.el.querySelectorAll('.rp-xhs-card')].map(row=>({row,item:STATE.xhsFeed.find(p=>String(p.id)===row.getAttribute('data-xhsid'))}));
+  return [];
+}
+function rpReadSnapshot(context, identify=false) {
+  const el=context?.el;
+  if(!el || !el.clientHeight)return null;
+  const snapshot={top:el.scrollTop,atBottom:el.scrollHeight-el.scrollTop-el.clientHeight<24};
+  const top=el.getBoundingClientRect().top;
+  let selected=null,distance=Infinity;
+  for(const entry of rpReadingRows(context)){
+    if(!entry.item)continue;
+    const rect=entry.row.getBoundingClientRect();
+    if(rect.bottom<=top || rect.top>=top+el.clientHeight)continue;
+    if(Math.abs(rect.top-top)<distance){selected=entry;distance=Math.abs(rect.top-top);}
+  }
+  if(selected){
+    if(identify&&!selected.item.id)selected.item.id='read_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
+    if(selected.item.id){snapshot.anchor=String(selected.item.id);snapshot.offset=selected.row.getBoundingClientRect().top-top;}
+  }
+  return snapshot;
+}
+function rpRememberReading() {
+  const context=rpReadingContext(), snapshot=rpReadSnapshot(context,true);
+  if(!snapshot)return;
+  if(!STATE.readingPositions || typeof STATE.readingPositions!=='object' || Array.isArray(STATE.readingPositions))STATE.readingPositions={};
+  STATE.readingPositions[context.key]=snapshot;
+}
+function rpRestoreSnapshot(context,snapshot) {
+  const el=context?.el;
+  if(!el || !el.clientHeight || !snapshot)return;
+  if(snapshot.atBottom&&context.kind==='thread')el.scrollTop=el.scrollHeight;
+  else {
+    const row=snapshot.anchor&&rpReadingRows(context).find(entry=>String(entry.item?.id)===snapshot.anchor)?.row;
+    if(row)el.scrollTop+=row.getBoundingClientRect().top-el.getBoundingClientRect().top-(Number(snapshot.offset)||0);
+    else el.scrollTop=Number.isFinite(snapshot.top)?Math.max(0,snapshot.top):0;
+  }
+  rpUpdateLatestButton();
+}
+function rpRestoreReadingPosition() {
+  const context=rpReadingContext();
+  if(context)rpRestoreSnapshot(context,STATE.readingPositions?.[context.key]);
+  rpUpdateLatestButton();
+}
+function rpUpdateLatestButton() {
+  const el=document.getElementById('rp-bubbles');
+  $('#rp-go-latest').toggle(!!(STATE.currentView==='thread'&&el?.clientHeight&&el.scrollHeight-el.scrollTop-el.clientHeight>30));
+}
+function rpInstallReadingListener() {
+  rpRuntime.listenDOM(document,'scroll',event=>{
+    const context=rpReadingContext();if(!context||event.target!==context.el)return;
+    rpUpdateLatestButton();clearTimeout(rpReadingTimer);
+    rpReadingTimer=setTimeout(()=>{rpReadingTimer=null;rpRememberReading();saveState();},150);
+  },true);
+}
+function rpOpenLocalSearch() {
+  const task=rpRuntime.task();
+  const input=$('<input type="search" class="rp-feature-input" aria-label="搜索联系人和信息" placeholder="搜索联系人或信息内容" autocomplete="off">');
+  const status=$('<p class="rp-feature-note" role="status">').text('输入关键词，查找当前聊天中的联系人和信息。');
+  const results=$('<div class="rp-feature-results">');
+  rpFeatureDialog('搜索', $('<div>').append(input,status,results),[{label:'关闭'}]);
+  const render=()=>{
+    if(!task.valid()||!input[0].isConnected)return;
+    results.empty();
+    const query=String(input.val()||'').trim().toLocaleLowerCase();
+    if(!query){status.text('输入关键词，查找当前聊天中的联系人和信息。');return;}
+    let matches=0,shown=0;
+    const add=(thread,message,text)=>{
+      matches++;if(shown>=80)return;shown++;
+      const button=$('<button type="button" class="rp-feature-result">').append($('<strong>').text(thread.name+(message?.time?' · '+message.time:'')),$('<span class="rp-feature-preview">').text(text.slice(0,150)));
+      button.on('click',()=>{
+        if(!task.valid()||STATE.threads[thread.id]!==thread||(message&&!thread.messages.includes(message))){status.text('该内容已有变化，请重新搜索。');return;}
+        rpCloseFeatureDialog();openThread(thread.id);
+        if(message){
+          const index=thread.messages.indexOf(message),el=document.getElementById('rp-bubbles');
+          const row=[...el.children].find(child=>Number(child.dataset.rpReadingIndex)===index);
+          if(row){el.scrollTop+=row.getBoundingClientRect().top-el.getBoundingClientRect().top-12;row.classList.add('rp-search-match');setTimeout(()=>row.classList.remove('rp-search-match'),2000);}
+        }
+        rpRememberReading();saveState();rpUpdateLatestButton();
+      });results.append(button);
+    };
+    for(const thread of Object.values(STATE.threads)){
+      if(String(thread.name||'').toLocaleLowerCase().includes(query))add(thread,null,'联系人 · '+(thread.messages||[]).length+' 条信息');
+      for(const message of thread.messages||[]){
+        const text=[message.text,message.voiceText,message.note,message.place,message.amount].filter(value=>value!=null).join(' ');
+        if(text.toLocaleLowerCase().includes(query))add(thread,message,text);
+      }
+    }
+    status.text(matches ? matches>shown?'找到 '+matches+' 条，显示前 '+shown+' 条，请缩小关键词。':'找到 '+matches+' 条。':'没有找到相关内容。');
+  };
+  let timer;
+  input.on('input',event=>{clearTimeout(timer);if(!rpIsComposing(event))timer=setTimeout(render,120);}).on('compositionend',render).on('keydown',event=>{if(event.key==='Enter'&&!rpIsComposing(event)){event.preventDefault();clearTimeout(timer);render();}});
+  input.trigger('focus');
+}
+
 function bindUI() {
+  rpInstallReadingListener();
+  $(document).on('click.mochiPhone','#rp-local-search,#rp-thread-search',rpOpenLocalSearch);
+  $(document).on('click.mochiPhone','#rp-go-latest',()=>{const el=document.getElementById('rp-bubbles');el.scrollTop=el.scrollHeight;rpRememberReading();saveState();rpUpdateLatestButton();});
+  $(document).on("click.mochiPhone", "#rp-xhs-favorites", () => rpSetFavoritesOnly(!rpXhsFavoritesOnly));
+  $(document).on('click.mochiPhone', '.rp-diary-retry', function() { void rpRetryDiaryReply(this.dataset.diaryId, Number(this.dataset.diaryIndex)); });
+  $(document).on("click.mochiPhone", ".rp-pending-item[data-queue-index]", function(){ rpOpenQueueEditor(Number(this.dataset.queueIndex)); });
   rpInstallLudoBoardResize();
   // Click also covers native touch activation; do not double-submit touchend + click.
   $(document).on('click.mochiPhone', '#rp-phone .rp-translation-btn', function(e) {
@@ -9010,10 +9385,7 @@ function bindUI() {
     if (!threadId || isNaN(msgIdx)) return;
     const th = STATE.threads[threadId];
     if (!th || !th.messages[msgIdx]) return;
-    th.messages.splice(msgIdx, 1);
-    saveState();
-    updatePreviews();
-    renderBubbles(threadId);
+    rpDeletePhoneMessage(threadId, msgIdx);
   });
   // 红包/语音播放：事件委托 + data 绑定，避免 threadId/msgId 含特殊字符时 inline onclick 断裂
   $(document).on("click.mochiPhone touchend.mochiPhone", '#rp-bubbles .rp-hongbao-openable', function(e) {
@@ -9062,6 +9434,7 @@ function bindUI() {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
+      rpRememberReading();
       saveState();
       phone.hide();
     }
@@ -9865,10 +10238,7 @@ function bindUI() {
   $(document).on("click.mochiPhone", '.rp-moment-del-btn', function(e) {
     e.stopPropagation();
     const momentId = $(this).data('moment');
-    STATE.moments = (STATE.moments || []).filter(function(m) { return m.id !== momentId; });
-    if (STATE.commentDrafts.moments) delete STATE.commentDrafts.moments[momentId];
-    renderMoments();
-    saveState();
+    rpDeleteMoment(momentId);
   });
 
   // Moments: reply
@@ -9975,59 +10345,8 @@ function bindUI() {
   });
   $(document).on("click.mochiPhone", '#rp-del-confirm', function(e) {
     e.stopPropagation();
-    const toDelete = [];
-    const toDeleteNames = [];
-    $('#rp-del-list .rp-del-pick-item.rp-del-selected').each(function() {
-      const tid = $(this).data('tid');
-      toDelete.push(tid);
-      // 收集好友名称（用于朋友圈清理）
-      if (STATE.threads[tid]) toDeleteNames.push(STATE.threads[tid].name);
-    });
-    STATE.deletedContacts = STATE.deletedContacts || {};
-    toDelete.forEach(function(tid) {
-      const thread = STATE.threads[tid];
-      if (thread?.name) STATE.deletedContacts[normalizePhonePersonName(resolveCanonicalPhoneName(thread.name))] = { through: (getContext()?.chat?.length || 0) - 1 };
-      delete STATE.threads[tid];
-    });
-    if (STATE.currentThread && toDelete.includes(STATE.currentThread)) STATE.currentThread = null;
-
-    // ── 清理朋友圈中与被删好友相关的所有内容 ──
-    if (toDeleteNames.length > 0 && STATE.moments) {
-      STATE.moments = STATE.moments.filter(function(m) {
-        // 移除该好友发的朋友圈
-        if (m.from !== 'user' && toDeleteNames.includes(m.name)) return false;
-        return true;
-      }).map(function(m) {
-        // 移除该好友在别人朋友圈下的点赞
-        if (m.likes) {
-          m.likes = m.likes.filter(function(l) { return !toDeleteNames.includes(l); });
-        }
-        // 移除该好友在别人朋友圈下的评论，并重建 replyTo 索引
-        if (m.comments) {
-          // 建立旧索引 → 新索引的映射
-          const oldToNew = {};
-          let newIdx = 0;
-          m.comments.forEach(function(c, i) {
-            if (!toDeleteNames.includes(c.name)) {
-              oldToNew[i] = newIdx++;
-            }
-          });
-          m.comments = m.comments.filter(function(c) { return !toDeleteNames.includes(c.name); });
-          // 重建 replyTo：旧索引 → 新索引，找不到则置 null
-          m.comments.forEach(function(c) {
-            if (c.replyTo !== null && c.replyTo !== undefined) {
-              c.replyTo = (oldToNew[c.replyTo] !== undefined) ? oldToNew[c.replyTo] : null;
-            }
-          });
-        }
-        return m;
-      });
-    }
-
-    $('#rp-del-picker').remove();
-    renderThreadList();
-    if (STATE.currentView === 'moments') renderMoments();
-    saveState();
+    const ids=$('#rp-del-list .rp-del-pick-item.rp-del-selected').toArray().map(el=>$(el).data('tid'));
+    rpConfirmDeleteContacts(ids);
   });
   $(document).on("click.mochiPhone", '#rp-del-cancel', function(e) {
     e.stopPropagation();
@@ -10299,10 +10618,12 @@ function renderPendingQueue() {
     return;
   }
   container.show();
-  STATE.pendingMessages.forEach((msg) => {
+  const queueThread = STATE.threads[STATE.currentThread];
+  STATE.pendingMessages.forEach((msg, index) => {
     const text = String(msg ?? '');
     const short = text.length > 30 ? text.slice(0, 30) + '...' : text;
-    container.append($('<div>').addClass('rp-pending-item').text(short));
+    const locked = !!rpSmsQueueLock && rpSmsQueueLock.thread === queueThread && index < rpSmsQueueLock.count;
+    container.append($('<button type="button">').addClass('rp-pending-item').attr('data-queue-index', index).attr('aria-label', locked ? '正在发送：' + short : '编辑暂存消息：' + short).prop('disabled', locked).text(short));
   });
   container.append(`<div class="rp-pending-hint">点击 ↑ 发送全部 ${STATE.pendingMessages.length} 条</div>`);
 }
@@ -10396,6 +10717,7 @@ function getThreadListActivityKey(thread, originalIndex) {
 //  RENDER THREAD LIST
 // ================================================================
 function renderThreadList() {
+  if (rpDeferUi("renderThreadList", () => renderThreadList())) return;
   rpStampThreadActivity();
   const container = $('#rp-thread-list').empty();
 
@@ -10444,6 +10766,8 @@ function renderThreadList() {
 //  NAVIGATION
 // ================================================================
 function go(view) {
+  if(view==='xhs-detail' && !STATE.xhsFeed.some(post=>post.id===STATE.xhsCurrentPost))view='xhs';
+  if(view!==STATE.currentView)rpRememberReading();
   rpPauseGameAnimations();
   if (view === 'darkmode') { toggleDarkMode(); return; }
   if (view === 'ludo') view = 'game';
@@ -10492,14 +10816,15 @@ function go(view) {
   }
   if (view === 'xhs-detail') {
     const post = STATE.xhsFeed.find(p => p.id === STATE.xhsCurrentPost);
-    if (post) rpPaintXHSCommentDraft(post);
+    if (post) renderXHSDetail(post);
     else { STATE.xhsReplyToCidx = null; $('#rp-xhs-detail-input').val('').attr('placeholder','发表评论...'); }
-    // Bug1 fix: 每次打开帖子详情都回到顶部
-    setTimeout(function(){ var el = document.getElementById('rp-xhs-detail-body'); if(el) el.scrollTop = 0; }, 0);
+    // Reading position is restored below, separately for each post.
   }
   if (view === 'xhs-compose') {
     $('#rp-xhs-post-body').trigger('focus');
   }
+  document.getElementById('rp-phone').dataset.readingSlot=STATE.chatId;
+  rpRestoreReadingPosition();
 }
 
 let rpApiTest = null, rpModelRequest = null;
@@ -10585,6 +10910,8 @@ function showGroupMembersModal(threadId) {
 }
 
 function openThread(threadId) {
+  rpCloseFeatureDialog();
+  rpRememberReading();
   STATE.currentThread = threadId;
   const th = STATE.threads[threadId];
   if (!th) return;
@@ -10750,11 +11077,15 @@ function rpNormalizeMessageMeta(wrap) {
 }
 
 function renderBubbles(threadId, options = {}) {
+  if (rpDeferUi("bubbles:" + threadId, () => renderBubbles(threadId, options))) return;
   rpRenderHostOutbox(threadId);
   const area = $('#rp-bubbles'), el = area[0];
   if (!el) return;
   const previousScroll = el.scrollTop;
-  const followBottom = !options.preserveScroll;
+  const readingContext={key:'thread:'+threadId,el,kind:'thread',id:threadId};
+  const previousReading=el.dataset.readingThread===threadId?rpReadSnapshot(readingContext):null;
+  const wasNearBottom=el.scrollHeight-el.scrollTop-el.clientHeight<30;
+  const followBottom = !options.preserveScroll && (el.dataset.readingThread!==threadId || wasNearBottom);
   const renderEpoch = el._rpScrollRenderEpoch = (el._rpScrollRenderEpoch || 0) + 1;
   let expectedScroll = previousScroll;
   // A late image/timer may follow initial layout, never a user's deliberate scroll.
@@ -11057,9 +11388,13 @@ function renderBubbles(threadId, options = {}) {
   });
 
   // 先同步滚一次，再 setTimeout 等 DOM & 图片布局稳定后再滚一次
+  area.children().each(function(index){ this.dataset.rpReadingIndex=String(index); });
+  el.dataset.readingThread=threadId;
   area.children('.rp-bwrap').each(function() { rpNormalizeMessageMeta($(this)); });
   el.scrollTop = followBottom ? el.scrollHeight : previousScroll;
+  if(!followBottom&&previousReading)rpRestoreSnapshot(readingContext,previousReading);
   expectedScroll = el.scrollTop;
+  rpUpdateLatestButton();
   if (followBottom) setTimeout(settleScroll, 80);
 }
 
@@ -11722,7 +12057,7 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
   let stop, timer;
   const release = () => {
     stop?.(); clearTimeout(timer); task.signal.removeEventListener('abort', cancel);
-    if (rpHostSubmission === job) { rpHostSubmission = null; $('#rp-send').prop('disabled', false); }
+    if (rpHostSubmission === job) { rpHostSubmission = null; rpSmsQueueLock = null; $('#rp-send').prop('disabled', false); renderPendingQueue(); }
     if (rpMergeDeferred) { rpMergeDeferred = false; setTimeout(() => mergeDuplicateThreads(), 0); }
   };
   const cancel = () => { if (getPhoneChatSlotKey(getContext()) === originSlot && ta.value === content) { ta.value = original; ta.dispatchEvent(new Event('input', {bubbles:true})); } release(); };
@@ -11746,6 +12081,7 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
 }
 
 function sendSMS() {
+  if (rpHostSubmission) { toastr.warning('酒馆正在确认上一条发送，请稍后再试。'); return; }
   // FIX3: 先把输入框当前内容并入队列
   const currentText = $('#rp-input').val().trim();
   if (!STATE.currentThread || (!STATE.pendingMessages.length && !currentText)) return;
@@ -11839,7 +12175,9 @@ ${smsLine}
     : `${smsLine}
 <Request: ${requestSafeOoc}>`;
 
-  rpSubmitHostAction(requestWrappedText, hostIndex => {
+  rpSmsQueueLock = { thread: th, count: queuedCount };
+  renderPendingQueue();
+  const submitted = rpSubmitHostAction(requestWrappedText, hostIndex => {
     if (th.messages.some(m => m.hostIndex === hostIndex && m.from === 'user')) return;
     allMessages.forEach(text => th.messages.push({from:'user', text, time:ts, hostIndex}));
     const remaining = (Array.isArray(th.pendingMessages) ? th.pendingMessages : submittedQueue).slice(queuedCount);
@@ -11854,6 +12192,7 @@ ${smsLine}
     updatePreviews(); saveState();
   }, true);
 
+  if (!submitted) { rpSmsQueueLock = null; renderPendingQueue(); }
   // Request 包装路径不再依赖 extension prompt / display_text 清理链。
 }
 
@@ -13682,6 +14021,9 @@ function getTagAttrs(attrText) {
 }
 
 function parsePhoneMessageParts(parts, messageIndex, legacyReplay = false) {
+  return rpBatchPhoneUi(() => rpParsePhonePartsOrdered(parts, messageIndex, legacyReplay));
+}
+function rpParsePhonePartsOrdered(parts, messageIndex, legacyReplay = false) {
   if (!parts.blocks.length) return parsePhone(parts.normalized, { messageIndex, blockIndex: 0, legacyReplay }) || 0;
   let count = 0;
   parts.blocks.forEach((block, blockIndex) => {
@@ -13713,6 +14055,9 @@ function rpPhoneMessageAlreadyReceived(thread, source, matches, resolvedTime) {
 }
 
 function parsePhone(block, source = {}) {
+  return rpBatchPhoneUi(() => rpParsePhoneOrdered(block, source));
+}
+function rpParsePhoneOrdered(block, source = {}) {
   const previousIndex = STATE._parseMessageIndex;
   STATE._parseMessageIndex = Number.isInteger(source.messageIndex) ? source.messageIndex : null;
   try {
@@ -14411,6 +14756,7 @@ function addLockNotif(type, text) {
 
 // FIX2: 抽出 DOM 刷新,方便聊天切换时重建锁屏通知
 function refreshLockNotifs() {
+  if (rpDeferUi("refreshLockNotifs", () => refreshLockNotifs())) return;
   const c = $('#rp-lock-notifs').empty();
   // 显示全部通知（最多保留最近3条由 addLockNotif 控制）
   STATE.notifications.forEach((n, idx) => {
@@ -14517,6 +14863,7 @@ function refreshLockNotifs() {
 //  UI REFRESH HELPERS
 // ================================================================
 function refreshBadges() {
+  if (rpDeferUi("refreshBadges", () => refreshBadges())) return;
   let total = 0;
   Object.values(STATE.threads).forEach(th => {
     const _badgeNode = document.getElementById(`rp-tbadge-${th.id}`);
@@ -14530,6 +14877,7 @@ function refreshBadges() {
 }
 
 function updatePreviews() {
+  if (rpDeferUi("updatePreviews", () => updatePreviews())) return;
   Object.values(STATE.threads).forEach(th => {
     const last = th.messages.at(-1);
     if (!last) return;
@@ -14550,6 +14898,7 @@ function updatePreviews() {
 
 const STAGE_NAMES = { 1: '初识 · 试探', 2: '增进 · 主导', 3: '陷落 · 占有' };
 function refreshWidget() {
+  if (rpDeferUi("refreshWidget", () => refreshWidget())) return;
   const { stage, progress, status } = STATE.sync;
   $('#rp-wd-stage').text(`Stage ${stage} · ${(STAGE_NAMES[stage] || '').split('·')[1]?.trim()}`);
   $('#rp-wd-fill').css('width', (progress / 99 * 100).toFixed(1) + '%');
@@ -14634,8 +14983,13 @@ function renderDiary() {
         + '<button class="rp-diary-edit-btn" data-diary-id="' + escHtml(e.id) + '" onclick="diaryInlineEdit(this,this.dataset.diaryId)" title="编辑"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;pointer-events:none"><rect x="3.5" y="1.2" width="4" height="9.5" rx="0.8" transform="rotate(38 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M9.8 2.5 L11.4 4.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3.2 9.8 L2.5 11.6 L4.3 10.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.7"/><circle cx="5.5" cy="5.5" r="0" fill="none"/></svg></button></div>'
         + '<div class="rp-diary-reply-text">' + escHtml(e.reply) + '</div></div>';
     }
+    if (!isAI && !e.reply) {
+      const busy = typeof rpDiaryJobs !== 'undefined' && rpDiaryJobs.has('reply');
+      const label = e.replyStatus === 'loading' && busy ? '正在获取回复…' : e.replyStatus === 'error' ? '重试回复' : '获取回复';
+      replyHtml = '<div class="rp-diary-retry-row"><button type="button" class="rp-feature-pill rp-diary-retry" data-diary-id="' + escHtml(e.id || '') + '" data-diary-index="' + (STATE.diary || []).indexOf(e) + '"' + (busy ? ' disabled' : '') + '>' + label + '</button></div>';
+    }
     container.append(
-      '<div class="rp-diary-entry">'
+      '<div class="rp-diary-entry" data-diary-index="' + (STATE.diary || []).indexOf(e) + '">'
       + '<div class="rp-diary-hd">'
       + '<div class="rp-diary-meta"><div class="rp-diary-author">' + escHtml(authorLabel) + '</div>'
       + '<div class="rp-diary-date">' + escHtml(e.date) + ' ' + escHtml(e.time) + '</div></div></div>'
@@ -14751,24 +15105,28 @@ async function generateAIDiary() {
 }
 
 async function postUserDiary() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-  var text = $('#rp-diary-input').val().trim();
+  const text = String($('#rp-diary-input').val() || '').trim();
   if (!text) return;
-  const diaryJob = rpStartDiaryJob('reply', rpTask);
-  if (!diaryJob) return;
+  const task = rpRuntime.task(), job = rpStartDiaryJob('reply', task);
+  if (!job) return;
+  $('#rp-diary-input').val(''); STATE.diaryDraft = '';
+  const now = new Date();
+  const entry = { id: 'diary_' + now.getTime() + '_' + Math.random().toString(36).slice(2, 9), date: (now.getMonth()+1) + '/' + now.getDate(), time: resolvePhoneTime(), author:'user', text, reply:null, replyTime:null };
+  STATE.diary.push(entry); saveState();
+  return rpCompleteDiaryReply(entry, task, job);
+}
+async function rpRetryDiaryReply(entryId, index) {
+  const entry = entryId ? STATE.diary.find(e => e.id === entryId) : STATE.diary[index];
+  if (!entry || entry.author === 'ai' || entry.reply || !entry.text) return;
+  const task = rpRuntime.task(), job = rpStartDiaryJob('reply', task);
+  if (!job) return;
+  if (!entry.id) entry.id = 'diary_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+  return rpCompleteDiaryReply(entry, task, job);
+}
+async function rpCompleteDiaryReply(sourceEntry, rpTask, diaryJob) {
+  const text = sourceEntry.text;
+  sourceEntry.replyStatus = 'loading'; saveState(); renderDiary();
   try {
-  $('#rp-diary-input').val('');
-  STATE.diaryDraft = '';
-  var now = new Date();
-  var dateStr = (now.getMonth()+1) + '/' + now.getDate();
-  var ts = resolvePhoneTime();
-  var entryId = 'diary_' + now.getTime();
-  STATE.diary = STATE.diary || [];
-  STATE.diary.push({ id: entryId, date: dateStr, time: ts, author: 'user', text: text, reply: null, replyTime: null });
-  saveState(); renderDiary();
-  // char 回复(只有主角,不请求 NPC)
     var _ctx2 = getContext();
     if (!_ctx2 || !STATE.chatId) throw rpPhoneApiError('context');
     var charName2 = _ctx2 && _ctx2.name2 ? _ctx2.name2 : 'TA';
@@ -14801,19 +15159,24 @@ async function postUserDiary() {
       var cleaned2 = resp2.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
       var now2 = new Date();
       var ts2 = resolvePhoneTime();
-      var entry = (STATE.diary || []).find(function(d) { return d.id === entryId; });
-      if (entry) { entry.reply = cleaned2; entry.replyTime = ts2; }
+      var entry = sourceEntry;
+      if (!STATE.diary.includes(entry) || entry.text !== text || entry.reply) return;
+      if (entry) { entry.reply = cleaned2; entry.replyTime = ts2; entry.replyStatus = 'done'; }
       saveState(); renderDiary();
       rpDiaryStatus('日记和角色回复已保存。');
     }
-  } catch(e) {
-    if (!rpTask.valid()) return;
-    rpDiaryFailure(e);
- console.warn('[Diary] postUserDiary reply error:', rpErrorInfo(e)); }
-  finally {
-    diaryJob.finish(); }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+  } catch(error) {
+    if (!rpTask.valid() || !STATE.diary.includes(sourceEntry)) return;
+    sourceEntry.replyStatus = 'error'; rpDiaryFailure(error);
+    console.warn('[Diary] reply error:', rpErrorInfo(error));
+  } finally {
+    diaryJob.finish();
+    if (rpTask.valid() && STATE.diary.includes(sourceEntry)) {
+      if (sourceEntry.replyStatus === 'loading') sourceEntry.replyStatus = 'idle';
+      saveState(); renderDiary();
+    }
+  }
 }
 
 async function postUserMoment() {
@@ -17413,6 +17776,7 @@ function rpPaintXHSCommentDraft(post) {
   input.attr('placeholder', target ? `回复 @${target.user}...` : '发表评论...');
 }
 function renderMoments() {
+  if (rpDeferUi("renderMoments", () => renderMoments())) return;
   const active = document.activeElement;
   if (active?._rpComposing && rpIsCurrentCommentInput(active, 'moments')) { active._rpNeedsRepaint = true; return; }
   const focusedId = active?.classList?.contains('rp-moment-cinput') ? $(active).closest('.rp-moment').data('mid') : null;
@@ -17590,6 +17954,10 @@ function renderXHSCard(p) {
 }
 
 function renderXHSFeed(forceRefresh) {
+  $('#rp-xhs-feed-title').text(rpXhsFavoritesOnly?'我的收藏':'发现');
+  $('#rp-xhs-favorites').text(rpXhsFavoritesOnly?'全部':'收藏').attr('aria-pressed',String(rpXhsFavoritesOnly));
+  $('#rp-xhs-refresh,#rp-xhs-compose').toggle(!rpXhsFavoritesOnly);
+  if(rpXhsFavoritesOnly){_renderXHSList();return;}
   const box = $('#rp-xhs-list');
   if (!box.length) return;
 
@@ -17636,9 +18004,9 @@ function _renderXHSList(box) {
   mergeGlobalAvatars();
   box = box || $('#rp-xhs-list');
   box.empty().removeClass('rp-xhs-masonry rp-xhs-refreshing').addClass('rp-xhs-waterfall');
-  const list = STATE.xhsFeed || [];
+  const list = (STATE.xhsFeed || []).filter(post=>!rpXhsFavoritesOnly || post.favoritedByUser);
   if (!list.length) {
-    box.removeClass('rp-xhs-waterfall').append('<div class="rp-xhs-empty">✦ 点击右上角刷新，读取最新小红书动态</div>');
+    box.removeClass('rp-xhs-waterfall').append($('<div class="rp-xhs-empty">').text(rpXhsFavoritesOnly?'暂无收藏，在笔记详情点击收藏即可。':'✦ 点击右上角刷新，读取最新小红书动态'));
     return;
   }
   // 按真实时间流展示：STATE.xhsFeed 最新在 index 0。
@@ -18235,10 +18603,11 @@ function _xhsClearEtaTimer() {
 // Fallback 通用模板(不假设任何角色关系)
 // 打开详情页
 function openXHSDetail(postId) {
+  rpRememberReading();
   const post = (STATE.xhsFeed || []).find(p => p.id === postId);
   if (!post) return;
   STATE.xhsCurrentPost = postId;
-  renderXHSDetail(post);
+  $('#rp-xhs-detail-body').scrollTop(0);
   go('xhs-detail');
 }
 
@@ -18641,12 +19010,14 @@ function toggleXHSFavorite(postId) {
   $('#rp-xhs-fav-btn')
     .css('color', post.favoritedByUser ? 'var(--rp-xhs-accent,#ff2442)' : 'var(--rp-xhs-text,#333)')
     .text(post.favoritedByUser ? '★ 已收藏' : '☆ 收藏');
+  if(STATE.currentView==='xhs')_renderXHSList();
 }
 
 function deleteXHSPost(postId) {
   const list = STATE.xhsFeed || [];
   const idx = list.findIndex(p => p.id === postId);
   if (idx < 0) return;
+  const before=list.slice(), removed=list[idx], draft=STATE.commentDrafts.xhs?.[postId];
   list.splice(idx, 1);
   if (STATE.commentDrafts.xhs) delete STATE.commentDrafts.xhs[postId];
   STATE.xhsFeed = list;
@@ -18659,57 +19030,15 @@ function deleteXHSPost(postId) {
     _renderXHSList();
   }
   saveState();
-}
-
-function deleteMomentComment(momentId, commentIdx) {
-  const moment = (STATE.moments || []).find(m => m.id === momentId);
-  if (!moment || !Array.isArray(moment.comments) || commentIdx < 0 || commentIdx >= moment.comments.length) return;
-  moment.comments.splice(commentIdx, 1);
-  moment.comments = moment.comments.map(function(c) {
-    const replyTo = c.replyTo;
-    if (replyTo === null || replyTo === undefined) return c;
-    if (replyTo === commentIdx) return Object.assign({}, c, { replyTo: null });
-    if (replyTo > commentIdx) return Object.assign({}, c, { replyTo: replyTo - 1 });
-    return c;
+  rpOfferUndo('已删除这篇笔记',()=>{
+    if(!rpInsertRemovedItem(STATE.xhsFeed,removed,before))return false;
+    if(draft&&!Object.hasOwn(STATE.commentDrafts.xhs||{},postId))Object.defineProperty(STATE.commentDrafts.xhs ||= {},postId,{value:draft,writable:true,enumerable:true,configurable:true});
+    if(STATE.currentView==='xhs')_renderXHSList();
   });
-
-  const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId);
-  const input = row.find('.rp-moment-cinput');
-  const replyIdx = input.data('reply-to-idx');
-  if (Number(replyIdx) === commentIdx) {
-    input.removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder','发表评论...');
-  } else if (Number.isFinite(Number(replyIdx)) && Number(replyIdx) > commentIdx) {
-    input.data('reply-to-idx', Number(replyIdx) - 1);
-  }
-
-  renderMoments();
-  saveState();
 }
 
-function deleteXHSComment(postId, commentIdx) {
-  const post = (STATE.xhsFeed || []).find(p => p.id === postId);
-  if (!post || !Array.isArray(post.comments) || commentIdx < 0 || commentIdx >= post.comments.length) return;
-  post.comments.splice(commentIdx, 1);
-  post.comments = post.comments.map(function(c) {
-    const replyTo = c.replyTo;
-    if (replyTo === null || replyTo === undefined) return c;
-    if (replyTo === commentIdx) return Object.assign({}, c, { replyTo: null });
-    if (replyTo > commentIdx) return Object.assign({}, c, { replyTo: replyTo - 1 });
-    return c;
-  });
-  if (STATE.xhsReplyToCidx === commentIdx) {
-    STATE.xhsReplyToCidx = null;
-    $('#rp-xhs-detail-input').val('').attr('placeholder','发表评论...');
-  } else if (typeof STATE.xhsReplyToCidx === 'number' && STATE.xhsReplyToCidx > commentIdx) {
-    STATE.xhsReplyToCidx -= 1;
-  }
-  saveState();
-  if (STATE.currentView === 'xhs-detail' && STATE.xhsCurrentPost === postId) {
-    renderXHSDetail(post);
-  } else if (STATE.currentView === 'xhs') {
-    _renderXHSList();
-  }
-}
+function deleteMomentComment(momentId, commentIdx) { rpDeleteComment('moments',momentId,commentIdx); }
+function deleteXHSComment(postId, commentIdx) { rpDeleteComment('xhs',postId,commentIdx); }
 
 
 function rpFindByDataAttr(rootSelector, itemSelector, attrName, value) {
