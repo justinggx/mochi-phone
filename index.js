@@ -613,6 +613,10 @@ const RP_UI_FINISH_CSS = `
 #rp-phone #rp-screen #rp-xhs-detail-body {overflow-wrap:anywhere;}
 #rp-phone.rp-dark:not(.rp-art-icons) #rp-pending-queue {color:var(--rp-v-text,#e7e0f4);}
 #rp-phone.rp-dark:not(.rp-art-icons) .rp-pending-hint {color:var(--rp-v-muted,#b8b1c2);}
+#rp-phone.rp-dark:not(.rp-art-icons) #rp-screen :is(#rp-swipe-hint,.rp-diary-reply-name,.rp-game-partner-bar,.rp-out .rp-bts) {color:var(--rp-v-muted,#b8b1c2)!important;opacity:1!important;}
+#rp-phone.rp-dark:not(.rp-art-icons) #rp-screen .rp-xhs-empty {color:var(--rp-v-muted,#b8b1c2)!important;background:var(--rp-v-card,#2a2635)!important;}
+#rp-phone.rp-theme-misty #rp-screen #rp-avatar-preview-swatch {color:#fff!important;}
+#rp-phone:not(.rp-art-icons) #rp-screen #rp-view-thread .rp-out .rp-private-avatar:not(.rp-av-img) {background:linear-gradient(145deg,#64748b,#475569);color:#fff;}
 `;
 const RP_MOMENT_TRANSLATE_CSS = `
 #rp-phone #rp-screen #rp-view-moments .rp-moment-bar {flex-wrap:wrap;column-gap:4px;row-gap:0;}
@@ -5476,6 +5480,10 @@ function rpResetChatTasks() {
   rpMergeDeferred = false;
   rpResetApiTest(); rpResetModelRequest(); rpHideBanner();
   rpRuntime.advance();
+  rpCloseChatOverlays();
+  $('#rp-compose-text,#rp-ts-input,#rp-input').val('');
+  $('#rp-diary-list,#rp-ts-bubbles').empty();
+  rpDiaryStatus('');
   rpAvatarEdits.clear(); rpWallpaperEdit = null;
   rpHostActionCallbacks.clear();
   clearTimeout(STATE._callTimer);
@@ -6814,6 +6822,8 @@ function restorePhoneChatState(saved) {
   rpRestorePostDraftInputs();
   STATE.nameAliases = Object.assign({}, s.nameAliases || {});
   STATE.currentThread = s.currentThread || null;
+  STATE._savedView = s.currentView || null;
+  STATE._savedThread = STATE.currentThread;
   STATE.bankData = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
   STATE.blocklist = Array.isArray(s.blocklist) ? s.blocklist.slice() : [];
   restorePhoneGameState(s.gameState);
@@ -7686,7 +7696,7 @@ function rpNormalizePhoneState(state) {
     });
     return object[field];
   };
-  for (const field of ['moments', 'diary', 'xhsFeed']) {
+  for (const field of ['moments', 'diary', 'xhsFeed', 'themeStudioMessages', 'notifications']) {
     for (const [index, item] of array(state, field, field).entries()) {
       const path = field + '[' + index + ']';
       for (const textField of (field === 'xhsFeed' ? ['title', 'body'] : ['text'])) {
@@ -7696,7 +7706,7 @@ function rpNormalizePhoneState(state) {
         }
       }
       if (field === 'moments') array(item, 'likes', path + '.likes', x => typeof x === 'string');
-      if (field !== 'diary') {
+      if (field === 'moments' || field === 'xhsFeed') {
         const originals = Array.isArray(item.comments) ? item.comments.slice() : [];
         array(item, 'comments', path + '.comments');
         const remap = new Map();
@@ -7713,6 +7723,12 @@ function rpNormalizePhoneState(state) {
       preserve('threads.' + id, thread); delete state.threads[id]; continue;
     }
     array(thread, 'messages', 'threads.' + id + '.messages');
+    thread.messages.forEach((message, index) => {
+      if (message.text !== undefined && typeof message.text !== 'string') {
+        preserve('threads.' + id + '.messages[' + index + '].text', message.text);
+        message.text = typeof message.text === 'number' ? String(message.text) : '';
+      }
+    });
     if (thread.pendingHostActions !== undefined) array(thread, 'pendingHostActions', 'threads.' + id + '.pendingHostActions',
       x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.text === 'string');
     thread.id = thread.id || id;
@@ -8266,7 +8282,7 @@ const HTML = `
             <div class="rp-set-section-title">黑名单管理</div>
             <div class="rp-set-section">
               <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
-                <div style="font-size:12px;color:#8a8a9a;line-height:1.4">拉黑后该角色不会出现在好友列表、不会发消息、不会在朋友圈互动。适用于多人卡场景。</div>
+                <div class="rp-set-hint" style="font-size:12px;color:#8a8a9a;line-height:1.4">拉黑后该角色不会出现在好友列表、不会发消息、不会在朋友圈互动。适用于多人卡场景。</div>
                 <div style="display:flex;gap:6px;min-width:0">
                   <input id="rp-block-input" type="text" placeholder="输入角色名称..." style="flex:1;min-width:0;border-radius:8px;padding:6px 10px;font-size:13px;border:1px solid rgba(0,0,0,.12);outline:none;background:rgba(255,255,255,.7);color:#222" />
                   <button id="rp-block-add-btn" style="flex-shrink:0;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;cursor:pointer;white-space:nowrap">拉黑</button>
@@ -9111,6 +9127,11 @@ function rpBatchPhoneUi(action) {
 }
 
 function rpCloseFeatureDialog() { $('#rp-feature-layer').remove(); }
+function rpCloseChatOverlays() {
+  rpCloseFeatureDialog();
+  $('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create').remove();
+  $('#rp-compose-modal,#rp-folder-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel').hide();
+}
 function rpFeatureDialog(title, content, actions = []) {
   rpCloseFeatureDialog();
   const task = rpRuntime.task(), previous = document.activeElement;
@@ -9629,7 +9650,6 @@ function bindUI() {
   $(document).on("click.mochiPhone", '[data-app="diary"]', function() {
     STATE.diary = STATE.diary || [];
     mergeGlobalAvatars();
-    renderDiary();
     go('diary');
   });
   $(document).on("click.mochiPhone", '#rp-gen-diary', generateAIDiary);
@@ -9906,7 +9926,6 @@ function bindUI() {
     if (tid === 'custom') {
       // 自定义卡片 → 进工作室
       go('theme-studio');
-      lgRenderThemeStudio();
     } else {
       lgApplyTheme(tid);
       lgRenderThemePicker();
@@ -10839,8 +10858,9 @@ function renderThreadList() {
 // ================================================================
 function go(view) {
   if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
+  if (view === 'thread' && !STATE.threads[STATE.currentThread]) view = 'messages';
   if(view==='xhs-detail' && !STATE.xhsFeed.some(post=>post.id===STATE.xhsCurrentPost))view='xhs';
-  if(view!==STATE.currentView)rpRememberReading();
+  if(view!==STATE.currentView){rpRememberReading();rpCloseChatOverlays();}
   rpPauseGameAnimations();
   if (view === 'darkmode') { toggleDarkMode(); return; }
   if (view === 'ludo') view = 'game';
@@ -10850,6 +10870,8 @@ function go(view) {
   if (view === 'gword' && !rpShowGameResume('gword')) { if (!GWORD.active) gwordOpen(); }
   if (view === 'api-settings') { lgFillAPIView(); }
   if (view === 'themes') { lgRenderThemePicker(); }
+  if (view === 'theme-studio') { lgRenderThemeStudio(); }
+  if (view === 'diary') { renderDiary(); }
   $('.rp-view').hide();
   // 需要 flex 布局的视图
   const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold'];
@@ -10983,6 +11005,7 @@ function showGroupMembersModal(threadId) {
 }
 
 function openThread(threadId) {
+  if (STATE.currentThread !== threadId) rpCloseChatOverlays();
   rpCloseFeatureDialog();
   rpRememberReading();
   STATE.currentThread = threadId;
@@ -11192,7 +11215,7 @@ function renderBubbles(threadId, options = {}) {
   const area = $('#rp-bubbles'), el = area[0];
   if (!el) return;
   const activeEditor = document.activeElement;
-  if (el.contains(activeEditor) && activeEditor._rpComposing && activeEditor.closest(".rp-inline-edit-wrap")) { activeEditor._rpNeedsRepaint = true; return; }
+  if (el.contains(activeEditor) && activeEditor._rpComposing && activeEditor.closest(".rp-inline-edit-wrap")?._rpMessageEdit?.threadId === threadId) { activeEditor._rpNeedsRepaint = true; return; }
   const edits = area.find(".rp-inline-edit-wrap").toArray().filter(node => node._rpMessageEdit && (node._rpMessageEdit.threadId === threadId || (!STATE.threads[node._rpMessageEdit.threadId] && STATE.threads[threadId]?.messages.includes(node._rpMessageEdit.message)))).map(node => {
     const input = node.querySelector("textarea");
     return {...node._rpMessageEdit, text:input.value, start:input.selectionStart, end:input.selectionEnd, direction:input.selectionDirection, focused:input === document.activeElement};
@@ -23524,6 +23547,8 @@ function gameInlineEdit(btn) {
 
 // P4: 日记回复内联编辑
 function diaryInlineEdit(btn, entryId) {
+  const task = rpRuntime.task(), entry = (STATE.diary || []).find(d => d.id === entryId);
+  if (!entry) return;
   const replyDiv = btn.closest('.rp-diary-reply');
   const textEl = replyDiv && replyDiv.querySelector('.rp-diary-reply-text');
   if (!textEl || replyDiv.querySelector('textarea')) return;
@@ -23556,8 +23581,10 @@ function diaryInlineEdit(btn, entryId) {
   okBtn.onclick = function() {
     const newText = ta.value.trim();
     if (newText) {
-      const entry = (STATE.diary || []).find(function(d){ return d.id === entryId; });
-      if (entry) { entry.reply = newText; saveState(); }
+      if (!task.valid() || !STATE.diary.includes(entry) || entry.reply !== origText) {
+        toastr.info('该日记回复已变化，请重新打开编辑。'); return;
+      }
+      entry.reply = newText; saveState();
     }
     ta.remove(); btnRow.remove();
     textEl.textContent = newText || origText;
