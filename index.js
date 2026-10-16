@@ -1,3 +1,4 @@
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261016-practical46';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -649,16 +650,16 @@ const RP_PRIVATE_AVATAR_CSS = `
 const RP_READING_CSS = `
 #rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:12px;}
 #rp-phone #rp-screen #rp-view-messages .rp-tp {font-size:10.5px;}
-#rp-phone #rp-screen #rp-view-thread .rp-bubble {font-size:11.5px!important;line-height:1.5;}
-#rp-phone #rp-screen #rp-view-thread .rp-translation-text {font-size:10.5px!important;line-height:1.5;}
+#rp-phone #rp-screen #rp-view-thread .rp-bubble {font-size:var(--rp-reading-message-size,11.5px)!important;line-height:1.5;}
+#rp-phone #rp-screen #rp-view-thread .rp-translation-text {font-size:calc(var(--rp-reading-message-size,11.5px) - 1px)!important;line-height:1.5;}
 #rp-phone #rp-screen #rp-view-thread :is(.rp-grp-sender,.rp-voice-dur) {font-size:10.5px;}
 #rp-phone #rp-screen #rp-view-thread .rp-bts {font-size:10px;}
 #rp-phone #rp-screen #rp-view-thread .rp-translation-btn {font-size:10.5px;}
 #rp-phone #rp-screen #rp-view-moments .rp-moment-name {font-size:11.5px;}
 #rp-phone #rp-screen #rp-view-moments .rp-moment-time {font-size:10px;}
-#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text {font-size:12px!important;line-height:1.55!important;}
-#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment {font-size:10.5px!important;line-height:1.5!important;}
-#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-translation-text {font-size:10.5px!important;line-height:1.5!important;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text {font-size:var(--rp-reading-moment-size,12px)!important;line-height:1.55!important;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment {font-size:calc(var(--rp-reading-moment-size,12px) - 1.5px)!important;line-height:1.5!important;}
+#rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-translation-text {font-size:calc(var(--rp-reading-moment-size,12px) - 1.5px)!important;line-height:1.5!important;}
 #rp-phone #rp-screen #rp-view-moments :is(.rp-moment-reply-btn,.rp-moment-comment-del-btn) {font-size:10.5px!important;}
 #rp-phone #rp-screen #rp-view-moments .rp-moment-likes-row {font-size:10.5px;}
 `;
@@ -5404,6 +5405,7 @@ ${RP_PRIVATE_AVATAR_CSS}
 ${RP_MESSAGE_ACTIONS_CSS}
 ${RP_MOMENT_TRANSLATE_CSS}
 ${RP_UI_FINISH_CSS}
+${PHONE_TOOLS_CSS}
 `;
 
 // ================================================================
@@ -5476,6 +5478,7 @@ function rpAddImageWait(entry) {
 function rpResetChatTasks() {
   clearTimeout(rpReadingTimer); rpReadingTimer=null;
   rpFinishUndo(); rpXhsFavoritesOnly=false;
+  $('#rp-reply-preview').hide().empty();
   rpCloseFeatureDialog(); rpSmsQueueLock = null; rpUiUpdates.clear();
   rpMergeDeferred = false;
   rpResetApiTest(); rpResetModelRequest(); rpHideBanner();
@@ -5548,10 +5551,12 @@ function rpAvoidFabControls() {
   if (!phone || !fab || window.getComputedStyle(phone).display === 'none' || window.getComputedStyle(fab).display === 'none') return;
   const rect = fab.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-  const controls = phone.querySelectorAll('#rp-send,#rp-diary-send,#rp-xhs-detail-send,.rp-inline-ok,.rp-inline-cancel,#rp-game-send,#g2048-send,#ggold-send,#gword-send,#ggold-launch-btn,#rp-api-save-v');
-  const overlaps = [...controls].map(el => el.getBoundingClientRect()).filter(r => r.width && r.height && rect.left < r.right && rect.right > r.left && rect.top < r.bottom && rect.bottom > r.top);
+  const controls = phone.querySelectorAll('#rp-send,#rp-diary-send,#rp-xhs-detail-send,.rp-inline-ok,.rp-inline-cancel,#rp-game-send,#g2048-send,#ggold-send,#gword-send,#ggold-launch-btn,#rp-api-save-v,#rp-feature-layer button,#rp-feature-layer input,#rp-feature-layer select,#rp-thread-menu,#rp-thread-search,#rp-reply-cancel');
+  const occupied = [...controls].map(el => el.getBoundingClientRect()).filter(r => r.width && r.height && rect.left < r.right && rect.right > r.left);
+  const overlaps = occupied.filter(r => rect.top < r.bottom && rect.bottom > r.top);
   if (!overlaps.length) return;
-  const top = Math.max(0, Math.min(...overlaps.map(r => r.top)) - rect.height - 12);
+  const candidates = [0,...occupied.map(r=>Math.max(0,r.top-rect.height-12))].filter(top=>top<=rect.top).sort((a,b)=>b-a);
+  const top = candidates.find(top=>!occupied.some(r=>top<r.bottom&&top+rect.height>r.top)) ?? 0;
   fab.style.setProperty('top', top + 'px', 'important');
   fab.style.setProperty('bottom', 'auto', 'important');
 }
@@ -6207,6 +6212,7 @@ function buildStatePayload() {
   const diary = Array.isArray(STATE.diary) ? STATE.diary.slice() : [];
   const payload = enrichPayloadMeta({
     threads,
+    phoneTools: JSON.parse(JSON.stringify(STATE.phoneTools || {version:1,bookmarks:[]})),
     notifications: Array.isArray(STATE.notifications) ? STATE.notifications.slice() : [],
     sync: STATE.sync,
     moments,
@@ -6753,6 +6759,7 @@ function mergeDuplicateThreads() {
       return ak != null && bk != null ? (ak - bk || a.index - b.index) : a.index - b.index;
     }).map(x => x.msg);
     keep.unread = Math.max(keep.unread || 0, drop.unread || 0);
+    rpTools().mergeContacts(keep,drop);
     keep.pendingMessages = [...(Array.isArray(keep.pendingMessages) ? keep.pendingMessages : []), ...(Array.isArray(drop.pendingMessages) ? drop.pendingMessages : [])];
     if (typeof drop.draft === 'string' && drop.draft) {
       if (!keep.draft) keep.draft = drop.draft;
@@ -6826,6 +6833,7 @@ function restorePhoneChatState(saved) {
   STATE._savedThread = STATE.currentThread;
   STATE.bankData = s.bankData ? JSON.parse(JSON.stringify(s.bankData)) : null;
   STATE.blocklist = Array.isArray(s.blocklist) ? s.blocklist.slice() : [];
+  rpTools().normalizeSaved(s);
   restorePhoneGameState(s.gameState);
   if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
 }
@@ -7218,7 +7226,7 @@ function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName,
   if (!rpIsReadingThread(grpThread.id)) grpThread.unread = (grpThread.unread || 0) + 1;
   refreshBadges(); renderThreadList();
   if (STATE.currentThread === groupId) renderBubbles(groupId);
-  showBanner(name, `${fromRaw}: 🎤 [${duration}]`);
+  showBanner(name, `${fromRaw}: 🎤 [${duration}]`, undefined, groupId);
   saveState();
 }
 
@@ -7257,7 +7265,7 @@ function incomingAutoGroupHongbao(fromRaw, toRaw, amount, note, groupName, time,
   if (!rpIsReadingThread(grpThread.id)) grpThread.unread = (grpThread.unread || 0) + 1;
   refreshBadges(); renderThreadList();
   if (STATE.currentThread === groupId) renderBubbles(groupId);
-  showBanner(name, `${fromRaw} 发了一个红包`);
+  showBanner(name, `${fromRaw} 发了一个红包`, undefined, groupId);
   saveState();
 }
 
@@ -8813,6 +8821,7 @@ async function rpInitBody() {
   // 扩展初始化/热重载时清空指纹,防止旧指纹导致第一条新消息被 skip
   STATE._lastAiFingerprint = null;
   bindUI();
+  rpTools().mount();
   makeDraggable();
   renderThreadList();
   refreshWidget();
@@ -9126,6 +9135,35 @@ function rpBatchPhoneUi(action) {
   }
 }
 
+let rpPhoneTools = null;
+function rpTools() {
+  if (rpPhoneTools) return rpPhoneTools;
+  const blocked = (thread,current) => {
+    const name = normalizePhonePersonName(resolveCanonicalPhoneName(thread.name || ''));
+    return (current.blocklist || []).some(item => normalizePhonePersonName(resolveCanonicalPhoneName(item)) === name)
+      || !!current.deletedContacts?.[rpDeletedContactKey(thread)];
+  };
+  rpPhoneTools = createPhoneTools({
+    $: $, document, state: () => STATE, touch: () => IS_TOUCH_DEVICE, storage: localStorage,
+    notify: text => toastr.info(text), rememberReading: rpRememberReading, restoreReading: rpRestoreReadingPosition,
+    dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog, runtime: () => rpRuntime,
+    renderThreads: renderThreadList, save: saveState, hideBanner: rpHideBanner,
+    openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
+    account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
+    blockedPost: (post,current) => post.from !== 'user' && blocked({name:post.name || post.user || post.author || post.from || ''},current),
+    canRestore: () => !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
+      && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
+      && !(window.rpImgWaitQueue || []).some(item => item?.source === 'mochi-phone') && !STATE._pendingCall,
+    applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshWidget(); refreshLockNotifs(); saveState({immediate:true}); },
+    download: (text,name) => {
+      const url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'})),link=document.createElement('a');
+      link.href=url;link.download=name;link.style.display='none';document.body.append(link);
+      try { link.click(); } finally { link.remove(); rpRuntime.timer(()=>URL.revokeObjectURL(url),30000,false,[],'lifetime'); }
+    },
+  });
+  return rpPhoneTools;
+}
+
 function rpCloseFeatureDialog() { $('#rp-feature-layer').remove(); }
 function rpCloseChatOverlays() {
   rpCloseFeatureDialog();
@@ -9150,13 +9188,13 @@ function rpFeatureDialog(title, content, actions = []) {
   layer.on('keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
     if (event.key === 'Tab') {
-      const controls = panel.find('button:enabled,input:enabled,textarea:enabled,[tabindex="0"]').toArray();
+      const controls = panel.find('button:enabled,input:enabled,textarea:enabled,select:enabled,[tabindex="0"]').toArray();
       const first = controls[0], last = controls.at(-1);
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }
   });
-  $('#rp-screen').append(layer); panel.find('textarea,input,button').first().trigger('focus');
+  $('#rp-screen').append(layer); panel.on('scroll',rpAvoidFabControls); rpAvoidFabControls(); panel.find('textarea,input,button').first().trigger('focus');
   return panel;
 }
 
@@ -9172,7 +9210,7 @@ function rpOpenQueueEditor(index) {
     if (!valid()) { toastr.info('暂存内容已变化，请重新打开。'); return; }
     const value = String(input.val() || '').trim();
     if (!remove && !value) { input.trigger('focus'); return false; }
-    if (remove) STATE.pendingMessages.splice(index, 1); else STATE.pendingMessages[index] = value;
+    if (remove) { thread.pendingQuotes = rpTools().quotes(thread); thread.pendingQuotes.splice(index,1); STATE.pendingMessages.splice(index, 1); } else STATE.pendingMessages[index] = value;
     thread.pendingMessages = STATE.pendingMessages.slice(); renderPendingQueue(); saveState();
   };
   rpFeatureDialog('编辑暂存消息', input, [
@@ -10693,15 +10731,19 @@ function renderBlocklist() {
 function addToQueue() {
   const text = $('#rp-input').val().trim();
   if (!text || !STATE.currentThread) return;
-  STATE.pendingMessages.push(text);
   const thread = STATE.threads[STATE.currentThread];
-  if (thread) { thread.pendingMessages = STATE.pendingMessages.slice(); thread.draft = ''; }
+  if (!thread) return;
+  thread.pendingQuotes = [...rpTools().quotes(thread), thread.draftQuote || null];
+  thread.draftQuote = null;
+  STATE.pendingMessages.push(text);
+  thread.pendingMessages = STATE.pendingMessages.slice(); thread.draft = '';
   $('#rp-input').val('');
   renderPendingQueue();
   saveState();
 }
 
 function renderPendingQueue() {
+  rpTools().renderReply();
   const container = $('#rp-pending-queue');
   container.empty();
   if (STATE.pendingMessages.length === 0) {
@@ -10711,7 +10753,8 @@ function renderPendingQueue() {
   container.show();
   const queueThread = STATE.threads[STATE.currentThread];
   STATE.pendingMessages.forEach((msg, index) => {
-    const text = String(msg ?? '');
+    const quote = queueThread?.pendingQuotes?.[index];
+    const text = (quote ? '↪ ' + quote.name + '：' : '') + String(msg ?? '');
     const short = text.length > 30 ? text.slice(0, 30) + '...' : text;
     const locked = !!rpSmsQueueLock && rpSmsQueueLock.thread === queueThread && index < rpSmsQueueLock.count;
     container.append($('<button type="button">').addClass('rp-pending-item').attr('data-queue-index', index).attr('aria-label', locked ? '正在发送：' + short : '编辑暂存消息：' + short).prop('disabled', locked).text(short));
@@ -10815,6 +10858,8 @@ function renderThreadList() {
   Object.values(STATE.threads)
     .map(function(th, idx) { return { th, idx }; })
     .sort(function(a, b) {
+      const pinned = Number(!!b.th.phonePinned) - Number(!!a.th.phonePinned);
+      if (pinned) return pinned;
       const ak = getThreadListActivityKey(a.th, a.idx);
       const bk = getThreadListActivityKey(b.th, b.idx);
       return (bk - ak) || (a.idx - b.idx);
@@ -10851,6 +10896,7 @@ function renderThreadList() {
       </div>
     `);
   });
+  rpTools().decorateThreads();
 }
 
 // ================================================================
@@ -11512,6 +11558,7 @@ function renderBubbles(threadId, options = {}) {
     rpNormalizeMessageMeta(wrap);
     rpAttachPrivateAvatar(wrap, thread, thread.messages[Number(this.dataset.rpReadingIndex)]);
   });
+  rpTools().decorateMessages(el,thread);
   for (const edit of edits) {
     const index = thread.messages.indexOf(edit.message);
     if (index < 0) continue;
@@ -12222,6 +12269,8 @@ function sendSMS() {
   const queuedCount = STATE.pendingMessages.length;
   const submittedQueue = STATE.pendingMessages.slice();
   const allMessages = [...submittedQueue, ...(currentText ? [currentText] : [])];
+  const submittedDraftQuote = th.draftQuote || null;
+  const submittedQuotes = [...rpTools().quotes(th).slice(0,queuedCount), ...(currentText ? [submittedDraftQuote] : [])];
 
   const ta = document.querySelector('#send_textarea');
   if (!ta) return;
@@ -12235,6 +12284,9 @@ function sendSMS() {
     const msgList = allMessages.map(m => `「${m}」`).join('、');
     smsLine = `*{{user}}拿起手机,给${th.name}连续发了${allMessages.length}条短信:${msgList}*`;
   }
+
+  const quoteLines = submittedQuotes.map((quote,index) => quote ? '第' + (index+1) + '条短信' + rpTools().quoteText(quote) : '').filter(Boolean);
+  if (quoteLines.length) smsLine += '\n*' + quoteLines.join('；') + '*';
 
   // FIX4+FIX1: 判断联系人是否为主角,生成不同的 OOC 指令
   // 修复:mainCharName 为空时,仅将内置线程 raymond/gaspard 视为主角,避免把所有 NPC 错误归为主角
@@ -12307,10 +12359,12 @@ ${smsLine}
   renderPendingQueue();
   const submitted = rpSubmitHostAction(requestWrappedText, hostIndex => {
     if (th.messages.some(m => m.hostIndex === hostIndex && m.from === 'user')) return;
-    allMessages.forEach(text => th.messages.push({from:'user', text, time:ts, hostIndex}));
+    allMessages.forEach((text,index) => th.messages.push({from:'user', text, time:ts, hostIndex, ...(submittedQuotes[index] ? {phoneQuote:submittedQuotes[index]} : {})}));
     const remaining = (Array.isArray(th.pendingMessages) ? th.pendingMessages : submittedQueue).slice(queuedCount);
+    th.pendingQuotes = rpTools().quotes(th).slice(queuedCount);
     th.pendingMessages = remaining;
     if (th.draft === currentText) th.draft = '';
+    if (currentText && th.draftQuote === submittedDraftQuote) th.draftQuote = null;
     if (STATE.currentThread === th.id) {
       STATE.pendingMessages = remaining;
       if ($('#rp-input').val().trim() === currentText) $('#rp-input').val('');
@@ -14316,7 +14370,7 @@ function rpParsePhoneAtom(block, source = {}) {
     if (!rpIsReadingThread(threadId)) th.unread++;
     refreshBadges(); updatePreviews();
     if (STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
-    showBanner(th.name, '[图片]', fallbackTime);
+    showBanner(th.name, '[图片]', fallbackTime, th.id);
     saveState();
   }
 
@@ -14418,7 +14472,7 @@ function rpParsePhoneAtom(block, source = {}) {
       if (!rpIsReadingThread(threadId)) th.unread++;
       refreshBadges(); updatePreviews();
       if (STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
-      showBanner(th.name, '📷 图片生成中...', msgTime);
+      showBanner(th.name, '📷 图片生成中...', msgTime, th.id);
       saveState();
     });
 
@@ -14674,7 +14728,7 @@ function rpParsePhoneAtom(block, source = {}) {
           if (!rpIsReadingThread(grpThread.id)) grpThread.unread = (grpThread.unread || 0) + 1;
       refreshBadges(); renderThreadList();
       if (STATE.currentThread === groupId) renderBubbles(groupId);
-      showBanner(groupName, `${fromRaw}: 🎤 [${duration}]`);
+      showBanner(groupName, `${fromRaw}: 🎤 [${duration}]`, undefined, groupId);
     }
     saveState();
     parsedCount++;
@@ -14719,7 +14773,7 @@ function rpParsePhoneAtom(block, source = {}) {
           if (!rpIsReadingThread(grpThread.id)) grpThread.unread = (grpThread.unread || 0) + 1;
       refreshBadges(); renderThreadList();
       if (STATE.currentThread === groupId) renderBubbles(groupId);
-      showBanner(groupName, `${fromRaw} 发了一个红包`);
+      showBanner(groupName, `${fromRaw} 发了一个红包`, undefined, groupId);
     }
     saveState();
     parsedCount++;
@@ -14839,7 +14893,7 @@ function incomingMsg(threadId, text, time, source) {
   }
 
   showLiveChat(th.name, th.avatarBg, STATE.avatars?.[th.name] || null, text);
-  showBanner(th.name, text, resolvedTime);
+  showBanner(th.name, text, resolvedTime, th.id);
   saveState(); // FIX2: 持久化收到的消息
 }
 
@@ -14853,7 +14907,8 @@ function rpHideBanner() {
   $('#rp-notif-banner').stop(true).removeClass('rp-nb-in').hide();
   $('#rp-live-chat').empty();
 }
-function showBanner(from, text, time) {
+function showBanner(from, text, time, threadId, allowCall = false) {
+  if (!allowCall && rpTools().isMuted(threadId,from)) return;
   // 短时去重:同 from+text 在 3s 内不重复弹出
   const key = from + '|' + text;
   if (STATE._lastBannerKey === key && Date.now() - (STATE._lastBannerAt || 0) < 3000) return;
@@ -15458,7 +15513,7 @@ function incomingCall(fromRaw, time, source) {
   STATE._pendingCall = { fromRaw, time, threadId: thread.id, chatSlot: STATE.chatId, source };
   clearTimeout(STATE._callTimer);
   STATE._callTimer = setTimeout(() => resolveCall('missed'), 15000);
-  showBanner(thread.name, '📞 来电中...');
+  showBanner(thread.name, '📞 来电中...', undefined, thread.id, true);
 }
 
 function resolveCall(result) {
@@ -15515,7 +15570,7 @@ function incomingHongbao(fromRaw, amount, note, time, source) {
   if (!rpIsReadingThread(thread.id)) thread.unread = (thread.unread || 0) + 1;
   refreshBadges(); renderThreadList();
   if (STATE.currentThread === thread.id) renderBubbles(thread.id);
-  showBanner(thread.name, '🧧 发来了一个红包');
+  showBanner(thread.name, '🧧 发来了一个红包', undefined, thread.id);
   showLiveChat(thread.name, thread.avatarBg, STATE.avatars?.[thread.name] || null, `🧧 红包:${note}`);
   saveState();
 }
@@ -15555,7 +15610,7 @@ function incomingVoice(fromRaw, time, duration, text, source) {
   if (!rpIsReadingThread(thread.id)) thread.unread = (thread.unread || 0) + 1;
   refreshBadges(); renderThreadList();
   if (STATE.currentThread === thread.id) renderBubbles(thread.id);
-  showBanner(thread.name, `🎤 语音消息 ${duration}`);
+  showBanner(thread.name, `🎤 语音消息 ${duration}`, undefined, thread.id);
   showLiveChat(thread.name, thread.avatarBg, STATE.avatars?.[thread.name] || null, `🎤 ${duration}`);
   saveState();
 }
@@ -15608,7 +15663,7 @@ function incomingGroupMsg(fromRaw, groupName, time, text, source) {
   if (!rpIsReadingThread(thread.id)) thread.unread = (thread.unread || 0) + 1;
   refreshBadges(); renderThreadList();
   if (STATE.currentThread === groupId) renderBubbles(groupId);
-  showBanner(groupName, `${fromRaw}:${text.slice(0,22)}${text.length>22?'...':''}`);
+  showBanner(groupName, `${fromRaw}:${text.slice(0,22)}${text.length>22?'...':''}`, undefined, groupId);
   const _sth = senderTh;
   showLiveChat(fromRaw, _sth.avatarBg, STATE.avatars?.[fromRaw] || null, text);
   saveState();
