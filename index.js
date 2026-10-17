@@ -1,4 +1,4 @@
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261016-practical46';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261017-global-font47';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -22501,7 +22501,7 @@ function lgRender() {
     const num = idx + 1;
     if (!isStart && !isEnd && num % 5 === 0) {
     C.fillStyle = 'rgba(64,72,80,.74)';
-    C.font = `${CELL*0.42}px -apple-system, sans-serif`;
+    C.font = `${CELL*0.42*(rpTools().prefs().scale/100)}px -apple-system, sans-serif`;
       C.textAlign = 'center'; C.textBaseline = 'middle';
       C.fillText(String(num), c*CELL+CELL/2, r*CELL+CELL/2);
     }

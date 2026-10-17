@@ -1,11 +1,14 @@
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
 '#rp-phone #rp-screen .rp-tools-buttons{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}',
+'#rp-phone #rp-screen #rp-phone-tools-settings>.rp-tools-buttons{padding:10px 12px;box-sizing:border-box;min-width:0}',
 '#rp-phone #rp-screen .rp-tools-button{border:0;border-radius:10px;padding:8px 10px;min-height:36px;background:var(--rp-v-card,#f1ece9);color:var(--rp-v-text,#44353d);font:inherit;font-size:12px;cursor:pointer}',
 '#rp-phone.rp-dark #rp-screen .rp-tools-button{background:var(--rp-v-card,#2c2735);color:var(--rp-v-text,#ebe7f0)}',
 '#rp-phone #rp-screen #rp-view-thread>.rp-nav-bar{grid-template-columns:76px minmax(0,1fr) 76px}',
 '#rp-phone #rp-screen .rp-thread-tools-actions{display:flex;align-items:center;justify-content:flex-end;gap:2px;min-width:0}',
-'#rp-phone #rp-screen #rp-thread-menu{width:32px;min-width:32px;height:40px;font-size:23px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}',
+'#rp-phone #rp-screen #rp-thread-menu{width:max(32px,calc(23px * var(--mochi-phone-font-scale,1)));min-width:32px;flex-shrink:0;height:40px;font-size:23px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}',
+'#rp-phone #rp-screen .rp-game-resume button{font-size:13.333333px}',
+'#rp-phone[data-font-enlarged=true] #rp-screen #rp-view-g2048{overflow-y:auto!important;overscroll-behavior:contain}',
 '#rp-phone #rp-screen .rp-message-more{border:0;background:transparent;color:var(--rp-v-muted,#756772);font:inherit;font-size:16px;min-width:24px;min-height:28px;padding:0 4px;cursor:pointer}',
 '#rp-phone #rp-screen #rp-view-thread .rp-voice-txt{font-size:var(--rp-reading-message-size,11.5px)!important}',
 '#rp-phone.rp-dark #rp-screen .rp-message-more{color:var(--rp-v-muted,#c5bdce)}',
@@ -58,7 +61,8 @@ function portable(value) {
 }
 function normalizePrefs(value) {
   const number = (key,fallback) => typeof value?.[key] === 'number' && Number.isFinite(value[key]) ? Math.max(9,Math.min(18,Math.round(value[key]*2)/2)) : fallback;
-  return {message:number('message',11.5),moments:number('moments',12),density:value?.density==='compact'?'compact':'standard'};
+  const scale=typeof value?.scale==='number'&&Number.isFinite(value.scale)?Math.max(75,Math.min(150,Math.round(value.scale/5)*5)):100;
+  return {message:number('message',11.5),moments:number('moments',12),scale,density:value?.density==='compact'?'compact':'standard'};
 }
 function identity(item) {
   if (item.phoneSource?.key) return 'source:' + item.phoneSource.key;
@@ -104,7 +108,70 @@ function mergeComments(target, source, stats) {
 export function createPhoneTools(api) {
   const $=api.$, doc=api.document, state=api.state;
   const prefsKey=()=> 'mochi-phone-reading-v1-' + (api.touch()?'mobile':'desktop');
-  let prefs=normalizePrefs(null), mountedRuntime=null, unbind=null;
+  let prefs=normalizePrefs(null), mountedRuntime=null, unbind=null, fontObserver=null;
+  const fontVariable='--mochi-phone-font-scale',fontOwners='#rp-phone,#rp-wrapper,#rp-fab,#rp-live-chat';
+  function fontValue(value, root = false) {
+    const v=String(value||'').trim();
+    if(!v||v.includes(fontVariable)||/^(?:inherit|unset|revert(?:-layer)?|smaller|larger)$/i.test(v))return v;
+    // Relative descendants inherit their already-scaled parent; wrapping them again would compound.
+    if(!root&&/(?:[0-9.]em\b|%)/i.test(v))return v;
+    const keywords={'xx-small':'9px','x-small':'10px',small:'13px',medium:'16px',large:'18px','x-large':'24px','xx-large':'32px','xxx-large':'48px',initial:'16px'};
+    return 'calc(('+ (keywords[v]||v) +') * var('+fontVariable+',1))';
+  }
+  function scaleDeclaration(style, root = false) {
+    const original=style.getPropertyValue('font-size'),next=fontValue(original,root);
+    if(next&&next!==original)style.setProperty('font-size',next,style.getPropertyPriority('font-size'));
+  }
+  function scaleSheet(owner) {
+    if(!owner?.sheet)return;
+    const phone=doc.getElementById('rp-phone');
+    const visit=rules=>{for(const rule of rules||[]){
+      if(rule.style){let root=false;try{root=!!phone?.matches(rule.selectorText||':not(*)');}catch(_){}scaleDeclaration(rule.style,root);}
+      if(rule.cssRules)visit(rule.cssRules);
+    }};
+    try{visit(owner.sheet.cssRules);}catch(_){}
+  }
+  function scaleInline(root) {
+    if(root?.nodeType!==1)return;
+    const candidates=[root,...root.querySelectorAll('[style]')];
+    for(const el of candidates)if(el.closest(fontOwners)&&el.style)scaleDeclaration(el.style,el.id==='rp-phone');
+  }
+  function refreshTypography() {
+    for(const id of ['rp-phone-css','rp-custom-theme-style'])scaleSheet(doc.getElementById(id));
+    for(const root of doc.querySelectorAll(fontOwners))scaleInline(root);
+  }
+  function installTypography() {
+    fontObserver?.disconnect();
+    let base=doc.getElementById('rp-global-font-base');
+    if(!base){
+      base=doc.createElement('style');base.id='rp-global-font-base';
+      // The phone's parent is outside its scaled text tree; 1em tracks the host's base font.
+      base.textContent='#rp-phone{font-size:calc(1em * var('+fontVariable+',1))}';
+      doc.head.insertBefore(base,doc.getElementById('rp-phone-css'));
+    }
+    refreshTypography();
+    const Observer=doc.defaultView.MutationObserver;
+    const observer=new Observer(records=>{
+      const sheets=new Set(),nodes=new Set();
+      for(const change of records){
+        if(change.type==='attributes'){
+          const el=change.target,value=el.style?.getPropertyValue('font-size');
+          if(value&&!value.includes(fontVariable)&&el.closest(fontOwners))nodes.add(el);
+        }else{
+          const style=change.target.nodeType===1?change.target:change.target.parentElement;
+          if(style?.matches?.('#rp-phone-css,#rp-custom-theme-style'))sheets.add(style);
+          for(const node of change.addedNodes)if(node.nodeType===1){
+            if(node.matches('#rp-phone-css,#rp-custom-theme-style'))sheets.add(node);
+            if(node.matches(fontOwners)||node.closest(fontOwners))nodes.add(node);
+          }
+        }
+      }
+      for(const sheet of sheets)scaleSheet(sheet);
+      for(const node of nodes)scaleInline(node);
+    });
+    observer.observe(doc.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['style'],characterData:true});
+    fontObserver=observer;api.runtime().own(()=>{observer.disconnect();if(fontObserver===observer)fontObserver=null;base.remove();});
+  }
   const toolsState=()=> {
     if(!object(state().phoneTools))state().phoneTools={};
     if(!Array.isArray(state().phoneTools.bookmarks))state().phoneTools.bookmarks=[];
@@ -132,24 +199,20 @@ export function createPhoneTools(api) {
     const phone=doc.getElementById('rp-phone');if(!phone)return true;
     phone.style.setProperty('--rp-reading-message-size',next.message+'px');
     phone.style.setProperty('--rp-reading-moment-size',next.moments+'px');
+    for(const root of doc.querySelectorAll(fontOwners))root.style.setProperty(fontVariable,String(next.scale/100));
     phone.dataset.readingDensity=next.density;
+    phone.dataset.fontEnlarged=next.scale>100?'true':'false';
     return true;
   }
   function openReading() {
-    const content=node('div'), status=node('p','rp-feature-note','更改立即保存，仅用于当前账号的'+(api.touch()?'手机端':'电脑端')+'。');
-    const inputs={};
-    for(const [key,label] of [['message','消息'],['moments','朋友圈']]){
-      const output=node('output','',prefs[key]+'px'),input=node('input').attr({type:'range',min:9,max:18,step:.5,'aria-label':label+'字号'}).val(prefs[key]);
-      input.on('input',()=>{
-        const next={...prefs,[key]:Number(input.val())};api.rememberReading();
-        if(applyReading(next,true)){output.text(prefs[key]+'px');api.restoreReading();}else input.val(prefs[key]);
-      });
-      inputs[key]={input,output};content.append(node('label','rp-tools-field').append(node('span','',label),input,output));
-    }
+    const content=node('div'), status=node('p','rp-feature-note','统一调整所有功能与界面的文字，保留标题和正文的大小层次。更改立即保存，仅用于当前账号的'+(api.touch()?'手机端':'电脑端')+'。');
+    const output=node('output','',prefs.scale+'%'),input=node('input').attr({type:'range',min:75,max:150,step:5,id:'rp-global-font-size','aria-label':'整体字号'}).val(prefs.scale);
+    input.on('input',()=>{api.rememberReading();if(applyReading({...prefs,scale:Number(input.val())},true)){output.text(prefs.scale+'%');api.restoreReading();}else input.val(prefs.scale);});
+    content.append(node('label','rp-tools-field').append(node('span','','整体字号'),input,output));
     const density=node('select','rp-tools-select').attr('aria-label','显示密度').append(node('option','','标准').val('standard'),node('option','','紧凑').val('compact')).val(prefs.density);
     density.on('change',()=>{api.rememberReading();if(applyReading({...prefs,density:density.val()},true))api.restoreReading();else density.val(prefs.density);});
     content.append(node('label','rp-tools-field').append(node('span','','显示密度'),density),status);
-    api.dialog('阅读显示',content,[{label:'恢复默认',run:()=>{if(applyReading(null,true)){for(const key of ['message','moments']){inputs[key].input.val(prefs[key]);inputs[key].output.text(prefs[key]+'px');}density.val(prefs.density);}return false;}},{label:'完成'}]);
+    api.dialog('调整字号大小',content,[{label:'恢复默认',run:()=>{api.rememberReading();if(applyReading(null,true)){input.val(prefs.scale);output.text(prefs.scale+'%');density.val(prefs.density);api.restoreReading();}return false;}},{label:'完成'}]);
   }
   function openThreadMenu() {
     const thread=state().threads[state().currentThread];if(!thread)return;
@@ -370,9 +433,10 @@ export function createPhoneTools(api) {
     if(unbind)unbind();
     try{prefs=normalizePrefs(JSON.parse(api.storage.getItem(prefsKey())||'null'));}catch(_){prefs=normalizePrefs(null);}
     applyReading(prefs);
+    installTypography();
     if(!doc.getElementById('rp-phone-tools-settings')){
       const settings=$('#rp-view-settings'),body=settings.children().filter((_,e)=>doc.defaultView.getComputedStyle(e).overflowY==='auto').first();
-      const block=node('section','').attr('id','rp-phone-tools-settings').append(node('div','rp-set-section-title','阅读与数据'),node('div','rp-tools-buttons').append(button('阅读显示',openReading),button('消息收藏',()=>openBookmarks()),button('备份与恢复',openBackup)));
+      const block=node('section','').attr('id','rp-phone-tools-settings').append(node('div','rp-set-section-title','调整字号大小'),node('div','rp-tools-buttons').append(button('字号与显示',openReading),button('消息收藏',()=>openBookmarks()),button('备份与恢复',openBackup)));
       (body.length?body:settings).prepend(block);
     }
     if(!doc.getElementById('rp-thread-menu'))$('#rp-thread-search').wrap('<div class="rp-thread-tools-actions"></div>').parent().append(node('button','','⋯').attr({id:'rp-thread-menu',type:'button','aria-label':'聊天设置与收藏'}).on('click',openThreadMenu));
@@ -381,5 +445,5 @@ export function createPhoneTools(api) {
     $(doc).on('keydown'+ns,event=>{if(event.key==='Escape'&&state().currentView==='thread'&&!doc.getElementById('rp-feature-layer')){const thread=state().threads[state().currentThread];if(thread?.draftQuote){delete thread.draftQuote;api.save();renderReply();}}});
     unbind=()=>{$(doc).off(ns);unbind=null;};mountedRuntime.own(unbind);renderReply();
   }
-  return {mount,applyReading,openReading,openThreadMenu,openBookmarks,openMessage,renderReply,decorateMessages,decorateThreads,isMuted,quotes,quoteText,normalizeSaved,mergeContacts,makeBackup,parseBackup,planMerge,restoreBackup,previewBackup,openBackup,exportBackup,portable,signature,prefs:()=>({...prefs}),snapshot,toolsState};
+  return {mount,applyReading,openReading,refreshTypography,openThreadMenu,openBookmarks,openMessage,renderReply,decorateMessages,decorateThreads,isMuted,quotes,quoteText,normalizeSaved,mergeContacts,makeBackup,parseBackup,planMerge,restoreBackup,previewBackup,openBackup,exportBackup,portable,signature,prefs:()=>({...prefs}),snapshot,toolsState};
 }
