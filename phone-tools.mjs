@@ -1,5 +1,16 @@
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
+'#rp-phone #rp-screen .rp-conv-field{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:9px 0;min-width:0}',
+'#rp-phone #rp-screen .rp-conv-field>span{flex:0 0 4.8em;font-size:12px}',
+'#rp-phone #rp-screen .rp-conv-field>input,#rp-phone #rp-screen .rp-conv-field>select{flex:1;min-width:0;width:100%;box-sizing:border-box}',
+'#rp-phone #rp-screen .rp-conv-check{display:flex;align-items:flex-start;gap:8px;padding:9px 0;font-size:12px;min-width:0;overflow-wrap:anywhere;cursor:pointer}',
+'#rp-phone #rp-screen .rp-conv-check input{flex:0 0 18px;width:18px;height:18px;margin:2px 0;accent-color:var(--rp-nav-btn,#9b647b)}',
+'#rp-phone #rp-screen .rp-conv-check span{min-width:0;white-space:pre-wrap}',
+'#rp-phone #rp-screen .rp-conv-source{font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-height:9em;overflow:auto;padding:8px;border-radius:9px;background:var(--rp-v-card,#f1ece9)}',
+'#rp-phone #rp-screen .rp-search-navigation{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;padding:4px 8px;flex-shrink:0;font-size:11px;background:var(--rp-v-card,#f1ece9);color:var(--rp-v-text,#44353d)}',
+'#rp-phone #rp-screen .rp-search-navigation button{font-size:11px;padding:4px 7px;min-height:32px}',
+'#rp-phone #rp-screen .rp-long-image-preview{display:block;width:100%;height:auto;border-radius:10px}',
+
 '#rp-phone #rp-screen .rp-tools-buttons{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}',
 '#rp-phone #rp-screen #rp-view-settings .rp-settings-body{min-height:0;padding:4px 12px 18px;box-sizing:border-box;overscroll-behavior:contain}',
 '#rp-phone #rp-screen #rp-view-settings .rp-settings-group{margin:0 0 10px;min-width:0}',
@@ -257,6 +268,7 @@ export function createPhoneTools(api) {
     content.append(node('label','rp-tools-field').append(node('span','','显示密度'),density),status);
     api.dialog('调整字号大小',content,[{label:'恢复默认',run:()=>{api.rememberReading();if(applyReading(null,true)){input.val(prefs.scale);output.text(prefs.scale+'%');density.val(prefs.density);api.restoreReading();}return false;}},{label:'完成'}]);
   }
+  const conversation=createConversationFeatures({...api,node,button,info,toolsState,snapshot,ensureId,jump,safeImage,fontScale:()=>prefs.scale/100});
   function openThreadMenu() {
     const thread=state().threads[state().currentThread];if(!thread)return;
     const content=node('div').append(node('p','',thread.name),node('p','rp-feature-note','免打扰只关闭该聊天的消息横幅，消息、未读数和来电照常保留。'));
@@ -264,7 +276,10 @@ export function createPhoneTools(api) {
     api.dialog('聊天设置',content,[
       {label:thread.phonePinned?'取消置顶':'置顶聊天',run:()=>{if(live()){thread.phonePinned=!thread.phonePinned;thread.phonePrefsAt=Date.now();api.renderThreads();api.save();}}},
       {label:thread.phoneMuted?'关闭免打扰':'开启免打扰',run:()=>{if(live()){thread.phoneMuted=!thread.phoneMuted;thread.phonePrefsAt=Date.now();api.hideBanner();api.renderThreads();api.save();}}},
-      {label:'消息收藏',run:()=>{openBookmarks(thread.id);return false;}},{label:'关闭'}
+      {label:'消息收藏',run:()=>{openBookmarks(thread.id);return false;}},
+      {label:'自动翻译'+(thread.phoneAutoTranslate?.enabled?'（已开启）':''),run:()=>{conversation.openAuto(thread);return false;}},
+      {label:'聊天长图',run:()=>{conversation.openExport(thread);return false;}},
+      {label:'剧情约定',run:()=>{conversation.openAgreements(thread.id);return false;}},{label:'关闭'}
     ]);
   }
   function sourceOf(entry) {
@@ -306,6 +321,8 @@ export function createPhoneTools(api) {
     api.dialog('信息操作',node('div').append(node('p','rp-feature-preview',snapshot(thread,message).text.slice(0,240))),[
       {label:'引用回复',run:()=>{if(!live())return;thread.draftQuote=snapshot(thread,message);api.save();api.closeDialog();renderReply();$('#rp-input').trigger('focus');return false;}},
       {label:saved?'取消收藏':'收藏消息',run:()=>{if(!live())return;const items=toolsState().bookmarks;if(saved){const i=items.indexOf(saved);if(i>=0)items.splice(i,1);}else items.push({...snapshot(thread,message),savedAt:Date.now(),id:uid()});api.save();}},
+      {label:'加入约定',run:()=>{if(live())conversation.addAgreement(thread,message);return false;}},
+      {label:'导出长图',run:()=>{if(live())conversation.openExport(thread,message);return false;}},
       {label:'关闭'}
     ]);
   }
@@ -338,7 +355,7 @@ export function createPhoneTools(api) {
   function quoteText(quote) {return quote?'回复 '+String(quote.name||'对方').replace(/[<>]/g,'')+' 的「'+String(quote.text||'').replace(/[<>]/g,'').slice(0,800)+'」：':'';}
   function normalizeSaved(saved) {
     const raw=object(saved.phoneTools)?saved.phoneTools:{},bookmarks=Array.isArray(raw.bookmarks)?raw.bookmarks.filter(e=>object(e)&&typeof e.threadId==='string'&&typeof e.messageId==='string'&&typeof e.text==='string'): [];
-    state().phoneTools={version:1,bookmarks:clone(bookmarks)};
+    state().phoneTools={...clone(raw),version:1,bookmarks:clone(bookmarks)};
     for(const thread of Object.values(state().threads||{})){
       thread.pendingQuotes=quotes(thread);
       if(!object(thread.draftQuote))delete thread.draftQuote;
@@ -347,6 +364,7 @@ export function createPhoneTools(api) {
     renderReply();
   }
   function mergeContacts(keep,drop) {
+    conversation.mergeContacts(keep,drop);
     // Called before the existing queue/draft concatenation.
     keep.pendingQuotes=[...quotes(keep),...quotes(drop)];
     if(drop.draft){if(!keep.draft)keep.draftQuote=drop.draftQuote||null;else keep.pendingQuotes.push(drop.draftQuote||null);}
@@ -376,11 +394,13 @@ export function createPhoneTools(api) {
       if(thread.draft!==undefined&&typeof thread.draft!=='string')throw new Error('备份草稿格式不完整。');
       for(const m of thread.messages)for(const key of ['text','name','from','type','time','src','voiceText','place'])if(m[key]!==undefined&&typeof m[key]!=='string')throw new Error('备份消息字段格式不完整。');
     }
+    if(value.data.phoneTools?.agreements!==undefined&&(!Array.isArray(value.data.phoneTools.agreements)||value.data.phoneTools.agreements.some(e=>!object(e)||typeof e.id!=='string'||typeof e.threadId!=='string'||typeof e.messageId!=='string'||typeof e.text!=='string'||typeof e.title!=='string'||(e.dueAt!=null&&!Number.isFinite(e.dueAt)))))throw new Error('备份约定清单格式不完整。');
+    for(const t of Object.values(value.data.threads))if(t.phoneAutoTranslate!==undefined&&(!object(t.phoneAutoTranslate)||typeof t.phoneAutoTranslate.enabled!=='boolean'||!Array.isArray(t.phoneAutoTranslate.known)||t.phoneAutoTranslate.known.some(k=>typeof k!=='string')))throw new Error('备份自动翻译设置格式不完整。');
     value.data=portable(value.data);return value;
   }
   function planMerge(backup, current=api.snapshot()) {
     if(backup.origin.account!==api.account()||backup.origin.slot!==state().chatId)throw new Error('备份与当前账号或聊天不一致。');
-    const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,themeMessages:0,skipped:0};
+    const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,agreements:0,themeMessages:0,skipped:0};
     result.threads ||= {};
     for(const[id,thread]of Object.entries(source.threads)){
       if(api.blocked(thread,current)){stats.skipped++;continue;}
@@ -406,6 +426,11 @@ export function createPhoneTools(api) {
     result.phoneTools ||= {version:1,bookmarks:[]};result.phoneTools.bookmarks ||= [];
     const bookmarks=source.phoneTools?.bookmarks||[];const known=new Set(result.phoneTools.bookmarks.map(e=>JSON.stringify([e.threadId,e.messageId])));
     for(const entry of bookmarks)if(object(entry)&&typeof entry.threadId==='string'&&typeof entry.messageId==='string'&&typeof entry.text==='string'){const key=JSON.stringify([entry.threadId,entry.messageId]);if(!known.has(key)){result.phoneTools.bookmarks.push(clone(entry));known.add(key);stats.bookmarks++;}}
+    result.phoneTools.agreements ||= [];
+    const agreementIds=new Set(result.phoneTools.agreements.map(e=>e.id));
+    for(const e of source.phoneTools?.agreements||[])if(object(e)&&typeof e.id==='string'&&!agreementIds.has(e.id)){result.phoneTools.agreements.push(clone(e));agreementIds.add(e.id);stats.agreements++;}
+    // Importing history must never start automatic translation requests.
+    for(const t of Object.values(result.threads))if(t.phoneAutoTranslate){if(!current.threads?.[t.id])t.phoneAutoTranslate.enabled=false;else t.phoneAutoTranslate.known=[...new Set([...(t.phoneAutoTranslate.known||[]),...t.messages.map(m=>{if(m.id==null)m.id=uid();return String(m.id);})])];}
     for(const field of ['avatars','nameAliases']){result[field] ||= {};for(const[key,value]of Object.entries(source[field]||{}))if(!Object.hasOwn(result[field],key))result[field][key]=clone(value);}
     for(const field of ['composeDraft','diaryDraft','themeStudioDraft'])if(!result[field]&&typeof source[field]==='string')result[field]=source[field];
     result.themeStudioMessages ||= [];mergeList(result.themeStudioMessages,source.themeStudioMessages||[],stats,'themeMessages');
@@ -459,7 +484,7 @@ export function createPhoneTools(api) {
   function previewBackup(backup) {
     const task=api.runtime().task(),origin=signature(),plan=planMerge(backup),s=plan.stats,content=node('div'),status=node('p','rp-feature-note');
     const token={valid:()=>task.valid()&&!!content[0]?.isConnected};
-    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏及'+s.themeMessages+' 条主题对话。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
+    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏、'+s.agreements+' 条约定及'+s.themeMessages+' 条主题对话。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
     let running=false;
     api.dialog('恢复预览',content,[{label:'取消'},{label:'合并恢复',primary:true,run:()=>{if(running)return false;running=true;status.text('正在备份并校验…');void restoreBackup(backup,origin,token).then(ok=>{if(ok)api.closeDialog();else if(token.valid()){running=false;status.text('未合并，请检查提示或重新选择备份。');}}).catch(()=>{if(token.valid()){running=false;status.text('恢复未完成，原存档与自动备份仍保留。');}});return false;}}]);
   }
@@ -488,9 +513,296 @@ export function createPhoneTools(api) {
     settingsLink('#rp-settings-backup-slot','rp-settings-backup','备份与恢复','导出当前聊天，或预览并合并备份',openBackup);
     if(!doc.getElementById('rp-thread-menu'))$('#rp-thread-search').wrap('<div class="rp-thread-tools-actions"></div>').parent().append(node('button','','⋯').attr({id:'rp-thread-menu',type:'button','aria-label':'聊天设置与收藏'}).on('click',openThreadMenu));
     if(!doc.getElementById('rp-reply-preview'))node('div').attr('id','rp-reply-preview').hide().insertBefore('#rp-pending-queue');
+    conversation.mount();
     mountedRuntime=api.runtime();const ns='.mochiPhoneTools'+uid();
     $(doc).on('keydown'+ns,event=>{if(event.key==='Escape'&&state().currentView==='thread'&&!doc.getElementById('rp-feature-layer')){const thread=state().threads[state().currentThread];if(thread?.draftQuote){delete thread.draftQuote;api.save();renderReply();}}});
     unbind=()=>{$(doc).off(ns);unbind=null;};mountedRuntime.own(unbind);renderReply();
   }
-  return {mount,applyReading,openReading,refreshTypography,openThreadMenu,openBookmarks,openMessage,renderReply,decorateMessages,decorateThreads,isMuted,quotes,quoteText,normalizeSaved,mergeContacts,makeBackup,parseBackup,planMerge,restoreBackup,previewBackup,openBackup,exportBackup,portable,signature,prefs:()=>({...prefs}),snapshot,toolsState};
+  return {conversation,mount,applyReading,openReading,refreshTypography,openThreadMenu,openBookmarks,openMessage,renderReply,decorateMessages,decorateThreads,isMuted,quotes,quoteText,normalizeSaved,mergeContacts,makeBackup,parseBackup,planMerge,restoreBackup,previewBackup,openBackup,exportBackup,portable,signature,prefs:()=>({...prefs}),snapshot,toolsState};
+}
+
+
+// Conversation helpers stay local to the current account/chat and never submit host messages.
+export function createConversationFeatures(api) {
+  const {$,document:doc,state,node,button,info}=api;
+  const win=doc.defaultView;
+  const supported=['source','cached','translate','translationBusy','avatar'].every(k=>typeof api[k]==='function');
+  let activeSearch=null,searchJumping=false,autoBusy=false,mounted=null,exportCleanup=null;
+  const key=m=>api.ensureId(m);
+  const liveThread=t=>state().threads[t.id]===t;
+  const typeOf=m=>/image/.test(m.type||'')?'image':/voice/.test(m.type||'')?'voice':/hongbao/.test(m.type||'')?'hongbao':m.type==='location'?'location':'text';
+  const translated=m=>api.cached(m)?.text||'';
+  const searchable=m=>[m.text,m.voiceText,m.note,m.place,m.amount,translated(m)].filter(v=>v!=null).join(' ');
+  const sender=(t,m)=>m.from==='user'?'我':m.name||t.name;
+  const validEntry=e=>object(e)&&typeof e.id==='string'&&typeof e.threadId==='string'&&typeof e.messageId==='string'&&typeof e.text==='string'&&typeof e.title==='string';
+  const agreements=()=>{const s=api.toolsState();if(!Array.isArray(s.agreements))s.agreements=[];return s.agreements;};
+  const origin=e=>{const t=state().threads[e.threadId];return {thread:t,message:t?.messages?.find(m=>String(m.id)===e.messageId)};};
+  const field=(label,control)=>node('label','rp-conv-field').append(node('span','',label),control);
+  const note=text=>node('p','rp-feature-note',text);
+  const checkbox=(id,label,checked=false)=>{const input=node('input').attr({type:'checkbox',id}).prop('checked',checked);return {input,label:node('label','rp-conv-check').append(input,node('span','',label))};};
+  const sessionValid=token=>token.valid()&&doc.visibilityState!=='hidden';
+  function isVisible(t) {
+    const phone=doc.getElementById('rp-phone');
+    return liveThread(t)&&state().currentView==='thread'&&state().currentThread===t.id&&doc.visibilityState!=='hidden'&&phone&&win.getComputedStyle(phone).display!=='none'&&!api.blocked(t,state());
+  }
+  function setAuto(t,enabled) {
+    if(!liveThread(t))return;
+    t.phoneAutoTranslate={enabled:!!enabled,known:(t.messages||[]).map(key),changedAt:Date.now()};
+    api.save();
+  }
+  function openAuto(t=state().threads[state().currentThread]) {
+    if(!supported){info('请刷新酒馆后使用此功能。');return;}
+    if(!t||!liveThread(t))return;
+    const content=node('div').append(node('strong','',t.name),note('仅在打开此会话时，逐条翻译开启后收到的新文字或语音文字。使用当前翻译 API，可能产生费用；已有历史不会批量翻译。失败可点消息上的翻译按钮重试。离开会话或关闭开关后停止排队。'));
+    const enabled=checkbox('rp-auto-translate-enabled','此会话自动翻译',t.phoneAutoTranslate?.enabled===true);
+    content.append(enabled.label,note('关闭后重新开启，只处理重新开启后收到的新消息。'));
+    const token=api.runtime().task();
+    api.dialog('自动翻译',content,[{label:'取消'},{label:'保存',primary:true,run:()=>{if(token.valid()&&content[0].isConnected&&liveThread(t)&&enabled.input.prop('checked')!==(t.phoneAutoTranslate?.enabled===true))setAuto(t,enabled.input.prop('checked'));}}]);
+  }
+  async function pumpAuto() {
+    if(!supported||autoBusy)return false;
+    const t=state().threads[state().currentThread],config=t?.phoneAutoTranslate;
+    if(!t||config?.enabled!==true||!Array.isArray(config.known)||!isVisible(t)||api.translationBusy())return false;
+    const known=new Set(config.known);
+    const m=t.messages.find(m=>m.from!=='user'&&['text','default','group_msg','voice','group_voice',''].includes(m.type||'')&&!known.has(key(m)));
+    if(!m)return false;
+    const id=key(m),source=api.source(m),token=api.runtime().task();
+    const valid=()=>token.valid()&&isVisible(t)&&t.phoneAutoTranslate===config&&config.enabled&&t.messages.includes(m)&&api.source(m)===source;
+    if(!source||source.length>8000||api.cached(m)){config.known.push(id);api.save();return true;}
+    autoBusy=true;
+    try {
+      await api.translate({kind:'message',threadId:t.id,item:m},valid);
+      // Canceled/edited messages remain eligible; failed requests never loop automatically.
+      if(valid()&&!config.known.includes(id)){config.known.push(id);api.save();}
+    } finally { autoBusy=false; }
+    return true;
+  }
+  function searchMessages({query='',threadId='',member='',kind=''}={}) {
+    const q=query.trim().toLocaleLowerCase(),matches=[];
+    for(const t of Object.values(state().threads||{})) {
+      if(threadId&&t.id!==threadId)continue;
+      if(q&&!member&&!kind&&String(t.name||'').toLocaleLowerCase().includes(q))matches.push({thread:t,message:null,text:'联系人 · '+(t.messages||[]).length+' 条信息'});
+      for(const m of t.messages||[]) {
+        if(member&&sender(t,m)!==member||kind&&typeOf(m)!==kind)continue;
+        const text=searchable(m);
+        if(!q||text.toLocaleLowerCase().includes(q))matches.push({thread:t,message:m,text});
+      }
+    }
+    return matches;
+  }
+  const resultLive=r=>liveThread(r.thread)&&(!r.message||r.thread.messages.includes(r.message));
+  function clearSearch() {activeSearch=null;$('#rp-search-navigation').remove();}
+  function paintSearch() {
+    $('#rp-search-navigation').remove();
+    const s=activeSearch;if(!s||!s.token.valid()){clearSearch();return;}
+    const bar=node('div','rp-search-navigation').attr({id:'rp-search-navigation','aria-label':'搜索结果导航'});
+    const step=delta=>{if(!activeSearch)return;let i=s.index+delta;while(i>=0&&i<s.results.length&&!resultLive(s.results[i]))i+=delta;if(i>=0&&i<s.results.length)jumpResult(s.results,i);};
+    bar.append(button('上一处',()=>step(-1)).prop('disabled',s.index===0),node('span','',String(s.index+1)+' / '+s.results.length),button('下一处',()=>step(1)).prop('disabled',s.index===s.results.length-1),button('×',clearSearch).attr('aria-label','关闭搜索结果导航'));
+    bar.insertBefore('#rp-bubbles');
+  }
+  function jumpResult(results,index) {
+    const r=results[index];if(!r||!resultLive(r)){info('该内容已有变化，请重新搜索。');return false;}
+    activeSearch={results,index,token:api.runtime().task()};
+    searchJumping=true;
+    try {
+      if(r.message)api.jump(api.snapshot(r.thread,r.message));else {api.closeDialog();api.openThread(r.thread.id);}
+    } finally {searchJumping=false;}
+    paintSearch();return true;
+  }
+  function openSearch(initialThread='') {
+    clearSearch();const token=api.runtime().task();
+    const input=node('input','rp-feature-input').attr({type:'search',id:'rp-search-query','aria-label':'搜索原文或译文',placeholder:'搜索原文、译文或联系人',autocomplete:'off'});
+    const scope=node('select','rp-tools-select').attr({id:'rp-search-scope','aria-label':'搜索会话'}).append(node('option','','全部会话').val(''));
+    for(const t of Object.values(state().threads||{}))scope.append(node('option','',t.name+(t.type==='group'?'（群聊）':'')).val(t.id));
+    scope.val(state().threads[initialThread]?initialThread:'');
+    const member=node('select','rp-tools-select').attr({id:'rp-search-member','aria-label':'搜索发言者'});
+    const kind=node('select','rp-tools-select').attr({id:'rp-search-type','aria-label':'搜索内容类型'});
+    for(const[v,label]of [['','全部类型'],['text','文字'],['image','图片'],['voice','语音'],['hongbao','红包'],['location','位置']])kind.append(node('option','',label).val(v));
+    const status=note('输入关键词，或选择内容类型。'),list=node('div','rp-feature-results'),content=node('div').append(input,field('范围',scope),field('发言者',member),field('类型',kind),status,list);
+    let page=0,lastResults=[];
+    function members() {const old=member.val(),names=new Set();for(const t of Object.values(state().threads||{})){if(scope.val()&&scope.val()!==t.id)continue;for(const m of t.messages||[])names.add(sender(t,m));}member.empty().append(node('option','','全部发言者').val(''));for(const name of names)member.append(node('option','',name).val(name));member.val(names.has(old)?old:'');}
+    function render() {
+      if(!token.valid()||!content[0].isConnected)return;
+      list.empty();const query=String(input.val()||'').trim();
+      if(!query&&!member.val()&&!kind.val()){status.text('输入关键词，或选择发言者、内容类型。');return;}
+      lastResults=searchMessages({query,threadId:scope.val(),member:member.val(),kind:kind.val()});
+      page=Math.max(0,Math.min(page,Math.ceil(lastResults.length/40)-1));
+      status.text('找到 '+lastResults.length+' 条'+(lastResults.length?' · 第 '+(page+1)+' 页':''));
+      for(let i=page*40;i<Math.min(lastResults.length,(page+1)*40);i++) {
+        const r=lastResults[i];if(r.message)key(r.message);
+        const item=node('button','rp-feature-result').attr('type','button').append(node('strong','',r.thread.name+(r.message?' · '+sender(r.thread,r.message)+(r.message.time?' · '+r.message.time:''):'')),node('span','rp-feature-preview',r.text.slice(0,180)));
+        item.on('click',()=>{if(token.valid())jumpResult(lastResults,i);});list.append(item);
+      }
+      if(lastResults.length>40)list.append(node('div','rp-tools-buttons').append(button('上一页',()=>{page--;render();}).prop('disabled',page===0),button('下一页',()=>{page++;render();}).prop('disabled',(page+1)*40>=lastResults.length)));
+    }
+    members();scope.on('change',()=>{page=0;members();render();});member.add(kind).on('change',()=>{page=0;render();});
+    let searchTimer=null;
+    input.on('input compositionend',event=>{if(event.originalEvent?.isComposing)return;page=0;if(searchTimer)api.runtime().clearTimer(searchTimer);searchTimer=api.runtime().timer(()=>{searchTimer=null;render();},120,false);});
+    input.on('keydown',event=>{if(event.key==='Enter'&&!event.originalEvent?.isComposing&&event.keyCode!==229){event.preventDefault();if(searchTimer)api.runtime().clearTimer(searchTimer);render();}});
+    api.dialog('搜索',content,[{label:'关闭'}]);render();
+  }
+  function addAgreement(t,m) {
+    if(!liveThread(t)||!t.messages.includes(m))return;
+    key(m);editAgreement(null,{...api.snapshot(t,m),id:uid(),title:api.snapshot(t,m).text.slice(0,100),createdAt:Date.now(),done:false,dueAt:null});
+  }
+  function editAgreement(entry,draft=entry) {
+    const token=api.runtime().task(),content=node('div'),title=node('input','rp-feature-input').attr({id:'rp-agreement-title',maxlength:160,'aria-label':'约定内容'}).val(draft.title),due=node('input','rp-feature-input').attr({id:'rp-agreement-due',type:'datetime-local','aria-label':'提醒时间'}),status=note('');
+    if(Number.isFinite(draft.dueAt)){const d=new Date(draft.dueAt);due.val(new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16));}
+    content.append(field('约定',title),field('提醒时间（可选）',due),note('按设备本地时间设置；仅在酒馆页面打开、可见且处于当前聊天时提示。'),node('div','rp-conv-source',draft.name+'：'+draft.text),status);
+    api.dialog(entry?'编辑约定':'加入剧情约定',content,[{label:'取消'},{label:'保存',primary:true,run:()=>{
+      if(!token.valid()||!content[0].isConnected)return;
+      const text=String(title.val()||'').trim(),value=String(due.val()||''),time=value?new Date(value).getTime():null;
+      if(!text||text.length>160){status.text('请输入160字以内的约定。');return false;}
+      if(value&&!Number.isFinite(time)){status.text('请选择有效的提醒时间。');return false;}
+      if(entry&&!agreements().includes(entry)){status.text('该约定已不存在，请重新打开清单。');return false;}
+      const next={...draft,title:text,dueAt:time,updatedAt:Date.now(),remindedDue:entry?.dueAt===time?entry.remindedDue:null};
+      if(entry)Object.assign(entry,next);else agreements().push(next);
+      api.save();openAgreements(draft.threadId);return false;
+    }}]);
+  }
+  function openAgreements(filter='') {
+    const token=api.runtime().task(),scope=node('select','rp-tools-select').attr({'aria-label':'约定会话',id:'rp-agreement-scope'}).append(node('option','','全部会话').val('')),statusFilter=node('select','rp-tools-select').attr({'aria-label':'约定状态',id:'rp-agreement-status'}).append(node('option','','待完成').val('open'),node('option','','已完成').val('done'),node('option','','全部').val('all')),list=node('div'),content=node('div').append(field('范围',scope),field('状态',statusFilter),list);
+    const names=new Map(agreements().filter(validEntry).map(e=>[e.threadId,e.threadName||'原会话']));for(const[id,name]of names)scope.append(node('option','',name).val(id));scope.val(names.has(filter)?filter:'');
+    let limit=50;
+    function render() {
+      if(!token.valid())return;list.empty();
+      const entries=agreements().filter(e=>validEntry(e)&&(!scope.val()||scope.val()===e.threadId)&&(statusFilter.val()==='all'||!!e.done===(statusFilter.val()==='done'))).slice().sort((a,b)=>(Number.isFinite(a.dueAt)?a.dueAt:Infinity)-(Number.isFinite(b.dueAt)?b.dueAt:Infinity)||b.createdAt-a.createdAt);
+      if(!entries.length)list.append(note('暂无符合条件的约定。在消息“⋯”中选择“加入约定”。'));
+      for(const entry of entries.slice(0,limit)) {
+        const row=node('div','rp-saved-message rp-agreement'),live=origin(entry),complete=checkbox('rp-agreement-'+entry.id,entry.title,!!entry.done);
+        complete.input.on('change',()=>{if(!token.valid()||!agreements().includes(entry))return;entry.done=complete.input.prop('checked');entry.updatedAt=Date.now();api.save();render();});
+        row.append(complete.label,note(entry.threadName+(Number.isFinite(entry.dueAt)?' · '+new Date(entry.dueAt).toLocaleString():'')),node('div','rp-conv-source',entry.name+'：'+entry.text));
+        if(!live.message)row.append(note('原消息已删除，约定快照仍保留。'));
+        row.append(node('div','rp-tools-buttons').append(button('原消息',()=>{if(token.valid()&&agreements().includes(entry))api.jump(entry);}).prop('disabled',!live.message),button('编辑',()=>{if(token.valid()&&agreements().includes(entry))editAgreement(entry);}),button('删除',()=>{
+          api.dialog('删除约定',node('p','',entry.title),[{label:'取消',run:()=>{openAgreements(filter);return false;}},{label:'删除',danger:true,run:()=>{const items=agreements(),i=items.indexOf(entry);if(i>=0){items.splice(i,1);api.save();}openAgreements(filter);return false;}}]);
+        })));list.append(row);
+      }
+      if(entries.length>limit)list.append(button('再显示50条',()=>{limit+=50;render();}));
+    }
+    scope.add(statusFilter).on('change',()=>{limit=50;render();});api.dialog('剧情约定',content,[{label:'关闭'}]);render();
+  }
+  function checkReminders(now=Date.now()) {
+    if(doc.visibilityState==='hidden'||!state().chatId||!api.runtime().task().valid())return 0;
+    const due=agreements().filter(e=>validEntry(e)&&!e.done&&Number.isFinite(e.dueAt)&&e.dueAt<=now&&e.remindedDue!==e.dueAt);
+    if(!due.length)return 0;
+    for(const e of due)e.remindedDue=e.dueAt;
+    api.save();info('剧情约定到时：'+due.slice(0,3).map(e=>e.title).join('；')+(due.length>3?' 等 '+due.length+' 项':''));return due.length;
+  }
+  function exportRecords(t,messages,options={}) {
+    if(!liveThread(t)||!messages.length||messages.length>30||messages.some(m=>!t.messages.includes(m)))throw Error('请选择1–30条仍存在的消息。');
+    const aliases=new Map();let count=0;
+    return messages.map(m=>{
+      const real=sender(t,m),aliasKey=m.from==='user'?'user':'person:'+real;if(!aliases.has(aliasKey))aliases.set(aliasKey,m.from==='user'?'我':t.type==='group'?'成员'+(++count):'对方');
+      const row=[...(doc.getElementById('rp-bubbles')?.children||[])].find(e=>Number(e.dataset.rpReadingIndex)===t.messages.indexOf(m)),bubble=row?.querySelector('.rp-bubble'),style=bubble?win.getComputedStyle(bubble):null;
+      return {name:options.hideNames?aliases.get(aliasKey):real,from:m.from==='user'?'user':'incoming',text:api.snapshot(t,m).text,time:options.time===false?'':String(m.time||''),translation:options.translations===false?'':translated(m),image:m.type==='image'?api.safeImage(m.src):'',avatar:options.hideNames?'':api.safeImage(api.avatar(m.from==='user'?'user':m.name||t.name)),background:style?.backgroundColor,color:style?.color};
+    });
+  }
+  function loadImage(src,valid) {
+    if(!src||!valid())return Promise.resolve(null);
+    return new Promise(resolve=>{const image=new win.Image();let settled=false;const timer=win.setTimeout(()=>finish(null),6000);function finish(value){if(settled)return;settled=true;win.clearTimeout(timer);image.onload=image.onerror=null;resolve(valid()?value:null);}image.crossOrigin='anonymous';image.onload=()=>finish(image.naturalWidth?image:null);image.onerror=()=>finish(null);image.src=src;});
+  }
+  function wrapLines(ctx,text,width) {
+    const lines=[];
+    for(const paragraph of String(text||'').replace(/\r\n?/g,'\n').split('\n')) {
+      let line='';
+      for(const word of paragraph.match(/\s+|[^\s]+/gu)||[]) {
+        if(ctx.measureText(line+word).width<=width){line+=word;continue;}
+        if(word.trim()&&ctx.measureText(word).width<=width){if(line)lines.push(line);line=word;continue;}
+        const chars=win.Intl?.Segmenter?Array.from(new win.Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(word),s=>s.segment):Array.from(word);
+        for(const char of chars){if(line&&ctx.measureText(line+char).width>width){lines.push(line);line=char;}else line+=char;}
+      }
+      lines.push(line);
+    }
+    return lines;
+  }
+  async function makeLongImage(records,options,valid) {
+    if(!records.length||records.length>30)throw Error('请选择1–30条消息。');
+    if(records.reduce((n,r)=>n+r.text.length+r.translation.length,0)>40000)throw Error('选中文字较多，请减少消息后导出。');
+    const canvas=doc.createElement('canvas'),ctx=canvas.getContext('2d');if(!ctx)throw Error('当前浏览器不支持生成图片。');
+    const phone=doc.getElementById('rp-phone'),style=win.getComputedStyle(phone),panel=doc.querySelector('#rp-feature-layer .rp-feature-panel'),surface=panel?win.getComputedStyle(panel).backgroundColor:'#fffaf8',textColor=panel?win.getComputedStyle(panel).color:'#493e46',font=Math.round(26*api.fontScale()),lineHeight=Math.round(font*1.5),fontFamily=style.fontFamily||'sans-serif',width=720,pad=28,avatarSize=44,bubbleWidth=548;
+    ctx.font=font+'px '+fontFamily;
+    const prepared=[];let height=108,missing=0;
+    for(const r of records) {
+      if(!valid())return null;
+      const image=await loadImage(r.image,valid),avatar=await loadImage(r.avatar,valid);if(!valid())return null;
+      if(r.image&&!image)missing++;if(r.avatar&&!avatar)missing++;
+      const lines=wrapLines(ctx,r.text,bubbleWidth-32),translation=r.translation?wrapLines(ctx,r.translation,bubbleWidth-32):[],imageHeight=image?Math.min(420,image.naturalHeight*(bubbleWidth-32)/image.naturalWidth):0;
+      const body=lines.length*lineHeight+32+(imageHeight?imageHeight+12:0),tr=translation.length?translation.length*lineHeight+28:0,itemHeight=32+body+(tr?tr+6:0)+(r.time?28:0)+26;
+      height+=itemHeight;prepared.push({r,image,avatar,lines,translation,imageHeight,body,tr,itemHeight});
+    }
+    if(height>16000)throw Error('长图超过16000像素，请减少选中消息后重试。');
+    canvas.width=width;canvas.height=height+pad;ctx.fillStyle=surface;ctx.fillRect(0,0,width,canvas.height);ctx.textBaseline='top';
+    const round=(x,y,w,h,color,radius=18)=>{ctx.fillStyle=color;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,radius);else ctx.rect(x,y,w,h);ctx.fill();};
+    const drawText=(lines,x,y,color)=>{ctx.fillStyle=color;ctx.font=font+'px '+fontFamily;for(const line of lines){ctx.fillText(line,x,y);y+=lineHeight;}};
+    ctx.fillStyle=textColor;ctx.font='600 '+Math.round(font*1.15)+'px '+fontFamily;const title=wrapLines(ctx,options.hideNames?'聊天片段':String(options.title||'聊天片段'),width-pad*2);ctx.fillText(title[0]+(title.length>1?'…':''),pad,pad);ctx.font='20px '+fontFamily;ctx.fillText(records.length+' 条消息',pad,66);
+    let y=108;
+    for(const p of prepared) {
+      const {r}=p,isUser=r.from==='user',x=isUser?width-pad-avatarSize-14-bubbleWidth:pad+avatarSize+14,ax=isUser?width-pad-avatarSize:pad;
+      round(ax,y+30,avatarSize,avatarSize,'#ede8e6',22);
+      if(p.avatar){ctx.save();ctx.beginPath();ctx.arc(ax+22,y+52,22,0,Math.PI*2);ctx.clip();ctx.drawImage(p.avatar,ax,y+30,avatarSize,avatarSize);ctx.restore();}else {ctx.fillStyle=textColor;ctx.font='20px '+fontFamily;ctx.fillText(Array.from(r.name).slice(0,2).join(''),ax+5,y+42);}
+      ctx.fillStyle=textColor;ctx.font='20px '+fontFamily;const name=wrapLines(ctx,r.name,bubbleWidth)[0];ctx.fillText(name,x,y+2);
+      const color=r.color&&r.color!=='rgba(0, 0, 0, 0)'?r.color:textColor,bg=r.background&&r.background!=='rgba(0, 0, 0, 0)'?r.background:surface;
+      round(x,y+30,bubbleWidth,p.body,bg);drawText(p.lines,x+16,y+46,color);
+      if(p.image)ctx.drawImage(p.image,x+16,y+46+p.lines.length*lineHeight,bubbleWidth-32,p.imageHeight);
+      let bottom=y+30+p.body;
+      if(p.tr){round(x,bottom+6,bubbleWidth,p.tr,bg,12);drawText(p.translation,x+16,bottom+20,color);bottom+=p.tr+6;}
+      if(r.time){ctx.fillStyle=textColor;ctx.font='18px '+fontFamily;ctx.fillText(r.time,x,bottom+8);}
+      y+=p.itemHeight;
+    }
+    if(!valid())return null;
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!valid())return null;if(!blob)throw Error('生成图片失败，请减少消息后重试。');
+    return {blob,width:canvas.width,height:canvas.height,missing};
+  }
+  function openExport(t=state().threads[state().currentThread],first=null,restore=null) {
+    if(!supported){info('请刷新酒馆后使用此功能。');return;}
+    if(!t||!liveThread(t))return;
+    const token=api.runtime().task(),selected=new Set((restore?.messages||(first?[first]:[])).filter(m=>t.messages.includes(m))),content=node('div'),list=node('div'),status=note('选择1–30条消息，按原顺序生成长图。'),query=node('input','rp-feature-input').attr({type:'search',id:'rp-export-search',placeholder:'筛选要选择的消息','aria-label':'筛选导出消息'}).val(restore?.query||''),hide=checkbox('rp-export-hide','隐藏姓名与头像（正文保留）',!!restore?.options?.hideNames),translations=checkbox('rp-export-translations','包含已有译文',restore?.options?.translations!==false),time=checkbox('rp-export-time','包含时间',restore?.options?.time!==false);
+    let page=restore?.page||0,running=false;
+    function render() {
+      list.empty();const q=String(query.val()||'').trim().toLocaleLowerCase(),messages=t.messages.filter(m=>!q||searchable(m).toLocaleLowerCase().includes(q));page=Math.max(0,Math.min(page,Math.ceil(messages.length/30)-1));
+      status.text('已选 '+selected.size+' / 30 条 · 第 '+(page+1)+' 页');
+      for(const m of messages.slice(page*30,(page+1)*30)) {
+        const choice=checkbox('rp-export-select-'+t.messages.indexOf(m),sender(t,m)+(m.time?' · '+m.time:'')+'：'+api.snapshot(t,m).text.slice(0,110),selected.has(m));
+        choice.input.on('change',()=>{if(choice.input.prop('checked')){if(selected.size>=30){choice.input.prop('checked',false);status.text('最多选择30条，请先取消部分消息。');return;}selected.add(m);}else selected.delete(m);status.text('已选 '+selected.size+' / 30 条');});list.append(choice.label);
+      }
+      if(messages.length>30)list.append(node('div','rp-tools-buttons').append(button('上一页',()=>{page--;render();}).prop('disabled',page===0),button('下一页',()=>{page++;render();}).prop('disabled',(page+1)*30>=messages.length)));
+    }
+    content.append(note(t.name),node('div','rp-tools-buttons').append(button('选最近10条',()=>{selected.clear();for(const m of t.messages.slice(-10))selected.add(m);page=Math.floor(Math.max(0,t.messages.length-1)/30);query.val('');render();}),button('清空选择',()=>{selected.clear();render();})),hide.label,translations.label,time.label,query,status,list);
+    query.on('input',()=>{page=0;render();});api.dialog('聊天长图',content,[{label:'关闭'},{label:'生成预览',primary:true,run:()=>{
+      if(running)return false;if(!token.valid()||!liveThread(t))return;
+      const messages=t.messages.filter(m=>selected.has(m)),options={hideNames:hide.input.prop('checked'),translations:translations.input.prop('checked'),time:time.input.prop('checked'),title:t.name};
+      let records;try{records=exportRecords(t,messages,options);}catch(e){status.text(e.message);return false;}
+      const signature=JSON.stringify(records),valid=()=>token.valid()&&content[0].isConnected&&liveThread(t)&&state().currentThread===t.id;
+      running=true;content.find('input,select,button').prop('disabled',true);status.text('正在生成图片…');
+      void makeLongImage(records,options,valid).then(result=>{
+        if(!valid()||!result)return;
+        if(JSON.stringify(exportRecords(t,messages,options))!==signature)throw Error('选中消息已有变化，请重新生成。');
+        showExportPreview(result,options,t,()=>openExport(t,null,{messages,options,query:String(query.val()||''),page}));
+      }).catch(e=>{if(valid())status.text(e.message||'生成失败，请重试。');}).finally(()=>{running=false;if(content[0].isConnected)content.find('input,select,button').prop('disabled',false);});return false;
+    }}]);render();
+  }
+  function showExportPreview(result,options,t,back) {
+    exportCleanup?.();const url=win.URL.createObjectURL(result.blob),content=node('div').append(node('img','rp-long-image-preview').attr({src:url,alt:'聊天长图预览'}),note(result.width+' × '+result.height+(result.missing?' · '+result.missing+' 张图片或头像无法读取，已保留文字或占位。':'')),note('手机浏览器也可长按预览图片保存。'));
+    let released=false,downloaded=false;const cleanup=()=>{if(released)return;released=true;observer.disconnect();if(downloaded)win.setTimeout(()=>win.URL.revokeObjectURL(url),30000);else win.URL.revokeObjectURL(url);if(exportCleanup===cleanup)exportCleanup=null;};
+    const observer=new win.MutationObserver(()=>{if(!content[0].isConnected)cleanup();});
+    api.dialog('长图预览',content,[{label:'返回选择',run:()=>{back();return false;}},{label:'保存图片',primary:true,run:()=>{const a=doc.createElement('a');a.href=url;a.download='MochiPhone-chat-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';doc.body.append(a);try{downloaded=true;a.click();}catch(_){info('请长按预览图片，选择保存。');}finally{a.remove();}return false;}}]);observer.observe(doc.documentElement,{childList:true,subtree:true});exportCleanup=cleanup;
+  }
+  function mergeContacts(keep,drop) {
+    for(const e of agreements())if(e.threadId===drop.id){e.threadId=keep.id;e.threadName=keep.name;}
+    const a=keep.phoneAutoTranslate,b=drop.phoneAutoTranslate;
+    if(a||b){const chosen=(b?.changedAt||0)>(a?.changedAt||0)?b:a;keep.phoneAutoTranslate={...chosen,known:[...new Set([...(a?.known||[]),...(b?.known||[]),...(keep.messages||[]).map(key),...(drop.messages||[]).map(key)])]};}
+  }
+  function onOpen(id) {if(!searchJumping&&activeSearch&&activeSearch.results[activeSearch.index]?.thread.id!==id)clearSearch();}
+  function onNavigate(view) {if(view!=='thread')clearSearch();}
+  function reset() {clearSearch();exportCleanup?.();}
+  function mount() {
+    if(mounted===api.runtime())return;mounted=api.runtime();
+    const slot=$('#rp-settings-bookmark-slot');
+    if(!doc.getElementById('rp-settings-agreements')){
+      const copy=node('span','rp-settings-copy').append(node('span','rp-settings-label','剧情约定'),node('span','rp-settings-hint','手动记录约定、完成状态与提醒'));
+      node('button','rp-settings-item').attr({id:'rp-settings-agreements',type:'button'}).append(copy,node('span','rp-settings-chevron','›').attr('aria-hidden','true')).on('click',()=>openAgreements()).appendTo(slot);
+    }
+    mounted.timer(()=>{void pumpAuto();checkReminders();},1200,true,[],'lifetime');mounted.own(reset);
+  }
+  return {mount,reset,onOpen,onNavigate,setAuto,openAuto,pumpAuto,searchMessages,openSearch,clearSearch,addAgreement,editAgreement,openAgreements,checkReminders,agreements,exportRecords,wrapLines,makeLongImage,openExport,mergeContacts};
 }
