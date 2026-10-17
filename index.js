@@ -9259,10 +9259,19 @@ function rpInsertRemovedItem(list, item, before) {
 function rpDeletePhoneMessage(threadId, index) {
   const thread = STATE.threads[threadId], message = thread?.messages?.[index];
   if (!message) return;
+  const actionsBefore = (thread.pendingHostActions || []).slice();
+  const imageActions = message.type==='image' && message.id!=null ? actionsBefore.filter(action=>action.imageMessageId===message.id) : [];
+  if (imageActions.length && rpHostSubmission) { toastr.info('请等当前发送确认完成后再删除这张图片。'); return; }
   const before = thread.messages.slice(); thread.messages.splice(index,1);
+  if (imageActions.length) {
+    thread.pendingHostActions = actionsBefore.filter(action=>!imageActions.includes(action));
+    rpRenderHostOutbox(threadId);
+  }
   saveState(); updatePreviews(); renderBubbles(threadId,{preserveScroll:true});
   rpOfferUndo('已删除这条信息', () => {
     if (STATE.threads[threadId]!==thread || !rpInsertRemovedItem(thread.messages,message,before)) return false;
+    for (const action of imageActions) rpInsertRemovedItem(thread.pendingHostActions ||= [],action,actionsBefore);
+    if (imageActions.length && STATE.currentThread===threadId) rpRenderHostOutbox(threadId);
     if (STATE.currentThread===threadId) renderBubbles(threadId,{preserveScroll:true});
   });
 }
@@ -15673,6 +15682,7 @@ function toggleAttachPanel() {
 
 function showHongbaoSheet() {
   $('#rp-attach-panel').hide();
+  if ($('#rp-hb-modal').length) { $('#rp-hb-amount').trigger('focus'); return; }
   $('#rp-screen').append(`
     <div class="rp-hb-modal" id="rp-hb-modal">
       <div class="rp-hb-sheet">
@@ -15704,6 +15714,7 @@ function triggerImagePick() {
   $('#rp-attach-panel').hide();
   const fi = $('<input type="file" accept="image/*" style="display:none">');
   $('body').append(fi);
+  fi.on('click', event=>event.stopPropagation()); // This phone-owned picker is not an outside click.
   const cleanup = () => { fi.remove(); task.signal.removeEventListener('abort', cleanup); };
   task.signal.addEventListener('abort', cleanup, { once: true });
   fi.on('cancel', cleanup);
@@ -15716,11 +15727,12 @@ function triggerImagePick() {
       if (!task.valid() || thread !== targetThread) { cleanup(); return; }
       const ts  = resolvePhoneTime();
       const src = e.target.result;
-      thread.messages.push({ id: `uimg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'user', type: 'image', time: ts, src, delivery:'pending' });
+      const message = { id: `uimg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'user', type: 'image', time: ts, src, delivery:'pending' };
+      thread.messages.push(message);
       if (STATE.currentThread === targetId && STATE.currentView === 'thread') renderBubbles(thread.id);
       saveState();
       cleanup();
-      sendImageMessage(thread, src, file.type);
+      sendImageMessage(thread, message.id);
     });
     reader.onerror = reader.onabort = cleanup;
     reader.readAsDataURL(file);
@@ -15737,9 +15749,9 @@ function dataURLtoBlob(dataURL) {
   return new Blob([arr], { type: mime });
 }
 
-function sendImageMessage(thread, src, mimeType) {
-  const message = thread.messages.find(m=>m.from==='user' && m.type==='image' && m.src===src && m.delivery==='pending');
-  if (message) rpSubmitThreadAction(thread, '*{{user}}向'+thread.name+'发送了一张图片,请认真观看并以'+thread.name+'的视角做出符合人设的回应*', null, null, message.id);
+function sendImageMessage(thread, messageId) {
+  const message = thread.messages.find(m=>m.id===messageId && m.from==='user' && m.type==='image' && m.delivery==='pending');
+  if (message && !(thread.pendingHostActions || []).some(action=>action.imageMessageId===message.id)) rpSubmitThreadAction(thread, '*{{user}}向'+thread.name+'发送了一张图片,请认真观看并以'+thread.name+'的视角做出符合人设的回应*', null, null, message.id);
 }
 
 function showLocationInput() {
@@ -15816,7 +15828,7 @@ function hideAddChoice() { $('#rp-add-choice').remove(); }
 
 function showGroupPicker() {
   $('#rp-grp-create').remove();
-  const contacts = Object.values(STATE.threads).filter(t => !t.id.startsWith('grp_'));
+  const contacts = Object.values(STATE.threads).filter(t => !rpIsGroupThread(t));
   const items = contacts.map(t => {
     const img = STATE.avatars?.[t.name];
     const avHtml = img
@@ -18259,9 +18271,9 @@ function _paintBankBody(data) {
 
   const assets   = Array.isArray(data.assets) ? data.assets.filter(item => item && typeof item === 'object') : [];
   const txns     = Array.isArray(data.transactions) ? data.transactions.filter(item => item && typeof item === 'object') : [];
-  const total    = data.totalAssets  || '—';
-  const liquid   = data.liquidAssets || null;  // 流动资金
-  const debt     = data.totalDebt    || null;  // 总负债
+  const total    = data.totalAssets ?? '—';
+  const liquid   = data.liquidAssets == null || data.liquidAssets === '' ? null : String(data.liquidAssets);  // 流动资金，0也是有效值
+  const debt     = data.totalDebt == null || data.totalDebt === '' ? null : String(data.totalDebt);  // 总负债
   const charName = data.charName     || 'TA';
   const currency = data.currency     || '¥';
   const safeCurrency = escHtml(currency);
