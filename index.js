@@ -646,6 +646,12 @@ const RP_PRIVATE_AVATAR_CSS = `
 #rp-phone #rp-screen #rp-view-thread .rp-private-body>.rp-hongbao,
 #rp-phone #rp-screen #rp-view-thread .rp-private-body>.rp-loc-card {max-width:100%;}
 #rp-phone #rp-screen #rp-view-thread .rp-private-avatar {margin-top:0;width:30px;height:30px;}
+#rp-phone #rp-screen #rp-view-thread .rp-message-translation{align-self:stretch;box-sizing:border-box;min-width:0;max-width:100%;margin:4px 0 0!important}
+#rp-phone #rp-screen #rp-view-thread .rp-message-translation[hidden]{display:none!important}
+#rp-phone #rp-screen #rp-view-thread .rp-message-translation>.rp-translation-text{box-sizing:border-box;width:100%;margin:0!important}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta>.rp-translation-btn{color:var(--rp-v-muted);margin:0}
+#rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-bwrap>.rp-message-translation{width:72%;max-width:72%;align-self:flex-start}
+#rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-out>.rp-message-translation{align-self:flex-end}
 `;
 const RP_READING_CSS = `
 #rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:12px;}
@@ -11125,7 +11131,9 @@ function rpPaintPhoneTranslation(control, target) {
   // Never run the conversation/action sanitizer on translated text.
   body.text(cache ? (cache.target === 'zh' ? '中文译文：\n' : 'English：\n') + cache.text : '');
   body.prop('hidden', !cache?.expanded);
-  control.parent('.rp-message-meta').toggleClass('rp-has-expanded-translation', !!cache?.expanded);
+  const meta = control.data('phoneTranslationMeta') || control.parent('.rp-message-meta');
+  meta.toggleClass('rp-has-expanded-translation', !!cache?.expanded);
+  if (control.hasClass('rp-message-translation')) control.prop('hidden', !cache?.expanded);
 }
 
 function rpMakePhoneTranslationControl(target) {
@@ -11150,12 +11158,18 @@ function rpMountMomentTranslation(deleteButton, target) {
 }
 
 function rpAttachMessageTranslation(wrap, item, threadId) {
-  const body = wrap.children('.rp-grp-body');
+  rpNormalizeMessageMeta(wrap);
+  const body = wrap.children('.rp-grp-body,.rp-private-body');
   const control = rpMakePhoneTranslationControl({ kind: 'message', item, threadId });
+  if (!control.length) return;
   const container = body.length ? body : wrap;
   const meta = container.children('.rp-message-meta');
-  (meta.length ? meta : container).append(control);
-  if (control.length) rpPaintPhoneTranslation(control, control.data('phoneTranslationTarget'));
+  const button = control.find('.rp-translation-btn');
+  control.addClass('rp-message-translation').data('phoneTranslationButton', button).data('phoneTranslationMeta', meta);
+  button.data('phoneTranslationTarget', control.data('phoneTranslationTarget'));
+  meta.append(button);
+  control.insertBefore(meta);
+  rpPaintPhoneTranslation(control, control.data('phoneTranslationTarget'));
 }
 
 function rpRefreshPhoneTranslationControls(item) {
