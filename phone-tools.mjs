@@ -1,7 +1,30 @@
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
 '#rp-phone #rp-screen .rp-tools-buttons{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}',
-'#rp-phone #rp-screen #rp-phone-tools-settings>.rp-tools-buttons{padding:10px 12px;box-sizing:border-box;min-width:0}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-body{min-height:0;padding:4px 12px 18px;box-sizing:border-box;overscroll-behavior:contain}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-group{margin:0 0 10px;min-width:0}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-group>.rp-set-section-title{font-size:11px;line-height:1.5;letter-spacing:.04em;margin:10px 4px 6px;padding:0;color:var(--rp-v-muted,#756772)}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-group>.rp-set-section{margin:0;padding:0 12px!important;border-radius:14px;min-width:0}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-item{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;box-sizing:border-box;padding:11px 0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#44353d);font:inherit;text-align:left;cursor:pointer;list-style:none}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-item::-webkit-details-marker{display:none}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-item:focus-visible{outline:2px solid var(--rp-nav-btn,#9b647b);outline-offset:-2px;border-radius:6px!important}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;overflow-wrap:anywhere}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-label{color:var(--rp-v-text,#44353d)!important;font-size:14px;font-weight:600;line-height:1.4}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-hint{font-size:10px;line-height:1.5;color:var(--rp-v-muted,#756772)!important}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-chevron{font-size:20px;line-height:1.4;flex:0 0 1.4em;text-align:center;overflow:hidden;opacity:.55;transition:transform .15s}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-detail[open]>.rp-settings-item>.rp-settings-chevron{transform:rotate(90deg)}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-detail+.rp-settings-detail,.rp-settings-group #rp-phone-tools-settings+.rp-settings-detail,#rp-phone #rp-screen #rp-view-settings #rp-settings-bookmark-slot+.rp-settings-detail{border-top:1px solid var(--rp-v-border,rgba(128,110,120,.15))}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-panel{padding:0 0 8px;min-width:0}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-panel .rp-set-row{gap:8px;min-width:0}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-panel .rp-set-key{font-size:12px;min-width:0}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-panel .rp-set-hint{font-size:10px;line-height:1.5;overflow-wrap:anywhere}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-panel .rp-set-select{font-size:12px;min-width:0;max-width:60%}',
+'#rp-phone #rp-screen #rp-view-settings .rp-settings-panel .rp-set-upload-btn,.rp-settings-panel .rp-avatar-upload-btn{font-size:11px;min-height:36px;white-space:normal;overflow-wrap:anywhere}',
+'#rp-phone #rp-screen #rp-view-settings #rp-desktop-size-value{font-size:13px;white-space:nowrap}',
+'#rp-phone #rp-screen #rp-view-settings #rp-settings-avatar .rp-set-row{flex-wrap:wrap} #rp-phone #rp-screen #rp-view-settings #rp-settings-avatar .rp-set-row:nth-child(2)>.rp-set-hint{flex-basis:80px}',
+'#rp-phone #rp-screen #rp-view-settings #rp-settings-wallpaper .rp-set-row>div{flex-wrap:wrap}',
+'#rp-phone #rp-screen #rp-view-settings #rp-settings-blocklist .rp-blocklist-tag{max-width:100%;overflow-wrap:anywhere}',
+'#rp-phone #rp-screen #rp-view-settings #rp-settings-blocklist .rp-block-x{flex-shrink:0}',
 '#rp-phone #rp-screen .rp-tools-button{border:0;border-radius:10px;padding:8px 10px;min-height:36px;background:var(--rp-v-card,#f1ece9);color:var(--rp-v-text,#44353d);font:inherit;font-size:12px;cursor:pointer}',
 '#rp-phone.rp-dark #rp-screen .rp-tools-button{background:var(--rp-v-card,#2c2735);color:var(--rp-v-text,#ebe7f0)}',
 '#rp-phone #rp-screen #rp-view-thread>.rp-nav-bar{grid-template-columns:76px minmax(0,1fr) 76px}',
@@ -434,11 +457,15 @@ export function createPhoneTools(api) {
     try{prefs=normalizePrefs(JSON.parse(api.storage.getItem(prefsKey())||'null'));}catch(_){prefs=normalizePrefs(null);}
     applyReading(prefs);
     installTypography();
-    if(!doc.getElementById('rp-phone-tools-settings')){
-      const settings=$('#rp-view-settings'),body=settings.children().filter((_,e)=>doc.defaultView.getComputedStyle(e).overflowY==='auto').first();
-      const block=node('section','').attr('id','rp-phone-tools-settings').append(node('div','rp-set-section-title','调整字号大小'),node('div','rp-tools-buttons').append(button('字号与显示',openReading),button('消息收藏',()=>openBookmarks()),button('备份与恢复',openBackup)));
-      (body.length?body:settings).prepend(block);
-    }
+    const settingsLink=(slot,id,title,hint,action)=>{
+      if(doc.getElementById(id))return;
+      const copy=node('span','rp-settings-copy').append(node('span','rp-settings-label',title),node('span','rp-settings-hint',hint));
+      const arrow=node('span','rp-settings-chevron','›').attr('aria-hidden','true');
+      node('button','rp-settings-item').attr({id,type:'button'}).append(copy,arrow).on('click',action).appendTo(slot);
+    };
+    settingsLink('#rp-phone-tools-settings','rp-settings-font','调整字号大小','所有界面字号与消息间距',openReading);
+    settingsLink('#rp-settings-bookmark-slot','rp-settings-bookmarks','消息收藏','查看已收藏的消息快照',()=>openBookmarks());
+    settingsLink('#rp-settings-backup-slot','rp-settings-backup','备份与恢复','导出当前聊天，或预览并合并备份',openBackup);
     if(!doc.getElementById('rp-thread-menu'))$('#rp-thread-search').wrap('<div class="rp-thread-tools-actions"></div>').parent().append(node('button','','⋯').attr({id:'rp-thread-menu',type:'button','aria-label':'聊天设置与收藏'}).on('click',openThreadMenu));
     if(!doc.getElementById('rp-reply-preview'))node('div').attr('id','rp-reply-preview').hide().insertBefore('#rp-pending-queue');
     mountedRuntime=api.runtime();const ns='.mochiPhoneTools'+uid();

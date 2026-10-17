@@ -1,4 +1,4 @@
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261017-global-font47';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261017-settings48';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -8239,15 +8239,9 @@ const HTML = `
 
                 <!-- 设置 -->
         <div id="rp-view-settings" class="rp-view" style="display:none">
-          <div class="rp-nav-bar">
-            <button class="rp-back" data-to="home">‹</button>
-            <span class="rp-nav-title">设置</span>
-            <span></span>
-          </div>
-          <div style="overflow-y:auto;flex:1">
-            <div id="rp-desktop-size-setting" style="display:none">
-              <div class="rp-set-section-title">手机尺寸（PC）</div>
-              <div class="rp-set-section">
+          <div class="rp-nav-bar"><button class="rp-back" data-to="home">‹</button><span class="rp-nav-title">设置</span><span></span></div>
+          <div class="rp-settings-body" style="overflow-y:auto;flex:1">
+            <section class="rp-settings-group" aria-labelledby="rp-settings-display-title"><h3 id="rp-settings-display-title" class="rp-set-section-title">显示与大小</h3><div class="rp-set-section"><div id="rp-phone-tools-settings"></div><details id="rp-desktop-size-setting" class="rp-settings-detail" style="display:none"><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">手机尺寸（PC）</span><span class="rp-settings-hint">等比调整手机整体大小</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
                 <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
                     <label for="rp-desktop-size" class="rp-set-key">等比缩放</label>
@@ -8257,10 +8251,8 @@ const HTML = `
                   <div id="rp-desktop-size-note" class="rp-set-hint">仅 PC 生效；外框与内部等比缩放，刷新后保留。</div>
                   <button id="rp-desktop-size-reset" type="button" class="rp-set-upload-btn rp-wall-reset-btn">恢复默认（100%）</button>
                 </div>
-              </div>
-            </div>
-            <div class="rp-set-section-title">头像管理</div>
-            <div class="rp-set-section">
+</div></details></div></section>
+            <section class="rp-settings-group" aria-labelledby="rp-settings-appearance-title"><h3 id="rp-settings-appearance-title" class="rp-set-section-title">个性外观</h3><div class="rp-set-section"><details id="rp-settings-avatar" class="rp-settings-detail" ><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">头像</span><span class="rp-settings-hint">为自己和角色更换头像</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
               <div class="rp-set-row">
                 <span class="rp-set-key">修改对象</span>
                 <select id="rp-avatar-select" class="rp-set-select">
@@ -8273,10 +8265,7 @@ const HTML = `
                 <button class="rp-avatar-upload-btn" id="rp-avatar-upload-btn">📷 选择</button>
                 <input type="file" id="rp-avatar-file-input" accept="image/*" style="display:none">
               </div>
-            </div>
-
-            <div class="rp-set-section-title">壁纸管理</div>
-            <div class="rp-set-section">
+</div></details><details id="rp-settings-wallpaper" class="rp-settings-detail" ><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">壁纸</span><span class="rp-settings-hint">更换或还原手机壁纸</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
               <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
                 <img id="rp-wall-preview" class="rp-wall-preview-img" style="display:none" alt=""/>
                 <div style="display:flex;gap:8px">
@@ -8285,10 +8274,8 @@ const HTML = `
                 </div>
                 <input id="rp-wall-file" type="file" accept="image/*" style="display:none"/>
               </div>
-            </div>
-
-            <div class="rp-set-section-title">黑名单管理</div>
-            <div class="rp-set-section">
+</div></details></div></section>
+            <section class="rp-settings-group" aria-labelledby="rp-settings-messages-title"><h3 id="rp-settings-messages-title" class="rp-set-section-title">消息与联系人</h3><div class="rp-set-section"><div id="rp-settings-bookmark-slot"></div><details id="rp-settings-blocklist" class="rp-settings-detail" ><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">黑名单</span><span class="rp-settings-hint">管理不接收互动的角色</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
               <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
                 <div class="rp-set-hint" style="font-size:12px;color:#8a8a9a;line-height:1.4">拉黑后该角色不会出现在好友列表、不会发消息、不会在朋友圈互动。适用于多人卡场景。</div>
                 <div style="display:flex;gap:6px;min-width:0">
@@ -8297,9 +8284,8 @@ const HTML = `
                 </div>
                 <div id="rp-block-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
               </div>
-            </div>
-
-
+</div></details></div></section>
+            <section class="rp-settings-group" aria-labelledby="rp-settings-data-title"><h3 id="rp-settings-data-title" class="rp-set-section-title">数据管理</h3><div class="rp-set-section"><div id="rp-settings-backup-slot"></div</div></section>
           </div>
         </div>
 
