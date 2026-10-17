@@ -54,6 +54,25 @@ export const PHONE_TOOLS_CSS = [
 '#rp-phone[data-reading-density=compact] #rp-screen #rp-view-thread .rp-bubble{padding:7px 10px!important}',
 '#rp-phone[data-reading-density=compact] #rp-screen #rp-view-moments .rp-moment{padding-top:8px!important;padding-bottom:8px!important}',
 '#rp-phone[data-reading-density=compact] #rp-screen #rp-view-moments .rp-moment-comments-wrap{padding:7px 9px!important}',
+"#rp-phone #rp-screen .rp-nav-bar{--rp-nav-control-top:46px;--rp-nav-control-center:66px;position:sticky!important;top:0!important;z-index:40;box-sizing:border-box!important;height:92px!important;min-height:92px!important;padding:46px 6px 6px!important;flex-shrink:0}",
+"#rp-phone #rp-screen .rp-nav-bar>.rp-back{position:absolute!important;left:6px!important;right:auto!important;top:var(--rp-nav-control-top)!important;bottom:auto!important;width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important;min-height:40px!important;max-height:40px!important;box-sizing:border-box!important;margin:0!important;padding:0!important;transform:none!important;align-items:center!important;justify-content:center!important;line-height:40px!important;z-index:4}",
+"#rp-phone #rp-screen .rp-nav-bar>.rp-nav-title{position:absolute!important;left:50%!important;right:auto!important;top:var(--rp-nav-control-center)!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:max-content;max-width:calc(100% - 120px);margin:0!important;line-height:1.3;text-align:center;overflow-wrap:anywhere;pointer-events:none!important}",
+"#rp-phone #rp-screen .rp-nav-bar>:last-child:not(.rp-back):not(.rp-nav-title):not(.rp-thread-hd){position:absolute!important;right:6px!important;left:auto!important;top:var(--rp-nav-control-top)!important;bottom:auto!important;margin:0!important;transform:none!important;height:40px!important;min-height:40px!important;box-sizing:border-box!important;display:flex;align-items:center;justify-content:flex-end;z-index:4}",
+"#rp-phone #rp-screen .rp-nav-bar>button:not(.rp-back){width:64px!important;min-width:64px!important;padding:0 4px!important;white-space:nowrap;line-height:1.2}",
+"#rp-phone #rp-screen .rp-nav-bar :is(.rp-nav-add,#rp-gen-diary,#rp-gen-moments,#rp-bank-refresh){width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important;min-height:40px!important;max-height:40px!important;box-sizing:border-box!important;margin:0!important;padding:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 40px!important;line-height:40px!important}",
+"#rp-phone #rp-screen #rp-view-thread>.rp-nav-bar{height:auto!important;min-height:116px!important;padding:46px 12px 14px!important;grid-template-columns:88px minmax(0,1fr) 88px;align-items:start}",
+"#rp-phone #rp-screen #rp-view-thread .rp-thread-hd{grid-column:2;grid-row:1;align-self:start;justify-self:stretch}",
+"#rp-phone #rp-screen #rp-view-thread .rp-thread-tools-actions{width:82px;gap:2px;flex-wrap:nowrap}",
+"#rp-phone #rp-screen #rp-view-thread :is(#rp-thread-search,#rp-thread-menu){flex:0 0 40px;width:40px;min-width:40px;max-width:40px;height:40px;min-height:40px;max-height:40px;box-sizing:border-box;padding:0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;line-height:40px}",
+"#rp-phone #rp-screen :is(#rp-view-messages,#rp-view-moments)>.rp-nav-bar>.rp-nav-title{max-width:calc(100% - 184px)}",
+"#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar>.rp-nav-title{max-width:calc(100% - 224px)}",
+"#rp-phone #rp-screen #rp-view-xhs-compose .rp-nav-bar>.rp-nav-title{font-size:0!important}",
+"#rp-phone #rp-screen :is(#rp-compose-modal,#rp-del-picker)>.rp-nav-bar{--rp-nav-control-top:2px;--rp-nav-control-center:22px;height:44px!important;min-height:44px!important;padding:0 6px!important}",
+"#rp-phone #rp-screen .rp-nav-bar>:is(#rp-compose-cancel,#rp-del-cancel){width:64px!important;min-width:64px!important;max-width:64px!important}",
+"#rp-phone #rp-screen :is(#rp-compose-modal,#rp-del-picker)>.rp-nav-bar>.rp-nav-title{max-width:calc(100% - 152px)}",
+"#rp-phone #rp-screen .rp-feature-header{align-items:flex-start}",
+"#rp-phone #rp-screen .rp-feature-header>strong{flex:1;min-width:0;overflow-wrap:anywhere}",
+"#rp-phone #rp-screen .rp-feature-close{flex:0 0 40px;width:40px;min-width:40px;max-width:40px;height:40px;min-height:40px;max-height:40px;padding:0;line-height:40px;box-sizing:border-box}",
 ].join('\n');
 
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -225,6 +244,7 @@ export function createPhoneTools(api) {
     for(const root of doc.querySelectorAll(fontOwners))root.style.setProperty(fontVariable,String(next.scale/100));
     phone.dataset.readingDensity=next.density;
     phone.dataset.fontEnlarged=next.scale>100?'true':'false';
+    api.reflow?.();
     return true;
   }
   function openReading() {

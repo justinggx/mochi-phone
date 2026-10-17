@@ -1,4 +1,4 @@
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261017-settings48';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261017-nav-anchor49';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -5551,7 +5551,7 @@ function rpAvoidFabControls() {
   if (!phone || !fab || window.getComputedStyle(phone).display === 'none' || window.getComputedStyle(fab).display === 'none') return;
   const rect = fab.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-  const controls = phone.querySelectorAll('#rp-send,#rp-diary-send,#rp-xhs-detail-send,.rp-inline-ok,.rp-inline-cancel,#rp-game-send,#g2048-send,#ggold-send,#gword-send,#ggold-launch-btn,#rp-api-save-v,#rp-feature-layer button,#rp-feature-layer input,#rp-feature-layer select,#rp-thread-menu,#rp-thread-search,#rp-reply-cancel');
+  const controls = phone.querySelectorAll('.rp-nav-bar button,.rp-game-chat-close,#rp-send,#rp-diary-send,#rp-xhs-detail-send,.rp-inline-ok,.rp-inline-cancel,#rp-game-send,#g2048-send,#ggold-send,#gword-send,#ggold-launch-btn,#rp-api-save-v,#rp-feature-layer button,#rp-feature-layer input,#rp-feature-layer select,#rp-thread-menu,#rp-thread-search,#rp-reply-cancel');
   const occupied = [...controls].map(el => el.getBoundingClientRect()).filter(r => r.width && r.height && rect.left < r.right && rect.right > r.left);
   const overlaps = occupied.filter(r => rect.top < r.bottom && rect.bottom > r.top);
   if (!overlaps.length) return;
@@ -9132,7 +9132,7 @@ function rpTools() {
   rpPhoneTools = createPhoneTools({
     $: $, document, state: () => STATE, touch: () => IS_TOUCH_DEVICE, storage: localStorage,
     notify: text => toastr.info(text), rememberReading: rpRememberReading, restoreReading: rpRestoreReadingPosition,
-    dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog, runtime: () => rpRuntime,
+    dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog, runtime: () => rpRuntime, reflow: rpAvoidFabControls,
     renderThreads: renderThreadList, save: saveState, hideBanner: rpHideBanner,
     openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
