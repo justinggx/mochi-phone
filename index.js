@@ -18027,7 +18027,7 @@ function renderMoments() {
       const item = moment.comments[cm.__oldIdx];
       if (item) {
         const commentNode = momentNode.find('.rp-moment-comment').eq(idx);
-        commentNode.append(rpMountMomentTranslation(commentNode.children('.rp-moment-comment-del-btn'), { kind: 'comment', item, moment }));
+        commentNode.children('.rp-moment-reply-btn').before(rpMountMomentTranslation(commentNode.children('.rp-moment-comment-del-btn'), { kind: 'comment', item, moment }));
       }
     });
     rpPaintMomentCommentDraft(moment, momentNode);
