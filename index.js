@@ -553,8 +553,8 @@ const RP_REFINED_CSS = `
 /* One overlay surface; folder grid balanced, copyright content stays intact. */
 #rp-phone.rp-art-icons #rp-screen #rp-folder-modal {background:color-mix(in srgb,var(--rp-v-surface) 86%,transparent)!important;}
 #rp-phone.rp-art-icons #rp-screen :is(.rp-folder-popup,.rp-about-card) {border:none!important;box-shadow:none!important;}
-#rp-phone.rp-art-icons #rp-screen .rp-folder-popup {display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:22px 28px;background:transparent!important;padding:18px 22px;}
-#rp-phone.rp-art-icons #rp-screen .rp-folder-item {width:auto;min-width:72px;}
+#rp-phone.rp-art-icons #rp-screen .rp-folder-popup {display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px 10px;background:transparent!important;padding:18px 14px;}
+#rp-phone.rp-art-icons #rp-screen .rp-folder-item {width:auto;min-width:0;}
 #rp-phone.rp-art-icons #rp-screen :is(.rp-folder-title-lbl,.rp-folder-item-lbl) {color:var(--rp-v-text)!important;text-shadow:none!important;}
 #rp-phone.rp-art-icons.rp-dark #rp-screen .rp-about-card {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;}
 #rp-phone.rp-art-icons.rp-dark #rp-screen :is(#rp-about-title,#rp-about-author,#rp-about-notice,.rp-about-hl) {color:var(--rp-v-text)!important;text-shadow:none!important;}
@@ -4419,29 +4419,30 @@ ${XHS_COVER_CSS}
 .rp-folder-popup {
   background: rgba(255,255,255,0.18); backdrop-filter:none; -webkit-backdrop-filter:none;
   border: 1px solid rgba(255,255,255,0.28); border-radius: 26px; padding: 18px 16px;
-  display: flex; flex-direction: row; flex-wrap: wrap; gap: 14px; align-items: flex-start;
-  justify-content: flex-start; max-width: 260px;
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: repeat(3,minmax(76px,auto)); gap: 18px 10px; align-items: start;
+  width: 260px; max-width: calc(100% - 32px); box-sizing: border-box;
   box-shadow: 0 8px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.35);
 }
 .rp-folder-item {
-  width: calc(33.33% - 10px);
-  min-width: 60px;
-  display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer;
+  width: auto;
+  min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;
   transition: transform .15s cubic-bezier(.34,1.56,.64,1);
 }
 .rp-folder-item:active { transform: scale(.84); }
 .rp-folder-item-ico {
-  width: 58px; height: 58px; border-radius: 14px;
+  width: 46px; height: 46px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   background: transparent !important;
   box-shadow: none !important;
 }
-.rp-folder-item-ico svg { width: 34px; height: 34px; }
+.rp-folder-item-ico svg { width: 28px; height: 28px; }
 .rp-folder-game-ludo,
 .rp-folder-game-2048 { color: #f6d7e3; }
 .rp-folder-item-lbl {
   font-size: 13px; color: #f6d7e3; font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0,0,0,.22); white-space: nowrap; letter-spacing: .1px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.22); white-space: normal; letter-spacing: .1px;
+  max-width: 100%; text-align: center; line-height: 1.35; overflow-wrap: anywhere;
 }
 /* ── Candy theme folder ── */
 #rp-phone.rp-theme-candy .rp-folder-ico {
