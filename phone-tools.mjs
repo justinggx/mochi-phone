@@ -92,7 +92,7 @@ export const PHONE_TOOLS_CSS = [
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const forbidden = new Set(['__proto__','prototype','constructor']);
 const secret = /^(?:api[_-]?key|access[_-]?token|authorization|cookie|password|rp_ludo_api)$/i;
-const fields = ['threads','notifications','sync','moments','diary','xhsFeed','darkMode','themeSettings','nameAliases','avatars','wallpaper','bankData','blocklist','gameState','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
+const fields = ['threads','notifications','sync','moments','diary','xhsFeed','darkMode','themeSettings','nameAliases','avatars','wallpaper','bankData','blocklist','gameState','gomoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
 const clone = value => JSON.parse(JSON.stringify(value));
 const uid = () => 'pt_' + Date.now() + '_' + Math.random().toString(36).slice(2,11);
 function clean(value, depth = 0) {
@@ -219,7 +219,7 @@ export function createPhoneTools(api) {
     for(const el of candidates)if(el.closest(fontOwners)&&el.style)scaleDeclaration(el.style,el.id==='rp-phone');
   }
   function refreshTypography() {
-    for(const id of ['rp-phone-css','rp-custom-theme-style'])scaleSheet(doc.getElementById(id));
+    for(const id of ['rp-phone-css','rp-custom-theme-style','rp-gomoku-css'])scaleSheet(doc.getElementById(id));
     for(const root of doc.querySelectorAll(fontOwners))scaleInline(root);
   }
   function installTypography() {
@@ -241,9 +241,9 @@ export function createPhoneTools(api) {
           if(value&&!value.includes(fontVariable)&&el.closest(fontOwners))nodes.add(el);
         }else{
           const style=change.target.nodeType===1?change.target:change.target.parentElement;
-          if(style?.matches?.('#rp-phone-css,#rp-custom-theme-style'))sheets.add(style);
+          if(style?.matches?.('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css'))sheets.add(style);
           for(const node of change.addedNodes)if(node.nodeType===1){
-            if(node.matches('#rp-phone-css,#rp-custom-theme-style'))sheets.add(node);
+            if(node.matches('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css'))sheets.add(node);
             if(node.matches(fontOwners)||node.closest(fontOwners))nodes.add(node);
           }
         }
@@ -428,6 +428,7 @@ export function createPhoneTools(api) {
     }
     if(value.data.phoneTools?.agreements!==undefined&&(!Array.isArray(value.data.phoneTools.agreements)||value.data.phoneTools.agreements.some(e=>!object(e)||typeof e.id!=='string'||typeof e.threadId!=='string'||typeof e.messageId!=='string'||typeof e.text!=='string'||typeof e.title!=='string'||(e.dueAt!=null&&!validPhoneReminder(e.dueAt)))))throw new Error('备份约定清单格式不完整。');
     for(const t of Object.values(value.data.threads))if(t.phoneAutoTranslate!==undefined&&(!object(t.phoneAutoTranslate)||typeof t.phoneAutoTranslate.enabled!=='boolean'||!Array.isArray(t.phoneAutoTranslate.known)||t.phoneAutoTranslate.known.some(k=>typeof k!=='string')))throw new Error('备份自动翻译设置格式不完整。');
+    if(value.data.gomoku!=null&&(!object(value.data.gomoku)||!Array.isArray(value.data.gomoku.log)||value.data.gomoku.log.some(m=>!object(m)||typeof m.text!=='string'||!['user','char','system'].includes(m.role))||(value.data.gomoku.round!=null&&(!object(value.data.gomoku.round)||!Array.isArray(value.data.gomoku.round.moves)))))throw new Error('备份五子棋记录格式不完整。');
     value.data=portable(value.data);return value;
   }
   function planMerge(backup, current=api.snapshot()) {
@@ -473,6 +474,13 @@ export function createPhoneTools(api) {
     }
     if(!result.xhsPostDraft?.title&&!result.xhsPostDraft?.body&&source.xhsPostDraft)result.xhsPostDraft=clone(source.xhsPostDraft);
     if(!result.bankData&&object(source.bankData))result.bankData=clone(source.bankData);
+    if(object(source.gomoku)){
+      result.gomoku ||= {version:1,level:'standard',screen:'home',round:null,log:[],draft:''};
+      result.gomoku.log ||= [];stats.gomokuMessages=0;
+      mergeList(result.gomoku.log,source.gomoku.log||[],stats,'gomokuMessages');
+      if(!result.gomoku.round&&source.gomoku.round){result.gomoku.round=clone(source.gomoku.round);result.gomoku.screen='home';stats.gomokuRound=1;}
+      if(!result.gomoku.draft&&typeof source.gomoku.draft==='string')result.gomoku.draft=source.gomoku.draft;
+    }
     return {data:result,stats};
   }
   function download(value,name) {
@@ -516,7 +524,7 @@ export function createPhoneTools(api) {
   function previewBackup(backup) {
     const task=api.runtime().task(),origin=signature(),plan=planMerge(backup),s=plan.stats,content=node('div'),status=node('p','rp-feature-note');
     const token={valid:()=>task.valid()&&!!content[0]?.isConnected};
-    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏、'+s.agreements+' 条约定及'+s.themeMessages+' 条主题对话。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
+    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏、'+s.agreements+' 条约定及'+s.themeMessages+' 条主题对话'+(s.gomokuMessages?'、'+s.gomokuMessages+' 条五子棋对话':'')+(s.gomokuRound?'及缺失的五子棋棋局':'')+'。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
     let running=false;
     api.dialog('恢复预览',content,[{label:'取消'},{label:'合并恢复',primary:true,run:()=>{if(running)return false;running=true;status.text('正在备份并校验…');void restoreBackup(backup,origin,token).then(ok=>{if(ok)api.closeDialog();else if(token.valid()){running=false;status.text('未合并，请检查提示或重新选择备份。');}}).catch(()=>{if(token.valid()){running=false;status.text('恢复未完成，原存档与自动备份仍保留。');}});return false;}}]);
   }

@@ -1,4 +1,5 @@
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261017-post-v51-52';
+import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-56';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-gomoku-56';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -5482,6 +5483,7 @@ function rpAddImageWait(entry) {
   }, RP_IMAGE_WAIT_TTL);
 }
 function rpResetChatTasks() {
+  rpGomoku?.cancel();
   rpPhoneTools?.conversation.reset();
   clearTimeout(rpReadingTimer); rpReadingTimer=null;
   rpFinishUndo(); rpXhsFavoritesOnly=false;
@@ -5517,6 +5519,7 @@ function rpResetChatTasks() {
   rpStoreAndResetGames();
 }
 function rpPauseGameAnimations() {
+  rpGomoku?.pause();
   rpGameRuntime('ludo').cancelFrame(LG._animFrame);
   LG._animFrame = null;
   rpGameRuntime('gm').cancelFrame(GM.rafId);
@@ -5530,6 +5533,7 @@ function rpGameVisible(view) {
   return isMochiPhoneEnabled() && !document.hidden && STATE.currentView === view && phone && window.getComputedStyle(phone).display !== 'none';
 }
 function rpResumeGameAnimations() {
+  rpGomoku?.resume();
   rpResumeDeferredGameTimers();
   if (LG.active && rpGameVisible('game') && !LG._animFrame) {
     let last = 0;
@@ -6236,6 +6240,7 @@ function buildStatePayload() {
     bankData: STATE.bankData || null,
     blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     gameState: getPhoneGameStateSnapshot(),
+    gomoku: STATE.gomoku ? JSON.parse(JSON.stringify(STATE.gomoku)) : null,
     themeStudioMessages: Array.isArray(STATE.themeStudioMessages) ? STATE.themeStudioMessages.slice() : [],
     composeDraft: STATE.composeDraft || '',
     themeStudioDraft: STATE.themeStudioDraft || '',
@@ -6847,6 +6852,7 @@ function restorePhoneChatState(saved) {
   STATE.blocklist = Array.isArray(s.blocklist) ? s.blocklist.slice() : [];
   rpTools().normalizeSaved(s);
   restorePhoneGameState(s.gameState);
+  rpGomokuApp().restore(s.gomoku);
   if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
 }
 
@@ -8820,6 +8826,7 @@ async function rpInitBody() {
   STATE._lastAiFingerprint = null;
   bindUI();
   rpTools().mount();
+  rpGomokuApp().mount();
   makeDraggable();
   renderThreadList();
   refreshWidget();
@@ -9133,6 +9140,23 @@ function rpBatchPhoneUi(action) {
   }
 }
 
+let rpGomoku = null;
+function rpGomokuApp() {
+  if (rpGomoku) return rpGomoku;
+  rpGomoku = createGomoku({
+    document, state: () => STATE, runtime: () => rpRuntime, save: saveState,
+    navigate: go, visible: () => rpGameVisible('gomoku'), partner: gameGetCurrentPartner,
+    changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog, notify: text => toastr.info(text),
+    call: (prompt,max,sys,token) => rpGuardAwait(lgCallAPI(prompt,max,sys,{gameTask:token,reportErrors:true}),token),
+    persona: name => g2048GetPersona(name)+'\n'+rpPhoneSpeechLanguageRule(), clean: cleanGameReply,
+    classify: error => rpClassifyPhoneApiError(error).phoneApiCode, errorText: rpGameReplyError,
+    userName: () => getContext()?.name1 || '用户',
+    iconURL: 'https://preview.taliatang1.xyz/assets/mochi-phone-gomoku-icon-20261018.png',
+    iconLocalURL: new URL('scripts/extensions/third-party/mochi-phone/gomoku-art-20261018/mochi-phone-gomoku-icon-20261018.png',document.baseURI).href,
+  });
+  return rpGomoku;
+}
+
 let rpPhoneTools = null;
 function rpTools() {
   if (rpPhoneTools) return rpPhoneTools;
@@ -9153,7 +9177,7 @@ function rpTools() {
     openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
     blockedPost: (post,current) => post.from !== 'user' && blocked({name:post.name || post.user || post.author || post.from || ''},current),
-    canRestore: () => !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
+    canRestore: () => !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
       && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
       && !(window.rpImgWaitQueue || []).some(item => item?.source === 'mochi-phone') && !STATE._pendingCall,
     applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshWidget(); refreshLockNotifs(); saveState({immediate:true}); },
@@ -9634,7 +9658,7 @@ function bindUI() {
     e.stopPropagation();
     const app = $(this).data('folder-app');
     $('#rp-folder-modal').hide();
-    if (['ludo','g2048','ggold','gword'].includes(app)) go(app);
+    if (['ludo','g2048','ggold','gword','gomoku'].includes(app)) go(app);
   });
   // ── Ludo game ────────────────────────────────────────────────
   $(document).on("click.mochiPhone", '[data-app="ludo"]', function(e) {
@@ -10899,7 +10923,7 @@ function go(view) {
   if (view === 'diary') { renderDiary(); }
   $('.rp-view').hide();
   // 需要 flex 布局的视图
-  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold'];
+  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku'];
   if (flexViews.includes(view)) {
     rpFindByDataAttr(null, '.rp-view', 'id', 'rp-view-' + view).css('display','flex');
   } else {
@@ -10907,6 +10931,7 @@ function go(view) {
   }
   $('#rp-home-ind').toggle(view !== 'lock');
   STATE.currentView = view;
+  rpGomoku?.onNavigate(view);
   rpTools().conversation.onNavigate(view);
   rpFitGoldCanvas();
   rpAvoidFabControls();
@@ -16575,7 +16600,7 @@ function lgRenderHomeIcons() {
   });
   phone.querySelectorAll('#rp-folder-modal [data-folder-app]').forEach(el => {
     const icon = el.querySelector('.rp-folder-item-ico');
-    if (!icon) return;
+    if (!icon || el.dataset.folderApp === 'gomoku') return;
     if (!rpArtFolderFallbacks.has(el.dataset.folderApp)) rpArtFolderFallbacks.set(el.dataset.folderApp,icon.innerHTML);
     rpRestoreArtIcon(icon,rpArtFolderFallbacks.get(el.dataset.folderApp));
   });
@@ -19802,6 +19827,7 @@ function gameSetCurrentPartner(name, note, ctx) {
 }
 
 function gameApplyPartnerToGames(partner) {
+  rpGomoku?.render();
   partner = partner || gameGetCurrentPartner();
   var name = partner.name || '对方';
   try { if (typeof LG2048 !== 'undefined') LG2048.charName = name; } catch(e) {}
