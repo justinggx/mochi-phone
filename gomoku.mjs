@@ -167,9 +167,18 @@ export function createGomoku(api) {
     let style=doc.getElementById('rp-gomoku-css');if(!style){style=node('style');style.id='rp-gomoku-css';doc.head.append(style);}style.textContent=GOMOKU_CSS;
     root=node('div','rp-view');root.id='rp-view-gomoku';root.style.display='none';root.style.setProperty('background','#0b182b','important');root.style.fontWeight='400';root.style.fontStyle='normal';doc.getElementById('rp-screen').append(root);
     doc.querySelector('#rp-folder-modal [data-folder-app="gomoku"]')?.remove();
-    const item=node('div','rp-folder-item');item.dataset.folderApp='gomoku';const icon=node('div','rp-folder-item-ico');const img=node('img');img.alt='';img.loading='lazy';img.decoding='async';img.src=api.iconURL;img.style.cssText='width:100%;height:100%;object-fit:contain';let fallback=false;img.onerror=()=>{if(!fallback){fallback=true;img.src=api.iconLocalURL;}else{img.remove();icon.textContent='●○';}};icon.append(img);item.append(icon,node('div','rp-folder-item-lbl','五子棋'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);
+    const item=node('div','rp-folder-item');item.dataset.folderApp='gomoku';item.append(node('div','rp-folder-item-ico'),node('div','rp-folder-item-lbl','五子棋'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);refreshIcon();
     mounted.listenDOM(doc,'visibilitychange',()=>{if(doc.hidden)pause();else resume();});
     mounted.own(()=>{cancel();style.remove();});render();
+  }
+  function refreshIcon(theme=api.iconTheme?.()) {
+    const icon=doc.querySelector('#rp-folder-modal [data-folder-app="gomoku"] .rp-folder-item-ico');if(!icon)return;
+    const src=api.iconSource?.(theme,false)||api.iconURL,local=api.iconSource?.(theme,true)||api.iconLocalURL;
+    if(icon.dataset.gmkIconUrl===src&&icon.querySelector('img'))return;
+    const img=node('img');img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.style.cssText='width:100%;height:100%;object-fit:contain';let usingLocal=false;
+    icon.dataset.gmkIconUrl=src;icon.dataset.gmkIconTheme=['candy','star','misty'].includes(theme)?theme:'custom';
+    img.onerror=()=>{if(!img.isConnected||icon.dataset.gmkIconUrl!==src)return;if(!usingLocal){usingLocal=true;img.src=local;}else{icon.textContent='●○';delete icon.dataset.gmkIconUrl;}};
+    icon.replaceChildren(img);img.src=src;
   }
   function nav(){const n=node('div','gmk-nav'),back=button('‹','gmk-back',()=>{if(data().screen==='chat'){data().screen='play';render();resume();}else if(data().screen==='play'){pause();data().screen='home';save();render();}else api.navigate('home');});back.setAttribute('aria-label','返回');back.id='gmk-back';n.append(back,node('span','gmk-nav-title',data().screen==='home'?'':data().screen==='chat'?'对弈闲聊':'五子棋'),button('规则','gmk-rules',rules));return n;}
   function home(){const h=node('div','gmk-home'),inner=node('div','gmk-home-inner'),decor=node('div','gmk-decor');decor.setAttribute('aria-hidden','true');decor.append(node('div','gmk-moon'),node('div','gmk-decor-grid'),node('div','gmk-arc'));for(const[x,y,white]of [[95,105,0],[165,140,1],[130,175,0],[60,210,1],[25,245,1],[165,245,0]]){const s=node('i','gmk-decor-stone'+(white?' white':''));s.style.left=x+'px';s.style.top=y+'px';decor.append(s);}
@@ -220,5 +229,5 @@ export function createGomoku(api) {
     }
   }
   function onNavigate(view){doc.getElementById('rp-phone')?.classList.toggle('rp-gomoku-open',view==='gomoku');if(view==='gomoku'){mount();render();resume();}else pause();}
-  return {mount,restore,cancel,pause,resume,onNavigate,render,start,select,commit,takeback,sendChat,data,rules,confirmNew,busy:()=>!!chatJob,position:()=>gomokuPosition(data().round?.moves||[])};
+  return {mount,refreshIcon,restore,cancel,pause,resume,onNavigate,render,start,select,commit,takeback,sendChat,data,rules,confirmNew,busy:()=>!!chatJob,position:()=>gomokuPosition(data().round?.moves||[])};
 }

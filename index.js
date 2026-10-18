@@ -1,4 +1,4 @@
-import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-56';
+import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-icons-57';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-gomoku-56';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
@@ -9141,6 +9141,10 @@ function rpBatchPhoneUi(action) {
 }
 
 let rpGomoku = null;
+function rpGomokuIconUrl(theme,local=false) {
+  const file=['candy','star','misty'].includes(theme) ? 'mochi-phone-gomoku-'+theme+'-icon-20261018.png' : 'mochi-phone-gomoku-icon-20261018.png';
+  return local ? new URL('scripts/extensions/third-party/mochi-phone/gomoku-art-20261018/'+file,document.baseURI).href : 'https://preview.taliatang1.xyz/assets/'+file;
+}
 function rpGomokuApp() {
   if (rpGomoku) return rpGomoku;
   rpGomoku = createGomoku({
@@ -9151,8 +9155,8 @@ function rpGomokuApp() {
     persona: name => g2048GetPersona(name)+'\n'+rpPhoneSpeechLanguageRule(), clean: cleanGameReply,
     classify: error => rpClassifyPhoneApiError(error).phoneApiCode, errorText: rpGameReplyError,
     userName: () => getContext()?.name1 || '用户',
-    iconURL: 'https://preview.taliatang1.xyz/assets/mochi-phone-gomoku-icon-20261018.png',
-    iconLocalURL: new URL('scripts/extensions/third-party/mochi-phone/gomoku-art-20261018/mochi-phone-gomoku-icon-20261018.png',document.baseURI).href,
+    iconTheme: () => document.getElementById('rp-phone')?.dataset.rpArtTheme || null,
+    iconSource: (theme,local) => rpGomokuIconUrl(theme,local),
   });
   return rpGomoku;
 }
@@ -16560,6 +16564,7 @@ function rpPaintArtIcon(icon, atlas, index, columns) {
 }
 
 function rpRenderGameFolderIcons() {
+  rpGomoku?.refreshIcon();
   const phone = document.getElementById('rp-phone');
   if (!phone?.classList.contains('rp-art-icons')) return;
   const theme = phone.dataset.rpArtTheme;
@@ -16587,6 +16592,7 @@ function lgRenderHomeIcons() {
   rpRefreshGoldModeArt();
   rpRefreshLudoModeArt();
   rpRefreshWordModeArt();
+  rpGomoku?.refreshIcon(builtIn ? theme : null);
   // Legacy currentColor artwork stays available for custom themes/load failure.
   // Built-in themes replace it only after the matching raster atlas has loaded.
   document.querySelectorAll('#rp-app-grid [data-app]').forEach(el => {
