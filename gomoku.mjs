@@ -68,8 +68,19 @@ export function normalizeGomoku(raw) {
     const item=copy(m);if(!item.id)item.id=uid();if(item.replyState==='pending'){item.replyState='failed';item.replyError='interrupted';}out.log.push(item);
   });else if(raw.log!==undefined)issues.push({path:'gomoku.log',value:raw.log});
   if(raw.round!=null){const r=raw.round,p=gomokuPosition(r?.moves);if(p&&typeof r.id==='string'&&typeof r.partner==='string'&&r.partner&&LEVELS.includes(r.level))out.round={id:r.id,partner:r.partner,note:typeof r.note==='string'?r.note:'',level:r.level,moves:copy(r.moves),startedAt:Number(r.startedAt)||Date.now(),abandoned:!!r.abandoned};else issues.push({path:'gomoku.round',value:r});}
+  if(out.round)out.round.speech=normalizeSpeech(raw.round.speech,out.round.moves.length);
   // Reload always requires an explicit Continue, never an automatic move/request.
   return {data:out,issues};
+}
+
+// Speech bookkeeping prevents reissuing a billed request after reload or navigation.
+function normalizeSpeech(raw,moves=0) {
+  const r=raw&&typeof raw==='object'?raw:{},now=Date.now();
+  const revision=Number.isSafeInteger(r.revision)&&r.revision>=moves?r.revision:moves;
+  const seen=Array.isArray(r.seen)?[...new Set(r.seen.filter(x=>typeof x==='string'&&/^\d+:(opening|resume|move|threat|end)$/.test(x)))].slice(-256):[];
+  const event=e=>e&&e.revision===revision&&typeof e.key==='string'&&seen.includes(e.key)&&['opening','resume','move','threat','end'].includes(e.kind)&&e.key===revision+':'+e.kind?{key:e.key,revision,kind:e.kind}:null;
+  const interrupted=event(r.pending),failed=event(r.failed);
+  return {revision,seen,lastAt:Number.isFinite(r.lastAt)?Math.max(0,Math.min(now,r.lastAt)):0,pending:null,failed:interrupted?{...interrupted,error:'interrupted'}:failed?{...failed,error:typeof r.failed.error==='string'?r.failed.error:'interrupted'}:null};
 }
 
 const P='#rp-phone #rp-screen #rp-view-gomoku';
@@ -136,8 +147,8 @@ ${P} .gmk-message-status button{font:inherit;color:#b5d9fa;background:transparen
 ${P} .gmk-compose{display:flex;gap:7px;align-items:end;padding-top:8px;border-top:1px solid #9bb9d126;}
 ${P} .gmk-compose textarea{resize:vertical;min-height:38px;max-height:120px;flex:1;min-width:0;border:1px solid #7a9db64d;border-radius:15px;background:#14263c;color:#e8eff6;font-family:inherit;font-size:12px;line-height:1.5;padding:8px 11px;}
 ${P} .gmk-compose button{font-size:12px;padding:9px 12px;min-height:38px;}
-${P} .gmk-chat-toolbar{display:flex;justify-content:space-between;align-items:center;gap:5px;}
-${P} .gmk-chat-toolbar label{font-size:10px;color:#9bb3cc;}
+${P} .gmk-speech-status{font-size:10px;line-height:1.6;color:#95adc6;margin:4px 0;}
+${P} .gmk-speech-status button{font:inherit;color:#b5d9fa;background:transparent;border:0;text-decoration:underline;padding:3px 6px;min-height:30px;}
 #rp-phone.rp-gomoku-open #rp-sbar,#rp-phone.rp-gomoku-open #rp-sbar *{color:#c0d6ec!important;}
 #rp-phone.rp-gomoku-open #rp-island{background:#03070d!important;}
 #rp-phone.rp-gomoku-open #rp-home-ind{background:#d3dfeb!important;}
@@ -148,20 +159,21 @@ ${P} .gmk-chat-toolbar label{font-size:10px;color:#9bb3cc;}
 export function createGomoku(api) {
   const doc=api.document,win=doc.defaultView;
   let root=null,mounted=null,controller=new win.AbortController(),epoch=0,moveTimer=null,selected=null,focusIndex=112,chatJob=null,visibleCount=100,showHistory=false,needsResume=false,composing=false,deferredRender=false;
+  let autoJob=null,autoTimer=null,queuedEvent=null,dialogueSerial=0,lastManualAt=0;
   const data=()=>{if(!api.state().gomoku)api.state().gomoku=normalizeGomoku(null).data;return api.state().gomoku;};
   const node=(tag,cls='',text='')=>{const e=doc.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
   const task=()=>{const parent=api.runtime().task(),serial=epoch,signal=controller.signal,origin=data();return{signal,valid:()=>parent.valid()&&!signal.aborted&&serial===epoch&&data()===origin};};
-  function cancel(){if(moveTimer!=null)win.clearTimeout(moveTimer);moveTimer=null;controller.abort();controller=new win.AbortController();epoch++;chatJob=null;selected=null;for(const m of api.state().gomoku?.log||[])if(m.replyState==='pending'){m.replyState='failed';m.replyError='interrupted';}}
+  function cancel(){stopSpeech(true);dialogueSerial++;if(moveTimer!=null)win.clearTimeout(moveTimer);moveTimer=null;controller.abort();controller=new win.AbortController();epoch++;chatJob=null;selected=null;for(const m of api.state().gomoku?.log||[])if(m.replyState==='pending'){m.replyState='failed';m.replyError='interrupted';}}
   function restore(raw){cancel();const result=normalizeGomoku(raw);api.state().gomoku=result.data;if(result.issues.length)(api.state().recovery ||= []).push(...result.issues);needsResume=!!result.data.round;showHistory=false;visibleCount=100;return result.data;}
   function save(){api.save();}
   function button(text,cls,run){const b=node('button',cls,text);b.type='button';b.addEventListener('click',run);return b;}
   function running(){const r=data().round;return !!r&&!r.abandoned&&gomokuPosition(r.moves)?.status==='playing';}
   function partner(){const r=data().round;return running()?{name:r.partner,note:r.note}:api.partner();}
   function message(role,text,extra={}){const r=data().round,m={id:uid(),role,text,roundId:r?.id||'',name:role==='char'?r?.partner||partner().name:undefined,...extra};data().log.push(m);save();return m;}
-  function rules(){const body=node('div');for(const text of ['休闲五子棋：15×15棋盘，你执黑先手，搭子执白。横、竖或斜线连成五枚及以上获胜；无禁手，棋盘下满且无人获胜为和棋。','先点选交叉点，再按“确认落子”，避免小屏误触。键盘方向键可移动选择，回车/空格选中后确认。','轻松、标准、挑战使用不同本地策略；对弈本身不调用API。和角色聊天使用现有API设置，可能产生费用。','返回或关闭手机会暂停搭子落子；刷新后需点“继续对局”。本局搭子与难度固定，开始新局后可更换。悔棋会撤回最近一轮落子，保留聊天记录。'])body.append(node('p','',text));api.dialog('五子棋规则',body,[{label:'知道了'}]);}
+  function rules(){const body=node('div');for(const text of ['休闲五子棋：15×15棋盘，你执黑先手，搭子执白。横、竖或斜线连成五枚及以上获胜；无禁手，棋盘下满且无人获胜为和棋。','先点选交叉点，再按“确认落子”，避免小屏误触。键盘方向键可移动选择，回车/空格选中后确认。','轻松、标准、挑战使用不同本地策略。角色会在开局、关键落子和结束时依据人设与实际棋局主动说话；也可以随时进入闲聊。发言优先使用已填写地址和密钥的自定义API，否则使用酒馆主API，可能产生费用。','返回或关闭手机会暂停搭子落子；刷新后需点“继续对局”。本局搭子与难度固定，开始新局后可更换。悔棋会撤回最近一轮落子，保留聊天记录。'])body.append(node('p','',text));api.dialog('五子棋规则',body,[{label:'知道了'}]);}
   function confirmNew(){if(data().round?.moves.length){api.dialog('重新开始？',node('p','','当前棋盘将结束，已有聊天记录保留。'),[{label:'取消'},{label:'重新开始',run:()=>{newHome();}}]);}else newHome();}
   function newHome(){cancel();if(data().round)data().round.abandoned=true;data().screen='home';needsResume=false;save();render();}
-  function start(){cancel();const d=data();if(!running()){const p=api.partner();d.round={id:uid(),partner:p.name||'对方',note:p.note||'',level:d.level,moves:[],startedAt:Date.now(),abandoned:false};}needsResume=false;d.screen='play';showHistory=false;save();render();resume();}
+  function start(){cancel();const d=data();if(!running()){const p=api.partner();d.round={id:uid(),partner:p.name||'对方',note:p.note||'',level:d.level,moves:[],startedAt:Date.now(),abandoned:false,speech:normalizeSpeech(null)};}needsResume=false;d.screen='play';showHistory=false;save();render();queueSpeech(d.round.moves.length?'resume':'opening');resume();}
   function mount(){
     if(mounted===api.runtime()&&root?.isConnected)return;
     mounted=api.runtime();root=doc.getElementById('rp-view-gomoku');if(root)root.remove();
@@ -192,27 +204,79 @@ export function createGomoku(api) {
     for(let n=0;n<GOMOKU_SIZE;n++)for(const axis of ['x','y']){const line=doc.createElementNS('http://www.w3.org/2000/svg','line'),at=n*2+1;line.dataset.gmkAxis=axis;line.setAttribute('x1',axis==='x'?at:1);line.setAttribute('y1',axis==='x'?1:at);line.setAttribute('x2',axis==='x'?at:29);line.setAttribute('y2',axis==='x'?29:at);lines.append(line);}board.append(lines);const last=r.moves.at(-1)?.index;
     for(let index=0;index<TOTAL;index++){const side=p.board[index],ghost=selected===index&&!side;const cell=button('','gmk-cell'+(side===2?' white':'')+(ghost?' ghost':'')+(last===index?' last':'')+(p.line.includes(index)?' won':''),()=>select(index));cell.dataset.gmkCell=String(index);cell.setAttribute('role','gridcell');cell.setAttribute('aria-label',label(index)+'，'+(side===1?'黑棋':side===2?'白棋':ghost?'待确认':'空位'));cell.setAttribute('aria-rowindex',String(Math.floor(index/15)+1));cell.setAttribute('aria-colindex',String(index%15+1));cell.setAttribute('aria-selected',String(ghost));cell.tabIndex=index===focusIndex?0:-1;cell.setAttribute('aria-disabled',String(side!==0||p.status!=='playing'||p.turn!==1||needsResume));
       if(side||ghost)cell.append(node('span','gmk-stone'));cell.addEventListener('keydown',event=>{const dirs={ArrowLeft:-1,ArrowRight:1,ArrowUp:-15,ArrowDown:15};if(!Object.hasOwn(dirs,event.key))return;event.preventDefault();let next=index+dirs[event.key];if(next<0||next>=TOTAL||((event.key==='ArrowLeft'||event.key==='ArrowRight')&&Math.floor(next/15)!==Math.floor(index/15)))return;focusIndex=next;cell.tabIndex=-1;const target=board.querySelector('[data-gmk-cell="'+next+'"]');target.tabIndex=0;target.focus();});board.append(cell);}
-    wrap.append(board);const actions=node('div','gmk-play-actions');const undo=button('悔棋','gmk-undo',takeback);undo.id='gmk-undo';undo.disabled=!r.moves.length;const fresh=button('新局','gmk-new',confirmNew);fresh.id='gmk-new';const confirm=button('确认落子','gmk-primary gmk-confirm',commit);confirm.id='gmk-confirm';confirm.disabled=selected==null||p.turn!==1||p.status!=='playing'||needsResume;actions.append(undo,fresh,confirm);wrap.append(actions,node('p','gmk-note','点选棋盘，再确认落子。对弈不消耗API。'));
-    const chat=button('和 '+r.partner+' 聊聊　›','gmk-chat-open',()=>{pause();data().screen='chat';save();render();});chat.id='gmk-chat-open';const lastChat=data().log.filter(m=>m.roundId===r.id&&m.role==='char').at(-1);wrap.append(chat);if(lastChat)wrap.append(node('div','gmk-chat-preview',lastChat.text));return wrap;
+    wrap.append(board);const actions=node('div','gmk-play-actions');const undo=button('悔棋','gmk-undo',takeback);undo.id='gmk-undo';undo.disabled=!r.moves.length;const fresh=button('新局','gmk-new',confirmNew);fresh.id='gmk-new';const confirm=button('确认落子','gmk-primary gmk-confirm',commit);confirm.id='gmk-confirm';confirm.disabled=selected==null||p.turn!==1||p.status!=='playing'||needsResume;actions.append(undo,fresh,confirm);wrap.append(actions,node('p','gmk-note','点选棋盘，再确认落子。搭子的话会显示在下方。'));
+    const chat=button('和 '+r.partner+' 聊聊　›','gmk-chat-open',()=>{pauseMoves();data().screen='chat';save();render();resume();});chat.id='gmk-chat-open';const lastChat=data().log.filter(m=>m.roundId===r.id&&m.role==='char').at(-1);wrap.append(chat);if(lastChat)wrap.append(node('div','gmk-chat-preview',lastChat.text));appendSpeechStatus(wrap);return wrap;
   }
   function select(index){const r=data().round,p=r&&gomokuPosition(r.moves);if(!p||p.status!=='playing'||p.turn!==1||p.board[index]||needsResume)return;selected=index;focusIndex=index;const scroll=root.querySelector('.gmk-play')?.scrollTop||0;render();root.querySelector('.gmk-play').scrollTop=scroll;}
-  function commit(){const r=data().round,p=r&&gomokuPosition(r.moves);if(!p||p.status!=='playing'||p.turn!==1||selected==null||p.board[selected]||needsResume)return false;r.moves.push({index:selected,side:1});selected=null;save();render();resume();return true;}
-  function pause(){if(moveTimer!=null)win.clearTimeout(moveTimer);moveTimer=null;}
-  function resume(){if(!root?.isConnected||!api.visible()||data().screen!=='play'||needsResume||moveTimer!=null)return;const r=data().round,p=r&&gomokuPosition(r.moves);if(!r||r.abandoned||p.status!=='playing'||p.turn!==2)return;const token=task();moveTimer=win.setTimeout(()=>{moveTimer=null;if(!token.valid()||!api.visible()||data().round!==r||data().screen!=='play')return;const before=gomokuPosition(r.moves);if(before.status!=='playing'||before.turn!==2)return;const index=gomokuChooseMove(before.board,2,r.level);if(index==null||before.board[index])return;r.moves.push({index,side:2});save();render();},650);}
-  function takeback(){const r=data().round;if(!r?.moves.length)return;cancel();const n=r.moves.length%2===0?2:1;r.moves.splice(Math.max(0,r.moves.length-n));needsResume=false;message('system','已悔棋，棋盘回到第'+r.moves.length+'手。');save();render();}
-  function chat(){const r=data().round,wrap=node('div','gmk-chat'),toolbar=node('div','gmk-chat-toolbar'),show=node('input');show.type='checkbox';show.checked=showHistory;show.id='gmk-show-history';show.addEventListener('change',()=>{showHistory=show.checked;visibleCount=100;render();});const showLabel=node('label','','往局对话');showLabel.prepend(show);toolbar.append(showLabel,node('span','gmk-note','发送聊天使用当前API'));wrap.append(toolbar);const log=node('div','gmk-chat-log');log.id='gmk-chat-log';const items=data().log.filter(m=>showHistory||m.roundId===r?.id);if(items.length>visibleCount)log.append(button('显示更早对话','gmk-text-button',()=>{const top=log.scrollTop,height=log.scrollHeight;visibleCount+=100;render();const updated=root.querySelector('#gmk-chat-log');updated.scrollTop=top+updated.scrollHeight-height;}));if(!items.length)log.append(node('p','gmk-note','可以聊刚才的一手棋，也可以自然聊其他话题。'));
-    for(const m of items.slice(-visibleCount)){const row=node('div','gmk-message '+m.role);row.dataset.gmkMessage=m.id;if(m.role!=='system')row.append(node('span','gmk-message-name',m.role==='user'?api.userName():m.name||r?.partner||'对方'));row.append(doc.createTextNode(m.text));if(['pending','failed','superseded'].includes(m.replyState)){const feedback=node('span','gmk-message-status');feedback.textContent=m.replyState==='pending'?'正在回复…':m.replyState==='superseded'?'已有更新的提问':api.errorText(m.replyError);if(m.replyState==='failed'&&m.roundId===r?.id){const retry=button('重试','',()=>sendChat(m.id));retry.disabled=!!chatJob;feedback.append(retry);}row.append(feedback);}log.append(row);}wrap.append(log);const composer=node('div','gmk-compose'),input=node('textarea');input.id='gmk-input';input.rows=1;input.maxLength=8000;input.placeholder='和搭子聊聊…';input.setAttribute('aria-label','和五子棋搭子聊天');input.value=data().draft;input.addEventListener('compositionstart',()=>{composing=true;});input.addEventListener('compositionend',()=>{composing=false;data().draft=input.value;save();if(deferredRender){deferredRender=false;render();}});input.addEventListener('input',()=>{data().draft=input.value;save();});input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){event.preventDefault();void sendChat();}});const send=button('发送','gmk-primary',()=>sendChat());send.id='gmk-send';send.disabled=!!chatJob;composer.append(input,send);wrap.append(composer);return wrap;
+  function commit(){const r=data().round,p=r&&gomokuPosition(r.moves);if(!p||p.status!=='playing'||p.turn!==1||selected==null||p.board[selected]||needsResume)return false;stopSpeech(true);r.moves.push({index:selected,side:1});advanceSpeech();selected=null;save();render();if(gomokuPosition(r.moves).status!=='playing')queueSpeech('end');resume();return true;}
+  function pauseMoves(){if(moveTimer!=null)win.clearTimeout(moveTimer);moveTimer=null;}
+  function pause(){pauseMoves();stopSpeech(false);}
+  function resume(){flushSpeech();if(!root?.isConnected||!api.visible()||data().screen!=='play'||needsResume||moveTimer!=null)return;const r=data().round,p=r&&gomokuPosition(r.moves);if(!r||r.abandoned||p.status!=='playing'||p.turn!==2)return;const token=task();moveTimer=win.setTimeout(()=>{moveTimer=null;if(!token.valid()||!api.visible()||data().round!==r||data().screen!=='play')return;const before=gomokuPosition(r.moves);if(before.status!=='playing'||before.turn!==2)return;const index=gomokuChooseMove(before.board,2,r.level);if(index==null||before.board[index])return;stopSpeech(true);r.moves.push({index,side:2});advanceSpeech();save();render();const after=gomokuPosition(r.moves),facts=boardFacts();if(after.status!=='playing')queueSpeech('end');else if(facts.userWinningPoints.length||facts.partnerWinningPoints.length||facts.longest.user>=3||facts.longest.char>=3||winningPoints(before.board,1).includes(index))queueSpeech('threat');else if(r.moves.length===2||r.moves.length%6===0)queueSpeech('move');},650);}
+  function takeback(){const r=data().round;if(!r?.moves.length)return;cancel();const n=r.moves.length%2===0?2:1;r.moves.splice(Math.max(0,r.moves.length-n));advanceSpeech();needsResume=false;message('system','已悔棋，棋盘回到第'+r.moves.length+'手。');save();render();}
+  function chat(){const r=data().round,wrap=node('div','gmk-chat');const log=node('div','gmk-chat-log');log.id='gmk-chat-log';const items=data().log.filter(m=>showHistory||m.roundId===r?.id);if(!showHistory&&data().log.some(m=>m.roundId!==r?.id))log.append(button('查看往局对话','gmk-text-button',()=>{showHistory=true;visibleCount=100;render();}));if(showHistory)log.append(button('仅看本局','gmk-text-button',()=>{showHistory=false;visibleCount=100;render();}));if(items.length>visibleCount)log.append(button('显示更早对话','gmk-text-button',()=>{const top=log.scrollTop,height=log.scrollHeight;visibleCount+=100;render();const updated=root.querySelector('#gmk-chat-log');updated.scrollTop=top+updated.scrollHeight-height;}));if(!items.length)log.append(node('p','gmk-note','可以聊刚才的一手棋，也可以自然聊其他话题。'));
+    for(const m of items.slice(-visibleCount)){const row=node('div','gmk-message '+m.role);row.dataset.gmkMessage=m.id;if(m.role!=='system')row.append(node('span','gmk-message-name',m.role==='user'?api.userName():m.name||r?.partner||'对方'));row.append(doc.createTextNode(m.text));if(['pending','failed','superseded'].includes(m.replyState)){const feedback=node('span','gmk-message-status');feedback.textContent=m.replyState==='pending'?'正在回复…':m.replyState==='superseded'?'已有更新的提问':api.errorText(m.replyError);if(m.replyState==='failed'&&m.roundId===r?.id){const retry=button('重试','',()=>sendChat(m.id));retry.disabled=!!chatJob;feedback.append(retry);}row.append(feedback);}log.append(row);}appendSpeechStatus(log);wrap.append(log);const composer=node('div','gmk-compose'),input=node('textarea');input.id='gmk-input';input.rows=1;input.maxLength=8000;input.placeholder='和搭子聊聊…';input.setAttribute('aria-label','和五子棋搭子聊天');input.value=data().draft;input.addEventListener('compositionstart',()=>{composing=true;stopSpeech(true);});input.addEventListener('compositionend',()=>{composing=false;data().draft=input.value;save();if(deferredRender){deferredRender=false;render();}});input.addEventListener('input',()=>{data().draft=input.value;if(input.value.trim())stopSpeech(true);save();});input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){event.preventDefault();void sendChat();}});const send=button('发送','gmk-primary',()=>sendChat());send.id='gmk-send';send.disabled=!!chatJob;composer.append(input,send);wrap.append(composer);return wrap;
   }
   async function sendChat(retryId=''){
     if(chatJob)return false;const r=data().round;if(!r)return false;const input=root?.querySelector('#gmk-input');let m;if(retryId){m=data().log.find(x=>x.id===retryId&&x.roundId===r.id&&x.role==='user');if(!m||m.replyState!=='failed')return false;}else{const text=(input?.value??data().draft).trim();if(!text||text.length>8000)return false;for(const old of data().log)if(old.replyState==='failed')old.replyState='superseded';m=message('user',text);data().draft='';}
-    const token=task(),owner={};chatJob=owner;const prior=m.replyError;m.replyState='pending';delete m.replyError;save();render();
+    stopSpeech(true);dialogueSerial++;lastManualAt=Date.now();const token=task(),owner={};chatJob=owner;const prior=m.replyError;m.replyState='pending';delete m.replyError;save();render();
     try{
-      const p=gomokuPosition(r.moves),history=data().log.filter(x=>x.roundId===r.id&&x.id!==m.id&&x.role!=='system').slice(-20);let bounded=[];let size=0;for(let i=history.length-1;i>=0;i--){const item={role:history[i].role,name:history[i].name,text:history[i].text},length=JSON.stringify(item).length;if(size+length>16000)break;bounded.unshift(item);size+=length;}
-      const prompt='[GomokuDialogue/v1]\n棋局事实（不能改写）：'+JSON.stringify({game:'五子棋',partner:r.partner,userStone:'黑棋',partnerStone:'白棋',level:r.level,moves:r.moves.map(x=>({at:label(x.index),side:x.side===1?'user':'char'})),status:p.status,winner:p.winner===1?'user':p.winner===2?'char':null})+'\n本局近期完整对话：'+JSON.stringify(bounded)+'\n最新用户消息：'+JSON.stringify({name:api.userName(),text:m.text})+'\n先理解并回应最新消息，允许自然闲聊。只输出当前搭子的完整回复；不代替用户发言，不擅自声明已经落下未出现的棋子。聊天不执行落子、改难度或悔棋；这些操作由界面按钮完成。不要报坐标代替回答，也不要突然转移话题。';
+      const bounded=recentDialogue(m.id);
+      const prompt='[GomokuDialogue/v1]\n棋局事实（不能改写）：'+JSON.stringify(boardFacts())+'\n本局近期完整对话：'+JSON.stringify(bounded)+'\n最新用户消息：'+JSON.stringify({name:api.userName(),text:m.text})+'\n先理解并回应最新消息，允许自然闲聊。只输出当前搭子的完整回复；不代替用户发言，不擅自声明已经落下未出现的棋子。聊天不执行落子、改难度或悔棋；这些操作由界面按钮完成。不要报坐标代替回答，也不要突然转移话题。';
       const raw=await api.call(prompt,retryId&&prior==='truncated'?8192:4096,api.persona(r.partner)+(r.note?'\n本局搭子补充资料：'+r.note:''),token);if(!token.valid()||data().round!==r)return false;const reply=api.clean(raw,r.partner);if(!reply)throw Object.assign(new Error('Empty game reply'),{phoneApiCode:'empty'});message('char',reply,{replyTo:m.id});m.replyState='done';
     }catch(error){if(!token.valid())return false;m.replyState='failed';m.replyError=api.classify(error);}
-    finally{if(token.valid()&&chatJob===owner){chatJob=null;save();render();}}
+    finally{if(token.valid()&&chatJob===owner){chatJob=null;lastManualAt=Date.now();save();render();resume();}}
     return true;
+  }
+  function speech(){const r=data().round;return r?(r.speech ||= normalizeSpeech(null,r.moves.length)):null;}
+  function advanceSpeech(){const meta=speech();meta.revision++;meta.failed=null;}
+  function stopSpeech(clearQueue){
+    if(autoTimer!=null)win.clearTimeout(autoTimer);autoTimer=null;
+    if(clearQueue)queuedEvent=null;
+    if(autoJob){const owner=autoJob;autoJob=null;owner.controller.abort();root?.querySelectorAll('.gmk-speech-status').forEach(e=>e.remove());if(owner.round===data().round&&speech()?.pending?.key===owner.event.key){speech().pending=null;save();}}
+  }
+  function winningPoints(board,side){const out=[];for(let i=0;i<TOTAL;i++)if(!board[i]){board[i]=side;if(gomokuWin(board,i).length)out.push(i);board[i]=0;}return out;}
+  function boardFacts(){
+    const r=data().round,p=gomokuPosition(r.moves),longest={user:0,char:0};
+    for(let i=0;i<TOTAL;i++)if(p.board[i])for(const[dx,dy]of DIRS){let count=1,x=i%15+dx,y=Math.floor(i/15)+dy;while(inside(x,y)&&p.board[y*15+x]===p.board[i]){count++;x+=dx;y+=dy;}const who=p.board[i]===1?'user':'char';longest[who]=Math.max(longest[who],count);}
+    return {game:'五子棋',partner:r.partner,userStone:'黑棋',partnerStone:'白棋',level:r.level,moves:r.moves.map(x=>({at:label(x.index),side:x.side===1?'user':'char'})),lastMove:r.moves.length?{at:label(r.moves.at(-1).index),side:r.moves.at(-1).side===1?'user':'char'}:null,status:p.status,winner:p.winner===1?'user':p.winner===2?'char':null,next:p.status==='playing'?(p.turn===1?'user':'char'):null,longest,userWinningPoints:p.status==='playing'?winningPoints(p.board,1).map(label):[],partnerWinningPoints:p.status==='playing'?winningPoints(p.board,2).map(label):[]};
+  }
+  function recentDialogue(exclude=''){
+    const history=data().log.filter(x=>x.roundId===data().round.id&&x.id!==exclude&&x.role!=='system'&&(x.role!=='user'||!x.replyState||x.replyState==='done')).slice(-20),bounded=[];let size=0;
+    for(let i=history.length-1;i>=0;i--){const item={role:history[i].role,name:history[i].name,text:history[i].text},length=JSON.stringify(item).length;if(size+length>16000)break;bounded.unshift(item);size+=length;}return bounded;
+  }
+  function speechVisible(){return root?.isConnected&&api.visible()&&!doc.hidden&&!needsResume&&['play','chat'].includes(data().screen);}
+  function eventValid(event){const r=data().round;return r&&!r.abandoned&&event?.roundId===r.id&&event.revision===speech().revision;}
+  function queueSpeech(kind){
+    const r=data().round;if(!r||r.abandoned)return;const meta=speech(),event={roundId:r.id,revision:meta.revision,kind,key:meta.revision+':'+kind};
+    if(meta.seen.includes(event.key))return;queuedEvent=event;flushSpeech();
+  }
+  function flushSpeech(){
+    if(!queuedEvent||autoJob||autoTimer!=null||!speechVisible())return;
+    if(!eventValid(queuedEvent)){queuedEvent=null;return;}
+    if(chatJob||composing||data().draft.trim()||data().log.some(m=>m.roundId===data().round.id&&m.role==='user'&&['pending','failed'].includes(m.replyState)))return;
+    const wait=Math.max(0,lastManualAt?lastManualAt+15000-Date.now():0,queuedEvent.kind==='end'?0:speech().lastAt? speech().lastAt+10000-Date.now():0);
+    if(wait>0){autoTimer=win.setTimeout(()=>{autoTimer=null;flushSpeech();},wait);return;}
+    const event=queuedEvent;queuedEvent=null;void speak(event);
+  }
+  async function speak(event,retry=false){
+    if(!eventValid(event)||!speechVisible()||chatJob||autoJob||composing||data().draft.trim()||data().log.some(m=>m.roundId===data().round.id&&m.role==='user'&&['pending','failed'].includes(m.replyState)))return false;
+    const r=data().round,meta=speech(),base=task(),serial=dialogueSerial,child=new win.AbortController(),owner={round:r,event,controller:child};
+    const token={signal:child.signal,valid:()=>base.valid()&&!child.signal.aborted&&autoJob===owner&&dialogueSerial===serial&&eventValid(event)&&speechVisible()};
+    const prior=meta.failed?.error;autoJob=owner;meta.failed=null;meta.pending={key:event.key,revision:event.revision,kind:event.kind};meta.seen=[...new Set([...meta.seen,event.key])].slice(-256);meta.lastAt=Date.now();save();render();
+    try{
+      const names={opening:'开始新局，你执白，用户执黑先手',resume:'用户主动继续这局棋',move:'你刚完成了一次真实落子',threat:'刚才的落子涉及连子、攻防或拦截',end:'本局已经分出胜负或和棋'};
+      const prompt='[GomokuEventComment/v1]\n本次事件：'+names[event.kind]+'\n当前棋局事实（唯一依据，不能改写）：'+JSON.stringify(boardFacts())+'\n本局近期完整对话：'+JSON.stringify(recentDialogue())+'\n请以当前搭子的身份主动对用户说一两句简短、自然、完整的话。结合你的人设、关系、最新落子与胜负状态，延续最近的话题，不机械报棋谱，不强行亲昵，不每次提问，不重复上一句。不替用户发言、描写用户动作或感受，不编造落子、胜负或线下行为，不输出分析、舞台动作、规则说明或标签。落子由本地规则执行，聊天不能改变棋盘；这是你主动开口，不是用户发来了一条新消息。';
+      const raw=await api.call(prompt,retry&&prior==='truncated'?8192:2048,api.persona(r.partner)+(r.note?'\n本局搭子补充资料：'+r.note:''),token);
+      if(!token.valid())return false;const reply=api.clean(raw,r.partner);if(!reply)throw Object.assign(new Error('Empty game comment'),{phoneApiCode:'empty'});
+      if(!data().log.filter(m=>m.roundId===r.id&&m.role==='char').slice(-6).some(m=>m.text===reply))message('char',reply,{kind:'event-comment',eventKey:event.key});
+    }catch(error){if(!token.valid())return false;meta.failed={key:event.key,revision:event.revision,kind:event.kind,error:api.classify(error)};}
+    finally{if(autoJob===owner){autoJob=null;meta.pending=null;save();render();flushSpeech();}}
+    return true;
+  }
+  function appendSpeechStatus(wrap){
+    const meta=speech();if(!meta)return;
+    if(autoJob)wrap.append(node('p','gmk-speech-status',data().round.partner+'正在说话…'));
+    else if(meta.failed){const line=node('div','gmk-speech-status',data().round.partner+'的发言：'+api.errorText(meta.failed.error)),event={...meta.failed,roundId:data().round.id};const retry=button('重试','',()=>{void speak(event,true);});retry.disabled=!!chatJob||!speechVisible()||data().log.some(m=>m.roundId===data().round.id&&m.role==='user'&&['pending','failed'].includes(m.replyState));line.append(retry);wrap.append(line);}
   }
   function render(){
     if(!root?.isConnected)return;
@@ -231,5 +295,5 @@ export function createGomoku(api) {
     }
   }
   function onNavigate(view){doc.getElementById('rp-phone')?.classList.toggle('rp-gomoku-open',view==='gomoku');if(view==='gomoku'){mount();render();resume();}else pause();}
-  return {mount,refreshIcon,restore,cancel,pause,resume,onNavigate,render,start,select,commit,takeback,sendChat,data,rules,confirmNew,busy:()=>!!chatJob,position:()=>gomokuPosition(data().round?.moves||[])};
+  return {mount,refreshIcon,restore,cancel,pause,resume,onNavigate,render,start,select,commit,takeback,sendChat,data,rules,confirmNew,busy:()=>!!chatJob||!!autoJob,position:()=>gomokuPosition(data().round?.moves||[])};
 }
