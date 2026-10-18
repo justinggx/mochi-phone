@@ -651,7 +651,11 @@ const RP_PRIVATE_AVATAR_CSS = `
 #rp-phone #rp-screen #rp-view-thread .rp-message-translation{align-self:stretch;box-sizing:border-box;min-width:0;max-width:100%;margin:4px 0 0!important}
 #rp-phone #rp-screen #rp-view-thread .rp-message-translation[hidden]{display:none!important}
 #rp-phone #rp-screen #rp-view-thread .rp-message-translation>.rp-translation-text{box-sizing:border-box;width:100%;margin:0!important}
-#rp-phone #rp-screen #rp-view-thread .rp-message-meta>.rp-translation-btn{color:var(--rp-v-muted);margin:0}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta{width:max-content;min-width:100%;max-width:none;flex-wrap:nowrap;gap:0 2px}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta .rp-bts{flex:0 0 auto;white-space:nowrap}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta .rp-btn-row{flex:0 0 auto;gap:0}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta :is(.rp-edit-btn,.rp-del-btn){width:30px;min-width:30px;height:30px;min-height:30px}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta>.rp-translation-btn{flex:0 0 auto;min-width:0;color:var(--rp-v-muted);margin:0 0 0 auto;padding:3px 2px;white-space:nowrap}
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-bwrap>.rp-message-translation{width:72%;max-width:72%;align-self:flex-start}
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-out>.rp-message-translation{align-self:flex-end}
 `;
