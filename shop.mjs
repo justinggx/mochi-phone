@@ -4,7 +4,7 @@ import {shopPrompt} from './shop-dialogue.mjs?v=20261018-shop-60';
 
 const P='#rp-phone #rp-screen #rp-view-shop';
 export const SHOP_CSS=`
-${P}{display:none;flex-direction:column;overflow:hidden!important;background:#f8f5ee!important;color:#44372f!important;isolation:isolate;font-family:inherit;font-weight:400;font-style:normal;--shop-muted:#82756a;--shop-line:#ded6c9;}
+${P},#rp-phone.rp-art-icons.rp-shop-open #rp-frame #rp-screen #rp-view-shop.rp-view{display:none;flex-direction:column;overflow:hidden!important;background:#f8f5ee!important;color:#44372f!important;isolation:isolate;font-family:inherit;font-weight:400;font-style:normal;--shop-muted:#82756a;--shop-line:#ded6c9;}
 ${P} *{box-sizing:border-box;}
 ${P} [hidden]{display:none!important;}
 ${P} button,${P} input,${P} textarea,${P} select{font-family:inherit;font-style:normal;font-weight:400;color:inherit;box-shadow:none;}
@@ -53,9 +53,11 @@ ${P} .shop-compose{position:sticky;bottom:-24px;background:#f8f5ee!important;pad
 ${P} .shop-compose textarea{margin:0;max-height:180px;}
 ${P} .shop-badge{font-size:11px;letter-spacing:1px;color:var(--shop-muted);}
 ${P} .shop-empty{padding:28px 0;font-size:14px;line-height:1.9;}
-#rp-phone.rp-shop-open #rp-statusbar{color:#796652!important;}
-#rp-phone.rp-shop-open #rp-statusbar *{color:inherit!important;}
+#rp-phone.rp-shop-open #rp-frame #rp-screen #rp-sbar{color:#796652!important;}
+#rp-phone.rp-shop-open #rp-frame #rp-screen #rp-sbar *{color:inherit!important;}
 #rp-phone.rp-shop-open #rp-home-ind{background:#a59a8c!important;}
+#rp-phone #rp-screen #rp-folder-modal [data-folder-app="shop"] .rp-shop-folder-icon{display:block;position:static;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;flex:0 0 auto;}
+#rp-phone #rp-screen #rp-folder-modal [data-folder-app="shop"] .rp-shop-folder-fallback{display:grid;place-items:center;width:100%;height:100%;font-size:32px;line-height:1;overflow:hidden;}
 `;
 const uid=()=>globalThis.crypto?.randomUUID?.()||'shop_'+Date.now()+'_'+Math.random().toString(36).slice(2);
 const PHASE={prepare:'开门之前',service:'营业中',closing:'准备打烊',rest:'今天辛苦了'};
@@ -71,7 +73,12 @@ export function createShop(api){
   function setNotice(text){notice=text;status&&(status.textContent=text);}
   function cancel(){generation++;controller?.abort();controller=null;aiBusy=false;}
   function asset(theme,hero=false,local=false){const file='mochi-phone-shop-'+(hero?'hero':['candy','star','misty'].includes(theme)?theme:'misty')+'-20261018.png';return local?new URL('scripts/extensions/third-party/mochi-phone/shop-art-20261018/'+file,doc.baseURI).href:'https://preview.taliatang1.xyz/assets/'+file;}
-  function image(hero=false){const theme=api.iconTheme(),img=node('img',hero?'shop-art':'');img.alt='';img.src=asset(theme,hero);img.onerror=()=>{img.onerror=null;img.src=asset(theme,hero,true);};return img;}
+  function image(hero=false){
+    const theme=api.iconTheme(),img=node('img',hero?'shop-art':'rp-shop-folder-icon');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';
+    if(!hero){img.width=58;img.height=58;img.loading='lazy';img.style.cssText='display:block;position:static;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;flex:0 0 auto';}
+    let local=false;img.onerror=()=>{if(!img.isConnected)return;if(!local){local=true;img.src=asset(theme,hero,true);}else{img.onerror=null;if(hero)img.hidden=true;else img.replaceWith(node('span','rp-shop-folder-fallback','☕'));}};
+    img.src=asset(theme,hero);return img;
+  }
   function refreshIcon(){const target=doc.querySelector('#rp-folder-modal [data-folder-app="shop"] .rp-folder-item-ico');if(!target)return;target.replaceChildren(image());}
   function mount(){
     if(root?.isConnected)return;

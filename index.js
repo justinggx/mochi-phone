@@ -1,4 +1,4 @@
-import { createShop } from './shop.mjs?v=20261018-shop-60';
+import { createShop } from './shop.mjs?v=20261018-folder-icons-61';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-shop-60';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -16633,7 +16633,7 @@ function lgRenderHomeIcons() {
   });
   phone.querySelectorAll('#rp-folder-modal [data-folder-app]').forEach(el => {
     const icon = el.querySelector('.rp-folder-item-ico');
-    if (!icon || el.dataset.folderApp === 'gomoku') return;
+    if (!icon || ['gomoku','shop'].includes(el.dataset.folderApp)) return;
     if (!rpArtFolderFallbacks.has(el.dataset.folderApp)) rpArtFolderFallbacks.set(el.dataset.folderApp,icon.innerHTML);
     rpRestoreArtIcon(icon,rpArtFolderFallbacks.get(el.dataset.folderApp));
   });
