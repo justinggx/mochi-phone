@@ -596,7 +596,7 @@ export function createConversationFeatures(api) {
   function openAuto(t=state().threads[state().currentThread]) {
     if(!supported){info('请刷新酒馆后使用此功能。');return;}
     if(!t||!liveThread(t))return;
-    const content=node('div').append(node('strong','',t.name),note('仅在打开此会话时，逐条翻译开启后收到的新文字或语音文字。使用当前翻译 API，可能产生费用；已有历史不会批量翻译。失败可点消息上的翻译按钮重试。离开会话或关闭开关后停止排队。'));
+    const content=node('div').append(node('strong','',t.name),note('仅在打开此会话时，逐条把开启后收到的新外语文字或语音文字翻成中文，中文消息会跳过。使用当前翻译 API，可能产生费用；已有历史不会批量翻译。失败可点消息上的翻译按钮重试。离开会话或关闭开关后停止排队。'));
     const enabled=checkbox('rp-auto-translate-enabled','此会话自动翻译',t.phoneAutoTranslate?.enabled===true);
     content.append(enabled.label,note('关闭后重新开启，只处理重新开启后收到的新消息。'));
     const token=api.runtime().task();
