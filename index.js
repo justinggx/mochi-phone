@@ -1,4 +1,4 @@
-import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-icons-57';
+import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-grid-58';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-gomoku-56';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
