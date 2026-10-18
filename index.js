@@ -1,4 +1,4 @@
-import { createShop } from './shop.mjs?v=20261018-folder-icons-61';
+import { createShop } from './shop.mjs?v=20261018-games-loop-63';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-shop-60';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -9156,6 +9156,11 @@ function rpShopApp() {
     deviceLabel: () => IS_TOUCH_DEVICE ? '移动设备' : '电脑',
     visible: () => rpGameVisible('shop'), navigate: go, dialog: rpFeatureDialog,
     notify: text => toastr.info(text), clean: cleanGameReply,
+    download: (text,name) => {
+      const url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'})),link=document.createElement('a');
+      link.href=url;link.download=name;link.style.display='none';link.addEventListener('click',event=>event.stopPropagation());document.body.append(link);
+      try { link.click(); } finally { link.remove(); rpRuntime.timer(()=>URL.revokeObjectURL(url),30000,false,[],'lifetime'); }
+    },
     classify: error => rpClassifyPhoneApiError(error).phoneApiCode, errorText: error => rpGameReplyError(rpClassifyPhoneApiError(error).phoneApiCode),
     user: () => { const ctx=getContext()||{};return {name:ctx.name1||'用户',description:String(ctx.powerUserSettings?.persona_description||'').slice(0,12000)}; },
     characters: () => (getContext()?.characters||[]).filter(c=>c?.avatar&&c?.name).map(c=>({name:c.name,avatar:c.avatar})),
@@ -9212,7 +9217,7 @@ function rpTools() {
     applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshWidget(); refreshLockNotifs(); saveState({immediate:true}); },
     download: (text,name) => {
       const url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'})),link=document.createElement('a');
-      link.href=url;link.download=name;link.style.display='none';document.body.append(link);
+      link.href=url;link.download=name;link.style.display='none';link.addEventListener('click',event=>event.stopPropagation());document.body.append(link);
       try { link.click(); } finally { link.remove(); rpRuntime.timer(()=>URL.revokeObjectURL(url),30000,false,[],'lifetime'); }
     },
   });

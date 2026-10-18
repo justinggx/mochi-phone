@@ -1,5 +1,5 @@
 import {INGREDIENTS,RECIPES,EQUIPMENT,DECOR,REGULARS,capacity,stockLimit,money,profit,priceRange} from './shop-engine.mjs?v=20261018-shop-60';
-import {createShopClient} from './shop-client.mjs?v=20261018-shop-60';
+import {createShopClient} from './shop-client.mjs?v=20261018-games-loop-63';
 import {shopPrompt} from './shop-dialogue.mjs?v=20261018-shop-60';
 
 const P='#rp-phone #rp-screen #rp-view-shop';
@@ -63,7 +63,7 @@ const uid=()=>globalThis.crypto?.randomUUID?.()||'shop_'+Date.now()+'_'+Math.ran
 const PHASE={prepare:'开门之前',service:'营业中',closing:'准备打烊',rest:'今天辛苦了'};
 export function createShop(api){
   const doc=api.document,client=createShopClient(api);let root,body,foot,status,mountedRuntime,screen='archives',lastScreen='',campaigns=[],snapshots=[],profile=null,cards=[],filter='',notice='',loading=false,active=false,account=null;
-  let heartbeat=null,controller=null,generation=0,aiBusy=false,lastSpeech=0,manualAt=0,draft='',importFile=null,bookTab='memory',bookPage=1;
+  let heartbeat=null,controller=null,generation=0,aiBusy=false,lastSpeech=0,manualAt=0,draft='',draftVersion=0,importFile=null,bookTab='memory',bookPage=1;
   const node=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
   const btn=(text,action,cls='',disabled=false)=>{const b=node('button',cls,text);b.type='button';b.dataset.action=action;b.disabled=disabled;return b;};
   const desc=(text,parent=body)=>parent.append(node('p','shop-muted',text));
@@ -86,7 +86,7 @@ export function createShop(api){
     if(api.runtime?.()!==mountedRuntime){mountedRuntime=api.runtime?.();mountedRuntime?.own(pause);}
     root=node('div','rp-view');root.id='rp-view-shop';root.style.display='none';doc.getElementById('rp-screen')?.append(root);
     root.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(b&&!b.disabled){e.preventDefault();void dispatch(b.dataset.action,b);}});
-    root.addEventListener('input',e=>{if(e.target.id==='shop-draft'){draft=e.target.value;manualAt=Date.now();if(aiBusy&&state()?.commentJob?.status==='pending'){cancel();setNotice('已优先保留你的输入；可发送消息。');}}if(e.target.id==='shop-partner-search'){filter=e.target.value;renderPartnerList();}});
+    root.addEventListener('input',e=>{if(e.target.id==='shop-draft'){draft=e.target.value;draftVersion++;manualAt=Date.now();if(aiBusy&&state()?.commentJob?.status==='pending'){cancel();setNotice('已优先保留你的输入；可发送消息。');}}if(e.target.id==='shop-partner-search'){filter=e.target.value;renderPartnerList();}});
     root.addEventListener('keydown',e=>{if(e.target.id==='shop-draft'&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&!e.isComposing){e.preventDefault();void dispatch('send');}});
     if(!doc.querySelector('[data-folder-app="shop"]')){const item=node('div','rp-folder-item');item.dataset.folderApp='shop';item.append(node('div','rp-folder-item-ico'),node('div','rp-folder-item-lbl','小店'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);}
     refreshIcon();render();
@@ -158,7 +158,7 @@ export function createShop(api){
     if(!active)return;if(action.startsWith('view:')){screen=action.slice(5);notice='';bookPage=1;render(false);return;}
     if(action==='back'){if(screen==='home'||screen==='archives'){pause();api.navigate('home');}else{screen=state()?'home':'archives';render(false);}return;}
     if(action==='archives'){await archives();return;}
-    if(action==='recover'){await busy(async()=>{const r=await client.recover();if(r?.id)await client.load(r.id);setNotice('已核对上次操作，请查看进度再继续。');});return;}
+    if(action==='recover'){await busy(async()=>{await client.recover();if(!state()){campaigns=await client.list();screen='archives';}setNotice('已核对上次操作，请查看进度再继续。');});return;}
     if(action==='new'){cancel();profile=null;cards=api.characters();filter='';screen='create';render(false);return;}
     if(action==='partner'){await busy(async()=>{profile=(await client.request('profile',{avatar:b.dataset.avatar})).profile;});return;}
     if(action==='create'){const name=doc.getElementById('shop-name')?.value?.trim();if(!profile||!name){setNotice('请填写店名并选择搭子。');return;}await busy(async()=>{await client.release();const r=await client.mutate('create',{name,avatar:profile.avatar,user:api.user()});await client.claim(r.id);screen='home';draft='';setNotice('新店已建立并保存到云端。');});if(screen==='home'&&!loading)void speak({event:'你们一起确定了店名，正站在第一次开门前的小店里。'});return;}
@@ -171,7 +171,7 @@ export function createShop(api){
     if(['wave','close','expand','rescue'].includes(action)){if(['expand','rescue'].includes(action)&&!await confirm('确认安排','请确认页面说明与资金条件，操作会写入本档。'))return;await act({type:action},['wave','close'].includes(action)?'营业进度刚刚变化，请结合当前批次、订单或结算，与用户自然交流。':null);return;}
     if(action.startsWith('book:')){bookTab=parts[1];bookPage=1;render(false);return;}
     if(action==='book-more'||action==='chat-more'){bookPage++;render();return;}
-    if(action==='send'){const text=(doc.getElementById('shop-draft')?.value||draft).trim();if(!text){setNotice('先写下想说的话。');return;}cancel();manualAt=Date.now();const id=uid();let saved=false;await busy(async()=>{await client.action({type:'chat-user',id,text});saved=true;draft='';screen='chat';render(false);});if(saved)void speak({messageId:id});return;}
+    if(action==='send'){const text=(doc.getElementById('shop-draft')?.value||draft).trim();if(!text){setNotice('先写下想说的话。');return;}cancel();manualAt=Date.now();const id=uid(),sentVersion=draftVersion;let saved=false;await busy(async()=>{await client.action({type:'chat-user',id,text});saved=true;if(sentVersion===draftVersion)draft='';screen='chat';render(false);});if(saved)void speak({messageId:id});return;}
     if(action.startsWith('retry:')){void speak({messageId:action.slice(6),retry:true});return;}
     if(action==='retry-comment'){void speak({retry:true});return;}
     if(action==='stop'){cancel();setNotice('已暂停，未完成的提问可以手动重试。');render();return;}
