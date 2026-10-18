@@ -88,7 +88,7 @@ export function createShop(api){
     root.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(b&&!b.disabled){e.preventDefault();void dispatch(b.dataset.action,b);}});
     root.addEventListener('input',e=>{if(e.target.id==='shop-draft'){draft=e.target.value;draftVersion++;manualAt=Date.now();if(aiBusy&&state()?.commentJob?.status==='pending'){cancel();setNotice('已优先保留你的输入；可发送消息。');}}if(e.target.id==='shop-partner-search'){filter=e.target.value;renderPartnerList();}});
     root.addEventListener('keydown',e=>{if(e.target.id==='shop-draft'&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&!e.isComposing){e.preventDefault();void dispatch('send');}});
-    if(!doc.querySelector('[data-folder-app="shop"]')){const item=node('div','rp-folder-item');item.dataset.folderApp='shop';item.append(node('div','rp-folder-item-ico'),node('div','rp-folder-item-lbl','小店'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);}
+    if(!doc.querySelector('[data-folder-app="shop"]')){const item=node('div','rp-folder-item');item.dataset.folderApp='shop';item.append(node('div','rp-folder-item-ico'),node('div','rp-folder-item-lbl','你的小店'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);}
     refreshIcon();render();
   }
   function input(label,id,value,type='text',max=null,parent=body){const l=node('label','',label),i=node(type==='textarea'?'textarea':'input');i.id=id;if(type!=='textarea')i.type=type;i.value=value??'';if(max)i.maxLength=max;l.append(i);parent.append(l);return i;}
