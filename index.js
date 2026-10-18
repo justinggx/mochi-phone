@@ -1,4 +1,4 @@
-import { createShop } from './shop.mjs?v=20261018-shop-name-64';
+import { createShop } from './shop.mjs?v=20261018-shop-design-65';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-shop-60';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
