@@ -1,7 +1,8 @@
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
+import { createStickers } from './stickers.mjs?v=20261019-private-stickers-72';
 import { createSudoku } from './sudoku.mjs?v=20261019-sudoku-71';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261019-sudoku-71';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261019-private-stickers-72';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -5506,6 +5507,7 @@ function rpResetChatTasks() {
   rpShop?.pause();
   rpGomoku?.cancel();
   rpSudoku?.cancel();
+  rpStickerJobs.clear();
   rpPhoneTools?.conversation.reset();
   clearTimeout(rpReadingTimer); rpReadingTimer=null;
   rpFinishUndo(); rpXhsFavoritesOnly=false;
@@ -5937,7 +5939,7 @@ function refreshMochiPrompt() {
     if (isMochiPhoneEnabled()) {
       sep(
         'mochi-phone-gmsg',
-        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneSpeechLanguageRule(),
+        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
         promptPosition,
         0
       );
@@ -8855,6 +8857,7 @@ async function rpInitBody() {
   rpTools().mount();
   rpGomokuApp().mount();
   rpSudokuApp().mount();
+  rpStickerApp().mount();
   rpShopApp()?.mount();
   makeDraggable();
   renderThreadList();
@@ -9225,6 +9228,44 @@ function rpSudokuApp() {
   return rpSudoku;
 }
 
+let rpStickers = null;
+const rpStickerJobs = new Map();
+function rpStickerApp() {
+  if (!rpStickers) rpStickers = createStickers({
+    document, runtime: () => rpRuntime, fetch: (...args) => fetch(...args),
+    account: () => rpArchiveAccountHandle, slot: () => STATE.chatId, view: () => STATE.currentView,
+    headers: () => getContext()?.getRequestHeaders?.() || _rp_script_mod?.getRequestHeaders?.() || {'Content-Type':'application/json'},
+    context: () => String(getContext()?.chat?.slice(-3).map(m=>String(m.mes||'')).join('\n')||'').slice(-1500),
+    navigate: go, dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog,
+    changed: refreshMochiPrompt, repaint: () => {if(STATE.currentView==='thread')renderBubbles(STATE.currentThread);},
+  });
+  return rpStickers;
+}
+function rpQueueSticker(thread, ids, time, source, sender) {
+  if (!ids.length || !thread || !isMochiPhoneEnabled()) return;
+  const id=ids[0],slot=STATE.chatId,token=rpRuntime.task(),owner=rpArchiveAccountHandle;
+  const key=source?String(source.key)+':sticker':JSON.stringify([thread.id,sender||'',time,id]);
+  if(thread.messages.some(m=>m.stickerKey===key)||rpStickerJobs.has(slot+key))return;
+  const jobKey=slot+key,job={};rpStickerJobs.set(jobKey,job);
+  void (async()=>{
+    try {
+      const entry=await rpStickerApp().verify(id);
+      if(!entry||!token.valid()||owner!==rpArchiveAccountHandle||STATE.threads[thread.id]!==thread)return;
+      if(thread.messages.some(m=>m.stickerKey===key)||isPhoneBlocked(sender||thread.name))return;
+      // A main model reply may contain several SMS/GMSG parts: allow one sticker per floor.
+      const floor=source?JSON.parse(source.key)?.[0]:null;
+      if(Number.isInteger(floor)&&Object.values(STATE.threads).some(t=>t.messages.some(m=>m.stickerFloor===floor)))return;
+      const message={id:'stk_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),type:'sticker',from:sender?'incoming':thread.id,
+        ...(sender?{name:sender}:{}),time:resolvePhoneTime(time),text:'[表情包] '+entry.name,stickerKey:key,
+        ...(Number.isInteger(floor)?{stickerFloor:floor}:{}),sticker:{id:entry.id,format:entry.format,name:entry.name,owner}};
+      thread.messages.push(message);if(!rpIsReadingThread(thread.id))thread.unread=(thread.unread||0)+1;
+      refreshBadges();renderThreadList();if(STATE.currentView==='thread'&&STATE.currentThread===thread.id)renderBubbles(thread.id);
+      showBanner(thread.name,message.text,message.time,thread.id);saveState();
+    } catch (_) { /* Invalid/deleted identifiers never replace or interrupt normal text. */ }
+    finally {if(rpStickerJobs.get(jobKey)===job)rpStickerJobs.delete(jobKey);}
+  })();
+}
+
 let rpPhoneTools = null;
 function rpTools() {
   if (rpPhoneTools) return rpPhoneTools;
@@ -9240,12 +9281,13 @@ function rpTools() {
     renderThreads: renderThreadList, save: saveState, hideBanner: rpHideBanner,
     cached: item=>rpPhoneTranslationSnapshot(item,rpPhoneTranslationSource({kind:'message',item})),
     source: item=>rpPhoneTranslationSource({kind:'message',item}), avatar:getAvatar,
+    stickerImage: item=>rpStickerApp().imageSource(item),
     translate:(target,valid)=>rpTogglePhoneTranslation(target,{valid}),
     translationBusy:()=>Object.values(STATE.threads).some(t=>(t.messages||[]).some(m=>{const j=rpPhoneTranslationJobs.get(m);return j?.pending&&j.task.valid();})),
     openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
     blockedPost: (post,current) => post.from !== 'user' && blocked({name:post.name || post.user || post.author || post.from || ''},current),
-    canRestore: () => !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
+    canRestore: () => !rpStickers?.busy() && !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
       && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
       && !(window.rpImgWaitQueue || []).some(item => item?.source === 'mochi-phone') && !STATE._pendingCall,
     applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshWidget(); refreshLockNotifs(); saveState({immediate:true}); },
@@ -10992,7 +11034,7 @@ function go(view) {
   if (view === 'diary') { renderDiary(); }
   $('.rp-view').hide();
   // 需要 flex 布局的视图
-  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku','sudoku','shop'];
+  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku','sudoku','stickers','shop'];
   if (flexViews.includes(view)) {
     rpFindByDataAttr(null, '.rp-view', 'id', 'rp-view-' + view).css('display','flex');
   } else {
@@ -11002,6 +11044,7 @@ function go(view) {
   STATE.currentView = view;
   rpGomoku?.onNavigate(view);
   rpSudoku?.onNavigate(view);
+  rpStickers?.onNavigate(view);
   void rpShop?.onNavigate(view);
   rpTools().conversation.onNavigate(view);
   rpFitGoldCanvas();
@@ -11408,6 +11451,14 @@ function renderBubbles(threadId, options = {}) {
       const cls  = msg.result === 'missed' ? 'rp-call-rec missed' : 'rp-call-rec';
       area.append(`<div class="rp-sys-msg"><div class="${cls}">${icon} ${escHtml(msg.label)} · ${escHtml(msg.time)}</div></div>`);
       return;
+    }
+    if (msg.type === 'sticker') {
+      const group=thread.type==='group',wrap=$('<div>').addClass('rp-bwrap rp-in'+(group?' rp-grp':''));
+      const tile=$(rpStickerApp().messageNode(msg));
+      const del=$('<button class="rp-del-btn" title="删除">').attr({'data-msgidx':msgIdx,'data-threadid':threadId}).html(DEL_SVG_EARLY);
+      if(group)appendGroupSenderBody(wrap,msg,tile,$('<div class="rp-btn-row">').append(del),msg.time);
+      else wrap.append(tile,$('<div class="rp-bts">').text(msg.time),del);
+      area.append(wrap);return;
     }
     // ── 红包 ──
     if (msg.type === 'hongbao' && msg.from !== 'user') {
@@ -13754,7 +13805,7 @@ function buildPhoneEchoContainer(block, smsList, commentList, groupList, moments
     ensureDivider();
     const row = document.createElement('span');
     row.className = 'rp-phone-echo-block';
-    row.innerHTML = html;
+    row.innerHTML = html.replace(/\[表情包:[^\]\r\n]{0,120}\]/g,'[表情包]');
     wrap.appendChild(row);
   }
 
@@ -14980,6 +15031,7 @@ function rpIsReadingThread(threadId) {
 function incomingMsg(threadId, text, time, source) {
   const th = STATE.threads[threadId];
   if (!th) return;
+  if(String(text||'').includes('[表情包:')){const parsed=rpStickerApp().extract(text);rpQueueSticker(th,parsed.ids,time,source);text=parsed.text;if(!text)return;}
   const resolvedTime = resolvePhoneTime(time);
 
   // 去重只看最近几条，避免“同一句话后来再次出现”被永久吞掉
@@ -15761,6 +15813,7 @@ function incomingGroupMsg(fromRaw, groupName, time, text, source) {
   const senderTh = findOrCreateThread(fromRaw);
   if (!senderTh) return;
   if (!thread.members.includes(senderTh.id)) thread.members.push(senderTh.id);
+  if(String(text||'').includes('[表情包:')){const parsed=rpStickerApp().extract(text);rpQueueSticker(thread,parsed.ids,time,source,fromRaw);text=parsed.text;if(!text)return;}
   // 去重只看最近几条，避免同一句群消息后续再次出现时被永久吞掉
   const matches = m => m.type === 'group_msg' && m.name === fromRaw && m.text === text;
   const isDup = source ? rpPhoneMessageAlreadyReceived(thread, source, matches, resolvedTime)
@@ -15800,6 +15853,7 @@ function toggleAttachPanel() {
       </div>
     </div>
   `).show();
+  p.find('.rp-attach-row').append(rpStickerApp().attachment());
 }
 
 function showHongbaoSheet() {

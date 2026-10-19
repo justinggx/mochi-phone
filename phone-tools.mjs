@@ -219,7 +219,7 @@ export function createPhoneTools(api) {
     for(const el of candidates)if(el.closest(fontOwners)&&el.style)scaleDeclaration(el.style,el.id==='rp-phone');
   }
   function refreshTypography() {
-    for(const id of ['rp-phone-css','rp-custom-theme-style','rp-gomoku-css','rp-sudoku-css','rp-shop-css'])scaleSheet(doc.getElementById(id));
+    for(const id of ['rp-phone-css','rp-custom-theme-style','rp-gomoku-css','rp-sudoku-css','rp-stickers-css','rp-shop-css'])scaleSheet(doc.getElementById(id));
     for(const root of doc.querySelectorAll(fontOwners))scaleInline(root);
   }
   function installTypography() {
@@ -241,9 +241,9 @@ export function createPhoneTools(api) {
           if(value&&!value.includes(fontVariable)&&el.closest(fontOwners))nodes.add(el);
         }else{
           const style=change.target.nodeType===1?change.target:change.target.parentElement;
-          if(style?.matches?.('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-shop-css'))sheets.add(style);
+          if(style?.matches?.('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-stickers-css,#rp-shop-css'))sheets.add(style);
           for(const node of change.addedNodes)if(node.nodeType===1){
-            if(node.matches('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-shop-css'))sheets.add(node);
+            if(node.matches('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-stickers-css,#rp-shop-css'))sheets.add(node);
             if(node.matches(fontOwners)||node.closest(fontOwners))nodes.add(node);
           }
         }
@@ -264,8 +264,8 @@ export function createPhoneTools(api) {
   const button=(text,fn)=>node('button','rp-tools-button',text).attr('type','button').on('click',fn);
   const safeImage=value=>typeof value==='string' && /^(?:https?:\/\/|data:image\/(?:png|jpe?g|gif|webp|avif);|blob:|\/(?!\/))/.test(value) ? value : '';
   function snapshot(thread,message) {
-    const text=message.type==='image'?'[图片]':message.type==='pending_image'?'[待生成图片]':message.type==='location'?'[位置] '+(message.place||''):message.type==='hongbao'||message.type==='group_hongbao'?'[红包] '+(message.amount||'')+' '+(message.note||''):String(message.text||message.voiceText||'[信息]');
-    return {threadId:thread.id,threadName:thread.name,messageId:String(message.id),name:message.from==='user'?'我':message.name||thread.name,text,time:String(message.time||''),type:message.type||'text',...(message.type==='image'&&safeImage(message.src)?{src:message.src}:{})};
+    const text=message.type==='sticker'?'[表情包] '+(message.sticker?.name||''):message.type==='image'?'[图片]':message.type==='pending_image'?'[待生成图片]':message.type==='location'?'[位置] '+(message.place||''):message.type==='hongbao'||message.type==='group_hongbao'?'[红包] '+(message.amount||'')+' '+(message.note||''):String(message.text||message.voiceText||'[信息]');
+    return {threadId:thread.id,threadName:thread.name,messageId:String(message.id),name:message.from==='user'?'我':message.name||thread.name,text,time:String(message.time||''),type:message.type||'text',...(message.type==='sticker'&&api.stickerImage?.(message)?{src:api.stickerImage(message)}:message.type==='image'&&safeImage(message.src)?{src:message.src}:{})};
   }
   function ensureId(message) { if(!message.id)message.id=uid();return String(message.id); }
   function isMuted(id,name) {
@@ -574,7 +574,7 @@ export function createConversationFeatures(api) {
   let activeSearch=null,searchJumping=false,autoBusy=false,mounted=null,exportCleanup=null;
   const key=m=>api.ensureId(m);
   const liveThread=t=>state().threads[t.id]===t;
-  const typeOf=m=>/image/.test(m.type||'')?'image':/voice/.test(m.type||'')?'voice':/hongbao/.test(m.type||'')?'hongbao':m.type==='location'?'location':'text';
+  const typeOf=m=>/image|sticker/.test(m.type||'')?'image':/voice/.test(m.type||'')?'voice':/hongbao/.test(m.type||'')?'hongbao':m.type==='location'?'location':'text';
   const translated=m=>api.cached(m)?.text||'';
   const searchable=m=>[m.text,m.voiceText,m.note,m.place,m.amount,translated(m)].filter(v=>v!=null).join(' ');
   const sender=(t,m)=>m.from==='user'?'我':m.name||t.name;
@@ -744,7 +744,7 @@ export function createConversationFeatures(api) {
     return messages.map(m=>{
       const real=sender(t,m),aliasKey=m.from==='user'?'user':'person:'+real;if(!aliases.has(aliasKey))aliases.set(aliasKey,m.from==='user'?'我':t.type==='group'?'成员'+(++count):'对方');
       const row=[...(doc.getElementById('rp-bubbles')?.children||[])].find(e=>Number(e.dataset.rpReadingIndex)===t.messages.indexOf(m)),bubble=row?.querySelector('.rp-bubble'),style=bubble?win.getComputedStyle(bubble):null;
-      return {name:options.hideNames?aliases.get(aliasKey):real,from:m.from==='user'?'user':'incoming',text:api.snapshot(t,m).text,time:options.time===false?'':String(m.time||''),translation:options.translations===false?'':translated(m),imageExpected:m.type==='image',image:m.type==='image'?api.safeImage(m.src):'',avatar:options.hideNames?'':api.safeImage(api.avatar(m.from==='user'?'user':m.name||t.name)),background:style?.backgroundColor,color:style?.color};
+      return {name:options.hideNames?aliases.get(aliasKey):real,from:m.from==='user'?'user':'incoming',text:api.snapshot(t,m).text,time:options.time===false?'':String(m.time||''),translation:options.translations===false?'':translated(m),imageExpected:['image','sticker'].includes(m.type),image:m.type==='sticker'?api.safeImage(api.snapshot(t,m).src):m.type==='image'?api.safeImage(m.src):'',avatar:options.hideNames?'':api.safeImage(api.avatar(m.from==='user'?'user':m.name||t.name)),background:style?.backgroundColor,color:style?.color};
     });
   }
   function loadImage(src,valid) {
