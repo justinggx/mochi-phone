@@ -1,5 +1,5 @@
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
-import { createStickers } from './stickers.mjs?v=20261019-joint-audit-73';
+import { createStickers } from './stickers.mjs?v=20261019-sticker-sort-74';
 import { createSudoku } from './sudoku.mjs?v=20261019-joint-audit-73';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261019-private-stickers-72';
