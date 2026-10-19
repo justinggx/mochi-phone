@@ -1,6 +1,7 @@
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
+import { createSudoku } from './sudoku.mjs?v=20261019-sudoku-71';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-translation-bubble-67';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261019-sudoku-71';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -51,7 +52,7 @@ async function rpClaimLegacyStorage() {
     if (key.startsWith('rp-phone-v1-')) {
       let data; try { data = JSON.parse(value); } catch (_) { continue; }
       const slot = key.slice('rp-phone-v1-'.length), current = _extSettings()?.[EXT_KEY]?.[slot];
-      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title
+      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title || s.sudoku?.round
         || ['ludo','g2048','gm','gword'].some(key=>s.gameState?.[key]?.round || s.gameState?.[key]?.chatLog?.length) || s.gameState?.partner?.name || Object.keys(s.gameState?.towers || {}).length);
       if (hasContent(current)) continue; // Never replace current non-empty account data.
       if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
@@ -5504,6 +5505,7 @@ function rpAddImageWait(entry) {
 function rpResetChatTasks() {
   rpShop?.pause();
   rpGomoku?.cancel();
+  rpSudoku?.cancel();
   rpPhoneTools?.conversation.reset();
   clearTimeout(rpReadingTimer); rpReadingTimer=null;
   rpFinishUndo(); rpXhsFavoritesOnly=false;
@@ -5541,6 +5543,7 @@ function rpResetChatTasks() {
 function rpPauseGameAnimations() {
   rpShop?.pause();
   rpGomoku?.pause();
+  rpSudoku?.pause();
   rpGameRuntime('ludo').cancelFrame(LG._animFrame);
   LG._animFrame = null;
   rpGameRuntime('gm').cancelFrame(GM.rafId);
@@ -6263,6 +6266,7 @@ function buildStatePayload() {
     blocklist: Array.isArray(STATE.blocklist) ? STATE.blocklist.slice() : [],
     gameState: getPhoneGameStateSnapshot(),
     gomoku: STATE.gomoku ? JSON.parse(JSON.stringify(STATE.gomoku)) : null,
+    sudoku: STATE.sudoku ? JSON.parse(JSON.stringify(STATE.sudoku)) : null,
     themeStudioMessages: Array.isArray(STATE.themeStudioMessages) ? STATE.themeStudioMessages.slice() : [],
     composeDraft: STATE.composeDraft || '',
     themeStudioDraft: STATE.themeStudioDraft || '',
@@ -6875,6 +6879,7 @@ function restorePhoneChatState(saved) {
   rpTools().normalizeSaved(s);
   restorePhoneGameState(s.gameState);
   rpGomokuApp().restore(s.gomoku);
+  rpSudokuApp().restore(s.sudoku);
   if (STATE.themeSettings) applyThemeSettingsSnapshot(STATE.themeSettings);
 }
 
@@ -8849,6 +8854,7 @@ async function rpInitBody() {
   bindUI();
   rpTools().mount();
   rpGomokuApp().mount();
+  rpSudokuApp().mount();
   rpShopApp()?.mount();
   makeDraggable();
   renderThreadList();
@@ -9209,6 +9215,16 @@ function rpGomokuApp() {
   return rpGomoku;
 }
 
+let rpSudoku = null;
+function rpSudokuApp() {
+  if (!rpSudoku) rpSudoku = createSudoku({
+    document, state: () => STATE, runtime: () => rpRuntime, save: saveState,
+    navigate: go, visible: () => rpGameVisible('sudoku'), partner: gameGetCurrentPartner,
+    changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog,
+  });
+  return rpSudoku;
+}
+
 let rpPhoneTools = null;
 function rpTools() {
   if (rpPhoneTools) return rpPhoneTools;
@@ -9229,7 +9245,7 @@ function rpTools() {
     openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
     blockedPost: (post,current) => post.from !== 'user' && blocked({name:post.name || post.user || post.author || post.from || ''},current),
-    canRestore: () => !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
+    canRestore: () => !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
       && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
       && !(window.rpImgWaitQueue || []).some(item => item?.source === 'mochi-phone') && !STATE._pendingCall,
     applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshWidget(); refreshLockNotifs(); saveState({immediate:true}); },
@@ -9710,7 +9726,7 @@ function bindUI() {
     e.stopPropagation();
     const app = $(this).data('folder-app');
     $('#rp-folder-modal').hide();
-    if (['ludo','g2048','ggold','gword','gomoku','shop'].includes(app)) go(app);
+    if (['ludo','g2048','ggold','gword','gomoku','sudoku','shop'].includes(app)) go(app);
   });
   // ── Ludo game ────────────────────────────────────────────────
   $(document).on("click.mochiPhone", '[data-app="ludo"]', function(e) {
@@ -10976,7 +10992,7 @@ function go(view) {
   if (view === 'diary') { renderDiary(); }
   $('.rp-view').hide();
   // 需要 flex 布局的视图
-  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku','shop'];
+  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku','sudoku','shop'];
   if (flexViews.includes(view)) {
     rpFindByDataAttr(null, '.rp-view', 'id', 'rp-view-' + view).css('display','flex');
   } else {
@@ -10985,6 +11001,7 @@ function go(view) {
   $('#rp-home-ind').toggle(view !== 'lock');
   STATE.currentView = view;
   rpGomoku?.onNavigate(view);
+  rpSudoku?.onNavigate(view);
   void rpShop?.onNavigate(view);
   rpTools().conversation.onNavigate(view);
   rpFitGoldCanvas();
@@ -16684,7 +16701,7 @@ function lgRenderHomeIcons() {
   });
   phone.querySelectorAll('#rp-folder-modal [data-folder-app]').forEach(el => {
     const icon = el.querySelector('.rp-folder-item-ico');
-    if (!icon || ['gomoku','shop'].includes(el.dataset.folderApp)) return;
+    if (!icon || ['gomoku','shop','sudoku'].includes(el.dataset.folderApp)) return;
     if (!rpArtFolderFallbacks.has(el.dataset.folderApp)) rpArtFolderFallbacks.set(el.dataset.folderApp,icon.innerHTML);
     rpRestoreArtIcon(icon,rpArtFolderFallbacks.get(el.dataset.folderApp));
   });
@@ -19911,6 +19928,7 @@ function gameSetCurrentPartner(name, note, ctx) {
 
 function gameApplyPartnerToGames(partner) {
   rpGomoku?.render();
+  rpSudoku?.render();
   partner = partner || gameGetCurrentPartner();
   var name = partner.name || '对方';
   try { if (typeof LG2048 !== 'undefined') LG2048.charName = name; } catch(e) {}
