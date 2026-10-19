@@ -1,6 +1,6 @@
 import {join,resolve} from 'node:path';
 import {ShopStore,ShopError} from './shop-store.mjs';
-import {readCharacterCard} from './shop-persona.mjs';
+import {readCharacterCard,readCardChoices} from './shop-persona.mjs';
 export const info={id:'mochi-shop',name:'MochiPhone shop saves',description:'Private account-scoped transactional shop saves and resumable games'};
 const stores=new Map();let timer=null;
 export function getStoreForUser(user){
@@ -9,7 +9,7 @@ export function getStoreForUser(user){
 }
 export async function init(router){
  router.use((req,res,next)=>{res.setHeader('Cache-Control','no-store');if(!req.user?.profile?.handle)return res.status(401).json({error:'请先登录酒馆账户。',code:'auth'});next();});
- router.get('/health',(_req,res)=>res.json({ok:true,version:1,schema:1,rules:1,storage:'sqlite',serverSaves:true}));
+ router.get('/health',(_req,res)=>res.json({ok:true,version:1,schema:1,rules:1,storage:'sqlite',serverSaves:true,cardMembers:true}));
  router.post('/v1',async(req,res)=>{
   try{
    const b=req.body;if(!b||typeof b!=='object'||Array.isArray(b)||typeof b.route!=='string'||JSON.stringify(b).length>12000000)throw new ShopError('input','存档请求格式不合法或过大。',413);
@@ -18,13 +18,14 @@ export async function init(router){
    case 'list':out={campaigns:store.list(),backupAvailable:!store.backupError};break;
    case 'read':out=store.read(b.id);break;
    case 'operation-status':out={result:store.operationStatus(b.op)};break;
-   case 'profile':out={profile:readCharacterCard(req.user.directories,b.avatar)};break;
-   case 'create':out=store.create(b,readCharacterCard(req.user.directories,b.avatar));break;
+   case 'card':out={card:readCardChoices(req.user.directories,b.avatar)};break;
+   case 'profile':out={profile:readCharacterCard(req.user.directories,b.avatar,b.member)};break;
+   case 'create':out=store.create(b,readCharacterCard(req.user.directories,b.avatar,b.member,{requireMember:true}));break;
    case 'claim':out=store.claim(b.id,b.device,b.deviceLabel,b.force===true);break;
    case 'renew':out=store.renew(b.id,b.device,b.token);break;
    case 'release':out=store.release(b.id,b.device,b.token);break;
    case 'action':{
-    const body=structuredClone(b);if(body.action?.type==='profile')body.action.profile=readCharacterCard(req.user.directories,body.action.avatar);
+    const body=structuredClone(b);if(body.action?.type==='profile')body.action.profile=readCharacterCard(req.user.directories,body.action.avatar,body.action.member);
     out=store.action(body);break;
    }
    case 'snapshot':out=store.manual(b);break;
@@ -40,6 +41,6 @@ export async function init(router){
   }catch(e){const known=e.shopCode;res.status(known?(e.status||400):503).json({code:known||'storage',error:known?e.message:'服务器未能完成存档操作。请保留页面，重试前先刷新确认进度。'});}
  });
  timer=setInterval(()=>{for(const s of stores.values())try{s.backup();}catch{s.backupError=true;}},60000);timer.unref?.();
- console.info('[MochiShop] cloud save routes ready (schema 1; rules 1).');
+ console.info('[MochiShop] cloud save routes ready (schema 1; rules 1; member selection v68).');
 }
 export async function exit(){if(timer)clearInterval(timer);timer=null;for(const s of stores.values())try{s.backup(true);}catch{}finally{try{s.close();}catch{}}stores.clear();}

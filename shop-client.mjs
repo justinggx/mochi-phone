@@ -9,15 +9,24 @@ export function createShopClient(api){
     return account;
   }
   function keepPending(value){pending=value;try{if(value)storage.setItem(key()+'pending',JSON.stringify(value));else storage.removeItem(key()+'pending');}catch{}}
-  async function request(route,body={}){
-    const owner=scope(),revision=epoch,controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+  async function request(route,body={},options={}){
+    const owner=scope(),revision=epoch,controller=new AbortController();let timer,rejectAbort;
+    const aborted=new Promise((_,reject)=>{rejectAbort=reject;});
+    const abort=(timeout=false)=>{if(controller.signal.aborted)return;rejectAbort(Object.assign(new Error(timeout?'服务器请求超时，请检查网络后重试。':'已取消读取。'),{code:timeout?'timeout':'cancelled'}));controller.abort();};
+    const cancel=()=>abort(false);options.signal?.addEventListener('abort',cancel,{once:true});
+    timer=setTimeout(()=>abort(true),20000);
     try{
+      if(options.signal?.aborted){cancel();await aborted;}
+      // Bound both headers and body reads, including host adapters that ignore AbortSignal.
+      return await Promise.race([aborted,(async()=>{
       const response=await api.fetch('/api/plugins/mochi-shop/v1',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',...api.headers()},body:JSON.stringify({...body,route}),signal:controller.signal});
+      if(response.status===401||response.status===403)throw Object.assign(new Error('登录校验已失效，请刷新整个酒馆页面后重试。'),{code:'auth',status:response.status});
       let out;try{out=await response.json();}catch{throw new Error('小店云存档服务尚未就绪，请联系管理员安装配套服务，或稍后重试。');}
       if(owner!==api.account()||revision!==epoch)throw Object.assign(new Error('账户已改变，请重新打开小店。'),{code:'account'});
       if(!response.ok||!out.ok)throw Object.assign(new Error(out.error||'云存档服务暂时不可用。'),{code:out.code,status:response.status});
       return out;
-    }finally{clearTimeout(timer);}
+      })()]);
+    }finally{clearTimeout(timer);options.signal?.removeEventListener('abort',cancel);}
   }
   async function settle(result,route,body){
     if(route==='trash'){if(body.deleted&&current?.state.id===body.id){current=null;token=null;leaseId=null;}}
