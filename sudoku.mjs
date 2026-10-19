@@ -126,7 +126,7 @@ export function createSudoku(api){
  const doc=api.document,win=doc.defaultView;let root,mounted,selected=null,noteMode=false,checked=false,status='',pending=null,epoch=0;
  const data=()=>api.state().sudoku ||= normalizeSudoku(null).data;
  const node=(tag,cls='',text='')=>{const e=doc.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
- const button=(text,cls,run)=>{const b=node('button',cls,text);b.type='button';b.addEventListener('click',run);return b;};
+ const button=(text,cls,run)=>{const b=node('button',cls,text);b.type='button';b.dataset.sdkFocus=cls+'|'+text;b.addEventListener('click',run);return b;};
  const visible=()=>api.visible()&&!doc.hidden;
  function pause(){epoch++;if(pending)status="已取消出题，可以重新开始。";pending=null;}
  function restore(raw){pause();const n=normalizeSudoku(raw);api.state().sudoku=n.data;if(n.issues.length)(api.state().recovery ||= []).push(...n.issues);selected=null;noteMode=false;checked=false;status='';return n.data;}
@@ -185,8 +185,8 @@ export function createSudoku(api){
   body.append(button('换一道题','sdk-link',newGame));
  }
  function render(){
-  if(!root?.isConnected)return;const old=root.querySelector('.sdk-body'),scroll=old?.scrollTop||0,focus=root.contains(doc.activeElement)?doc.activeElement?.dataset?.sdkCell:null;
-  const body=node('main','sdk-body');root.replaceChildren(nav(),body);if(data().screen==='play')play(body);else home(body);body.scrollTop=scroll;if(focus!=null)root.querySelector('[data-sdk-cell="'+focus+'"]')?.focus({preventScroll:true});
+  if(!root?.isConnected)return;const old=root.querySelector('.sdk-body'),scroll=old?.scrollTop||0,active=root.contains(doc.activeElement)?doc.activeElement:null,focus=active?.dataset?.sdkCell,control=active?.dataset?.sdkFocus;
+  const body=node('main','sdk-body');root.replaceChildren(nav(),body);if(data().screen==='play')play(body);else home(body);body.scrollTop=scroll;if(focus!=null)root.querySelector('[data-sdk-cell="'+focus+'"]')?.focus({preventScroll:true});else if(control!=null)Array.from(root.querySelectorAll('button')).find(b=>!b.disabled&&b.dataset.sdkFocus===control)?.focus({preventScroll:true});
  }
  function onNavigate(view){if(view==='sudoku'){mount();render();}else pause();}
  return{mount,restore,pause,cancel:pause,resume:()=>{},onNavigate,render,start,select,enter,help,undo,data,busy:()=>!!pending};
