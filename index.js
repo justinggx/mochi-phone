@@ -5,6 +5,9 @@ import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
 
+// Temporarily unlisted; keep the game sources and account saves for a future return.
+const RP_SHOP_AVAILABLE = false;
+
 let rpPhoneArchive = createPhoneArchive();
 let rpArchiveAccountHandle = null;
 const rpAccountStoragePrefix = () => rpArchiveAccountHandle ? 'mochi-phone-account-v1:' + encodeURIComponent(rpArchiveAccountHandle) + ':' : null;
@@ -8846,7 +8849,7 @@ async function rpInitBody() {
   bindUI();
   rpTools().mount();
   rpGomokuApp().mount();
-  rpShopApp().mount();
+  rpShopApp()?.mount();
   makeDraggable();
   renderThreadList();
   refreshWidget();
@@ -9162,6 +9165,7 @@ function rpBatchPhoneUi(action) {
 
 let rpShop = null;
 function rpShopApp() {
+  if (!RP_SHOP_AVAILABLE) return null;
   if (rpShop) return rpShop;
   rpShop = createShop({
     document, runtime: () => rpRuntime, storage: window.sessionStorage, fetch: (...args) => fetch(...args),
@@ -10954,6 +10958,7 @@ function renderThreadList() {
 //  NAVIGATION
 // ================================================================
 function go(view) {
+  if (view === 'shop' && !RP_SHOP_AVAILABLE) view = 'home';
   if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
   if (view === 'thread' && !STATE.threads[STATE.currentThread]) view = 'messages';
   if(view==='xhs-detail' && !STATE.xhsFeed.some(post=>post.id===STATE.xhsCurrentPost))view='xhs';
