@@ -41,6 +41,6 @@ export async function init(router){
   }catch(e){const known=e.shopCode;res.status(known?(e.status||400):503).json({code:known||'storage',error:known?e.message:'服务器未能完成存档操作。请保留页面，重试前先刷新确认进度。'});}
  });
  timer=setInterval(()=>{for(const s of stores.values())try{s.backup();}catch{s.backupError=true;}},60000);timer.unref?.();
- console.info('[MochiShop] cloud save routes ready (schema 1; rules 1; member selection v68).');
+ console.info('[MochiShop] cloud save routes ready (schema 1; rules 1; manual member selection v69).');
 }
 export async function exit(){if(timer)clearInterval(timer);timer=null;for(const s of stores.values())try{s.backup(true);}catch{}finally{try{s.close();}catch{}}stores.clear();}

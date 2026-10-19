@@ -139,8 +139,8 @@ export function createShop(api){
     if(api.runtime?.()!==mountedRuntime){mountedRuntime=api.runtime?.();mountedRuntime?.own(pause);}
     root=node('div','rp-view');root.id='rp-view-shop';root.style.display='none';doc.getElementById('rp-screen')?.append(root);
     root.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(b&&!b.disabled){e.preventDefault();void dispatch(b.dataset.action,b);}});
-    root.addEventListener('input',e=>{if(e.target.id==='shop-draft'){draft=e.target.value;draftVersion++;manualAt=Date.now();if(aiBusy&&state()?.commentJob?.status==='pending'){cancel();setNotice('已优先保留你的输入；可发送消息。');}}if(e.target.id==='shop-partner-search'){filter=e.target.value;renderPartnerList();}if(e.target.id==='shop-member-search'){memberFilter=e.target.value;renderMemberList();}});
-    root.addEventListener('keydown',e=>{if(e.target.id==='shop-draft'&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&!e.isComposing){e.preventDefault();void dispatch('send');}});
+    root.addEventListener('input',e=>{if(e.target.id==='shop-draft'){draft=e.target.value;draftVersion++;manualAt=Date.now();if(aiBusy&&state()?.commentJob?.status==='pending'){cancel();setNotice('已优先保留你的输入；可发送消息。');}}if(e.target.id==='shop-partner-search'){filter=e.target.value;renderPartnerList();}if(e.target.id==='shop-member-name')memberEdited(e.target.value);});
+    root.addEventListener('keydown',e=>{if(e.target.id==='shop-member-name'&&e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();void dispatch('confirm-member');}if(e.target.id==='shop-draft'&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&!e.isComposing){e.preventDefault();void dispatch('send');}});
     if(!doc.querySelector('[data-folder-app="shop"]')){const item=node('div','rp-folder-item');item.dataset.folderApp='shop';item.append(node('div','rp-folder-item-ico'),node('div','rp-folder-item-lbl','你的小店'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);}
     refreshIcon();render();
   }
@@ -148,8 +148,8 @@ export function createShop(api){
   function actions(parent,...buttons){const a=node('div','shop-actions');a.append(...buttons);parent.append(a);}
   function row(title,text){const r=node('section','shop-row');if(title)r.append(node('h3','',title));if(text)r.append(node('div','shop-muted',text));body.append(r);return r;}
   function render(preserve=true){
-    if(!root)return;let values=[],focus=null,selection=null,scroll=0;
-    if(preserve&&lastScreen===screen){scroll=body?.scrollTop||0;values=[...root.querySelectorAll('input[id],textarea[id],select[id]')].map(n=>[n.id,n.value,n.checked]);if(root.contains(doc.activeElement)){focus=doc.activeElement.id;selection=[doc.activeElement.selectionStart,doc.activeElement.selectionEnd];}}
+    if(!root)return;let values=[],focus=null,caret=null,scroll=0;
+    if(preserve&&lastScreen===screen){scroll=body?.scrollTop||0;values=[...root.querySelectorAll('input[id],textarea[id],select[id]')].map(n=>[n.id,n.value,n.checked]);if(root.contains(doc.activeElement)){focus=doc.activeElement.id;caret=[doc.activeElement.selectionStart,doc.activeElement.selectionEnd];}}
     const s=state();root.replaceChildren();root.dataset.shopPage=screen;const nav=node('header','shop-nav');nav.append(btn('‹','back','shop-back'));if(screen==='home'){const tools=node('div','shop-nav-tools');if(s){const sync=btn(loading||client.busy?'保存中':client.uncertain?'待核对':client.writable?'已同步':'只读',client.uncertain?'recover':client.writable?'refresh':'takeover','shop-sync',loading);sync.prepend(icon('cloud'));tools.append(sync);}tools.append(btn('存档','archives','shop-nav-save',loading));nav.append(tools);}else nav.append(node('div','shop-nav-title',({archives:'小店与存档',create:'一起开一家店',plan:'今日菜单',stock:'备货',service:'店内营业',closing:'打烊账页',upgrades:'小店成长',book:'共同店册',chat:'和搭子商量',points:'存档点',profile:'搭子资料'}[screen]||'你的小店')),btn('存档','archives','shop-nav-save',loading));root.append(nav);
     body=node('main','shop-body shop-body-'+screen);root.append(body);status=node('div','shop-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.textContent=notice;body.append(status);
     if(loading)body.append(node('p','shop-muted','正在核对云端进度…'));if(aiBusy)body.append(btn('暂停搭子回应，继续经营','stop','shop-link'));
@@ -157,8 +157,8 @@ export function createShop(api){
     if(s&&!['home','archives','create','points','profile'].includes(screen)){const line=node('div','shop-pair');line.append(node('span','shop-badge','第 '+s.day+' 日 · '+PHASE[s.phase]),btn(client.writable?'已云存档 · 刷新':'在本机继续',client.writable?'refresh':'takeover','shop-link',loading));body.append(line);}
     if(!client.backupAvailable)desc('自动备份暂时异常，云端主档仍保留。请先导出一份备份并联系管理员。');
     if(screen==='home')renderHome(s);else if(screen==='archives')renderArchives();else if(screen==='create')renderCreate();else if(!s){desc('请先选择一份小店档案。');body.append(btn('选择小店','archives','shop-primary'));}else if(screen==='plan')renderPlan(s);else if(screen==='stock')renderStock(s);else if(screen==='service')renderService(s);else if(screen==='closing')renderClosing(s);else if(screen==='upgrades')renderUpgrades(s);else if(screen==='book')renderBook(s);else if(screen==='chat')renderChat(s);else if(screen==='points')renderPoints(s);else if(screen==='profile')renderProfile(s);
-    if(screen==='create'){foot=node('div','shop-create-footer');foot.append(node('div','shop-create-selection',profile?'和 '+profile.name+' 一起，经营属于你们的小店。':'先选一位搭子，再为小店写下名字。'),btn('一起开店 →','create','shop-primary',loading||!!selection||!profile||client.uncertain));root.append(foot);}else if((s||screen==='home')&&!['archives','points','profile'].includes(screen)){foot=node('nav','shop-foot');for(const [label,a]of [['营业','home'],['商量','chat'],['店册','book']]){const b=btn(label,'view:'+a,'',!s&&a!=='home');b.prepend(icon(a));if(screen===a)b.setAttribute('aria-current','page');foot.append(b);}root.append(foot);}
-    lastScreen=screen;for(const[id,value,checked]of values){const e=doc.getElementById(id);if(e){e.value=value;e.checked=checked;}}body.scrollTop=scroll;if(focus){const e=doc.getElementById(focus);e?.focus({preventScroll:true});try{e?.setSelectionRange(...selection);}catch{}}
+    if(screen==='create'){foot=node('div','shop-create-footer');foot.append(node('div','shop-create-selection',profile?'和 '+profile.name+' 一起，经营属于你们的小店。':'请填写搭子姓名并确认，再一起开店。'),btn('一起开店 →','create','shop-primary',loading||!!selection||!profile||client.uncertain));root.append(foot);}else if((s||screen==='home')&&!['archives','points','profile'].includes(screen)){foot=node('nav','shop-foot');for(const [label,a]of [['营业','home'],['商量','chat'],['店册','book']]){const b=btn(label,'view:'+a,'',!s&&a!=='home');b.prepend(icon(a));if(screen===a)b.setAttribute('aria-current','page');foot.append(b);}root.append(foot);}
+    lastScreen=screen;for(const[id,value,checked]of values){const e=doc.getElementById(id);if(e){e.value=value;e.checked=checked;}}body.scrollTop=scroll;if(focus){const e=doc.getElementById(focus);e?.focus({preventScroll:true});try{e?.setSelectionRange(...caret);}catch{}}
   }
   function renderHome(s){
     if(s)try{api.storage.setItem('mochi-shop-last:'+encodeURIComponent(api.account()),s.id);}catch{}
@@ -186,14 +186,19 @@ export function createShop(api){
   function renderCreate(){
     body.append(node('p','shop-create-kicker','OUR LITTLE CAFÉ'),node('h1','shop-create-intro','和谁一起，\n经营日常？'));
     input('为小店取个名字','shop-name','转角咖啡馆','text',36);
-    if(!card){input('第一步 · 搜索并选择角色卡','shop-partner-search',filter,'text',100);desc('多人卡请先选卡名，再选卡里的搭子。');body.append(node('div','shop-partners'));renderPartnerList();return;}
+    if(!card){input('第一步 · 搜索并选择角色卡','shop-partner-search',filter,'text',100);desc('先选人设所在的角色卡，再填写一起开店的人物。');body.append(node('div','shop-partners'));renderPartnerList();return;}
     status.hidden=true;const panel=node('section','shop-card-choice'),title=node('div','shop-card-heading');title.append(node('strong','','角色卡 · '+card.name),btn('换一张卡','change-card','shop-link'));panel.append(title);
-    const progress=node('div','shop-read-status',selection?(selection.phase==='card'?'正在读取卡内人物…':'正在核对搭子资料…'):notice);progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');panel.append(progress);
+    const progress=node('div','shop-read-status',selection?(selection.phase==='card'?'正在读取角色卡…':'正在读取这位搭子的资料…'):notice);progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');panel.append(progress);
     if(selection)panel.append(btn('取消读取','cancel-selection','shop-link'));
-    else if(!Array.isArray(card.members)||(!profile&&!card.members.length))panel.append(btn('重新读取','retry-card','shop-link'));
-    if(Array.isArray(card.members)&&card.members.length){desc('第二步 · 选择这张卡里的开店搭子',panel);input('按卡内角色姓名查找','shop-member-search',memberFilter,'text',100,panel);panel.append(node('div','shop-partners shop-members'));body.append(panel);renderMemberList();}
-    else{if(profile)desc('开店搭子 · '+profile.name,panel);body.append(panel);}
-    desc('每家新店独立保存。搭子的来源卡、具体人物与资料快照会随存档一起保存。');
+    if(!card.ready&&!selection)panel.append(btn('重新读取角色卡','retry-card','shop-link'));
+    if(card.ready){
+      desc('第二步 · 填写一起开店的人物姓名',panel);
+      const field=input('搭子姓名','shop-member-name',memberFilter,'text',100,panel);field.placeholder='填写卡内姓名或别名';field.autocomplete='off';
+      desc('由你决定和谁开店。会从这张卡及其绑定世界书读取对应资料。',panel);
+      panel.append(btn(profile?'重新确认搭子':'确认搭子','confirm-member','shop-link',loading||!!selection||!memberFilter.trim()));
+      if(profile)desc('已确认 · '+profile.name,panel);
+    }
+    body.append(panel);desc('每家新店独立保存，来源卡、搭子姓名和资料快照随存档一起保留。');
     if(profile?.worldUnavailable)desc('绑定世界书暂不可读，当前只读到了卡内资料；可换卡或稍后重试。');
   }
   function renderPartnerList(){
@@ -201,14 +206,16 @@ export function createShop(api){
     const matches=cards.filter(c=>c.name.toLowerCase().includes(filter.toLowerCase()));
     for(const c of matches.slice(0,60)){const b=btn('','partner','shop-partner',loading);b.dataset.avatar=c.avatar;b.append(node('span','shop-front-avatar',Array.from(c.name)[0]||'·'),node('span','shop-partner-name',c.name));host.append(b);}
     if(matches.length>60)desc('还有更多角色卡，请继续输入卡名筛选。',host);
-    if(!matches.length)desc(cards.length?'没有找到这张卡；多人卡请按卡名搜索，再到卡内选人。':'请先在酒馆导入角色卡，再来选择。',host);
+    if(!matches.length)desc(cards.length?'没有找到这张卡；请先按卡名搜索，再填写卡内人物。':'请先在酒馆导入角色卡，再来选择。',host);
   }
-  function renderMemberList(){
-    const host=root?.querySelector('.shop-members');if(!host||!card)return;host.replaceChildren();
-    const query=memberFilter.normalize('NFKC').trim().toLowerCase(),matches=card.members.filter(m=>[m.name,m.id,...(m.aliases||[])].some(x=>String(x).normalize('NFKC').toLowerCase().includes(query)));
-    for(const m of matches.slice(0,60)){const b=btn('','member','shop-partner',loading);b.dataset.member=m.id;b.setAttribute('aria-pressed',String(profile?.member===m.id));b.append(node('span','shop-front-avatar',Array.from(m.name)[0]||'·'),node('span','shop-partner-name',m.name),node('span','shop-partner-check','✓'));host.append(b);}
-    if(matches.length>60)desc('还有更多人物，请继续输入姓名筛选。',host);
-    if(!matches.length){desc('未找到匹配的人物。请核对卡内姓名；不会将自由输入直接当成人设。',host);if(query)host.append(btn('在本卡核对这个姓名','member-lookup','shop-link',loading));}
+  function memberEdited(value){
+    memberFilter=value;cancelSelection();profile=null;notice='';
+    // Keep the real input in place: replacing it during IME composition loses Chinese keystrokes.
+    setNotice('');root?.querySelector('[data-action="cancel-selection"]')?.remove();
+    const confirm=root?.querySelector('[data-action="confirm-member"]');if(confirm){confirm.disabled=loading||!memberFilter.trim();confirm.textContent='确认搭子';}
+    const create=root?.querySelector('[data-action="create"]');if(create)create.disabled=true;
+    const caption=root?.querySelector('.shop-create-selection');if(caption)caption.textContent='请填写搭子姓名并确认，再一起开店。';
+    const selected=root?.querySelector('.shop-card-choice p:last-child');if(selected?.textContent.startsWith('已确认 · '))selected.remove();
   }
   function cancelSelection(){selectionSerial++;selection?.controller.abort();selection=null;}
   async function choose(avatar,member=null){
@@ -219,13 +226,11 @@ export function createShop(api){
       render();
       if(member===null){
         const out=await client.request('card',{avatar},{signal:controller.signal});if(!valid())return;
-        if(!out.card||!Array.isArray(out.card.members)||out.card.avatar!==avatar)throw new Error('卡内人物列表未能读取，请重新选择角色卡。');
-        card=out.card;memberFilter='';
-        if(card.members.length)return;
-        selection.phase='profile';render();
+        if(!out.card?.name||out.card.avatar!==avatar)throw new Error('角色卡未能读取，请重新选择。');
+        card={...out.card,ready:true};return;
       }
       const out=await client.request('profile',{avatar,member:member||''},{signal:controller.signal});if(!valid())return;
-      if(!out.profile?.ref||!out.profile.name||out.profile.avatar!==avatar||(member&&!out.profile.member))throw new Error('搭子资料不完整，请重新核对。');
+      if(!out.profile?.ref||!out.profile.name||out.profile.avatar!==avatar)throw new Error('搭子资料不完整，请重新核对。');
       profile=out.profile;notice='已选 '+profile.name+'，可以一起开店了。';
     }catch(e){if(valid()&&e.code!=='cancelled'){notice=e.message||'读取未完成，请重试或换一张卡。';}}
     finally{if(serial===selectionSerial){selection=null;if(active&&screen==='create')render();}}
@@ -260,11 +265,11 @@ export function createShop(api){
     if(action==='archives'){await archives();return;}
     if(action==='recover'){await busy(async()=>{await client.recover();if(!state()){campaigns=await client.list();screen='archives';}setNotice('已核对上次操作，请查看进度再继续。');});return;}
     if(action==='new'){if(loading||client.uncertain)return;cancel();cancelSelection();profile=null;card=null;memberFilter='';cards=(api.characters()||[]).filter(c=>typeof c?.name==='string'&&typeof c?.avatar==='string').map(c=>({name:c.name,avatar:c.avatar}));filter='';screen='create';notice='';render(false);return;}
-    if(action==='partner'){if(loading||screen!=='create')return;const picked=cards.find(c=>c.avatar===b?.dataset?.avatar);if(!picked)return;card={...picked,members:null};memberFilter='';await choose(picked.avatar);return;}
+    if(action==='partner'){if(loading||screen!=='create')return;const picked=cards.find(c=>c.avatar===b?.dataset?.avatar);if(!picked)return;card={...picked,ready:false};memberFilter='';await choose(picked.avatar);return;}
     if(action==='change-card'){cancelSelection();profile=null;card=null;memberFilter='';notice='';render();return;}
     if(action==='cancel-selection'){cancelSelection();notice='读取已取消，可以重试或换卡。';render();return;}
     if(action==='retry-card'){if(card)await choose(card.avatar);return;}
-    if(action==='member'||action==='member-lookup'){if(loading||screen!=='create'||!card)return;const member=action==='member'?b?.dataset?.member:memberFilter.trim();if(member)await choose(card.avatar,member);return;}
+    if(action==='confirm-member'||action==='member'||action==='member-lookup'){if(loading||screen!=='create'||!card?.ready)return;const member=action==='member'?b?.dataset?.member:memberFilter.trim();if(member){memberFilter=member;await choose(card.avatar,member);}else setNotice('请先填写搭子姓名。');return;}
     if(action==='create'){if(loading||selection||screen!=='create')return;const name=doc.getElementById('shop-name')?.value?.trim();if(!profile||!name){setNotice('请填写店名并选择搭子。');return;}let created=false;await busy(async()=>{await client.release();const r=await client.mutate('create',{name,avatar:profile.avatar,member:profile.member||'',user:api.user()});screen='home';draft='';entryLoaded=true;created=true;setNotice('');await client.claim(r.id);});if(created&&active&&!loading)void speak({event:'你们一起确定了店名，正站在第一次开门前的小店里。'});return;}
     if(action.startsWith('open:')){await open(action.slice(5));return;}
     if(action==='refresh'){await busy(async()=>{await client.load(state().id);setNotice('');});return;}

@@ -1,4 +1,4 @@
-import { createShop } from './shop.mjs?v=20261019-shop-multicard-68';
+import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261018-translation-bubble-67';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -551,7 +551,11 @@ const RP_REFINED_CSS = `
 #rp-phone.rp-art-icons #rp-screen .rp-bank-card {background:transparent!important;padding:12px 4px!important;}
 #rp-phone.rp-art-icons #rp-screen .rp-asset-item {background:transparent!important;border:none!important;border-radius:0!important;padding:14px 0!important;}
 /* One overlay surface; folder grid balanced, copyright content stays intact. */
+/* Always-readable base for Chrome 109; only supported engines enhance transparency. */
+#rp-phone.rp-art-icons #rp-screen #rp-folder-modal {background:var(--rp-v-surface,#fff7fa)!important;}
+@supports (background:color-mix(in srgb,white 86%,transparent)) {
 #rp-phone.rp-art-icons #rp-screen #rp-folder-modal {background:color-mix(in srgb,var(--rp-v-surface) 86%,transparent)!important;}
+}
 #rp-phone.rp-art-icons #rp-screen :is(.rp-folder-popup,.rp-about-card) {border:none!important;box-shadow:none!important;}
 #rp-phone.rp-art-icons #rp-screen .rp-folder-popup {display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px 10px;background:transparent!important;padding:18px 14px;}
 #rp-phone.rp-art-icons #rp-screen .rp-folder-item {width:auto;min-width:0;}

@@ -51,6 +51,22 @@ function castOf(source){
  for(const member of members)for(const alias of member.aliases){const key=norm(alias),list=byAlias.get(key)||[];if(!list.includes(member))list.push(member);byAlias.set(key,list);}
  return{members,byAlias};
 }
+// Manual identity comes from the user. Source matching supplies context, not a closed roster.
+function mentions(text,name){
+ const hay=norm(text),needle=norm(name);if(!needle)return false;let at=hay.indexOf(needle);
+ while(at>=0){const before=hay[at-1]||'',after=hay[at+needle.length]||'',word=/[\p{Script=Latin}\p{N}_]/u;if(!word.test(needle[0])||!word.test(before)){if(!word.test(needle.at(-1))||!word.test(after))return true;}at=hay.indexOf(needle,at+1);}return false;
+}
+function manualMember(source,name){
+ const id=name.normalize('NFKC').trim(),strong=source.entries.filter(e=>mentions(e.comment||e.name||'',id)||keys(e).some(k=>norm(k)===norm(id)));
+ const raw=[source.d.description,source.d.personality,source.d.scenario,source.d.mes_example].filter(x=>typeof x==='string').join('\n\n');
+ const paragraphs=raw.split(/\n\s*\n/).filter(block=>mentions(block,id)),weak=source.entries.filter(e=>mentions(e.content,id));
+ const entries=strong.length?strong:weak;
+ if(Array.from(id).length<2&&!source.entries.some(e=>keys(e).some(k=>norm(k)===norm(id))))bad('请填写完整的卡内人物姓名。');
+ if(!entries.length&&!paragraphs.length)bad('在所选角色卡和绑定世界书中没有找到这个姓名，请检查姓名或别名。');
+ // Explicitly selected sections come first; the chosen spelling remains stable in the save.
+ const blocks=strong.length?strong.map(e=>e.content):[...paragraphs,...weak.map(e=>e.content)];
+ return{id,name:id,aliases:[id],blocks:[...new Set(blocks)],entries:new Set(entries),manual:true};
+}
 export function readCardChoices(directories,avatar){
  const source=sourceCard(directories,avatar),{members}=castOf(source),name=source.d.name.trim().slice(0,100);
  return{avatar,name,members:members.map(({id,name,aliases})=>({id,name,aliases})),worldUnavailable:source.worldUnavailable};
@@ -58,7 +74,7 @@ export function readCardChoices(directories,avatar){
 export function readCharacterCard(directories,avatar,member='',{requireMember=false}={}){
  const source=sourceCard(directories,avatar),{d}=source,cast=castOf(source);let selected=null;
  if(typeof member!=='string'||member.length>100)bad('请选择卡内有效的角色姓名。');
- if(member.trim()){const matches=cast.byAlias.get(norm(member))||[];if(matches.length!==1)bad(matches.length?'这个姓名对应多个角色，请使用完整姓名。':'在这张卡的人物资料中没有找到这个角色，请换一个姓名或选择其他卡。');selected=matches[0];}
+ if(member.trim()){if(/[{}<>\\/\u0000-\u001f]/.test(member))bad('请填写人物姓名，不要输入标签或指令。');const matches=cast.byAlias.get(norm(member))||[];if(matches.length>1)bad('这个别名对应多个资料段，请使用更明确的完整姓名。');selected=matches[0]||(norm(member)===norm(d.name)?null:manualMember(source,member));}
  else if(requireMember&&cast.members.length>1)bad('这是一张多人卡，请先选择卡内的开店搭子。');
  const profile={ref:selected?'member:'+hash(avatar+'\0'+norm(selected.id)).slice(0,48):'card:'+avatar,name:selected?.name||d.name.trim().slice(0,100),avatar,description:clean(d.description,120000),personality:clean(d.personality,30000),scenario:clean(d.scenario,30000),examples:clean(d.mes_example,30000),greeting:clean(d.first_mes,20000),worldEntries:[],worldName:source.worldName,version:source.version};
  if(source.worldUnavailable)profile.worldUnavailable=true;
