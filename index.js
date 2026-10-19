@@ -9241,24 +9241,32 @@ function rpStickerApp() {
   });
   return rpStickers;
 }
+function rpStickerFloorKey(key) {
+  try { const parts=JSON.parse(String(key||'').replace(/:sticker$/,''));return Array.isArray(parts)&&Number.isInteger(parts[0])?JSON.stringify([parts[0],String(parts[1]??'')]):null; } catch (_) { return null; }
+}
 function rpQueueSticker(thread, ids, time, source, sender) {
   if (!ids.length || !thread || !isMochiPhoneEnabled()) return;
   const id=ids[0],slot=STATE.chatId,token=rpRuntime.task(),owner=rpArchiveAccountHandle;
   const key=source?String(source.key)+':sticker':JSON.stringify([thread.id,sender||'',time,id]);
   if(thread.messages.some(m=>m.stickerKey===key)||rpStickerJobs.has(slot+key))return;
-  const jobKey=slot+key,job={};rpStickerJobs.set(jobKey,job);
+  const sourceMessage=source?thread.messages.filter(m=>m.phoneSource?.key===source.key&&m.phoneSource?.signature===source.signature).at(-1):null;
+  const jobKey=slot+key,job={thread,after:sourceMessage||thread.messages.at(-1)||null,position:thread.messages.length};rpStickerJobs.set(jobKey,job);
   void (async()=>{
     try {
       const entry=await rpStickerApp().verify(id);
       if(!entry||!token.valid()||owner!==rpArchiveAccountHandle||STATE.threads[thread.id]!==thread)return;
       if(thread.messages.some(m=>m.stickerKey===key)||isPhoneBlocked(sender||thread.name))return;
       // A main model reply may contain several SMS/GMSG parts: allow one sticker per floor.
-      const floor=source?JSON.parse(source.key)?.[0]:null;
-      if(Number.isInteger(floor)&&Object.values(STATE.threads).some(t=>t.messages.some(m=>m.stickerFloor===floor)))return;
+      const floor=source?JSON.parse(source.key)?.[0]:null,floorKey=source?rpStickerFloorKey(source.key):null;
+      if(floorKey&&Object.values(STATE.threads).some(t=>t.messages.some(m=>m.type==='sticker'&&rpStickerFloorKey(m.stickerKey)===floorKey)))return;
       const message={id:'stk_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),type:'sticker',from:sender?'incoming':thread.id,
         ...(sender?{name:sender}:{}),time:resolvePhoneTime(time),text:'[表情包] '+entry.name,stickerKey:key,
         ...(Number.isInteger(floor)?{stickerFloor:floor}:{}),sticker:{id:entry.id,format:entry.format,name:entry.name,owner}};
-      thread.messages.push(message);if(!rpIsReadingThread(thread.id))thread.unread=(thread.unread||0)+1;
+      const anchor=job.after?thread.messages.indexOf(job.after)+1:0;
+      thread.messages.splice(job.after&&anchor===0?Math.min(job.position,thread.messages.length):anchor,0,message);
+      // Re-anchor later image-only receipts sharing this point, regardless of verification order.
+      let later=false;for(const pending of rpStickerJobs.values()){if(pending===job){later=true;continue;}if(later&&pending.thread===thread&&pending.after===job.after)pending.after=message;}
+      if(!rpIsReadingThread(thread.id))thread.unread=(thread.unread||0)+1;
       refreshBadges();renderThreadList();if(STATE.currentView==='thread'&&STATE.currentThread===thread.id)renderBubbles(thread.id);
       showBanner(thread.name,message.text,message.time,thread.id);saveState();
     } catch (_) { /* Invalid/deleted identifiers never replace or interrupt normal text. */ }
@@ -15031,7 +15039,7 @@ function rpIsReadingThread(threadId) {
 function incomingMsg(threadId, text, time, source) {
   const th = STATE.threads[threadId];
   if (!th) return;
-  if(String(text||'').includes('[表情包:')){const parsed=rpStickerApp().extract(text);rpQueueSticker(th,parsed.ids,time,source);text=parsed.text;if(!text)return;}
+  let stickerIds=[];if(String(text||'').includes('[表情包:')){const parsed=rpStickerApp().extract(text);stickerIds=parsed.ids;text=parsed.text;if(!text){rpQueueSticker(th,stickerIds,time,source);return;}}
   const resolvedTime = resolvePhoneTime(time);
 
   // 去重只看最近几条，避免“同一句话后来再次出现”被永久吞掉
@@ -15040,11 +15048,12 @@ function incomingMsg(threadId, text, time, source) {
   const isDup = source ? rpPhoneMessageAlreadyReceived(th, source, matches, resolvedTime)
     : recentMsgs.some(m => matches(m) && (!resolvedTime || !m.time || m.time === resolvedTime));
   if (isDup) {
-    return;
+    rpQueueSticker(th,stickerIds,time,source);return;
   }
 
   th.messages.push({ from: threadId, text, time: resolvedTime,
     ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}) });
+  rpQueueSticker(th,stickerIds,time,source);
   if (!rpIsReadingThread(threadId)) {
     th.unread++;
   }
@@ -15813,18 +15822,19 @@ function incomingGroupMsg(fromRaw, groupName, time, text, source) {
   const senderTh = findOrCreateThread(fromRaw);
   if (!senderTh) return;
   if (!thread.members.includes(senderTh.id)) thread.members.push(senderTh.id);
-  if(String(text||'').includes('[表情包:')){const parsed=rpStickerApp().extract(text);rpQueueSticker(thread,parsed.ids,time,source,fromRaw);text=parsed.text;if(!text)return;}
+  let stickerIds=[];if(String(text||'').includes('[表情包:')){const parsed=rpStickerApp().extract(text);stickerIds=parsed.ids;text=parsed.text;if(!text){rpQueueSticker(thread,stickerIds,time,source,fromRaw);return;}}
   // 去重只看最近几条，避免同一句群消息后续再次出现时被永久吞掉
   const matches = m => m.type === 'group_msg' && m.name === fromRaw && m.text === text;
   const isDup = source ? rpPhoneMessageAlreadyReceived(thread, source, matches, resolvedTime)
     : thread.messages.slice(-8).some(m => matches(m) && (!resolvedTime || !m.time || m.time === resolvedTime));
-  if (isDup) return;
+  if (isDup) {rpQueueSticker(thread,stickerIds,time,source,fromRaw);return;}
   thread.messages.push({
     id: `gm_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'incoming',
     type: 'group_msg', name: fromRaw, time: resolvedTime, text,
     ...(source ? { phoneSource: { key: source.key, signature: source.signature } } : {}),
     initials: senderTh.initials, avatarBg: senderTh.avatarBg
   });
+  rpQueueSticker(thread,stickerIds,time,source,fromRaw);
   if (!rpIsReadingThread(thread.id)) thread.unread = (thread.unread || 0) + 1;
   refreshBadges(); renderThreadList();
   if (STATE.currentThread === groupId) renderBubbles(groupId);
