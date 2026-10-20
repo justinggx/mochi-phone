@@ -117,8 +117,6 @@ ${P} .sdk-pad small{font-size:8px;line-height:1;opacity:.6;}
 ${P} .sdk-help{overflow-wrap:anywhere;display:flex;align-items:center;justify-content:space-between;width:100%;gap:7px;margin:12px 0 0;min-height:42px;background:var(--sdk-accent);border:0;border-radius:21px;padding:9px 13px;color:var(--rp-v-surface,#fff);font-size:12px;}
 ${P} .sdk-help-action{font-size:11px;line-height:1.85;margin:10px 2px;overflow-wrap:anywhere;color:var(--sdk-help);}
 ${P} .sdk-complete{padding:8px 0;color:var(--sdk-accent);font-size:13px;line-height:1.8;}
-#rp-phone #rp-screen #rp-folder-modal .sdk-folder-icon{display:grid;width:38px;height:38px;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);transform:rotate(-7deg);border:1.5px solid currentColor;border-radius:5px;color:var(--rp-nav-btn,#ad7888);background:var(--rp-v-surface,#fff7f1);box-shadow:2px 3px 0 var(--rp-v-card,#ead8db);overflow:hidden;pointer-events:none;}
-#rp-phone #rp-screen #rp-folder-modal .sdk-folder-icon span{display:grid;place-items:center;font-family:Georgia,serif;font-size:10px;line-height:1;border:0 solid currentColor;border-right-width:.5px;border-bottom-width:.5px;}
 `;
 
 
@@ -134,8 +132,16 @@ export function createSudoku(api){
   if(mounted===api.runtime()&&root?.isConnected)return;
   mounted=api.runtime();doc.getElementById('rp-view-sudoku')?.remove();let style=doc.getElementById('rp-sudoku-css');if(!style){style=node('style');style.id='rp-sudoku-css';doc.head.append(style);}style.textContent=SUDOKU_CSS;
   root=node('div','rp-view');root.id='rp-view-sudoku';root.style.display='none';doc.getElementById('rp-screen')?.append(root);
-  if(!doc.querySelector('[data-folder-app=sudoku]')){const item=node('div','rp-folder-item');item.dataset.folderApp='sudoku';const icon=node('div','rp-folder-item-ico'),grid=node('div','sdk-folder-icon');grid.setAttribute('aria-hidden','true');for(const v of ['1','','3','','5','','7','','9'])grid.append(node('span','',v));icon.append(grid);item.append(icon,node('div','rp-folder-item-lbl','数独'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);}
+  if(!doc.querySelector('[data-folder-app=sudoku]')){const item=node('div','rp-folder-item');item.dataset.folderApp='sudoku';item.append(node('div','rp-folder-item-ico'),node('div','rp-folder-item-lbl','数独'));doc.querySelector('#rp-folder-modal .rp-folder-popup')?.append(item);}refreshIcon();
   mounted.listenDOM(root,'keydown',key);mounted.listenDOM(doc,'visibilitychange',()=>{if(doc.hidden)pause();});mounted.own(()=>{pause();style.remove();});render();
+ }
+ function refreshIcon(theme=api.iconTheme?.()){
+  const icon=doc.querySelector('#rp-folder-modal [data-folder-app="sudoku"] .rp-folder-item-ico');if(!icon||!api.iconSource)return;
+  const src=api.iconSource(theme,false),local=api.iconSource(theme,true);if(icon.dataset.sdkIconUrl===src&&icon.querySelector('img'))return;
+  const img=node('img','sdk-folder-image');img.alt='';img.setAttribute('aria-hidden','true');img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.style.cssText='width:100%;height:100%;object-fit:contain';let usingLocal=false;
+  icon.dataset.sdkIconUrl=src;icon.dataset.sdkIconTheme=['candy','star','misty'].includes(theme)?theme:'custom';
+  img.onerror=()=>{if(!img.isConnected||icon.dataset.sdkIconUrl!==src)return;if(!usingLocal){usingLocal=true;img.src=local;}else{icon.textContent='▦';delete icon.dataset.sdkIconUrl;}};
+  icon.replaceChildren(img);img.src=src;
  }
  function save(){api.save();}
  function rules(){const body=node('div');for(const t of ['所有格子都由你填写。每行、每列、每个3×3宫都应包含1至9，不能重复。题目有且只有一个解。','点格子，再用下方数字键填写；电脑可按1至9，方向键移动，退格/Delete擦除。原有题目数字不能改。笔记模式可记录候选数字；撤销保留最近100步。','求助会由本地解题程序填对一格，不消耗API。若已有填错格，优先修正所选错误格或第一处错误；否则优先所选空格。搭子不会轮流落笔，求助不会替你填完整盘。','三个档位按题面保留的数字数量区分，不是严格的解题技巧评级。点击检查会标出与唯一解不符的已填数字。','局面随当前聊天的小手机存档保存。换聊天各自保留，刷新后可继续；备份恢复只补充缺失的数独局面，不覆盖当前题目。'])body.append(node('p','',t));api.dialog('数独玩法',body,[{label:'知道了'}]);}
@@ -189,5 +195,5 @@ export function createSudoku(api){
   const body=node('main','sdk-body');root.replaceChildren(nav(),body);if(data().screen==='play')play(body);else home(body);body.scrollTop=scroll;if(focus!=null)root.querySelector('[data-sdk-cell="'+focus+'"]')?.focus({preventScroll:true});else if(control!=null)Array.from(root.querySelectorAll('button')).find(b=>!b.disabled&&b.dataset.sdkFocus===control)?.focus({preventScroll:true});
  }
  function onNavigate(view){if(view==='sudoku'){mount();render();}else pause();}
- return{mount,restore,pause,cancel:pause,resume:()=>{},onNavigate,render,start,select,enter,help,undo,data,busy:()=>!!pending};
+ return{mount,refreshIcon,restore,pause,cancel:pause,resume:()=>{},onNavigate,render,start,select,enter,help,undo,data,busy:()=>!!pending};
 }

@@ -1,7 +1,7 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261020-role-context-76';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261020-sticker-experience-80';
-import { createSudoku } from './sudoku.mjs?v=20261019-joint-audit-73';
+import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-remove-agreements-81';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -9383,11 +9383,18 @@ function rpGomokuApp() {
 }
 
 let rpSudoku = null;
+function rpSudokuIconUrl(theme,local=false) {
+  const selected=['candy','star','misty'].includes(theme)?theme:'candy';
+  const file='mochi-phone-sudoku-'+selected+'-icon-20261020.png';
+  return local?new URL('scripts/extensions/third-party/mochi-phone/sudoku-art-20261020/'+file,document.baseURI).href:'https://preview.taliatang1.xyz/assets/'+file;
+}
 function rpSudokuApp() {
   if (!rpSudoku) rpSudoku = createSudoku({
     document, state: () => STATE, runtime: () => rpRuntime, save: saveState,
     navigate: go, visible: () => rpGameVisible('sudoku'), partner: gameGetCurrentPartner,
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog,
+    iconTheme: () => document.getElementById('rp-phone')?.dataset.rpArtTheme || null,
+    iconSource: (theme,local) => rpSudokuIconUrl(theme,local),
   });
   return rpSudoku;
 }
@@ -16936,6 +16943,7 @@ function rpPaintArtIcon(icon, atlas, index, columns) {
 
 function rpRenderGameFolderIcons() {
   rpGomoku?.refreshIcon();
+  rpSudoku?.refreshIcon();
   rpShop?.refreshIcon();
   const phone = document.getElementById('rp-phone');
   if (!phone?.classList.contains('rp-art-icons')) return;
@@ -16965,6 +16973,7 @@ function lgRenderHomeIcons() {
   rpRefreshLudoModeArt();
   rpRefreshWordModeArt();
   rpGomoku?.refreshIcon(builtIn ? theme : null);
+  rpSudoku?.refreshIcon(builtIn ? theme : null);
   rpShop?.refreshIcon();
   // Legacy currentColor artwork stays available for custom themes/load failure.
   // Built-in themes replace it only after the matching raster atlas has loaded.
