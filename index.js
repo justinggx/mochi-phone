@@ -1,6 +1,6 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261020-role-context-76';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
-import { createStickers } from './stickers.mjs?v=20261020-sticker-entry-79';
+import { createStickers } from './stickers.mjs?v=20261020-sticker-experience-80';
 import { createSudoku } from './sudoku.mjs?v=20261019-joint-audit-73';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-contact-isolation-77';
@@ -5511,6 +5511,7 @@ function rpResetChatTasks() {
   rpGomoku?.cancel();
   rpSudoku?.cancel();
   rpStickerJobs.clear();
+  rpStickerGeneration = null;
   rpPhoneTools?.conversation.reset();
   clearTimeout(rpReadingTimer); rpReadingTimer=null;
   rpFinishUndo(); rpXhsFavoritesOnly=false;
@@ -5961,6 +5962,9 @@ async function rpPrepareMochiPrompt(type, options = {}, dryRun = false) {
   if (!rpPhoneContextReady(ctx)) return;
   if (STATE.chatId !== getPhoneChatSlotKey(ctx)) syncToCurrentChat();
   const task = rpRuntime.task();
+  const previousKey=JSON.stringify([(ctx.chat?.length||0)-1,String(ctx.chat?.at(-1)?.send_date||'')]);
+  const previousReceipts=new Set(Object.values(STATE.threads).flatMap(thread=>(thread.messages||[]).filter(m=>rpStickerFloorKey(m.phoneSource?.key)===previousKey)));
+  rpStickerGeneration = {task,slot:STATE.chatId,owner:rpArchiveAccountHandle,signal:options?.signal,length:ctx.chat?.length||0,previous:ctx.chat?.at(-1),previousText:String(ctx.chat?.at(-1)?.mes||''),previousReceipts,processing:false};
   try { await rpGuardAwait(rpStickerApp().prepare(),task,2500); }
   catch (_) { if (!task.valid()) return; }
   if (task.valid()) refreshMochiPrompt();
@@ -9026,11 +9030,13 @@ async function rpInitBody() {
       const ev = liveET[k];
       if (ev) {
         try { rpRuntime.listen(liveES, ev, onAIMessage); } catch(e) { console.error('[Phone:init] register FAILED', rpErrorInfo(e)); }
+        if (k === 'MESSAGE_RECEIVED') rpRuntime.listen(liveES,ev,(index,type)=>{void rpCompleteStickerGeneration(index,type).catch(e=>console.warn('[Phone] sticker completion failed',rpErrorInfo(e)));});
         if (k === 'GENERATION_ENDED') {
           try { rpRuntime.listen(liveES, ev, function() { scheduleFinalPhoneParseSweep('generation_ended'); }); } catch(e) {}
         }
       }
     });
+    if(liveET.GENERATION_STOPPED)rpRuntime.listen(liveES,liveET.GENERATION_STOPPED,()=>{rpStickerGeneration=null;});
     // 用户消息渲染后也清理 OOC（处理历史记录重新渲染的情况）
     const userMsgKey = liveET['USER_MESSAGE_RENDERED'] || liveET['MESSAGE_UPDATED'];
     if (userMsgKey) {
@@ -9402,24 +9408,30 @@ function rpStickerApp() {
 function rpStickerFloorKey(key) {
   try { const parts=JSON.parse(String(key||'').replace(/:sticker$/,''));return Array.isArray(parts)&&Number.isInteger(parts[0])?JSON.stringify([parts[0],String(parts[1]??'')]):null; } catch (_) { return null; }
 }
-function rpQueueSticker(thread, ids, time, source, sender) {
+function rpQueueSticker(thread, ids, time, source, sender, requiredValid) {
   if (!ids.length || !thread || !isMochiPhoneEnabled()) return;
   const id=ids[0],slot=STATE.chatId,token=rpRuntime.task(),owner=rpArchiveAccountHandle;
-  const key=source?String(source.key)+':sticker':JSON.stringify([thread.id,sender||'',time,id]);
-  if(thread.messages.some(m=>m.stickerKey===key)||rpStickerJobs.has(slot+key))return;
+  let sourceParts=null;try{sourceParts=source?JSON.parse(source.key):null;}catch(_){}
+  const reply=Number.isInteger(sourceParts?.[0])?rpPhoneTextFingerprint(String(getContext()?.chat?.[sourceParts[0]]?.mes||'')):null;
+  const frequent=rpStickerApp().store.state.prefs.frequency==='high';
+  const receipt=frequent&&reply&&sourceParts?JSON.stringify([...sourceParts,'reply:'+reply]):source?.key;
+  const key=source?String(receipt)+':sticker':JSON.stringify([thread.id,sender||'',time,id]);
+  if(thread.messages.some(m=>m.stickerKey===key))return;
+  if(rpStickerJobs.has(slot+key))return rpStickerJobs.get(slot+key).promise;
   const sourceMessage=source?thread.messages.filter(m=>m.phoneSource?.key===source.key&&m.phoneSource?.signature===source.signature).at(-1):null;
-  const jobKey=slot+key,job={thread,after:sourceMessage||thread.messages.at(-1)||null,position:thread.messages.length};rpStickerJobs.set(jobKey,job);
-  void (async()=>{
+  const jobKey=slot+key,job={thread,after:sourceMessage||thread.messages.at(-1)||null,position:thread.messages.length,floorKey:source?rpStickerFloorKey(source.key):null};rpStickerJobs.set(jobKey,job);
+  job.promise=(async()=>{
     try {
       const entry=await rpStickerApp().verify(id);
       if(!entry||!token.valid()||owner!==rpArchiveAccountHandle||STATE.threads[thread.id]!==thread)return;
+      if(requiredValid&&!requiredValid())return;
       if(thread.messages.some(m=>m.stickerKey===key)||isPhoneBlocked(sender||thread.name))return;
-      // A main model reply may contain several SMS/GMSG parts: allow one sticker per floor.
+      // A high-frequency continuation/swipe is a new reply, while duplicate events are not.
       const floor=source?JSON.parse(source.key)?.[0]:null,floorKey=source?rpStickerFloorKey(source.key):null;
-      if(floorKey&&Object.values(STATE.threads).some(t=>t.messages.some(m=>m.type==='sticker'&&rpStickerFloorKey(m.stickerKey)===floorKey)))return;
+      if(floorKey&&Object.values(STATE.threads).some(t=>t.messages.some(m=>m.type==='sticker'&&rpStickerFloorKey(m.stickerKey)===floorKey&&(!frequent||!reply||!m.stickerReply||m.stickerReply===reply))))return;
       const message={id:'stk_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),type:'sticker',from:sender?'incoming':thread.id,
         ...(sender?{name:sender}:{}),time:resolvePhoneTime(time),text:'[表情包] '+entry.name,stickerKey:key,
-        ...(Number.isInteger(floor)?{stickerFloor:floor}:{}),sticker:{id:entry.id,format:entry.format,name:entry.name,owner}};
+        ...(Number.isInteger(floor)?{stickerFloor:floor,stickerReply:reply}:{}),sticker:{id:entry.id,format:entry.format,name:entry.name,owner}};
       const anchor=job.after?thread.messages.indexOf(job.after)+1:0;
       thread.messages.splice(job.after&&anchor===0?Math.min(job.position,thread.messages.length):anchor,0,message);
       // Re-anchor later image-only receipts sharing this point, regardless of verification order.
@@ -9430,6 +9442,39 @@ function rpQueueSticker(thread, ids, time, source, sender) {
     } catch (_) { /* Invalid/deleted identifiers never replace or interrupt normal text. */ }
     finally {if(rpStickerJobs.get(jobKey)===job)rpStickerJobs.delete(jobKey);}
   })();
+  return job.promise;
+}
+
+let rpStickerGeneration = null;
+async function rpCompleteStickerGeneration(index,type) {
+  const generation=rpStickerGeneration,ctx=getContext(),message=ctx?.chat?.[index];
+  if(!generation||generation.processing||!Number.isInteger(index)||index<generation.length-1||['quiet','impersonate','first_message'].includes(type)||!message||message.is_user||message.is_system||!String(message.mes||'').trim())return;
+  if(message===generation.previous&&String(message.mes)===generation.previousText)return;
+  const raw=String(message.mes),stamp=String(message.send_date||''),floorKey=JSON.stringify([index,stamp]);
+  const valid=()=>rpStickerGeneration===generation&&generation.task.valid()&&!generation.signal?.aborted&&isMochiPhoneEnabled()&&generation.owner===rpArchiveAccountHandle&&generation.slot===STATE.chatId&&getPhoneChatSlotKey(getContext())===generation.slot&&getContext()?.chat?.[index]===message&&String(message.mes)===raw;
+  if(!valid()||!rpPhoneContextReady(ctx))return;generation.processing=true;
+  const app=rpStickerApp();
+  if(!await app.prepare()||!valid()||app.store.state.prefs.frequency!=='high'||!app.store.state.prefs.enabled)return;
+  // Let a model-selected sticker finish verification before deciding whether one is missing.
+  await Promise.allSettled([...rpStickerJobs.values()].filter(job=>job.floorKey===floorKey).map(job=>job.promise));
+  if(!valid())return;
+  const reply=rpPhoneTextFingerprint(raw);
+  const hasSticker=()=>Object.values(STATE.threads).some(thread=>(thread.messages||[]).some(m=>m.type==='sticker'&&rpStickerFloorKey(m.stickerKey)===floorKey&&(!m.stickerReply||m.stickerReply===reply)));
+  if(hasSticker())return;
+  let target=null;
+  for(const thread of Object.values(STATE.threads))for(const item of thread.messages||[]){if(item.from==='user'||item.from==='system'||generation.previousReceipts.has(item)||rpStickerFloorKey(item.phoneSource?.key)!==floorKey)continue;target={thread,item,sender:rpIsGroupThread(thread)?item.name:null};}
+  const previous=target?.thread.messages.filter(m=>m.type==='sticker').at(-1)?.sticker?.id;
+  const id=app.frequentCandidate((target?.item.text||'')+'\n'+raw,previous);if(!id||!valid())return;
+  if(!target){
+    const sender=String(ctx.groupId!=null?message.name:getCurrentCharName(ctx)).trim();
+    if(!sender||isPhoneUserName(sender,ctx)||isForbiddenPhoneContactName(sender,ctx)||isPhoneBlocked(sender))return;
+    const prior=STATE._parseMessageIndex;let thread;try{STATE._parseMessageIndex=index;thread=findOrCreateThread(sender);}finally{STATE._parseMessageIndex=prior;}
+    if(!thread)return;target={thread,item:null,sender:null};
+  }
+  const source=target.item?.phoneSource||{key:JSON.stringify([index,stamp,0,'STICKER_AUTO',0]),signature:rpPhoneTextFingerprint(raw)};
+  const policyEpoch=app.store.state.policyEpoch;
+  const requiredValid=()=>valid()&&app.store.state.policyEpoch===policyEpoch&&app.store.state.prefs.enabled&&app.store.state.prefs.frequency==='high';
+  await rpQueueSticker(target.thread,[id],target.item?.time,source,target.sender,requiredValid);
 }
 
 let rpPhoneTools = null;
