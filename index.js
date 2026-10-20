@@ -1,6 +1,6 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261020-role-context-76';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
-import { createStickers } from './stickers.mjs?v=20261020-sticker-prompt-78';
+import { createStickers } from './stickers.mjs?v=20261020-sticker-entry-79';
 import { createSudoku } from './sudoku.mjs?v=20261019-joint-audit-73';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-contact-isolation-77';
