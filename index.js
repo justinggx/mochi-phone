@@ -3,7 +3,7 @@ import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261019-sticker-sort-74';
 import { createSudoku } from './sudoku.mjs?v=20261019-joint-audit-73';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261019-private-stickers-72';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-contact-isolation-77';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -13,6 +13,8 @@ const RP_SHOP_AVAILABLE = false;
 
 let rpPhoneArchive = createPhoneArchive();
 let rpArchiveAccountHandle = null;
+const RP_PHONE_CARD_ALIASES_KEY = 'mochi_phone_card_aliases_v1';
+let rpPhoneCardAliases = Object.create(null);
 const rpAccountStoragePrefix = () => rpArchiveAccountHandle ? 'mochi-phone-account-v1:' + encodeURIComponent(rpArchiveAccountHandle) + ':' : null;
 function rpIsLegacyPhoneKey(key) {
   if (String(key).startsWith('mochi-phone-desktop-scale-v1-')) return key === 'mochi-phone-desktop-scale-v1-' + encodeURIComponent(rpArchiveAccountHandle);
@@ -5638,6 +5640,7 @@ const rpModulesReady = (async function _rpLoadModules() {
     const ext = await import('../../../extensions.js');
     if (ext && ext.extension_settings) {
       _rp_ext_settings = ext.extension_settings;
+      rpPhoneCardAliases = Object.fromEntries(Object.entries(ext.extension_settings[RP_PHONE_CARD_ALIASES_KEY] || {}).filter(([key,value])=>key !== '__proto__' && typeof value === 'string'));
     }
   } catch(e) { console.warn('[Phone] 无法加载 extensions.js:', rpErrorInfo(e)); }
   try {
@@ -6284,12 +6287,12 @@ function buildStatePayload() {
     // CHAT_CHANGED 发出时核心上下文已指向新聊天，而这里仍在保存旧槽位。
     // 元信息也必须属于旧槽位，不能把新角色信息写入旧存档。
     const es = _extSettings();
-    const previousMeta = es && es[EXT_KEY] && es[EXT_KEY][STATE.chatId] && es[EXT_KEY][STATE.chatId]._slotMeta;
+    const previousMeta = STATE._slotMeta || (es && es[EXT_KEY] && es[EXT_KEY][STATE.chatId] && es[EXT_KEY][STATE.chatId]._slotMeta);
     const separator = STATE.chatId.indexOf('::');
     payload._slotMeta = Object.assign({}, previousMeta || {
       rawChatId: separator >= 0 ? STATE.chatId.slice(separator + 2) : STATE.chatId,
       characterId: null, charName: '', historySig: '',
-    }, { slotVersion: 3, slotKey: STATE.chatId });
+    }, { slotVersion: 4, slotKey: STATE.chatId });
   }
   return payload;
 }
@@ -6418,7 +6421,7 @@ function restorePhoneGameState(saved) {
 
 function flushStateNow() {
   rpRememberReading();
-  if (!STATE.chatId) return;
+  if (!STATE.chatId || STATE.chatId === 'default') return;
   if (PHONE_STATE_BLOCKED_SLOTS.has(STATE.chatId)) {
     warnPhoneStateRecovery();
     return;
@@ -6542,13 +6545,126 @@ function getPhoneChatSlotKey(ctx) {
   // 否则同一角色同一聊天在 char 一开口时就会被误判成“切到新对话”，
   // 进而触发 onChatChanged() → go('lock')，导致小手机自动退回锁屏。
   // historySig 仍保留给诊断/元数据使用，但不参与 slot key 判定。
+  if (ctx?.groupId != null) return `group_${encodeURIComponent(String(ctx.groupId))}::${rawChatId}`;
+  const avatar = ctx?.characters?.[ctx?.characterId]?.avatar;
+  if (avatar) return `card_${encodeURIComponent(rpPhoneCanonicalCardAvatar(avatar))}::${rawChatId}`;
   if (ctx?.characterId != null) return `char_${ctx.characterId}::${rawChatId}`;
   return `${rawChatId}`;
 }
 
+function rpPhoneCanonicalCardAvatar(avatar) {
+  let current = String(avatar), seen = new Set();
+  while (Object.hasOwn(rpPhoneCardAliases,current) && !seen.has(current)) {
+    seen.add(current); current=String(rpPhoneCardAliases[current]);
+  }
+  return current;
+}
+
+function rpRememberPhoneCardRename(oldAvatar, newAvatar) {
+  if (typeof oldAvatar !== 'string' || typeof newAvatar !== 'string' || !oldAvatar || !newAvatar || oldAvatar === newAvatar) return;
+  const root=rpPhoneCanonicalCardAvatar(oldAvatar);
+  // Trust only the host's successful rename event, never infer identity from equal names.
+  if (newAvatar !== root) rpPhoneCardAliases[newAvatar]=root;
+  else delete rpPhoneCardAliases[newAvatar];
+  const es=_extSettings();
+  if (es) { es[RP_PHONE_CARD_ALIASES_KEY]=Object.assign({},rpPhoneCardAliases); _saveSettings(); }
+}
+
 function getCurrentCharName(ctx) {
-  return (ctx?.name2 || (ctx?.characters && ctx?.characterId !== undefined
-    ? ctx.characters[ctx.characterId]?.name : null) || '').trim();
+  return ((ctx?.characters && ctx?.characterId != null
+    ? ctx.characters[ctx.characterId]?.name : null) || ctx?.name2 || '').trim();
+}
+
+let rpPhoneHistoryOwner = null;
+function rpPhoneContextReady(ctx, loaded = false) {
+  if (!ctx || (ctx.characterId == null && ctx.groupId == null)) return false;
+  const card = ctx.characters?.[ctx.characterId];
+  // Core changes the selection before its asynchronous chat load finishes.
+  if (ctx.groupId == null && card?.name && ctx.name2 && card.name !== ctx.name2) return false;
+  const slot = getPhoneChatSlotKey(ctx), chat = Array.isArray(ctx.chat) ? ctx.chat : [];
+  if (!loaded && rpPhoneHistoryOwner?.slot !== slot && rpPhoneHistoryOwner?.first && chat.includes(rpPhoneHistoryOwner.first)) return false;
+  rpPhoneHistoryOwner = { slot, first: chat[0] || null };
+  return true;
+}
+
+function rpPhoneStateOwnedBy(payload, ctx) {
+  const meta = payload?._slotMeta;
+  if (!meta) return true; // Unlabelled legacy copies receive conservative migration below.
+  if (meta.rawChatId != null && String(meta.rawChatId) !== String(getPhoneRawChatId(ctx))) return false;
+  if (meta.groupId != null || ctx?.groupId != null) {
+    if (meta.groupId != null) return ctx?.groupId != null && String(meta.groupId) === String(ctx.groupId);
+    return meta.slotVersion < 4 && meta.characterId == null && meta.slotKey === getPhoneRawChatId(ctx);
+  }
+  const avatar = ctx?.characters?.[ctx?.characterId]?.avatar;
+  if (meta.characterAvatar) return !!avatar && rpPhoneCanonicalCardAvatar(meta.characterAvatar) === rpPhoneCanonicalCardAvatar(avatar);
+  return !meta.charName || normalizePhonePersonName(meta.charName) === normalizePhonePersonName(getCurrentCharName(ctx));
+}
+
+function rpPhoneLegacySlotKeys(ctx) {
+  const raw = String(getPhoneRawChatId(ctx)), keys = new Set([`char_${ctx?.characterId}::${raw}`, raw]);
+  const es = _extSettings()?.[EXT_KEY] || {};
+  for (const key of Object.keys(es)) if (key.endsWith('::' + raw) && !key.endsWith('::corrupt-backup')) keys.add(key);
+  const prefix = rpAccountStoragePrefix();
+  try { if (prefix) for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (!key?.startsWith(prefix + 'rp-phone-v1-')) continue;
+    const slot = key.slice((prefix + 'rp-phone-v1-').length);
+    if (slot.endsWith('::' + raw)) keys.add(slot);
+  } } catch (_) { /* Server-owned legacy slots remain available without browser storage. */ }
+  keys.delete(getPhoneChatSlotKey(ctx));
+  return [...keys];
+}
+
+function rpPreservePhoneOwnerConflict(chatId, ctx) {
+  const key = `rp-phone-v1-${chatId}`, es = _extSettings();
+  let raw; try { raw=localStorage.getItem(key); } catch (_) {}
+  if (raw) {
+    let copy; try { copy=JSON.parse(raw); } catch (_) {}
+    if (copy && !rpPhoneStateOwnedBy(copy,ctx)) {
+      const backup=key+'::ownership-backup';
+      try { const prior=localStorage.getItem(backup); if (prior == null) localStorage.setItem(backup,raw); else if (prior !== raw) PHONE_STATE_PROTECTED_KEYS.add(key); }
+      catch (_) { PHONE_STATE_PROTECTED_KEYS.add(key); }
+    }
+  }
+  const stored=es?.[EXT_KEY]?.[chatId];
+  if (isPhoneStatePayload(stored) && !rpPhoneStateOwnedBy(stored,ctx)) {
+    const backup=chatId+'::ownership-backup', prior=es[EXT_KEY][backup];
+    if (prior == null) es[EXT_KEY][backup]=JSON.parse(JSON.stringify(stored));
+    else if (JSON.stringify(prior)!==JSON.stringify(stored)) { PHONE_STATE_BLOCKED_SLOTS.add(chatId); return false; }
+  }
+  return true;
+}
+
+function rpIsolateForeignPhoneThreads(payload, ctx) {
+  // Quarantine only proven cross-owner source copies. Keep ambiguous/edited/manual records.
+  const foreign = new Set(), currentName = normalizePhonePersonName(getCurrentCharName(ctx));
+  for (const saved of Object.values(_extSettings()?.[EXT_KEY] || {})) {
+    if (!saved?._slotMeta?.charName || normalizePhonePersonName(saved._slotMeta.charName) === currentName) continue;
+    for (const thread of Object.values(saved.threads || {})) for (const m of Array.isArray(thread?.messages) ? thread.messages : []) {
+      if (m?.phoneSource?.key && m.phoneSource?.signature) foreign.add(JSON.stringify([normalizePhonePersonName(thread.name),m.phoneSource.key,m.phoneSource.signature]));
+    }
+  }
+  if (!foreign.size) return;
+  const localSenders = new Set([currentName]);
+  for (const floor of ctx?.chat || []) {
+    if (floor?.is_user) continue;
+    const parts = getPhoneParseParts(String(floor?.mes || '').replace(/<think>[\s\S]*?<\/think>/gi,''));
+    for (const tag of [...parts.blocks, parts.outside].join('\n').matchAll(/<(?:SMS|GMSG|VOICE|GVOICE|MOMENTS|COMMENT|HONGBAO|GHONGBAO|SIMG|CALL)\b([^>]*)>/gi)) {
+      localSenders.add(normalizePhonePersonName(getTagAttrs(tag[1]).FROM || ''));
+    }
+  }
+  const cardText = normalizePhonePersonName(JSON.stringify(ctx?.characters?.[ctx?.characterId] || {}));
+  for (const [id, thread] of Object.entries(payload.threads || {})) {
+    const name = normalizePhonePersonName(thread.name), messages = thread.messages || [];
+    if (rpIsGroupThread(thread) || !name || localSenders.has(name) || cardText.includes(name) || !messages.length) continue;
+    if (thread.draft || thread.pendingMessages?.length || thread.pendingHostActions?.length || messages.some(m=>m.from === 'user')) continue;
+    if (!messages.every(m=>m.phoneSource && foreign.has(JSON.stringify([name,m.phoneSource.key,m.phoneSource.signature])))) continue;
+    // Keep the full record in recovery and leave the original legacy slot untouched.
+    payload.recovery ||= [];
+    payload.recovery.push({path:'threads.'+id,value:thread,reason:'cross-character-source'});
+    delete payload.threads[id];
+    if (payload.currentThread === id) payload.currentThread = null;
+  }
 }
 
 function isForbiddenPhoneContactName(nameRaw, ctx) {
@@ -6666,14 +6782,16 @@ function sanitizeThreadsForContext(threads, ctx) {
 }
 
 function enrichPayloadMeta(payload, ctx) {
-  payload.__version = 3;
+  payload.__version = 4;
   payload.__savedAt = Date.now();
   payload._slotMeta = {
-    slotVersion: 3,
+    slotVersion: 4,
     rawChatId: getPhoneRawChatId(ctx),
     slotKey: getPhoneChatSlotKey(ctx),
     historySig: getPhoneChatHistorySignature(ctx),
     characterId: ctx?.characterId ?? null,
+    characterAvatar: ctx?.characters?.[ctx?.characterId]?.avatar || null,
+    groupId: ctx?.groupId ?? null,
     charName: getCurrentCharName(ctx),
   };
   return payload;
@@ -6727,6 +6845,7 @@ async function setAvatarCompressed(key, dataUrl, editToken) {
 function autoAddCharContact() {
   try {
     const ctx = getContext();
+    if (!rpPhoneContextReady(ctx)) return;
     // 必须有真实 chat slot(排除 ST 初始页面 / 无对话状态)
     if (!getPhoneChatSlotKey(ctx) || getPhoneRawChatId(ctx) === 'default') return;
     const charName = ctx?.name2 || (ctx?.characters && ctx?.characterId !== undefined
@@ -6846,6 +6965,8 @@ function mergeDuplicateThreads() {
 // 不依赖 CHAT_CHANGED 是否触发
 function restorePhoneChatState(saved) {
   const s = rpNormalizePhoneState(saved || {});
+  rpIsolateForeignPhoneThreads(s, getContext());
+  STATE._slotMeta = s._slotMeta || null;
   STATE.recovery = s.recovery || [];
   STATE.deletedContacts = Object.assign({}, s.deletedContacts || {});
   STATE.threads = s.threads || DEFAULT_THREADS();
@@ -6905,6 +7026,7 @@ function switchPhoneChatSlot(newChatId) {
 }
 
 function syncToCurrentChat() {
+  if (!rpPhoneContextReady(getContext())) return;
   if (!switchPhoneChatSlot(getPhoneChatSlotKey(getContext()))) return;
   mergeGlobalAvatars();
   try { applyWallpaper(); } catch(e) {}
@@ -6982,6 +7104,7 @@ async function fetchServerSettings() {
 function rebuildContactsFromHistory(chatId) {
   try {
     const ctx = getContext();
+    if (!rpPhoneContextReady(ctx)) return;
     const currentId = getPhoneChatSlotKey(ctx);
     if (currentId !== chatId) return; // chatId 已变,放弃
     const msgs = ctx?.chat || [];
@@ -7624,7 +7747,7 @@ function warnPhoneStateRecovery() {
   console.warn('[Phone] damaged saved state preserved; automatic saving is paused for this slot until recovery');
   if (phoneStateRecoveryWarningShown) return;
   phoneStateRecoveryWarningShown = true;
-  if (typeof toastr !== 'undefined') toastr.warning('手机存档损坏，已保留原副本。此聊天的自动保存已暂停，请恢复存档后重新加载。', 'MochiPhone 存档保护', { timeOut: 0, extendedTimeOut: 0 });
+    if (typeof toastr !== 'undefined') toastr.warning('手机存档归属不符或内容异常，已保留原副本。此聊天的自动保存已暂停，请核对存档后重新加载。', 'MochiPhone 存档保护', { timeOut: 0, extendedTimeOut: 0 });
 }
 
 function preserveCorruptPhoneState(storageKey, raw) {
@@ -7799,6 +7922,7 @@ function loadState(chatId) {
   resetMomentsCtxCache(); // 切换聊天/加载新槽位时清缓存，避免跨角色卡串台
   try {
     const ctx = getContext();
+    if (ctx?.characterId == null && ctx?.groupId == null) return null;
     const rawChatId = getPhoneRawChatId(ctx);
     const es = _extSettings();
 
@@ -7809,7 +7933,12 @@ function loadState(chatId) {
       // slotVersion 3 的 key 已同时包含角色与聊天标识，正常加载时必须完整保留
       // 群聊和手工联系人。只有从旧 raw chatId key 迁移时才做防串台过滤。
       const loadedThreads = (parsed.threads && typeof parsed.threads === 'object' && !Array.isArray(parsed.threads)) ? parsed.threads : {};
-      parsed.threads = isLegacyMigration ? sanitizeThreadsForContext(loadedThreads, ctx) : loadedThreads;
+      parsed.threads = isLegacyMigration && !parsed._slotMeta?.charName && !parsed._slotMeta?.groupId ? sanitizeThreadsForContext(loadedThreads, ctx) : loadedThreads;
+      if (parsed.threads !== loadedThreads) {
+        parsed.recovery ||= [];
+        for (const [id, thread] of Object.entries(loadedThreads)) if (!parsed.threads[id]) parsed.recovery.push({path:'threads.'+id,value:thread,reason:'unverified-legacy-owner'});
+      }
+      rpIsolateForeignPhoneThreads(parsed, ctx);
       parsed.notifications = Array.isArray(parsed.notifications) ? parsed.notifications : [];
       parsed.moments = Array.isArray(parsed.moments) ? parsed.moments : [];
       parsed.diary = Array.isArray(parsed.diary) ? parsed.diary : [];
@@ -7826,12 +7955,13 @@ function loadState(chatId) {
       parsed = enrichPayloadMeta(parsed, ctx);
       if (savedAt == null) delete parsed.__savedAt;
       else parsed.__savedAt = savedAt;
+      const ownerPreserved = rpPreservePhoneOwnerConflict(chatId, ctx);
       try {
         if (!PHONE_STATE_PROTECTED_KEYS.has(`rp-phone-v1-${chatId}`)) localStorage.setItem(`rp-phone-v1-${chatId}`, JSON.stringify(parsed));
       } catch(e) {
         console.warn('[Phone] unable to refresh local state cache (non-critical)');
       }
-      if (es && preserveCorruptPhoneSettings(es, chatId)) {
+      if (es && ownerPreserved && preserveCorruptPhoneSettings(es, chatId)) {
         if (!es[EXT_KEY]) es[EXT_KEY] = {};
         es[EXT_KEY][chatId] = parsed;
         // 旧 raw chatId 副本留作回滚，迁移只写新的角色组合槽位。
@@ -7841,9 +7971,10 @@ function loadState(chatId) {
     };
 
     const storedEs = es && es[EXT_KEY] && es[EXT_KEY][chatId];
-    const currentEs = clonePhoneStatePayload(storedEs, 'extension_settings');
-    const currentLocal = readLocalPhoneState(`rp-phone-v1-${chatId}`, 'local');
-    const currentArchive = clonePhoneStatePayload(rpPhoneArchive.get(chatId), 'archive');
+    const owned = copy => copy && rpPhoneStateOwnedBy(copy, ctx) ? copy : null;
+    const currentEs = owned(clonePhoneStatePayload(storedEs, 'extension_settings'));
+    const currentLocal = owned(readLocalPhoneState(`rp-phone-v1-${chatId}`, 'local'));
+    const currentArchive = owned(clonePhoneStatePayload(rpPhoneArchive.get(chatId), 'archive'));
     const current = choosePhoneStateCopy(choosePhoneStateCopy(currentEs, currentLocal), currentArchive);
     if (current) {
       PHONE_STATE_BLOCKED_SLOTS.delete(chatId);
@@ -7852,18 +7983,21 @@ function loadState(chatId) {
 
     // 兼容旧版本：旧 key 只有 raw chatId，容易跨角色卡串台。
     // 迁移前按当前角色/当前历史过滤联系人，只保留安全数据。
-    if (rawChatId && rawChatId !== chatId) {
-      const legacyEs = clonePhoneStatePayload(es && es[EXT_KEY] && es[EXT_KEY][rawChatId], 'legacy extension_settings');
-      const legacyLocal = readLocalPhoneState(`rp-phone-v1-${rawChatId}`, 'legacy local');
-      const legacy = choosePhoneStateCopy(legacyEs, legacyLocal);
-      if (legacy) {
-        PHONE_STATE_BLOCKED_SLOTS.delete(chatId);
-        return _normalizeLoaded(legacy, rawChatId, true);
-      }
-      if ((es && es[EXT_KEY] && es[EXT_KEY][rawChatId] != null) || localStorage.getItem(`rp-phone-v1-${rawChatId}`) != null) {
-        PHONE_STATE_BLOCKED_SLOTS.add(chatId);
-        warnPhoneStateRecovery();
-      }
+    let legacy = null, legacyKey = null;
+    for (const key of rpPhoneLegacySlotKeys(ctx)) {
+      const copies = [clonePhoneStatePayload(es?.[EXT_KEY]?.[key], 'legacy extension_settings'),readLocalPhoneState(`rp-phone-v1-${key}`, 'legacy local'),clonePhoneStatePayload(rpPhoneArchive.get(key), 'legacy archive')];
+      // An unlabelled numeric key is unsafe after card-list reindexing; raw legacy keys
+      // still use the history-based compatibility filter, retaining rejected data.
+      const eligible = copies.map(copy=>owned(copy)).filter(copy=>copy && (copy._slotMeta?.charName || copy._slotMeta?.groupId != null || key === rawChatId || key === `char_${ctx?.characterId}::${rawChatId}`));
+      for (const copy of eligible) if (choosePhoneStateCopy(legacy,copy) === copy) { legacy=copy;legacyKey=key; }
+    }
+    if (legacy) {
+      PHONE_STATE_BLOCKED_SLOTS.delete(chatId);
+      return _normalizeLoaded(legacy, legacyKey, true);
+    }
+    if (rawChatId && rawChatId !== chatId && ((es?.[EXT_KEY]?.[rawChatId] != null && !isPhoneStatePayload(es[EXT_KEY][rawChatId])) || (localStorage.getItem(`rp-phone-v1-${rawChatId}`) != null && !readLocalPhoneState(`rp-phone-v1-${rawChatId}`,'legacy local')))) {
+      PHONE_STATE_BLOCKED_SLOTS.add(chatId);
+      warnPhoneStateRecovery();
     }
     if (storedEs != null || localStorage.getItem(`rp-phone-v1-${chatId}`) != null) {
       PHONE_STATE_BLOCKED_SLOTS.add(chatId);
@@ -8903,6 +9037,11 @@ async function rpInitBody() {
   }
   // FIX2: 监听聊天窗口切换
   if (liveES && liveET) rpRuntime.listen(liveES, liveET.CHAT_CHANGED, onChatChanged);
+  if (liveES && liveET?.CHARACTER_RENAMED) {
+    // Identity bookkeeping must also survive a temporarily disabled phone switch.
+    liveES.on(liveET.CHARACTER_RENAMED, rpRememberPhoneCardRename);
+    rpRuntime.own(()=>{ const remove=liveES.off || liveES.removeListener; remove?.call(liveES,liveET.CHARACTER_RENAMED,rpRememberPhoneCardRename); });
+  }
 
 
 
@@ -9093,6 +9232,7 @@ async function rpInitBody() {
 //  FIX2: 聊天切换 - 保存/恢复各窗口的手机状态
 // ================================================================
 function onChatChanged() {
+  if (!rpPhoneContextReady(getContext(), true)) return;
   if (!switchPhoneChatSlot(getPhoneChatSlotKey(getContext()))) return;
   mergeGlobalAvatars();
   try { applyWallpaper(); } catch(e) {}
@@ -9295,6 +9435,11 @@ function rpTools() {
     translationBusy:()=>Object.values(STATE.threads).some(t=>(t.messages||[]).some(m=>{const j=rpPhoneTranslationJobs.get(m);return j?.pending&&j.task.valid();})),
     openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
+    compatibleSlot: slot => {
+      if (slot === STATE.chatId) return true;
+      const ctx = getContext(), saved = _extSettings()?.[EXT_KEY]?.[slot];
+      return rpPhoneLegacySlotKeys(ctx).includes(slot) && !!saved?._slotMeta?.charName && rpPhoneStateOwnedBy(saved, ctx);
+    },
     blockedPost: (post,current) => post.from !== 'user' && blocked({name:post.name || post.user || post.author || post.from || ''},current),
     canRestore: () => !rpStickers?.busy() && !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
       && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
@@ -12744,6 +12889,7 @@ function rpConsumeImageTags(html, messageIndex) {
 function onMessageUpdatedForImages(messageIndex) {
   if (!isMochiPhoneEnabled()) return;
   const ctx = getContext();
+  if (!rpPhoneContextReady(ctx)) return;
   if (getPhoneChatSlotKey(ctx) !== STATE.chatId) syncToCurrentChat();
   const index = rpResolveMessageUpdatedIndex(messageIndex, ctx);
   const message = ctx?.chat?.[index];
@@ -12760,6 +12906,7 @@ function onAIMessage(_retryCount) {
     const _diagCtx1 = getContext();
     const _diagCtx2 = window.SillyTavern?.getContext?.();
     const ctx  = getContext();
+    if (!rpPhoneContextReady(ctx)) return;
     const realSlotKey = getPhoneChatSlotKey(ctx);
     if (realSlotKey && STATE.chatId !== realSlotKey) {
       console.warn('[Phone:slot] onAIMessage 前发现槽位不一致，先强制同步');
@@ -14294,6 +14441,7 @@ function rewriteAllHistoryPhoneBlocks() {
   if (!isMochiPhoneEnabled()) return;
   try {
     const ctx = getContext();
+    if (!rpPhoneContextReady(ctx)) return;
     const chat = ctx?.chat || [];
     const domMsgs = Array.from(document.querySelectorAll('.mes:not([is_user="true"])'));
     if (!domMsgs.length) return;
@@ -14380,6 +14528,8 @@ function parsePhoneMessageParts(parts, messageIndex, legacyReplay = false) {
   return rpBatchPhoneUi(() => rpParsePhonePartsOrdered(parts, messageIndex, legacyReplay));
 }
 function rpParsePhonePartsOrdered(parts, messageIndex, legacyReplay = false) {
+  const ctx = getContext();
+  if (!rpPhoneContextReady(ctx) || STATE.chatId !== getPhoneChatSlotKey(ctx)) return 0;
   if (!parts.blocks.length) return parsePhone(parts.normalized, { messageIndex, blockIndex: 0, legacyReplay }) || 0;
   let count = 0;
   parts.blocks.forEach((block, blockIndex) => {
@@ -17385,7 +17535,8 @@ async function getMomentsCtx() {
 
   const now = Date.now();
   const ctx = getContext();
-  const chatId = ctx?.chatId || (ctx?.characterId != null ? `char_${ctx.characterId}` : 'default');
+  if (!rpPhoneContextReady(ctx) || STATE.chatId !== getPhoneChatSlotKey(ctx)) throw rpPhoneApiError('context');
+  const chatId = getPhoneChatSlotKey(ctx);
   if (_getMomentsCtxCache && _getMomentsCtxCacheChatId === chatId && (now - _getMomentsCtxCacheTime) < 30000) {
     return _getMomentsCtxCache;
   }
@@ -17475,12 +17626,16 @@ async function _doGetMomentsCtx(chatIdHint) {
     if (!npcPersonaDisplayNames[k]) npcPersonaDisplayNames[k] = name;
   };
 
-  // 1. 从角色卡提取(适用于有角色卡的 NPC)
+  // 1. Only explicit members of the active native group may supply other cards.
+  // A same-name phone contact does not authorize reading an independently installed card.
   try {
+    const group = ctx?.groupId != null ? (ctx.groups || []).find(g=>String(g.id)===String(ctx.groupId)) : null;
+    const members = new Set(group?.members || []);
     const chars = Array.isArray(ctx?.characters)
       ? ctx.characters
       : (ctx?.characters && typeof ctx.characters === 'object' ? Object.values(ctx.characters) : []);
     chars.forEach(ch => {
+      if (!ch?.avatar || !members.has(ch.avatar)) return;
       const name = (ch?.name || '').trim();
       if (!name || name === charName) return;
       // FIX: 只收集当前聊天中实际出现过的角色，或当前槽位有 thread 的角色
@@ -17512,8 +17667,10 @@ async function _doGetMomentsCtx(chatIdHint) {
     try {
       const charObj = (ctx?.characters && ctx?.characterId !== undefined)
         ? ctx.characters[ctx.characterId] : (ctx?.char || null);
-      const wiName = charObj?.data?.extensions?.world || charObj?.extensions?.world || '';
-      if (wiName && typeof ctx.loadWorldInfo === 'function') {
+      const bound = charObj?.data?.extensions?.world || charObj?.extensions?.world || '';
+      const chatBound = ctx?.chatMetadata?.world_info;
+      const wiNames = [...new Set([bound,chatBound].filter(n=>typeof n==='string' && n))];
+      for (const wiName of wiNames) if (typeof ctx.loadWorldInfo === 'function') {
         const wiData = await rpGuardAwait(ctx.loadWorldInfo(wiName), rpTask);
         if (wiData?.entries) {
           Object.values(wiData.entries).forEach(e => {
@@ -17523,23 +17680,16 @@ async function _doGetMomentsCtx(chatIdHint) {
           });
         }
       }
+      if (!bound) {
+        const embedded = charObj?.data?.character_book || charObj?.character_book;
+        for (const e of Object.values(embedded?.entries || {})) if (e && e.enabled !== false && !e.disable && !e.disabled && (e.content || e.text)) wiTexts.push(e.content || e.text);
+      }
     } catch(e) {
     if (!rpTask.valid()) return;
  console.warn('[getMomentsCtx] loadWorldInfo failed:', rpErrorInfo(e)); }
 
-    // 2b. 兜底:ctx 注入文本(已触发词条)
-    [ctx?.worldInfoBefore, ctx?.worldInfoAfter, ctx?.world_info, ctx?.lorebook]
-      .filter(Boolean).forEach(s => wiTexts.push(String(s)));
-
-    // 2c. extension_prompts
-    try {
-      const ep = window.extension_prompts || {};
-      Object.values(ep).forEach(p => { if (p?.value) wiTexts.push(String(p.value)); });
-    } catch(e) {
-    if (!rpTask.valid()) return;
-}
-
-    // Do not scan unrelated cached books: only the bound book and injected context above.
+    // Unscoped world-info/extension-prompts can still belong to a previously open card.
+    // Only explicit current bindings and embedded current-card lore are candidates.
 
     const totalLen = wiTexts.reduce((s,t) => s + t.length, 0);
 

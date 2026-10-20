@@ -412,7 +412,7 @@ export function createPhoneTools(api) {
     if(typeof text!=='string'||text.length>64*1024*1024)throw new Error('请选择64MB以内的JSON备份。');
     let value;try{value=JSON.parse(text);}catch(_){throw new Error('无法读取JSON备份，当前数据未改变。');}
     if(!object(value)||value.format!=='mochi-phone-backup'||value.version!==1||!object(value.origin)||!object(value.data)||!object(value.data.threads))throw new Error('文件不是受支持的小手机备份。');
-    if(value.origin.account!==api.account()||value.origin.slot!==state().chatId)throw new Error('请切换到备份对应的账号和聊天后重试。');
+    if(value.origin.account!==api.account()||!(value.origin.slot===state().chatId||api.compatibleSlot?.(value.origin.slot)))throw new Error('请切换到备份对应的账号和聊天后重试。');
     for(const field of ['moments','diary','xhsFeed','themeStudioMessages'])if(value.data[field]!==undefined&&!Array.isArray(value.data[field]))throw new Error('备份记录格式不完整。');
     if(value.data.bankData!=null&&!object(value.data.bankData))throw new Error('备份银行卡记录格式不完整。');
     for(const field of ['diary','themeStudioMessages'])if((value.data[field]||[]).some(item=>!object(item)))throw new Error('备份记录格式不完整。');
@@ -433,7 +433,7 @@ export function createPhoneTools(api) {
     value.data=portable(value.data);return value;
   }
   function planMerge(backup, current=api.snapshot()) {
-    if(backup.origin.account!==api.account()||backup.origin.slot!==state().chatId)throw new Error('备份与当前账号或聊天不一致。');
+    if(backup.origin.account!==api.account()||!(backup.origin.slot===state().chatId||api.compatibleSlot?.(backup.origin.slot)))throw new Error('备份与当前账号或聊天不一致。');
     const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,agreements:0,themeMessages:0,skipped:0};
     result.threads ||= {};
     for(const[id,thread]of Object.entries(source.threads)){
