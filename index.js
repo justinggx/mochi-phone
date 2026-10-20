@@ -1,6 +1,6 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261020-role-context-76';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
-import { createStickers } from './stickers.mjs?v=20261019-sticker-sort-74';
+import { createStickers } from './stickers.mjs?v=20261020-sticker-prompt-78';
 import { createSudoku } from './sudoku.mjs?v=20261019-joint-audit-73';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-contact-isolation-77';
@@ -5953,6 +5953,19 @@ function refreshMochiPrompt() {
   } catch(e) { console.warn('[Phone] GMSG extension prompt refresh failed', rpErrorInfo(e)); }
 }
 
+async function rpPrepareMochiPrompt(type, options = {}, dryRun = false) {
+  if (!isMochiPhoneEnabled()) { refreshMochiPrompt(); return; }
+  // Only real main-floor replies wait for library metadata. No additional model call.
+  if (type === 'quiet' || type === 'impersonate' || dryRun) { refreshMochiPrompt(); return; }
+  const ctx = getContext();
+  if (!rpPhoneContextReady(ctx)) return;
+  if (STATE.chatId !== getPhoneChatSlotKey(ctx)) syncToCurrentChat();
+  const task = rpRuntime.task();
+  try { await rpGuardAwait(rpStickerApp().prepare(),task,2500); }
+  catch (_) { if (!task.valid()) return; }
+  if (task.valid()) refreshMochiPrompt();
+}
+
 function applyMochiLaunchSettings() {
   const st = getMochiLaunchSettings();
   const enabled = st.enabled !== false;
@@ -9006,6 +9019,8 @@ async function rpInitBody() {
   // event_types 可能在 context 里叫 eventTypes 或 event_types
   const liveET = (liveCtx && (liveCtx.eventTypes || liveCtx.event_types)) || event_types;
   if (liveES && liveET) {
+    const prepareEvent = liveET.GENERATION_AFTER_COMMANDS || liveET.GENERATION_STARTED;
+    if (prepareEvent) rpRuntime.listen(liveES,prepareEvent,rpPrepareMochiPrompt);
     const aiEvtKeys = ['MESSAGE_RECEIVED', 'GENERATION_ENDED', 'MESSAGE_SWIPED'];
     aiEvtKeys.forEach(k => {
       const ev = liveET[k];
@@ -9232,6 +9247,8 @@ async function rpInitBody() {
 //  FIX2: 聊天切换 - 保存/恢复各窗口的手机状态
 // ================================================================
 function onChatChanged() {
+  // Host clearChat() resets extension_prompts even when a chat reload keeps its slot.
+  refreshMochiPrompt();
   if (!rpPhoneContextReady(getContext(), true)) return;
   if (!switchPhoneChatSlot(getPhoneChatSlotKey(getContext()))) return;
   mergeGlobalAvatars();
@@ -9376,7 +9393,7 @@ function rpStickerApp() {
     document, runtime: () => rpRuntime, fetch: (...args) => fetch(...args),
     account: () => rpArchiveAccountHandle, slot: () => STATE.chatId, view: () => STATE.currentView,
     headers: () => getContext()?.getRequestHeaders?.() || _rp_script_mod?.getRequestHeaders?.() || {'Content-Type':'application/json'},
-    context: () => String(getContext()?.chat?.slice(-3).map(m=>String(m.mes||'')).join('\n')||'').slice(-1500),
+    context: () => [String(getContext()?.chat?.slice(-3).map(m=>String(m.mes||'')).join('\n')||''),String(document.getElementById('send_textarea')?.value||'')].join('\n').slice(-1500),
     navigate: go, dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog,
     changed: refreshMochiPrompt, repaint: () => {if(STATE.currentView==='thread')renderBubbles(STATE.currentThread);},
   });
