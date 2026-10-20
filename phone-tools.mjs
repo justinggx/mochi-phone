@@ -108,7 +108,10 @@ function clean(value, depth = 0) {
 }
 function portable(value) {
   const result = {};
-  for (const field of fields) if (value[field] !== undefined) result[field] = clean(value[field]);
+  for (const field of fields) if (value[field] !== undefined) {
+    const item=field==='phoneTools'&&object(value[field])?Object.fromEntries(Object.entries(value[field]).filter(([name])=>name!=='agreements')):value[field];
+    result[field]=clean(item);
+  }
   for (const thread of Object.values(result.threads || {})) {
     delete thread.pendingHostActions; // A restored file must never replay host submissions.
   }
@@ -162,28 +165,20 @@ function mergeComments(target, source, stats) {
 }
 
 // Preserve damaged tool data before repairing its usable projection.
-function validPhoneReminder(value) {
-  if(!Number.isFinite(value))return false;
-  const date=new Date(value),year=date.getUTCFullYear();
-  return Number.isFinite(date.getTime())&&year>=1&&year<=9999;
-}
 function normalizePhoneToolData(value,recovery) {
   const preserve=(path,value)=>recovery.push({path,value:clone(value)});
   if(value!==undefined&&!object(value))preserve('phoneTools',value);
   const result=object(value)?clone(value):{};
-  for(const field of ['bookmarks','agreements']) {
-    if(!Array.isArray(result[field])){if(result[field]!==undefined)preserve('phoneTools.'+field,result[field]);result[field]=[];}
-    result[field]=result[field].filter((entry,index)=>{
-      const path='phoneTools.'+field+'['+index+']';
-      if(!object(entry)||typeof entry.threadId!=='string'||typeof entry.messageId!=='string'||typeof entry.text!=='string'||(field==='agreements'&&(typeof entry.id!=='string'||typeof entry.title!=='string'))){preserve(path,entry);return false;}
-      if(field==='agreements') {
-        if(entry.dueAt!=null&&!validPhoneReminder(entry.dueAt)){preserve(path+'.dueAt',entry.dueAt);entry.dueAt=null;}
-        for(const name of ['createdAt','updatedAt','remindedDue'])if(entry[name]!=null&&!validPhoneReminder(entry[name])){preserve(path+'.'+name,entry[name]);entry[name]=null;}
-        if(entry.done!==undefined&&typeof entry.done!=='boolean'){preserve(path+'.done',entry.done);entry.done=false;}
-      }
-      return true;
-    });
+  // Retired records stay in local recovery only; they have no active feature or reminders.
+  if(Object.hasOwn(result,'agreements')){
+    if(!Array.isArray(result.agreements)||result.agreements.length)preserve('phoneTools.agreements',result.agreements);
+    delete result.agreements;
   }
+  if(!Array.isArray(result.bookmarks)){if(result.bookmarks!==undefined)preserve('phoneTools.bookmarks',result.bookmarks);result.bookmarks=[];}
+  result.bookmarks=result.bookmarks.filter((entry,index)=>{
+    if(!object(entry)||typeof entry.threadId!=='string'||typeof entry.messageId!=='string'||typeof entry.text!=='string'){preserve('phoneTools.bookmarks['+index+']',entry);return false;}
+    return true;
+  });
   result.version=1;return result;
 }
 
@@ -256,7 +251,7 @@ export function createPhoneTools(api) {
   }
   const toolsState=()=> {
     const current=state();
-    if(!object(current.phoneTools)||!Array.isArray(current.phoneTools.bookmarks)||!Array.isArray(current.phoneTools.agreements))current.phoneTools=normalizePhoneToolData(current.phoneTools,current.recovery ||= []);
+    if(!object(current.phoneTools)||!Array.isArray(current.phoneTools.bookmarks)||Object.hasOwn(current.phoneTools,'agreements'))current.phoneTools=normalizePhoneToolData(current.phoneTools,current.recovery ||= []);
     return state().phoneTools;
   };
   const info=text=>api.notify(text);
@@ -308,7 +303,7 @@ export function createPhoneTools(api) {
       {label:'消息收藏',run:()=>{openBookmarks(thread.id);return false;}},
       {label:'自动翻译'+(thread.phoneAutoTranslate?.enabled?'（已开启）':''),run:()=>{conversation.openAuto(thread);return false;}},
       {label:'聊天长图',run:()=>{conversation.openExport(thread);return false;}},
-      {label:'剧情约定',run:()=>{conversation.openAgreements(thread.id);return false;}},{label:'关闭'}
+      {label:'关闭'}
     ]);
   }
   function sourceOf(entry) {
@@ -350,7 +345,6 @@ export function createPhoneTools(api) {
     api.dialog('信息操作',node('div').append(node('p','rp-feature-preview',snapshot(thread,message).text.slice(0,240))),[
       {label:'引用回复',run:()=>{if(!live())return;thread.draftQuote=snapshot(thread,message);api.save();api.closeDialog();renderReply();$('#rp-input').trigger('focus');return false;}},
       {label:saved?'取消收藏':'收藏消息',run:()=>{if(!live())return;const items=toolsState().bookmarks;if(saved){const i=items.indexOf(saved);if(i>=0)items.splice(i,1);}else items.push({...snapshot(thread,message),savedAt:Date.now(),id:uid()});api.save();}},
-      {label:'加入约定',run:()=>{if(live())conversation.addAgreement(thread,message);return false;}},
       {label:'导出长图',run:()=>{if(live())conversation.openExport(thread,message);return false;}},
       {label:'关闭'}
     ]);
@@ -426,7 +420,6 @@ export function createPhoneTools(api) {
       if(thread.draft!==undefined&&typeof thread.draft!=='string')throw new Error('备份草稿格式不完整。');
       for(const m of thread.messages)for(const key of ['text','name','from','type','time','src','voiceText','place'])if(m[key]!==undefined&&typeof m[key]!=='string')throw new Error('备份消息字段格式不完整。');
     }
-    if(value.data.phoneTools?.agreements!==undefined&&(!Array.isArray(value.data.phoneTools.agreements)||value.data.phoneTools.agreements.some(e=>!object(e)||typeof e.id!=='string'||typeof e.threadId!=='string'||typeof e.messageId!=='string'||typeof e.text!=='string'||typeof e.title!=='string'||(e.dueAt!=null&&!validPhoneReminder(e.dueAt)))))throw new Error('备份约定清单格式不完整。');
     for(const t of Object.values(value.data.threads))if(t.phoneAutoTranslate!==undefined&&(!object(t.phoneAutoTranslate)||typeof t.phoneAutoTranslate.enabled!=='boolean'||!Array.isArray(t.phoneAutoTranslate.known)||t.phoneAutoTranslate.known.some(k=>typeof k!=='string')))throw new Error('备份自动翻译设置格式不完整。');
     if(value.data.sudoku!=null&&(!object(value.data.sudoku)||(value.data.sudoku.round!=null&&(!object(value.data.sudoku.round)||!['givens','values','notes','helped'].every(k=>Array.isArray(value.data.sudoku.round[k])&&value.data.sudoku.round[k].length===81)))))throw new Error('备份数独记录格式不完整。');
     if(value.data.gomoku!=null&&(!object(value.data.gomoku)||!Array.isArray(value.data.gomoku.log)||value.data.gomoku.log.some(m=>!object(m)||typeof m.text!=='string'||!['user','char','system'].includes(m.role))||(value.data.gomoku.round!=null&&(!object(value.data.gomoku.round)||!Array.isArray(value.data.gomoku.round.moves)))))throw new Error('备份五子棋记录格式不完整。');
@@ -434,7 +427,7 @@ export function createPhoneTools(api) {
   }
   function planMerge(backup, current=api.snapshot()) {
     if(backup.origin.account!==api.account()||!(backup.origin.slot===state().chatId||api.compatibleSlot?.(backup.origin.slot)))throw new Error('备份与当前账号或聊天不一致。');
-    const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,agreements:0,themeMessages:0,skipped:0};
+    const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,themeMessages:0,skipped:0};
     result.threads ||= {};
     for(const[id,thread]of Object.entries(source.threads)){
       if(api.blocked(thread,current)){stats.skipped++;continue;}
@@ -457,12 +450,9 @@ export function createPhoneTools(api) {
         return post;
       });stats.skipped+=(source[field]||[]).length-records.length;mergeList(result[field],records,stats,key,field!=='diary');
     }
-    result.phoneTools ||= {version:1,bookmarks:[]};result.phoneTools.bookmarks ||= [];
+    result.phoneTools=normalizePhoneToolData(result.phoneTools,result.recovery ||= []);
     const bookmarks=source.phoneTools?.bookmarks||[];const known=new Set(result.phoneTools.bookmarks.map(e=>JSON.stringify([e.threadId,e.messageId])));
     for(const entry of bookmarks)if(object(entry)&&typeof entry.threadId==='string'&&typeof entry.messageId==='string'&&typeof entry.text==='string'){const key=JSON.stringify([entry.threadId,entry.messageId]);if(!known.has(key)){result.phoneTools.bookmarks.push(clone(entry));known.add(key);stats.bookmarks++;}}
-    result.phoneTools.agreements ||= [];
-    const agreementIds=new Set(result.phoneTools.agreements.map(e=>e.id));
-    for(const e of source.phoneTools?.agreements||[])if(object(e)&&typeof e.id==='string'&&!agreementIds.has(e.id)){result.phoneTools.agreements.push(clone(e));agreementIds.add(e.id);stats.agreements++;}
     // Importing history must never start automatic translation requests.
     for(const t of Object.values(result.threads))if(t.phoneAutoTranslate){if(!current.threads?.[t.id])t.phoneAutoTranslate.enabled=false;else t.phoneAutoTranslate.known=[...new Set([...(t.phoneAutoTranslate.known||[]),...t.messages.map(m=>{if(m.id==null)m.id=uid();return String(m.id);})])];}
     for(const field of ['avatars','nameAliases']){result[field] ||= {};for(const[key,value]of Object.entries(source[field]||{}))if(!Object.hasOwn(result[field],key))result[field][key]=clone(value);}
@@ -528,7 +518,7 @@ export function createPhoneTools(api) {
   function previewBackup(backup) {
     const task=api.runtime().task(),origin=signature(),plan=planMerge(backup),s=plan.stats,content=node('div'),status=node('p','rp-feature-note');
     const token={valid:()=>task.valid()&&!!content[0]?.isConnected};
-    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏、'+s.agreements+' 条约定及'+s.themeMessages+' 条主题对话'+(s.gomokuMessages?'、'+s.gomokuMessages+' 条五子棋对话':'')+(s.gomokuRound?'及缺失的五子棋棋局':'')+(s.sudokuRound?'及缺失的数独局面':'')+'。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
+    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏及'+s.themeMessages+' 条主题对话'+(s.gomokuMessages?'、'+s.gomokuMessages+' 条五子棋对话':'')+(s.gomokuRound?'及缺失的五子棋棋局':'')+(s.sudokuRound?'及缺失的数独局面':'')+'。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
     let running=false;
     api.dialog('恢复预览',content,[{label:'取消'},{label:'合并恢复',primary:true,run:()=>{if(running)return false;running=true;status.text('正在备份并校验…');void restoreBackup(backup,origin,token).then(ok=>{if(ok)api.closeDialog();else if(token.valid()){running=false;status.text('未合并，请检查提示或重新选择备份。');}}).catch(()=>{if(token.valid()){running=false;status.text('恢复未完成，原存档与自动备份仍保留。');}});return false;}}]);
   }
@@ -578,12 +568,7 @@ export function createConversationFeatures(api) {
   const translated=m=>api.cached(m)?.text||'';
   const searchable=m=>[m.text,m.voiceText,m.note,m.place,m.amount,translated(m)].filter(v=>v!=null).join(' ');
   const sender=(t,m)=>m.from==='user'?'我':m.name||t.name;
-  const sourceName=e=>typeof e.name==='string'&&e.name?e.name:'原消息';
-  const sourceThread=e=>typeof e.threadName==='string'&&e.threadName?e.threadName:state().threads[e.threadId]?.name||'原会话';
   const senderId=(t,m)=>JSON.stringify(m.from==='user'?['user']:['person',String(m.name||t.name)]);
-  const validEntry=e=>object(e)&&typeof e.id==='string'&&typeof e.threadId==='string'&&typeof e.messageId==='string'&&typeof e.text==='string'&&typeof e.title==='string';
-  const agreements=()=>api.toolsState().agreements;
-  const origin=e=>{const t=state().threads[e.threadId];return {thread:t,message:t?.messages?.find(m=>String(m.id)===e.messageId)};};
   const field=(label,control)=>node('label','rp-conv-field').append(node('span','',label),control);
   const note=text=>node('p','rp-feature-note',text);
   const checkbox=(id,label,checked=false)=>{const input=node('input').attr({type:'checkbox',id}).prop('checked',checked);return {input,label:node('label','rp-conv-check').append(input,node('span','',label))};};
@@ -691,53 +676,6 @@ export function createConversationFeatures(api) {
     input.on('keydown',event=>{if(event.key==='Enter'&&!event.originalEvent?.isComposing&&event.keyCode!==229){event.preventDefault();if(searchTimer)api.runtime().clearTimer(searchTimer);render();}});
     api.dialog('搜索',content,[{label:'关闭'}]);render();
   }
-  function addAgreement(t,m) {
-    if(!liveThread(t)||!t.messages.includes(m))return;
-    key(m);editAgreement(null,{...api.snapshot(t,m),id:uid(),title:api.snapshot(t,m).text.slice(0,100),createdAt:Date.now(),done:false,dueAt:null});
-  }
-  function editAgreement(entry,draft=entry) {
-    const token=api.runtime().task(),content=node('div'),title=node('input','rp-feature-input').attr({id:'rp-agreement-title',maxlength:160,'aria-label':'约定内容'}).val(draft.title),due=node('input','rp-feature-input').attr({id:'rp-agreement-due',type:'datetime-local','aria-label':'提醒时间'}),status=note('');
-    if(validPhoneReminder(draft.dueAt)){const d=new Date(draft.dueAt);due.val(new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16));}
-    content.append(field('约定',title),field('提醒时间（可选）',due),note('按设备本地时间设置；仅在酒馆页面打开、可见且处于当前聊天时提示。'),node('div','rp-conv-source',sourceName(draft)+'：'+draft.text),status);
-    api.dialog(entry?'编辑约定':'加入剧情约定',content,[{label:'取消'},{label:'保存',primary:true,run:()=>{
-      if(!token.valid()||!content[0].isConnected)return;
-      const text=String(title.val()||'').trim(),value=String(due.val()||''),time=value?new Date(value).getTime():null;
-      if(!text||text.length>160){status.text('请输入160字以内的约定。');return false;}
-      if(value&&!validPhoneReminder(time)){status.text('请选择有效的提醒时间。');return false;}
-      if(entry&&!agreements().includes(entry)){status.text('该约定已不存在，请重新打开清单。');return false;}
-      const next={...draft,title:text,dueAt:time,updatedAt:Date.now(),remindedDue:entry?.dueAt===time?entry.remindedDue:null};
-      if(entry)Object.assign(entry,next);else agreements().push(next);
-      api.save();openAgreements(draft.threadId);return false;
-    }}]);
-  }
-  function openAgreements(filter='') {
-    const token=api.runtime().task(),scope=node('select','rp-tools-select').attr({'aria-label':'约定会话',id:'rp-agreement-scope'}).append(node('option','','全部会话').val('')),statusFilter=node('select','rp-tools-select').attr({'aria-label':'约定状态',id:'rp-agreement-status'}).append(node('option','','待完成').val('open'),node('option','','已完成').val('done'),node('option','','全部').val('all')),list=node('div'),content=node('div').append(field('范围',scope),field('状态',statusFilter),list);
-    const names=new Map(agreements().filter(validEntry).map(e=>[e.threadId,sourceThread(e)]));for(const[id,name]of names)scope.append(node('option','',name).val(id));scope.val(names.has(filter)?filter:'');
-    let limit=50;
-    function render() {
-      if(!token.valid())return;list.empty();
-      const entries=agreements().filter(e=>validEntry(e)&&(!scope.val()||scope.val()===e.threadId)&&(statusFilter.val()==='all'||!!e.done===(statusFilter.val()==='done'))).slice().sort((a,b)=>(Number.isFinite(a.dueAt)?a.dueAt:Infinity)-(Number.isFinite(b.dueAt)?b.dueAt:Infinity)||b.createdAt-a.createdAt);
-      if(!entries.length)list.append(note('暂无符合条件的约定。在消息“⋯”中选择“加入约定”。'));
-      for(const entry of entries.slice(0,limit)) {
-        const row=node('div','rp-saved-message rp-agreement'),live=origin(entry),complete=checkbox('rp-agreement-'+entry.id,entry.title,!!entry.done);
-        complete.input.on('change',()=>{if(!token.valid()||!agreements().includes(entry))return;entry.done=complete.input.prop('checked');entry.updatedAt=Date.now();api.save();render();});
-        row.append(complete.label,note(sourceThread(entry)+(Number.isFinite(entry.dueAt)?' · '+new Date(entry.dueAt).toLocaleString():'')),node('div','rp-conv-source',sourceName(entry)+'：'+entry.text));
-        if(!live.message)row.append(note('原消息已删除，约定快照仍保留。'));
-        row.append(node('div','rp-tools-buttons').append(button('原消息',()=>{if(token.valid()&&agreements().includes(entry))api.jump(entry);}).prop('disabled',!live.message),button('编辑',()=>{if(token.valid()&&agreements().includes(entry))editAgreement(entry);}),button('删除',()=>{
-          api.dialog('删除约定',node('p','',entry.title),[{label:'取消',run:()=>{openAgreements(filter);return false;}},{label:'删除',danger:true,run:()=>{const items=agreements(),i=items.indexOf(entry);if(i>=0){items.splice(i,1);api.save();}openAgreements(filter);return false;}}]);
-        })));list.append(row);
-      }
-      if(entries.length>limit)list.append(button('再显示50条',()=>{limit+=50;render();}));
-    }
-    scope.add(statusFilter).on('change',()=>{limit=50;render();});api.dialog('剧情约定',content,[{label:'关闭'}]);render();
-  }
-  function checkReminders(now=Date.now()) {
-    if(doc.visibilityState==='hidden'||!state().chatId||!api.runtime().task().valid())return 0;
-    const due=agreements().filter(e=>validEntry(e)&&!e.done&&Number.isFinite(e.dueAt)&&e.dueAt<=now&&e.remindedDue!==e.dueAt);
-    if(!due.length)return 0;
-    for(const e of due)e.remindedDue=e.dueAt;
-    api.save();info('剧情约定到时：'+due.slice(0,3).map(e=>e.title).join('；')+(due.length>3?' 等 '+due.length+' 项':''));return due.length;
-  }
   function exportRecords(t,messages,options={}) {
     if(!liveThread(t)||!messages.length||messages.length>30||messages.some(m=>!t.messages.includes(m)))throw Error('请选择1–30条仍存在的消息。');
     const aliases=new Map();let count=0;
@@ -838,7 +776,6 @@ export function createConversationFeatures(api) {
     api.dialog('长图预览',content,[{label:'返回选择',run:()=>{back();return false;}},{label:'保存图片',primary:true,run:()=>{const a=doc.createElement('a');a.href=url;a.download='MochiPhone-chat-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';doc.body.append(a);try{downloaded=true;a.click();}catch(_){info('请长按预览图片，选择保存。');}finally{a.remove();}return false;}}]);observer.observe(doc.documentElement,{childList:true,subtree:true});exportCleanup=cleanup;
   }
   function mergeContacts(keep,drop) {
-    for(const e of agreements())if(e.threadId===drop.id){e.threadId=keep.id;e.threadName=keep.name;}
     const a=keep.phoneAutoTranslate,b=drop.phoneAutoTranslate;
     if(a||b){const chosen=(b?.changedAt||0)>(a?.changedAt||0)?b:a;keep.phoneAutoTranslate={...chosen,known:[...new Set([...(a?.known||[]),...(b?.known||[]),...(keep.messages||[]).map(key),...(drop.messages||[]).map(key)])]};}
   }
@@ -847,12 +784,7 @@ export function createConversationFeatures(api) {
   function reset() {clearSearch();exportCleanup?.();}
   function mount() {
     if(mounted===api.runtime())return;mounted=api.runtime();
-    const slot=$('#rp-settings-bookmark-slot');
-    if(!doc.getElementById('rp-settings-agreements')){
-      const copy=node('span','rp-settings-copy').append(node('span','rp-settings-label','剧情约定'),node('span','rp-settings-hint','手动记录约定、完成状态与提醒'));
-      node('button','rp-settings-item').attr({id:'rp-settings-agreements',type:'button'}).append(copy,node('span','rp-settings-chevron','›').attr('aria-hidden','true')).on('click',()=>openAgreements()).appendTo(slot);
-    }
-    mounted.timer(()=>{void pumpAuto();checkReminders();},1200,true,[],'lifetime');mounted.own(reset);
+    mounted.timer(()=>{void pumpAuto();},1200,true,[],'lifetime');mounted.own(reset);
   }
-  return {mount,reset,onOpen,onNavigate,refreshSearch:paintSearch,setAuto,openAuto,pumpAuto,searchMessages,openSearch,clearSearch,addAgreement,editAgreement,openAgreements,checkReminders,agreements,exportRecords,wrapLines,makeLongImage,openExport,mergeContacts};
+  return {mount,reset,onOpen,onNavigate,refreshSearch:paintSearch,setAuto,openAuto,pumpAuto,searchMessages,openSearch,clearSearch,exportRecords,wrapLines,makeLongImage,openExport,mergeContacts};
 }
