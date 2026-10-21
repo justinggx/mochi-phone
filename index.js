@@ -6060,7 +6060,7 @@ function buildMochiSettingsHtml() {
               <i></i>
             </label>
           </div>
-          <div class="mochi-launch-hint">总开关关闭＝停用手机：隐藏悬浮球与手机、不再解析 PHONE 标签、清空规则提示注入，无需卸载扩展。左下角魔法棒菜单的「打开小手机」不依赖悬浮球开关。</div>
+          <div class="mochi-launch-hint"><div>1.关闭总开关可以在不卸载mochiphone的情况下暂时停用小手机。</div><div>2.小手机启动方式有两种：悬浮球启动+魔法棒菜单的「打开小手机」按钮启动。</div><div>3.可关闭悬浮球，仅用魔法棒菜单入口启动手机。</div></div>
         </div>
       </div>
     </div>`;
