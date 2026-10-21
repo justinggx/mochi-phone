@@ -1153,7 +1153,11 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
   width:200%; overflow:hidden;
   transition:transform .32s cubic-bezier(.4,0,.2,1);
   will-change:transform;
+  touch-action:pan-y pinch-zoom;
+  -webkit-user-select:none; user-select:none;
 }
+#rp-home-pages img { -webkit-user-drag:none; user-select:none; }
+#rp-home-pages input, #rp-home-pages textarea, #rp-home-pages [contenteditable="true"] { -webkit-user-select:text; user-select:text; }
 .rp-home-page {
   width:50%; flex-shrink:0;
   position:relative; height:100%;
@@ -9165,90 +9169,148 @@ async function rpInitBody() {
   // 首次加载也清除外圈（覆盖所有主题）
   requestAnimationFrame(() => rpStripFrameRing());
 
-  // ── 主屏幕双页横滑 ──────────────────────────────────────────
+  // Home gestures include app icons: movement owns the gesture, a tap keeps its normal click.
   (function initHomeSwipe() {
-    var pages   = document.getElementById('rp-home-pages');
-    var dots    = document.querySelectorAll('.rp-home-dot');
-    var curPage = 0;
-    var totalPages = 2;
-
-    function gotoPage(idx, animate) {
-      if (idx < 0 || idx >= totalPages) return;
+    const pages = document.getElementById('rp-home-pages');
+    const home = pages?.parentElement;
+    const phone = document.getElementById('rp-phone');
+    if (!pages || !home || !phone) return;
+    const dots = home.querySelectorAll('.rp-home-dot');
+    const totalPages = pages.querySelectorAll(':scope > .rp-home-page').length;
+    let curPage = 0, gesture = null, frame = null, suppressUntil = 0, lastTouch = 0;
+    const active = () => isMochiPhoneEnabled() && STATE.currentView === 'home' && !document.hidden
+      && window.getComputedStyle(phone).display !== 'none' && window.getComputedStyle(home).display !== 'none';
+    const clearFrame = () => { if (frame !== null) rpRuntime.cancelFrame(frame); frame = null; };
+    function paintPage(idx, animate) {
       curPage = idx;
-      pages.style.transition = animate === false
-        ? 'none'
-        : 'transform .32s cubic-bezier(.4,0,.2,1)';
-      pages.style.transform = 'translateX(' + (-idx * 50) + '%)';
-      dots.forEach(function(d, i) {
-        d.classList.toggle('rp-home-dot-active', i === idx);
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      pages.style.transition = animate === false || reduced ? 'none' : 'transform .32s cubic-bezier(.4,0,.2,1)';
+      pages.style.transform = 'translateX(' + (-idx * 100 / totalPages) + '%)';
+      dots.forEach((dot, i) => dot.classList.toggle('rp-home-dot-active', i === idx));
+    }
+    function finish(cancelled = false) {
+      const g = gesture;
+      if (!g) return;
+      gesture = null;
+      clearFrame();
+      g.signal.removeEventListener('abort', g.abort);
+      window._rpSwipeLocked = false;
+      if (g.moved) suppressUntil = Date.now() + 700;
+      if (g.id !== undefined) {
+        try { if (pages.hasPointerCapture?.(g.id)) pages.releasePointerCapture(g.id); } catch (_) { /* Capture may already have been lost. */ }
+      }
+      let next = curPage;
+      const threshold = Math.max(24, Math.min(60, g.width / totalPages * .16));
+      if (!cancelled && g.direction === 'horizontal' && Math.abs(g.dx) > threshold) next += g.dx < 0 ? 1 : -1;
+      paintPage(Math.max(0, Math.min(totalPages - 1, next)), active());
+    }
+    function gotoPage(idx, animate) {
+      if (!Number.isInteger(idx) || idx < 0 || idx >= totalPages) return;
+      finish(true);
+      paintPage(idx, animate);
+    }
+    function start(target, x, y, id) {
+      if (!active() || gesture || target.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
+      const width = pages.getBoundingClientRect().width;
+      if (!(width > 0)) return;
+      suppressUntil = 0;
+      const token = rpRuntime.task();
+      gesture = { x, y, id, width, dx: 0, moved: false, direction: '', base: -curPage * 100 / totalPages, signal: token.signal };
+      gesture.abort = () => finish(true);
+      token.signal.addEventListener('abort', gesture.abort, { once: true });
+      // The phone frame has a separate desktop drag handler; a home gesture must not move it.
+      window._rpSwipeLocked = true;
+    }
+    function move(x, y, event) {
+      const g = gesture;
+      if (!g) return;
+      if (!active()) { finish(true); return; }
+      g.dx = x - g.x;
+      const dy = y - g.y;
+      if (!g.direction && Math.max(Math.abs(g.dx), Math.abs(dy)) >= 8) {
+        g.moved = true;
+        g.direction = Math.abs(g.dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+        if (g.direction === 'horizontal') {
+          // Continue from the rendered position if another swipe interrupts the snap animation.
+          const transform = window.getComputedStyle(pages).transform;
+          if (window.DOMMatrixReadOnly && transform && transform !== 'none' && pages.offsetWidth) {
+            try { g.base = new window.DOMMatrixReadOnly(transform).m41 / pages.offsetWidth * 100; } catch (_) { /* Use the settled page on older engines. */ }
+          }
+          pages.style.transition = 'none';
+          if (g.id !== undefined) { try { pages.setPointerCapture?.(g.id); } catch (_) { /* Document listeners still cover a release outside the phone. */ } }
+        }
+      }
+      if (g.direction !== 'horizontal') return;
+      if (event?.cancelable) event.preventDefault();
+      const low = -(totalPages - 1) * 100 / totalPages;
+      let pct = g.base + g.dx / g.width * 100;
+      // A little resistance at the edges, while normal page travel stays one-to-one.
+      if (pct > 0) pct = Math.min(6, pct * .22);
+      if (pct < low) pct = Math.max(low - 6, low + (pct - low) * .22);
+      g.pct = pct;
+      if (frame === null) frame = rpRuntime.frame(() => {
+        frame = null;
+        if (gesture === g) pages.style.transform = 'translateX(' + g.pct + '%)';
       });
     }
-
-    // 点击圆点切换页面
-    dots.forEach(function(dot, i) {
-      dot.style.pointerEvents = 'auto';
-      dot.style.cursor = 'pointer';
-      dot.addEventListener('click', function() { gotoPage(i, true); });
+    rpRuntime.listenDOM(pages, 'click', event => {
+      if (event.detail !== 0 && Date.now() < suppressUntil) { event.preventDefault(); event.stopImmediatePropagation(); }
+    }, true);
+    rpRuntime.listenDOM(pages, 'dragstart', event => event.preventDefault());
+    dots.forEach((dot, i) => {
+      dot.style.pointerEvents = 'auto'; dot.style.cursor = 'pointer';
+      rpRuntime.listenDOM(dot, 'click', () => gotoPage(i, true));
     });
-
-    // 触摸/鼠标拖拽
-    var _sx = 0, _sy = 0, _dragging = false, _dx = 0;
-    var THRESHOLD = 40;
-
-    function onStart(clientX, clientY) {
-      _sx = clientX; _sy = clientY; _dragging = true; _dx = 0;
-      pages.style.transition = 'none';
+    if (window.PointerEvent) {
+      rpRuntime.listenDOM(document, 'pointerdown', event => {
+        if (gesture && event.pointerType === 'touch' && event.pointerId !== gesture.id) finish(true);
+      }, true);
+      rpRuntime.listenDOM(pages, 'pointerdown', event => {
+        if (event.button !== 0 || event.isPrimary === false) return;
+        start(event.target, event.clientX, event.clientY, event.pointerId);
+      });
+      rpRuntime.listenDOM(document, 'pointermove', event => {
+        if (gesture && event.pointerId === gesture.id) move(event.clientX, event.clientY, event);
+      }, { passive: false });
+      rpRuntime.listenDOM(document, 'pointerup', event => {
+        if (gesture && event.pointerId === gesture.id) { move(event.clientX, event.clientY, event); finish(); }
+      });
+      rpRuntime.listenDOM(document, 'pointercancel', event => { if (gesture?.id === event.pointerId) finish(true); });
+      rpRuntime.listenDOM(pages, 'lostpointercapture', event => { if (gesture?.id === event.pointerId) finish(true); });
+    } else {
+      // Touch/mouse fallback for engines without Pointer Events; ignore touch-generated mouse events.
+      rpRuntime.listenDOM(document, 'touchstart', event => { if (gesture && event.touches.length > 1) finish(true); }, { passive: true, capture: true });
+      rpRuntime.listenDOM(pages, 'touchstart', event => {
+        lastTouch = Date.now();
+        if (event.touches.length !== 1) return;
+        const t = event.touches[0]; start(event.target, t.clientX, t.clientY, t.identifier);
+      }, { passive: true });
+      rpRuntime.listenDOM(document, 'touchmove', event => {
+        if (!gesture || event.touches.length !== 1) { if (gesture) finish(true); return; }
+        const t = Array.from(event.touches).find(t => t.identifier === gesture.id);
+        if (t) move(t.clientX, t.clientY, event);
+      }, { passive: false });
+      rpRuntime.listenDOM(document, 'touchend', event => {
+        if (!gesture) return;
+        const t = Array.from(event.changedTouches).find(t => t.identifier === gesture.id);
+        if (t) { lastTouch = Date.now(); move(t.clientX, t.clientY, event); finish(); }
+      });
+      rpRuntime.listenDOM(document, 'touchcancel', () => { lastTouch = Date.now(); finish(true); }, { passive: true });
+      rpRuntime.listenDOM(pages, 'mousedown', event => { if (event.button === 0 && Date.now() - lastTouch > 800) start(event.target, event.clientX, event.clientY); });
+      rpRuntime.listenDOM(document, 'mousemove', event => { if (gesture && gesture.id === undefined) move(event.clientX, event.clientY, event); });
+      rpRuntime.listenDOM(document, 'mouseup', event => { if (gesture && gesture.id === undefined && event.button === 0) { move(event.clientX, event.clientY, event); finish(); } });
     }
-    function onMove(clientX, clientY) {
-      if (!_dragging) return;
-      _dx = (clientX - _sx) / rpDesktopAppliedScale;
-      var dy = (clientY - _sy) / rpDesktopAppliedScale;
-      if (Math.abs(dy) > Math.abs(_dx) + 10) { _dragging = false; return; }
-      var base = -curPage * 50;
-      var pct  = _dx / pages.parentElement.offsetWidth * 100;
-      var pctClamped = Math.max(-50 * (totalPages - 1) - 8, Math.min(8, base + pct));
-      pages.style.transform = 'translateX(' + pctClamped + '%)';
-    }
-    function onEnd() {
-      if (!_dragging) return;
-      _dragging = false;
-      if (_dx < -THRESHOLD && curPage < totalPages - 1) gotoPage(curPage + 1, true);
-      else if (_dx > THRESHOLD && curPage > 0)          gotoPage(curPage - 1, true);
-      else                                               gotoPage(curPage, true);
-    }
-
-    // Touch
-    pages.addEventListener('touchstart', function(e) {
-      // 不拦截 app 点击
-      if (e.target.closest('.rp-app, button, input, select')) return;
-      var t = e.touches[0];
-      onStart(t.clientX, t.clientY);
-    }, { passive: true });
-    pages.addEventListener('touchmove', function(e) {
-      if (!_dragging) return;
-      var t = e.touches[0];
-      onMove(t.clientX, t.clientY);
-    }, { passive: true });
-    pages.addEventListener('touchend', onEnd, { passive: true });
-
-    // Mouse (PC端)
-    pages.addEventListener('mousedown', function(e) {
-      if (e.target.closest('.rp-app, button, input, select')) return;
-      onStart(e.clientX, e.clientY);
-    });
-    rpRuntime.listenDOM(document, 'mousemove', function(e) {
-      if (!_dragging) return;
-      onMove(e.clientX, e.clientY);
-    });
-    rpRuntime.listenDOM(document, 'mouseup', function(e) {
-      if (_dragging) onEnd();
-    });
-
-    // 切换到 home 页时重置到第0屏
-    var _origGo = window.go;
-    // 监听 go('home') 时重置页码
-    var _goOrig = go;
+    rpRuntime.listenDOM(window, 'blur', () => finish(true));
+    rpRuntime.listenDOM(window, 'resize', () => finish(true));
+    rpRuntime.listenDOM(document, 'visibilitychange', () => { if (document.hidden) finish(true); });
+    const observer = new rpRuntime.Observer(() => { if (gesture && !active()) finish(true); });
+    observer.observe(home, { attributes: true, attributeFilter: ['style', 'class'] });
+    observer.observe(phone, { attributes: true, attributeFilter: ['style', 'class'] });
     window._rpHomeSwipeGoto = gotoPage;
+    rpRuntime.own(() => {
+      finish(true); clearFrame(); observer.disconnect();
+      if (window._rpHomeSwipeGoto === gotoPage) delete window._rpHomeSwipeGoto;
+    });
   })();
 
   // 初始化后补一次当前聊天的单次点火：
@@ -15615,7 +15677,7 @@ function makeDraggable() {
   let dragging = false, ox, oy, ex, ey;
 
   phone.addEventListener('mousedown', e => {
-    if (IS_TOUCH_DEVICE) return;
+    if (IS_TOUCH_DEVICE || window._rpSwipeLocked) return;
     if (e.target.closest('input,textarea,select,button,a,[contenteditable]')) return;
     // 从 #rp-phone 外边缘算起，热区宽度 BORDER_HIT px 内视为边框（含 box-shadow 外圈）
     const pr = phone.getBoundingClientRect();
