@@ -722,37 +722,37 @@ const RP_XHS_COMPOSE_CSS = `
   background:var(--rp-compose-bg)!important;
 }
 #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery>.rp-nav-bar {
-  display:grid!important; grid-template-columns:30px minmax(0,1fr) max(74px,calc(74px * var(--mochi-phone-font-scale,1)))!important;
+  display:grid!important; grid-template-columns:30px minmax(0,1fr) max(64px,calc(64px * var(--mochi-phone-font-scale,1)))!important;
   column-gap:8px!important; align-items:center!important; position:relative!important;
-  box-sizing:border-box!important; height:88px!important; min-height:88px!important;
-  padding:44px 14px 4px 12px!important; margin:0!important;
+  box-sizing:border-box!important; height:96px!important; min-height:96px!important;
+  padding:56px 14px 8px 12px!important; margin:0!important;
   background:transparent!important; border:0!important; box-shadow:none!important;
 }
 #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery>.rp-nav-bar>.rp-back {
   position:static!important; inset:auto!important; grid-column:1!important; align-self:center!important;
   display:inline-flex!important; align-items:center!important; justify-content:center!important;
-  width:30px!important; min-width:30px!important; height:40px!important; min-height:40px!important;
+  width:30px!important; min-width:30px!important; height:32px!important; min-height:32px!important;
   margin:0!important; padding:0!important; transform:none!important; background:transparent!important;
-  color:var(--rp-compose-accent)!important; font-size:27px!important; font-weight:300!important;
+  color:var(--rp-compose-accent)!important; font-size:22px!important; font-weight:300!important;
 }
 #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery>.rp-nav-bar>.rp-nav-title {
   position:static!important; inset:auto!important; grid-column:2!important; justify-self:start!important;
   width:auto!important; min-width:0!important; max-width:100%!important; margin:0!important; padding:0!important;
   transform:none!important; text-align:left!important; overflow:hidden!important; text-overflow:ellipsis!important;
-  white-space:nowrap!important; font-family:var(--rp-compose-serif)!important; font-size:13px!important;
+  white-space:nowrap!important; font-family:var(--rp-compose-serif)!important; font-size:11px!important;
   font-weight:400!important; line-height:1.4!important; letter-spacing:.08em!important; color:var(--rp-compose-accent)!important;
 }
 #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery #rp-xhs-post-btn {
   position:static!important; inset:auto!important; grid-column:3!important; justify-self:stretch!important;
   display:inline-flex!important; justify-content:center!important; align-items:center!important; gap:5px!important;
   box-sizing:border-box!important; width:100%!important; min-width:0!important; max-width:none!important;
-  height:36px!important; min-height:36px!important; margin:0!important; padding:0 8px!important;
-  font-family:var(--rp-compose-serif)!important; font-size:12px!important; font-weight:400!important;
+  height:28px!important; min-height:28px!important; margin:0!important; padding:0 6px!important;
+  font-family:var(--rp-compose-serif)!important; font-size:11px!important; font-weight:400!important;
   line-height:1.2!important; letter-spacing:.06em!important; white-space:nowrap!important;
   background:transparent!important; color:var(--rp-compose-accent)!important;
   border:1px solid var(--rp-compose-accent)!important; border-radius:999px!important; box-shadow:none!important; transform:none!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery #rp-xhs-post-btn .rp-xhs-post-arrow {font-size:15px;line-height:1;}
+#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery #rp-xhs-post-btn .rp-xhs-post-arrow {font-size:13px;line-height:1;}
 #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery :is(.rp-back,#rp-xhs-post-btn):focus-visible {outline:2px solid var(--rp-compose-accent)!important;outline-offset:2px!important;}
 #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-compose-body {
   display:flex!important; flex-direction:column!important; align-items:stretch!important; flex:1 1 0!important;
