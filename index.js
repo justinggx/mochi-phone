@@ -1,6 +1,6 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261020-role-context-76';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
-import { createStickers } from './stickers.mjs?v=20261020-sticker-experience-80';
+import { createStickers } from './stickers.mjs?v=20261021-phone-presence-85';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-remove-agreements-81';
@@ -5949,6 +5949,17 @@ function isMochiPhoneEnabled() {
 }
 
 // GMSG 硬规则提示:启用时注入,停用时清空(等效于停用扩展的提示注入)
+function rpPhoneContactRule() {
+  return [
+    '[手机联系前置判断] 在生成PHONE内容前，先按最新场景为每位发送者分别判断是否需要用手机联系{{user}}；覆盖char、NPC及其他联系人，判断留在内部，不输出分析或额外标签。',
+    '以最新主楼叙述、人物行动和{{user}}本轮输入为准；最新移动/分开/会合优先于旧场景。正在面对面交谈、同行、同桌约会、一起在图书馆阅读或直接合作工作，或同一房间且能直接交谈时，不主动向{{user}}发送SMS、VOICE、图片、表情或红包，不把当面台词复制为手机消息，也不额外发起通话。',
+    '地点粒度看实际可交流空间，不能只比较大地点名称。同在家但明确楼上/楼下或不同房间，同在公司但一人在办公室、另一人在其他区域，或图书馆不同区域且已经分开时，可以在确有联系理由时发消息；不要虚构隔间、离开或分离来绕过判断。',
+    '对位置不明或未交代是否分开的角色，不凭空安排手机联系；对明确不在身边、确有事情要告知的角色，可以主动联系，但不必每楼发。面对面的A不发，不影响远处B按其自己的位置和事由联系。',
+    '例外：{{user}}明确通过手机发送的消息可以正常回复；剧情明确要发送地址、链接或照片等资料时，允许当面实际发送。仅有口头对话不等于收到手机消息。群聊仅在确有群内沟通需要时发送，不用群聊绕过当面交流规则，不把现实同场对话转成群消息。',
+    '本判断先于主动消息、回复条数、数量要求和频繁使用表情等要求；只有满足手机联系条件后才应用这些数量/频率规则。不满足时该发送者本轮可以没有任何私聊消息；不为凑数或发表情创造联系。保留原有PHONE容器、朋友圈和SYNC等其他协议，不替{{user}}发言。'
+  ].join('\n') + '\n';
+}
+
 function refreshMochiPrompt() {
   // 优先用加载期捕获的全局;缺失时运行时从 getContext() 兜底(与 Prism 同源,修复旧版捕获失败静默失效)
   let sep = (typeof setExtensionPrompt === 'function') ? setExtensionPrompt : null;
@@ -5966,7 +5977,7 @@ function refreshMochiPrompt() {
     if (isMochiPhoneEnabled()) {
       sep(
         'mochi-phone-gmsg',
-        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
+        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneContactRule() + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
         promptPosition,
         0
       );
@@ -9474,6 +9485,12 @@ function rpQueueSticker(thread, ids, time, source, sender, requiredValid) {
   return job.promise;
 }
 
+function rpStickerHasPhoneCarrier(item) {
+  try {
+    const parts = JSON.parse(item.phoneSource?.key || 'null');
+    return Array.isArray(parts) && ['SMS','GMSG'].includes(parts[3]);
+  } catch (_) { return false; }
+}
 let rpStickerGeneration = null;
 async function rpCompleteStickerGeneration(index,type) {
   const generation=rpStickerGeneration,ctx=getContext(),message=ctx?.chat?.[index];
@@ -9491,16 +9508,12 @@ async function rpCompleteStickerGeneration(index,type) {
   const hasSticker=()=>Object.values(STATE.threads).some(thread=>(thread.messages||[]).some(m=>m.type==='sticker'&&rpStickerFloorKey(m.stickerKey)===floorKey&&(!m.stickerReply||m.stickerReply===reply)));
   if(hasSticker())return;
   let target=null;
-  for(const thread of Object.values(STATE.threads))for(const item of thread.messages||[]){if(item.from==='user'||item.from==='system'||generation.previousReceipts.has(item)||rpStickerFloorKey(item.phoneSource?.key)!==floorKey)continue;target={thread,item,sender:rpIsGroupThread(thread)?item.name:null};}
-  const previous=target?.thread.messages.filter(m=>m.type==='sticker').at(-1)?.sticker?.id;
-  const id=app.frequentCandidate((target?.item.text||'')+'\n'+raw,previous);if(!id||!valid())return;
-  if(!target){
-    const sender=String(ctx.groupId!=null?message.name:getCurrentCharName(ctx)).trim();
-    if(!sender||isPhoneUserName(sender,ctx)||isForbiddenPhoneContactName(sender,ctx)||isPhoneBlocked(sender))return;
-    const prior=STATE._parseMessageIndex;let thread;try{STATE._parseMessageIndex=index;thread=findOrCreateThread(sender);}finally{STATE._parseMessageIndex=prior;}
-    if(!thread)return;target={thread,item:null,sender:null};
-  }
-  const source=target.item?.phoneSource||{key:JSON.stringify([index,stamp,0,'STICKER_AUTO',0]),signature:rpPhoneTextFingerprint(raw)};
+  for(const thread of Object.values(STATE.threads))for(const item of thread.messages||[]){if(item.from==='user'||item.from==='system'||!rpStickerHasPhoneCarrier(item)||generation.previousReceipts.has(item)||rpStickerFloorKey(item.phoneSource?.key)!==floorKey)continue;target={thread,item,sender:rpIsGroupThread(thread)?item.name:null};}
+  // Frequency only decorates a real current-reply SMS/GMSG; it must never invent contact.
+  if(!target)return;
+  const previous=target.thread.messages.filter(m=>m.type==='sticker').at(-1)?.sticker?.id;
+  const id=app.frequentCandidate((target.item.text||'')+'\n'+raw,previous);if(!id||!valid())return;
+  const source=target.item.phoneSource;
   const policyEpoch=app.store.state.policyEpoch;
   const requiredValid=()=>valid()&&app.store.state.policyEpoch===policyEpoch&&app.store.state.prefs.enabled&&app.store.state.prefs.frequency==='high';
   await rpQueueSticker(target.thread,[id],target.item?.time,source,target.sender,requiredValid);
