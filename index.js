@@ -5929,6 +5929,10 @@ function isMochiPhoneEnabled() {
 }
 
 // GMSG 硬规则提示:启用时注入,停用时清空(等效于停用扩展的提示注入)
+function rpPhoneWorldContextRule() {
+  return "[世界观适配] MochiPhone只是跨世界观通讯界面，默认与当前世界相容。古代短信可理解为书信/传书，西幻、玄幻可理解为传讯/传音；朋友圈和评论对应见闻札记/告示与留言。非现代背景下，“手机/发短信”等操作用语不表示剧情新增现代实物。无需考证“这个时代为何有手机”、解释来源、推演送达过程或描写适配过程，也不因此质疑、惊讶或另造现代科技/能力。直接按人设和剧情简短作答，完整遵守本次格式：协议标签/属性保持原样且闭合，JSON/纯正文仍用原格式，不得改成书信等新标签。仅适配载体，不改联系时机、知识边界或语言模式，不替{{user}}发言。\n";
+}
+
 function rpPhoneContactRule() {
   return [
     '[手机联系前置判断] 在生成PHONE内容前，先按最新场景为每位发送者分别判断是否需要用手机联系{{user}}；覆盖char、NPC及其他联系人，判断留在内部，不输出分析或额外标签。',
@@ -5957,7 +5961,7 @@ function refreshMochiPrompt() {
     if (isMochiPhoneEnabled()) {
       sep(
         'mochi-phone-gmsg',
-        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneContactRule() + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
+        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneWorldContextRule() + rpPhoneContactRule() + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
         promptPosition,
         0
       );
@@ -18193,7 +18197,7 @@ async function generateAIMoments() {
       + '3. 有人设的角色:内容必须符合其身份职业,医生写医疗相关,商人写商务相关,不得跨界\n'
       + '4. 无人设的角色:写与主角家庭完全无关的自己的个人日常,不得提及先生/小姐/主家\n'
       + '5. ' + charName + ' 只能以自己的视角发帖(第一人称),如写到家人/孩子要用"我的女儿""我家"等表达\n'
-      + '6. 口语化,1-2句,只返回JSON。\n' + rpPhoneSpeechLanguageRule();
+      + '6. 口语化,1-2句,只返回JSON。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
     const prompt = '近期剧情(主楼层最新对话):\n' + recentChat
       + '\n\n请为以下角色各写1条朋友圈(每人1条,不重复,与剧情相关):'
       + charList
@@ -18264,7 +18268,7 @@ async function charRespondToUserMoment(momentId) {
     + '你和"' + (getContext()?.name1 || '用户') + '"的关系以人设和当前剧情为准，不预设亲密或友好。'
     + '按真实关系、知识范围和角色性格评论；疏离或敌对关系也须保持一致。\n'
     + '近期对话参考(帮助判断关系和语境):\n' + (_rc ? _rc.slice(-300) : '无') + '\n'
-    + '简短1-2句,符合角色性格,只返回评论正文,不加引号或任何前缀。\n' + rpPhoneSpeechLanguageRule();
+    + '简短1-2句,符合角色性格,只返回评论正文,不加引号或任何前缀。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
   const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
     + charName + '的评论(必须写,不允许只点赞):';
   try {
@@ -18317,7 +18321,7 @@ async function charRespondToUserMoment(momentId) {
         + '2. 若语境里存在敌对、厌恶、仇恨、戒备、看不起、疏离关系，禁止写成鼓励、支持、宠溺、暧昧。\n'
         + '3. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确如此设定。\n'
         + '4. 不知道时就少说、冷一点，也不要乱认亲、乱套近乎。\n'
-        + '5. 只返回一条简短评论正文，不加引号，不加前缀。\n' + rpPhoneSpeechLanguageRule();
+        + '5. 只返回一条简短评论正文，不加引号，不加前缀。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
       const promptNpc = '朋友圈内容:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
         + '动态作者:「' + userName + '」\n'
         + '你的用户名是"' + npc + '",请基于人设/世界书/主楼上下文写评论，必须和其他人不同:';
@@ -18377,7 +18381,7 @@ async function momentAISocial(targetMomentId) {
     + '1动态里直接出现我的名字(' + charName + ')、英文名、或对我的称谓(爸爸/父亲/先生/Theodore);'
     + '2动态明确描述发生在我身上的事("我爸""我父亲""沈先生做了")。'
     + '其他情况一律以旁观者/朋友角色评论,不要把别人之间的事当成在说我。'
-    + '例:user说"julian叔叔告密了"→ char以父亲视角评论julian行为,不要当成在说自己。\n' + rpPhoneSpeechLanguageRule();
+    + '例:user说"julian叔叔告密了"→ char以父亲视角评论julian行为,不要当成在说自己。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
   const prompt2 = '朋友圈动态列表:\n' + momentsSummary + '\n\n只为以下角色生成2-4条社交互动(like/comment),禁止使用列表外的名字:' + charList2 + '\n格式:只返回JSON数组 [{"type":"like","from":"角色名","momentId":"完整ID"},{...}],from字段必须严格使用上方列表中的名字,momentId必须与上方完全一致。';
   const resp = await rpGuardAwait(lgCallAPI(prompt2, 400, sysMsg2), rpTask);
   if (!resp) return;
@@ -18482,7 +18486,7 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     + '4. 若关系里有敌对、厌恶、戒备、疏离，不得回复成过度亲昵、鼓励、暧昧。\n'
     + '5. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确设定。\n'
     + '6. COMMENT回复正文只能写一句评论内容本身；禁止括号动作、心理描写、叙事描写、打字过程、引号外说明。\n'
-    + '7. 简短一句,只返回回复内容本身。\n' + rpPhoneSpeechLanguageRule();
+    + '7. 简短一句,只返回回复内容本身。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
   const prompt3 = '你要回复朋友圈评论。\n'
     + '回复身份:「' + authorName + '」\n'
     + targetCommentLine
