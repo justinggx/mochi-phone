@@ -642,10 +642,15 @@ const RP_UI_FINISH_CSS = `
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame::after {content:'';position:absolute;inset:1px;border:1px solid var(--rp-art-edge);border-radius:37px;pointer-events:none;}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-screen {border-radius:31px!important;box-shadow:0 0 0 1px var(--rp-art-screen-edge);}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame .rp-btn {background:var(--rp-art-button);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
-#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar {padding-right:6px!important;padding-left:6px!important;grid-template-columns:100px minmax(0,1fr) 100px;}
-#rp-phone #rp-screen #rp-view-xhs .rp-xhs-nav-actions {display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:0 0 auto;margin-left:auto;height:40px;}
-#rp-phone #rp-screen #rp-view-xhs #rp-xhs-favorites {display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px;min-width:36px;height:36px;min-height:36px;padding:0!important;margin:0;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--rp-xhs-accent,var(--rp-nav-btn,#99677e))!important;font-family:inherit;font-size:11px!important;line-height:1!important;white-space:nowrap;word-break:keep-all;}
-#rp-phone #rp-screen #rp-view-xhs :is(#rp-xhs-compose,#rp-xhs-refresh) {display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;margin:0;}
+#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar {padding-right:6px!important;padding-left:6px!important;grid-template-columns:40px minmax(0,1fr) 40px;position:relative;z-index:5;overflow:visible!important;}
+#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar>.rp-nav-title {max-width:calc(100% - 104px)!important;}
+#rp-phone #rp-screen #rp-view-xhs .rp-xhs-nav-actions {position:relative;display:flex;align-items:center;justify-content:flex-end;margin-left:auto;height:40px;}
+#rp-phone #rp-screen #rp-xhs-more {display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-width:40px;min-height:40px;padding:0!important;margin:0;border:0!important;border-radius:50%;background:transparent!important;box-shadow:none!important;color:var(--rp-xhs-accent,var(--rp-nav-btn,#99677e))!important;font:24px/1 Arial,sans-serif!important;cursor:pointer;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-xhs-menu {position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:120px;max-width:220px;padding:5px;border:1px solid var(--rp-v-border,rgba(90,60,80,.14));border-radius:14px;background:var(--rp-v-surface,#fff7fa);box-shadow:0 8px 24px rgba(30,20,35,.14);box-sizing:border-box;}
+#rp-phone #rp-screen #rp-xhs-menu[hidden] {display:none!important;}
+#rp-phone #rp-screen #rp-xhs-menu>button {display:flex;align-items:center;justify-content:flex-start;flex:0 0 auto;width:100%;height:auto;min-width:0;min-height:38px;padding:8px 14px!important;margin:0;border:0!important;border-radius:9px!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#493e46)!important;font:inherit;font-size:13px!important;line-height:1.4!important;white-space:nowrap;cursor:pointer;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-xhs-menu>button:hover,#rp-phone #rp-screen #rp-xhs-menu>button:focus-visible {background:var(--rp-v-card,rgba(120,90,110,.08))!important;}
+#rp-phone #rp-screen #rp-xhs-menu>button:disabled {opacity:.5;cursor:wait;}
 #rp-phone.rp-theme-misty.rp-dark #rp-screen :is(#rp-sbar,#rp-lock-time,#rp-lock-date) {color:var(--rp-v-text,#e7e0f4)!important;text-shadow:none!important;}
 #rp-phone #rp-screen #rp-xhs-detail-body {overflow-wrap:anywhere;}
 #rp-phone.rp-dark:not(.rp-art-icons) #rp-pending-queue {color:var(--rp-v-text,#e7e0f4);}
@@ -5773,6 +5778,7 @@ function rpSetPhoneOpen(open) {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
+      rpSetXhsMenu(false);
       rpRememberReading();
       saveState();
       phone.hide();
@@ -8409,9 +8415,12 @@ const HTML = `
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title" id="rp-xhs-feed-title">发现</span>
             <div class="rp-xhs-nav-actions">
-              <button id="rp-xhs-favorites" class="rp-feature-pill" type="button" aria-pressed="false">收藏</button>
-              <button id="rp-xhs-compose" title="发笔记" aria-label="发布笔记" style="border:none;cursor:pointer"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 10h14M10 3v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-              <button id="rp-xhs-refresh" title="刷新" style="width:28px;height:28px;border:none;background:transparent;font-size:18px;cursor:pointer;color:var(--rp-nav-btn,#c0306a)">↻</button>
+              <button id="rp-xhs-more" type="button" aria-label="小红书更多操作" aria-haspopup="menu" aria-controls="rp-xhs-menu" aria-expanded="false">⋯</button>
+              <div id="rp-xhs-menu" role="menu" aria-label="小红书操作" hidden>
+                <button id="rp-xhs-favorites" type="button" role="menuitem">收藏</button>
+                <button id="rp-xhs-compose" type="button" role="menuitem">发布</button>
+                <button id="rp-xhs-refresh" type="button" role="menuitem">刷新</button>
+              </div>
             </div>
           </div>
           <div id="rp-xhs-list" style="flex:1;overflow-y:auto;padding:6px 10px 14px"></div>
@@ -9567,6 +9576,7 @@ function rpTools() {
 
 function rpCloseFeatureDialog() { $('#rp-feature-layer').remove(); }
 function rpCloseChatOverlays() {
+  rpSetXhsMenu(false);
   rpCloseFeatureDialog();
   $('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create').remove();
   $('#rp-compose-modal,#rp-folder-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel').hide();
@@ -9770,6 +9780,16 @@ function rpConfirmDeleteContacts(ids) {
   rpFeatureDialog('确认删除好友',content,[{label:'取消'},{label:'确认删除',danger:true,run:()=>rpDeleteContacts(ids)}]);
 }
 
+function rpSetXhsMenu(open, focus = false) {
+  const menu = document.getElementById('rp-xhs-menu');
+  const trigger = document.getElementById('rp-xhs-more');
+  if (!menu || !trigger) return;
+  open = !!open && STATE.currentView === 'xhs';
+  menu.hidden = !open;
+  trigger.setAttribute('aria-expanded', String(open));
+  if (focus) (open ? menu.querySelector('button:not(:disabled)') : trigger)?.focus();
+}
+
 let rpXhsFavoritesOnly = false;
 function rpSetFavoritesOnly(value) { rpRememberReading(); rpXhsFavoritesOnly=!!value; renderXHSFeed(false); rpRestoreReadingPosition(); }
 
@@ -9862,7 +9882,32 @@ function bindUI() {
   rpInstallReadingListener();
   $(document).on('click.mochiPhone','#rp-local-search,#rp-thread-search',rpOpenLocalSearch);
   $(document).on('click.mochiPhone','#rp-go-latest',()=>{const el=document.getElementById('rp-bubbles');el.scrollTop=el.scrollHeight;rpRememberReading();saveState();rpUpdateLatestButton();});
-  $(document).on("click.mochiPhone", "#rp-xhs-favorites", () => rpSetFavoritesOnly(!rpXhsFavoritesOnly));
+  $(document).on('click.mochiPhone', '#rp-xhs-more', function() {
+    rpSetXhsMenu(this.getAttribute('aria-expanded') !== 'true', true);
+  });
+  $(document).on('click.mochiPhone', function(event) {
+    if (!$(event.target).closest('#rp-view-xhs .rp-xhs-nav-actions').length) rpSetXhsMenu(false);
+  });
+  $(document).on('keydown.mochiPhone', '#rp-view-xhs .rp-xhs-nav-actions', function(event) {
+    const menu = document.getElementById('rp-xhs-menu');
+    if (event.key === 'Escape' && !menu.hidden) {
+      event.preventDefault(); event.stopPropagation(); rpSetXhsMenu(false, true); return;
+    }
+    if (event.key === 'Tab') { if (!menu.hidden) rpSetXhsMenu(false, true); return; }
+    if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    const wasHidden = menu.hidden;
+    rpSetXhsMenu(true);
+    const items = Array.from(menu.querySelectorAll('button:not(:disabled)'));
+    if (!items.length) return;
+    const index = items.indexOf(document.activeElement);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : wasHidden || index < 0 ? (event.key === 'ArrowUp' ? items.length - 1 : 0) : (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+    items[next].focus();
+  });
+  $(document).on('focusin.mochiPhone', function(event) {
+    if (!$(event.target).closest('#rp-view-xhs .rp-xhs-nav-actions').length) rpSetXhsMenu(false);
+  });
+  $(document).on("click.mochiPhone", "#rp-xhs-favorites", () => { rpSetXhsMenu(false, true); rpSetFavoritesOnly(!rpXhsFavoritesOnly); });
   $(document).on('click.mochiPhone', '.rp-diary-retry', function() { void rpRetryDiaryReply(this.dataset.diaryId, Number(this.dataset.diaryIndex)); });
   $(document).on("click.mochiPhone", ".rp-pending-item[data-queue-index]", function(){ rpOpenQueueEditor(Number(this.dataset.queueIndex)); });
   rpInstallLudoBoardResize();
@@ -9944,6 +9989,7 @@ function bindUI() {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
+      rpSetXhsMenu(false);
       rpRememberReading();
       saveState();
       phone.hide();
@@ -10078,6 +10124,8 @@ function bindUI() {
   });
 
   $(document).on("click.mochiPhone", '#rp-xhs-refresh', function() {
+    rpSetXhsMenu(false, true);
+    if (rpXhsFavoritesOnly) rpSetFavoritesOnly(false);
     renderXHSFeed(true);
   });
   $(document).on('click.mochiPhone', '[data-xhs-retry-comments]', function() {
@@ -10096,6 +10144,8 @@ function bindUI() {
 
   // 小红书 - 发帖按钮
   $(document).on("click.mochiPhone", '#rp-xhs-compose', function() {
+    rpSetXhsMenu(false);
+    if (rpXhsFavoritesOnly) rpSetFavoritesOnly(false);
     go('xhs-compose');
   });
 
@@ -18657,8 +18707,7 @@ function renderXHSCard(p) {
 
 function renderXHSFeed(forceRefresh) {
   $('#rp-xhs-feed-title').text(rpXhsFavoritesOnly?'我的收藏':'发现');
-  $('#rp-xhs-favorites').text(rpXhsFavoritesOnly?'全部':'收藏').attr('aria-pressed',String(rpXhsFavoritesOnly));
-  $('#rp-xhs-refresh,#rp-xhs-compose').toggle(!rpXhsFavoritesOnly);
+  $('#rp-xhs-favorites').text(rpXhsFavoritesOnly?'返回发现':'收藏');
   if(rpXhsFavoritesOnly){_renderXHSList();return;}
   const box = $('#rp-xhs-list');
   if (!box.length) return;
@@ -18695,7 +18744,7 @@ function renderXHSFeed(forceRefresh) {
     // 进页面不自动刷新：学习银行卡空态，等待用户手动点刷新。
     _xhsClearEtaTimer();
     box.removeClass('rp-xhs-masonry rp-xhs-waterfall rp-xhs-refreshing').empty();
-    box.append('<div class="rp-xhs-empty">✦ 点击右上角刷新，读取最新小红书动态</div>');
+    box.append('<div class="rp-xhs-empty">✦ 点击右上角 ⋯ → 刷新，读取最新小红书动态</div>');
     return;
   }
 
@@ -18708,7 +18757,7 @@ function _renderXHSList(box) {
   box.empty().removeClass('rp-xhs-masonry rp-xhs-refreshing').addClass('rp-xhs-waterfall');
   const list = (STATE.xhsFeed || []).filter(post=>!rpXhsFavoritesOnly || post.favoritedByUser);
   if (!list.length) {
-    box.removeClass('rp-xhs-waterfall').append($('<div class="rp-xhs-empty">').text(rpXhsFavoritesOnly?'暂无收藏，在笔记详情点击收藏即可。':'✦ 点击右上角刷新，读取最新小红书动态'));
+    box.removeClass('rp-xhs-waterfall').append($('<div class="rp-xhs-empty">').text(rpXhsFavoritesOnly?'暂无收藏，在笔记详情点击收藏即可。':'✦ 点击右上角 ⋯ → 刷新，读取最新小红书动态'));
     return;
   }
   // 按真实时间流展示：STATE.xhsFeed 最新在 index 0。
@@ -19248,7 +19297,7 @@ cover要求:headline提炼本帖核心，不添加新事实，8-28字；highligh
   $('#rp-xhs-list').removeClass('rp-xhs-refreshing');
   const box = $('#rp-xhs-list');
   if (box.length && !box.find('.rp-xhs-card').length) {
-    box.append('<div style="text-align:center;color:#aaa;padding:40px 20px;font-size:13px">加载失败,点右上角 ↻ 重试</div>');
+    box.append('<div style="text-align:center;color:#aaa;padding:40px 20px;font-size:13px">加载失败，点右上角 ⋯ → 刷新重试</div>');
   }
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
