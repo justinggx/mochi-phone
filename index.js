@@ -5702,8 +5702,9 @@ const _saveSettings = () => {
       (typeof saveSettingsDebounced === 'function' ? saveSettingsDebounced : null) ||
       window.saveSettingsDebounced ||
       (window.SillyTavern && window.SillyTavern.saveSettingsDebounced);
-    if (typeof fn === 'function') fn();
+    if (typeof fn === 'function') { fn(); return true; }
   } catch(e) {}
+  return false;
 };
 
 function rpInstallWandLauncher(runtime) {
@@ -11494,8 +11495,13 @@ function rpSetPhoneLanguageMode(mode) {
   if (!settings || !rpArchiveAccountHandle || !['native','zh'].includes(mode)) return false;
   const changed = mode !== rpGetPhoneLanguageMode();
   if (changed) {
+    const had = Object.hasOwn(settings, RP_PHONE_LANGUAGE_KEY), previous = settings[RP_PHONE_LANGUAGE_KEY];
     settings[RP_PHONE_LANGUAGE_KEY] = { mode };
-    _saveSettings();
+    if (!_saveSettings()) {
+      if (had) settings[RP_PHONE_LANGUAGE_KEY] = previous;
+      else delete settings[RP_PHONE_LANGUAGE_KEY];
+      return false;
+    }
   }
   rpRefreshPhoneLanguageSettings();
   refreshMochiPrompt();
@@ -18136,6 +18142,10 @@ async function generateAIMoments() {
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
 
+function rpSocialSourceKey(item) {
+  return JSON.stringify([item?.id,item?.from,item?.name,item?.user,item?.title,item?.body,item?.text,item?.img,item?.pendingImg,item?.replyTo]);
+}
+
 async function charRespondToUserMoment(momentId) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
@@ -18147,12 +18157,17 @@ async function charRespondToUserMoment(momentId) {
 
   const moment = (STATE.moments || []).find(function(m) { return m.id === momentId; });
   if (!moment) { momentsDiag('charRespondToUserMoment:skipMissingMoment', { momentId }); STATE._charRespondDone.delete(momentId); return; }
+  const sourceKey = rpSocialSourceKey(moment);
+  const current = () => rpTask.valid() && (STATE.moments || []).includes(moment) && rpSocialSourceKey(moment) === sourceKey;
+  const abandon = () => { STATE._charRespondDone?.delete(momentId); };
   const ctx = await rpGuardAwait(getMomentsCtx(), rpTask);
+  if (!current()) { abandon(); return; }
   const charName = ctx.charName;
   const charPersona = ctx.charPersona;
   if (!charName) { momentsDiag('charRespondToUserMoment:skipNoCharName', { momentId }); STATE._charRespondDone.delete(momentId); return; }
   // 强制主角写一条评论
   const { recentChat: _rc } = await rpGuardAwait(getMomentsCtx(), rpTask);
+  if (!current()) { abandon(); return; }
   const sysMsg = '你正在扮演 ' + charName + '。\n'
     + (charPersona ? '你的人设:' + charPersona.slice(0, 300) + '\n' : '')
     + '你和"' + (getContext()?.name1 || '用户') + '"的关系以人设和当前剧情为准，不预设亲密或友好。'
@@ -18163,6 +18178,7 @@ async function charRespondToUserMoment(momentId) {
     + charName + '的评论(必须写,不允许只点赞):';
   try {
     const resp = await rpGuardAwait(lgCallAPI(prompt, 150, sysMsg), rpTask);
+    if (!current()) { abandon(); return; }
     if (resp) {
       const cleaned = resp.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
       if (cleaned) {
@@ -18180,18 +18196,22 @@ async function charRespondToUserMoment(momentId) {
     if (STATE.currentView === 'moments') renderMoments();
     saveState();
   }
+  if (!current()) { abandon(); return; }
   // NPC 们强制回复(逐个单独请求,避免雷同;按人数:1好友=1条,2=2条,3+取2条NPC)
   setTimeout(async function() {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
+    if (!current()) { abandon(); return; }
     const { npcs, npcPersonaMap, recentChat, userName } = await rpGuardAwait(getMomentsCtx(), rpTask);
+    if (!current()) { abandon(); return; }
     const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
     const pendingNPCs = npcs.filter(n => !alreadyCommented.has(n));
     const maxNPC = Math.min(pendingNPCs.length, Math.max(0, 3 - (alreadyCommented.has(charName) ? 1 : 0)));
     // 随机打乱,避免永远是前两个 NPC
     const shuffled = pendingNPCs.sort(() => Math.random() - 0.5);
     for (let i = 0; i < maxNPC; i++) {
+      if (!current()) { abandon(); return; }
       const npc = shuffled[i];
       const npcPersona = resolveNpcPersonaByName(npc, npcPersonaMap) || '';
       const authorPersona = moment.from === 'user' ? ('用户' + userName + '的相关语境:\n' + (recentChat || '').slice(-500)) : '';
@@ -18211,6 +18231,7 @@ async function charRespondToUserMoment(momentId) {
         + '动态作者:「' + userName + '」\n'
         + '你的用户名是"' + npc + '",请基于人设/世界书/主楼上下文写评论，必须和其他人不同:';
       const resp = await rpGuardAwait(lgCallAPI(promptNpc, 120, sysNpc), rpTask);
+      if (!current()) { abandon(); return; }
       if (resp) {
         const cleaned = resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
         if (cleaned && cleaned.length > 2) {
@@ -18242,6 +18263,7 @@ async function momentAISocial(targetMomentId) {
     ? moments.filter(m => m.id === targetMomentId)
     : moments.slice(-6);
   if (targets.length === 0) return;
+  const sourceKeys = new Map(targets.map(m => [m, rpSocialSourceKey(m)]));
   const momentsSummary = targets.map(m =>
     'ID="' + m.id + '" 作者="' + m.name + '" 内容="' + m.text.slice(0, 150) + '"'
   ).join('\n');
@@ -18280,8 +18302,8 @@ async function momentAISocial(targetMomentId) {
       const isAllowed = allowedFromSet.has(fromKey)
         || [...allowedFromSet].some(k => k.startsWith(fromKey) || fromKey.startsWith(k));
       if (!isAllowed) return;
-      const m = moments.find(mo => mo.id === a.momentId);
-      if (!m || m.name === a.from) return;
+      const m = targets.find(mo => mo.id === a.momentId);
+      if (!m || !(STATE.moments || []).includes(m) || rpSocialSourceKey(m) !== sourceKeys.get(m) || m.name === a.from) return;
       if (a.type === 'like') {
         if (!m.likes.includes(a.from)) m.likes.push(a.from);
       } else if (a.type === 'comment' && a.text) {
@@ -18305,17 +18327,21 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
   const moment = STATE.moments?.find(m => m.id === momentId);
   if (!moment) { momentsDiag('generateAIReply:skipMissingMoment', { momentId }); return; }
   opts = opts || {};
-  let targetCommentId = null;
+  let targetCommentId = null, targetComment = null, targetKey = null;
+  const sourceKey = rpSocialSourceKey(moment);
   if (opts.replyToUser) {
     const target = opts.replyToUserId
       ? moment.comments?.find(c => c.id === opts.replyToUserId)
       : moment.comments?.[opts.replyToUserIndex];
     if (!target || !isPhoneUserName(target.name || target.from, getContext()) || target.text !== (opts.replyToUserText || userCommentText)) return;
     if (!target.id) target.id = 'mc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-    targetCommentId = target.id;
+    targetCommentId = target.id; targetComment = target; targetKey = rpSocialSourceKey(target);
   }
+  const current = () => rpTask.valid() && (STATE.moments || []).includes(moment) && rpSocialSourceKey(moment) === sourceKey
+    && (!targetComment || (moment.comments || []).includes(targetComment) && rpSocialSourceKey(targetComment) === targetKey);
   const authorName = fromName || moment.name;
   const { charName, charPersona, npcPersonaMap, recentChat } = await rpGuardAwait(getMomentsCtx(), rpTask);
+  if (!current()) return;
   let sysMsg3 = '';
   let authorPersona = '';
   if (authorName === charName && charPersona) {
@@ -18372,8 +18398,7 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     + userReplyLine + '\n'
     + '请基于人设/世界书/最近5楼/朋友圈主楼/评论串，写出一句贴着这条评论链的回复:';
   const resp = await rpGuardAwait(lgCallAPI(prompt3, 120, sysMsg3), rpTask);
-  if (!resp) return;
-  if (!STATE.moments.includes(moment)) return;
+  if (!resp || !current()) return;
   const targetIndex = targetCommentId ? moment.comments.findIndex(c => c.id === targetCommentId) : null;
   if (targetCommentId && targetIndex < 0) return;
   const ts = resolvePhoneTime();
@@ -19411,7 +19436,12 @@ function rpXhsNicknameKey(value) {
 function rpXhsNicknameBatch(count, post, preferred = []) {
   const used = new Set(), add = value => { const key = rpXhsNicknameKey(value); if (key) used.add(key); };
   const ctx = getContext() || {};
-  [ctx.name1, ctx.name2, post?.user].forEach(add);
+  [ctx.name1, ctx.name2, post?.user, 'user','me','self','myself','我','自己'].forEach(add);
+  for (const thread of Object.values(STATE.threads || {})) {
+    if (!rpIsGroupThread(thread)) add(thread.name);
+    for (const member of thread.members || []) add(typeof member === 'string' ? member : member?.name);
+  }
+  for (const [alias, canonical] of Object.entries(STATE.nameAliases || {})) { add(alias); add(canonical); }
   const recent = (STATE.xhsFeed || []).slice(0, 80);
   if (post && !recent.includes(post)) recent.push(post);
   for (const item of recent) {
@@ -19449,6 +19479,8 @@ async function generateXHSStrangerComments(postId) {
 
   const post = (STATE.xhsFeed || []).find(p => p.id === postId);
   if (!post) return;
+  const sourceKey = rpSocialSourceKey(post);
+  const current = () => rpTask.valid() && (STATE.xhsFeed || []).includes(post) && rpSocialSourceKey(post) === sourceKey;
   // 已有评论则不重复补评论：AI 刷新帖后台生成、user 发帖延迟生成都共用这里。
   if (Array.isArray(post.comments) && post.comments.length > 0) return;
   const job = rpStartAppJob('xhs-comments:' + postId, rpTask, [], () => {
@@ -19505,7 +19537,7 @@ async function generateXHSStrangerComments(postId) {
     if (!rpTask.valid()) return;
  throw new Error('Invalid comments'); }
   if (!Array.isArray(items) || items.length === 0) throw new Error('Empty comments');
-  if (!(STATE.xhsFeed || []).includes(post)) return;
+  if (!current()) return;
 
   const validItems = items.filter(item => item && typeof item.text === 'string' && item.text.trim()).slice(0, 5);
   const names = rpXhsNicknameBatch(validItems.length, post, validItems.map(item => item.user));
@@ -19523,7 +19555,7 @@ async function generateXHSStrangerComments(postId) {
   }
 
   } catch (error) {
-    if (rpTask.valid()) post.commentStatus = 'error';
+    if (current()) post.commentStatus = 'error';
   } finally {
     job.finish();
     if (rpTask.valid() && (STATE.xhsFeed || []).includes(post)) {
@@ -19573,6 +19605,10 @@ async function generateXHSReplyToComment(postId, userComment, userName, commentI
   if (!targetComment) return;
   if (!targetComment.id) targetComment.id = 'xhsc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
   const targetCommentId = targetComment.id;
+  const sourceKey = rpSocialSourceKey(post);
+  const targetKey = JSON.stringify([targetComment.id,targetComment.from,targetComment.user,targetComment.text,targetComment.replyTo]);
+  const current = () => rpTask.valid() && (STATE.xhsFeed || []).includes(post) && rpSocialSourceKey(post) === sourceKey
+    && (post.comments || []).includes(targetComment) && JSON.stringify([targetComment.id,targetComment.from,targetComment.user,targetComment.text,targetComment.replyTo]) === targetKey;
   const ctx = getContext() || {};
   const charName = ctx?.name2 || ctx?.name || 'TA';
   const charLast = charName.split(/\s+/).pop() || charName;
@@ -19600,7 +19636,7 @@ async function generateXHSReplyToComment(postId, userComment, userName, commentI
     + '\n最新用户评论：' + JSON.stringify({name:userName,text:userComment}) + '\n生成3条回复JSON：';
 
   const resp = await rpGuardAwait(lgCallAPI(prompt, 300, sysMsg, { structured: true, phoneXhs: true }), rpTask);
-  if (!resp) return;
+  if (!resp || !current()) return;
 
   let replies = [];
   try {
@@ -19623,8 +19659,8 @@ async function generateXHSReplyToComment(postId, userComment, userName, commentI
   const delays = [0, 1500, 3500];
   replies.slice(0, 3).forEach((r, i) => {
     setTimeout(() => {
-      const p2 = (STATE.xhsFeed || []).find(x => x.id === postId);
-      if (!p2) return;
+      if (!current()) return;
+      const p2 = post;
       const ts = resolvePhoneTime();
       const nick = rpXhsNicknameBatch(1, p2, [r?.user])[0];
       const replyText = typeof r?.text === 'string' ? r.text.trim() : '';
