@@ -795,7 +795,7 @@ const RP_XHS_COMPOSE_CSS = `
   height:1.5em!important; min-height:1.5em!important; margin:0!important; padding:0!important;
   border:0!important; border-radius:0!important; outline:0!important; box-shadow:none!important;
   background:transparent!important; color:var(--rp-compose-ink)!important; caret-color:var(--rp-compose-tape)!important;
-  font-family:var(--rp-compose-serif)!important; font-size:25px!important; font-weight:400!important;
+  font-family:var(--rp-compose-serif)!important; font-size:22px!important; font-weight:400!important;
   line-height:1.5!important; letter-spacing:.01em!important; -webkit-appearance:none; appearance:none;
 }
 #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-compose-divider {
@@ -809,7 +809,7 @@ const RP_XHS_COMPOSE_CSS = `
   height:auto!important; min-height:132px!important; max-height:none!important; margin:0!important; padding:0!important;
   border:0!important; border-radius:0!important; outline:0!important; box-shadow:none!important;
   background:transparent!important; color:var(--rp-compose-ink)!important; caret-color:var(--rp-compose-tape)!important;
-  font-family:var(--rp-compose-serif)!important; font-size:14px!important; font-weight:400!important;
+  font-family:var(--rp-compose-serif)!important; font-size:12.5px!important; font-weight:400!important;
   line-height:1.85!important; letter-spacing:.04em!important; resize:none!important; overflow-y:auto!important;
   overflow-x:hidden!important; overflow-wrap:anywhere; overscroll-behavior:contain; -webkit-appearance:none; appearance:none;
 }
