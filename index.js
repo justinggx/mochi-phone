@@ -6030,6 +6030,12 @@ function injectMochiSettingsStyles() {
     #mochi-phone-settings .mochi-launch-switch input:checked+i{background:#956174}
     #mochi-phone-settings .mochi-launch-switch input:checked+i:before{transform:translateX(20px)}
     #mochi-phone-settings .mochi-launch-hint{font-size:12px;opacity:.85;line-height:1.6;margin:6px 12px 2px;color:inherit}
+    #mochi-phone-settings #mochi-phone-legacy-restore{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:0;min-height:36px;max-width:calc(100% - 24px);margin:10px 12px 12px;padding:8px 13px;border:1px solid rgba(149,97,116,.28);border-color:color-mix(in srgb,currentColor 18%,transparent);border-radius:10px;background:rgba(149,97,116,.07);background:color-mix(in srgb,currentColor 5%,transparent);color:inherit;font-family:inherit;font-size:12px;font-weight:500;line-height:1.6;letter-spacing:.015em;text-align:left;white-space:normal;overflow-wrap:anywhere;box-shadow:none;cursor:pointer;transition:background-color .15s,border-color .15s;}
+    #mochi-phone-settings #mochi-phone-legacy-restore:hover{background:rgba(149,97,116,.12);border-color:rgba(149,97,116,.55);}
+    #mochi-phone-settings #mochi-phone-legacy-restore:active{background:rgba(149,97,116,.18);}
+    #mochi-phone-settings #mochi-phone-legacy-restore:focus-visible{outline:2px solid #956174;outline-offset:3px;}
+    #mochi-phone-settings #mochi-phone-legacy-restore:disabled{opacity:.55;cursor:default;}
+    @media(prefers-reduced-motion:reduce){#mochi-phone-settings #mochi-phone-legacy-restore{transition:none;}}
     #mochi-phone-settings .mochi-launch-switch input:focus-visible+i{outline:2px solid currentColor;outline-offset:3px}
     @media(prefers-reduced-motion:reduce){#mochi-phone-settings .mochi-launch-switch i,#mochi-phone-settings .mochi-launch-switch i:before{transition:none}}
   `;
