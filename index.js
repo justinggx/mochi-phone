@@ -8507,7 +8507,13 @@ const HTML = `
                 <input id="rp-wall-file" type="file" accept="image/*" style="display:none"/>
               </div>
 </div></details></div></section>
-            <section class="rp-settings-group" aria-labelledby="rp-settings-messages-title"><h3 id="rp-settings-messages-title" class="rp-set-section-title">消息与联系人</h3><div class="rp-set-section"><div id="rp-settings-bookmark-slot"></div><details id="rp-settings-blocklist" class="rp-settings-detail" ><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">黑名单</span><span class="rp-settings-hint">管理不接收互动的角色</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
+            <section class="rp-settings-group" aria-labelledby="rp-settings-messages-title"><h3 id="rp-settings-messages-title" class="rp-set-section-title">消息与联系人</h3><div class="rp-set-section"><details id="rp-settings-language" class="rp-settings-detail"><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">角色语言</span><span id="rp-phone-language-hint" class="rp-settings-hint">按人设说母语，提供中文翻译</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
+              <fieldset id="rp-phone-language-options" aria-label="角色语言" style="border:0;margin:0;padding:0;display:grid;gap:12px;min-width:0">
+                <label class="rp-language-choice" style="display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;min-height:40px;padding:8px 0;margin:0;cursor:pointer"><input type="radio" name="rp-phone-language-mode" value="native" style="width:16px;height:16px;flex:0 0 16px;margin:2px 0 0;accent-color:var(--rp-nav-btn)"><span class="rp-set-key" style="white-space:normal;min-width:0">角色说母语（提供中文翻译）</span></label>
+                <label class="rp-language-choice" style="display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;min-height:40px;padding:8px 0;margin:0;cursor:pointer"><input type="radio" name="rp-phone-language-mode" value="zh" style="width:16px;height:16px;flex:0 0 16px;margin:2px 0 0;accent-color:var(--rp-nav-btn)"><span class="rp-set-key" style="white-space:normal;min-width:0">角色说中文</span></label>
+              </fieldset>
+              <div class="rp-set-hint" style="margin-top:12px">用于信息、群聊、朋友圈及评论。对之后生成的内容生效，已有内容保持原样。</div>
+            </div></details><div id="rp-settings-bookmark-slot"></div><details id="rp-settings-blocklist" class="rp-settings-detail" ><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">黑名单</span><span class="rp-settings-hint">管理不接收互动的角色</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
               <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
                 <div class="rp-set-hint" style="font-size:12px;color:#8a8a9a;line-height:1.4">拉黑后该角色不会出现在好友列表、不会发消息、不会在朋友圈互动。适用于多人卡场景。</div>
                 <div style="display:flex;gap:6px;min-width:0">
@@ -9844,6 +9850,14 @@ function rpInstallReadingListener() {
 function rpOpenLocalSearch(event) { rpTools().conversation.openSearch(event?.currentTarget?.id==='rp-thread-search'?STATE.currentThread:''); }
 
 function bindUI() {
+  rpRefreshPhoneLanguageSettings();
+  $(document).on('change.mochiPhone', '#rp-phone-language-options input[name="rp-phone-language-mode"]', function() {
+    if (!this.checked) return;
+    if (!rpSetPhoneLanguageMode(this.value)) {
+      rpRefreshPhoneLanguageSettings();
+      toastr.info('语言设置暂不可用，请刷新后重试。');
+    }
+  });
   rpInstallReadingListener();
   $(document).on('click.mochiPhone','#rp-local-search,#rp-thread-search',rpOpenLocalSearch);
   $(document).on('click.mochiPhone','#rp-go-latest',()=>{const el=document.getElementById('rp-bubbles');el.scrollTop=el.scrollHeight;rpRememberReading();saveState();rpUpdateLatestButton();});
@@ -11318,7 +11332,7 @@ function go(view) {
   // 切换到 home 时重置到第0屏
   if (view === 'home' && window._rpHomeSwipeGoto) { window._rpHomeSwipeGoto(0, false); }
 
-  if (view === 'settings') { _bindAvatarUpload(); renderBlocklist(); rpApplyDesktopPhoneSize(); }
+  if (view === 'settings') { _bindAvatarUpload(); renderBlocklist(); rpApplyDesktopPhoneSize(); rpRefreshPhoneLanguageSettings(); }
 
   if (view === 'messages') {
     renderThreadList();
@@ -11465,8 +11479,36 @@ function openThread(threadId) {
 // ================================================================
 //  BUBBLE RENDERER
 // ================================================================
+const RP_PHONE_LANGUAGE_KEY = 'mochi_phone_speech_v1';
+function rpGetPhoneLanguageMode() {
+  return _extSettings()?.[RP_PHONE_LANGUAGE_KEY]?.mode === 'zh' ? 'zh' : 'native';
+}
+function rpRefreshPhoneLanguageSettings() {
+  const mode = rpGetPhoneLanguageMode();
+  $('#rp-phone-language-options input').each(function() { this.checked = this.value === mode; });
+  $('#rp-phone-language-options').prop('disabled', !_extSettings() || !rpArchiveAccountHandle);
+  $('#rp-phone-language-hint').text(mode === 'zh' ? '所有角色统一使用中文' : '按人设说母语，提供中文翻译');
+}
+function rpSetPhoneLanguageMode(mode) {
+  const settings = _extSettings();
+  if (!settings || !rpArchiveAccountHandle || !['native','zh'].includes(mode)) return false;
+  const changed = mode !== rpGetPhoneLanguageMode();
+  if (changed) {
+    settings[RP_PHONE_LANGUAGE_KEY] = { mode };
+    _saveSettings();
+  }
+  rpRefreshPhoneLanguageSettings();
+  refreshMochiPrompt();
+  return true;
+}
+
 function rpPhoneSpeechLanguageRule() {
-  return '[手机语言] Scope:只约束手机内容，PHONE内SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。Language:✓每位发言者使用其明确母语/常用语言；缺失时参考明确国籍，英国通常英语、德国通常德语，多语言国家按具体设定；不明默认中文；不能凭名字猜，不改国籍。Output:✓仅角色原语；中文角色仅中文；×括号译文/逐句对照/双语重复/自动附中文或英文翻译。历史手机消息即使是双语，也×模仿其译文格式；角色卡或其他提示词的翻译要求不用于手机发言，替代“手机文字一律中文”或“外语附中文翻译”的泛化规则。Translation:仅用户点译按钮后另行显示，×写进消息正文。Preserve:姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt保持原样；×替{{user}}发言/改{{user}}手动输入/改变主楼正文语言。';
+  const mode = rpGetPhoneLanguageMode();
+  const selection = '[手机语言模式:' + (mode === 'zh' ? '中文' : '母语') + '] 当前用户选择是本轮手机发言的语言依据，优先于世界书、角色卡或历史消息中固定母语/固定中文的手机语言要求；只改变发言语种，不改人物国籍、性格、视角或关系。\n';
+  if (mode === 'zh') {
+    return selection + '[手机语言] Scope:只约束手机内容，PHONE内SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。Language:✓所有发言者，包括char、NPC和其他联系人，不论国籍、母语或常用语言，统一直接用自然中文表达，保留人物语气、性格和上下文。外语人设或旧消息不能使本轮切回外语。Output:✓仅中文正文；×整句外语/双语重复/括号附外语/自动附翻译；专有姓名、必要的地址/链接与协议标记保留原样，不强行翻译。Translation:中文正文不附其他语言译文；已有外语消息仍可通过译按钮翻成中文。Preserve:姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt保持原样；×替{{user}}发言/改{{user}}手动输入/改变主楼正文语言。';
+  }
+  return selection + '[手机语言] Scope:只约束手机内容，PHONE内SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。Language:✓每位发言者使用其明确母语/常用语言；缺失时参考明确国籍，英国通常英语、德国通常德语，多语言国家按具体设定；不明默认中文；不能凭名字猜，不改国籍。Output:✓仅角色原语；中文角色仅中文；×括号译文/逐句对照/双语重复/自动附中文或英文翻译。历史手机消息即使是双语，也×模仿其译文格式；角色卡或其他提示词的翻译要求不用于手机发言，替代“手机文字一律中文”或“外语附中文翻译”的泛化规则。Translation:仅用户点译按钮后另行显示，×写进消息正文。Preserve:姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt保持原样；×替{{user}}发言/改{{user}}手动输入/改变主楼正文语言。';
 }
 
 const rpPhoneTranslationJobs = new WeakMap();
