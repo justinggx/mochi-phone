@@ -19343,6 +19343,50 @@ function postUserXHS() {
   setTimeout(() => generateXHSStrangerComments(post.id), 2000);
 }
 
+// Nicknames belong to fictional public viewers, never to the current persona or character.
+const XHS_NICKNAME_PARTS = {
+  names: '奶油面包边|窗台听雨|月亮打了个盹|周末慢半拍|橘子海来信|薄荷冰拿铁|今天也想散步|山间邮递员|不加糖的乌龙|一颗晚熟桃|路过花店的人|春天留个位置|猫咪借我靠靠|日落收藏家|雨天不带伞|半杯冰美式|云朵在排队|葡萄味气泡|偷偷存个春天|睡前翻两页|海盐可颂|月光晒被子|正在等绿灯|纸飞机没折好|松鼠的小口袋|桃子别太甜|拐角那只猫|晚风借过一下|小熊不加班|今天走慢一点|想吃热汤面|秋天的书签|一口柚子茶|星星晚点睡|去山里看云|好天气签收员|玻璃杯里的夏天|草莓要洗两遍|落日修理铺|黄昏去买花|一只路过的团子|猫在键盘上|把周末装进口袋|海风翻书|乌龙茶要温的|等一场流星雨|小岛散步指南|咖啡只喝半杯|凌晨的便利店|没有馅的汤圆|给云朵写信|窗边有只麻雀|下一站吃饭|热牛奶和饼干|晚安留声机|银杏叶慢慢落|碎冰摇一摇|太阳今天休假|雨后去踩水|邮票贴歪了|一罐蜜桃汽水|山茶没有开|绕远路回家|树荫下打个盹|橘猫占了座|咬一口月亮|豆沙面包出炉|明天记得吃早饭|小狗看见彩虹|青柠泡泡水|故事翻到下一页|晚霞快递到了|香菜另放谢谢|口袋里有糖|晚风停在窗边|给生活撒点芝麻|云边有家面馆|冰箱里的布丁|周五提前快乐|路灯下数星星|芝士多一点|一朵懒洋洋|下班去看夕阳|番茄今天不炒蛋|想和猫换个班|给自己买束花|煎蛋要溏心|把月色打包|薄荷窗帘|凌晨一点的吐司|借我一页晴天|在桥边等风|棉花糖不太甜|这杯少放冰|散步顺便买菜|小满不着急'.split('|'),
+  starts: '躲雨的|晒太阳的|爱发呆的|刚睡醒的|散步中的|等车的|不熬夜的|喝热茶的|慢悠悠的|刚下班的|看云的|听风的|绕远路的|背包里的|窗边的|树荫下的|海边的|周末的|雨后的|黄昏的|月光下的|口袋里的|春日的|秋天的|凌晨的|写信的|看电影的|吃早餐的|逛花市的|翻书的|等日落的|打瞌睡的'.split('|'),
+  ends: '小橘子|奶油猫|豆沙包|可颂|小麻雀|布丁|乌龙茶|小熊|棉花糖|白桃|吐司|海盐饼干|薄荷糖|青团|小松鼠|小狗|柚子|糯米团|纸飞机|蒲公英|小蘑菇|银杏叶|风铃|咖啡杯|月牙|星星|贝壳|热牛奶|小花盆|山茶花|向日葵|毛线球|栗子|草莓|青柠|云朵|饭团|小刺猬|巧克力|汤圆|红豆|冰汽水|纸风车|小鲸鱼|奶酪|番茄|橡皮鸭|小海獭'.split('|'),
+  emoji: ['🌿','🍊','☕','🌙','🍞','🫧','🍵','🐈','🌷','🍑','🧸','✨']
+};
+function rpXhsNicknameKey(value) {
+  return typeof value === 'string' ? value.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') : '';
+}
+function rpXhsNicknameBatch(count, post, preferred = []) {
+  const used = new Set(), add = value => { const key = rpXhsNicknameKey(value); if (key) used.add(key); };
+  const ctx = getContext() || {};
+  [ctx.name1, ctx.name2, post?.user].forEach(add);
+  const recent = (STATE.xhsFeed || []).slice(0, 80);
+  if (post && !recent.includes(post)) recent.push(post);
+  for (const item of recent) {
+    add(item.user);
+    const comments = Array.isArray(item.comments) ? item.comments : [];
+    for (const comment of (item === post ? comments : comments.slice(-80))) add(comment.user);
+  }
+  const { names, starts, ends, emoji } = XHS_NICKNAME_PARTS;
+  const size = names.length + starts.length * ends.length, order = Array.from({ length: size }, (_, i) => i);
+  for (let i = size - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  let cursor = 0;
+  const fresh = () => {
+    while (true) {
+      const n = order[cursor % size], cycle = Math.floor(cursor++ / size);
+      const stem = n < names.length ? names[n] : starts[Math.floor((n - names.length) / ends.length)] + ends[(n - names.length) % ends.length];
+      const value = stem + (cycle ? String(cycle + 1) : '') + emoji[Math.floor(Math.random() * emoji.length)];
+      if (!used.has(rpXhsNicknameKey(value))) return value;
+    }
+  };
+  return Array.from({ length: Math.max(0, Math.min(8, Math.trunc(Number(count) || 0))) }, (_, i) => {
+    let value = typeof preferred[i] === 'string' ? preferred[i].trim() : '';
+    if (!rpXhsNicknameKey(value) || used.has(rpXhsNicknameKey(value)) || Array.from(value).length > 32 || /[<>{}\r\n\u0000-\u001f]/.test(value)) value = fresh();
+    add(value);
+    return value;
+  });
+}
+
 // AI 生成陌生网友评论(多性格)
 async function generateXHSStrangerComments(postId) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
@@ -19366,6 +19410,7 @@ async function generateXHSStrangerComments(postId) {
   const posterName = post.from === 'user' ? userName : (post.user || '楼主');
   const posterDesc = post.from === 'user' ? `用户${userName}本人` : `网友${posterName}`;
 
+  const nicknames = rpXhsNicknameBatch(5, post);
   const sysMsg = `你是一个小红书评论模拟器。以下帖子是由${posterDesc}发的,模拟5位性格各异的陌生网友评论。
 
 人物关系说明(严格遵守,不能混淆):
@@ -19387,7 +19432,8 @@ async function generateXHSStrangerComments(postId) {
 4. 无脑力挺型:支持${userName}立场,情绪化但有观点
 5. 猜测爆瓜型:点出${charName}名字,八卦语气
 
-每条15-30字,口语化,带emoji昵称。
+每条15-30字,口语化。
+本次网友昵称候选：${JSON.stringify(nicknames)}。每人使用一个不同昵称，也可自拟新昵称；不要把发帖人、当前用户或角色姓名用作网友昵称。
 只返回JSON:[{"user":"昵称","text":"评论内容"}]`;
 
   const prompt = `帖子标题:${post.title}\n帖子内容:${post.body}`;
@@ -19406,13 +19452,12 @@ async function generateXHSStrangerComments(postId) {
   if (!Array.isArray(items) || items.length === 0) throw new Error('Empty comments');
   if (!(STATE.xhsFeed || []).includes(post)) return;
 
-  const now = new Date();
-  const baseTs = now.getTime();
-  items.forEach((item, i) => {
-    if (typeof item?.user !== 'string' || typeof item.text !== 'string' || !item.text.trim()) return;
+  const validItems = items.filter(item => item && typeof item.text === 'string' && item.text.trim()).slice(0, 5);
+  const names = rpXhsNicknameBatch(validItems.length, post, validItems.map(item => item.user));
+  validItems.forEach((item, i) => {
     const ts = resolvePhoneTime();
     post.comments = post.comments || [];
-    post.comments.push({ from: 'stranger_'+i, user: item.user, text: item.text, time: ts, replyTo: null });
+    post.comments.push({ from: 'stranger_'+i, user: names[i], text: item.text, time: ts, replyTo: null });
   });
   if (!post.comments.length) throw new Error('Empty comments');
   post.commentStatus = 'ready';
@@ -19478,11 +19523,13 @@ async function generateXHSReplyToComment(postId, userComment, userName, commentI
   const charLast = charName.split(/\s+/).pop() || charName;
   const recentComments = (post.comments||[]).filter(c => c !== targetComment).slice(-5).map(c=>`${c.user}:${c.text}`).join('\n');
 
+  const nicknames = rpXhsNicknameBatch(3, post);
   const sysMsg = `你是小红书评论区生成器。根据帖子内容和用户评论,生成3个自然贴切的陌生网友回复。
 要求:
 - 3条回复必须紧扣帖子主题和用户说的话,不能答非所问
 - 3条风格各异(如追问细节、调侃起哄、加料补充、共情、质疑等),根据帖子和评论内容自然选择
-- 每条15-25字,口语化小红书风格,昵称带emoji有创意
+- 每条15-25字,口语化小红书风格
+- 本次网友昵称候选：${JSON.stringify(nicknames)}。每人使用不同昵称，也可自拟；不要复用近期评论者昵称或冒用发帖人、当前用户和角色姓名
 帖子背景:涉及用户与 ${charName}(姓${charLast})的相关话题。请根据下方背景资料判断帖子中出现的亲属/关系称谓实际对应谁,以背景为准,不得臆造第三人。
 
 只返回JSON数组:[{"user":"昵称emoji","text":"回复内容"},{"user":"昵称emoji","text":"回复内容"},{"user":"昵称emoji","text":"回复内容"}]`;
@@ -19524,8 +19571,8 @@ async function generateXHSReplyToComment(postId, userComment, userName, commentI
       const p2 = (STATE.xhsFeed || []).find(x => x.id === postId);
       if (!p2) return;
       const ts = resolvePhoneTime();
-      const nick = r.user || '路人甲🍿';
-      const replyText = (r.text || '').trim();
+      const nick = rpXhsNicknameBatch(1, p2, [r?.user])[0];
+      const replyText = typeof r?.text === 'string' ? r.text.trim() : '';
       if (!replyText) return;
       const refIdx = p2.comments.findIndex(c => c.id === targetCommentId);
       if (refIdx < 0) return;
