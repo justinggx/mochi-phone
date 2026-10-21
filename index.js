@@ -129,6 +129,28 @@ const RP_ART_CSS = `
 #rp-phone.rp-art-icons #rp-screen :is(.rp-app-ico,.rp-folder-item-ico).rp-art-ready {position:relative;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;filter:none!important;overflow:visible;}
 #rp-phone .rp-art-clip {position:absolute;inset:0;overflow:hidden;clip-path:inset(4%);pointer-events:none;}
 #rp-phone .rp-art-atlas {position:absolute;display:block;max-width:none!important;max-height:none!important;image-rendering:auto!important;pointer-events:none;}
+/* Align visible artwork, rather than the unequal transparent margins in each source image. */
+#rp-phone.rp-art-icons #rp-folder-modal .rp-game-art-tile {position:absolute;inset:0;overflow:hidden;}
+#rp-phone.rp-art-icons #rp-folder-modal .rp-folder-item-ico > img,
+#rp-phone.rp-art-icons #rp-folder-modal .rp-game-art-tile {transform-origin:0 0;transform:translate(var(--rp-game-art-x,0%),var(--rp-game-art-y,0%)) scale(var(--rp-game-art-scale,1));pointer-events:none;}
+#rp-phone.rp-art-icons[data-rp-art-theme="candy"] #rp-folder-modal [data-folder-app="ludo"] .rp-folder-item-ico {--rp-game-art-scale:1.15843;--rp-game-art-x:-15.311778%;--rp-game-art-y:-20.484988%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="candy"] #rp-folder-modal [data-folder-app="g2048"] .rp-folder-item-ico {--rp-game-art-scale:1.142597;--rp-game-art-x:-3.485194%;--rp-game-art-y:-21.526196%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="candy"] #rp-folder-modal [data-folder-app="ggold"] .rp-folder-item-ico {--rp-game-art-scale:1.145205;--rp-game-art-x:-16.849315%;--rp-game-art-y:-1.689498%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="candy"] #rp-folder-modal [data-folder-app="gword"] .rp-folder-item-ico {--rp-game-art-scale:1.174707;--rp-game-art-x:-6.112412%;--rp-game-art-y:-4.145199%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="candy"] #rp-folder-modal [data-folder-app="gomoku"] .rp-folder-item-ico {--rp-game-art-scale:1.038509;--rp-game-art-x:-2.42236%;--rp-game-art-y:-1.925466%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="candy"] #rp-folder-modal [data-folder-app="sudoku"] .rp-folder-item-ico {--rp-game-art-scale:0.999203;--rp-game-art-x:-1.87251%;--rp-game-art-y:0%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="star"] #rp-folder-modal [data-folder-app="ludo"] .rp-folder-item-ico {--rp-game-art-scale:1.185816;--rp-game-art-x:-20.638298%;--rp-game-art-y:-25.555556%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="star"] #rp-folder-modal [data-folder-app="g2048"] .rp-folder-item-ico {--rp-game-art-scale:1.282864;--rp-game-art-x:-9.641944%;--rp-game-art-y:-30.204604%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="star"] #rp-folder-modal [data-folder-app="ggold"] .rp-folder-item-ico {--rp-game-art-scale:1.197136;--rp-game-art-x:-24.081146%;--rp-game-art-y:-4.892601%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="star"] #rp-folder-modal [data-folder-app="gword"] .rp-folder-item-ico {--rp-game-art-scale:1.226406;--rp-game-art-x:-9.559902%;--rp-game-art-y:-7.408313%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="star"] #rp-folder-modal [data-folder-app="gomoku"] .rp-folder-item-ico {--rp-game-art-scale:1.038509;--rp-game-art-x:-2.505176%;--rp-game-art-y:-1.966874%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="star"] #rp-folder-modal [data-folder-app="sudoku"] .rp-folder-item-ico {--rp-game-art-scale:0.996226;--rp-game-art-x:-1.678252%;--rp-game-art-y:-0.049652%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="misty"] #rp-folder-modal [data-folder-app="ludo"] .rp-folder-item-ico {--rp-game-art-scale:1.202878;--rp-game-art-x:-23.764988%;--rp-game-art-y:-23.764988%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="misty"] #rp-folder-modal [data-folder-app="g2048"] .rp-folder-item-ico {--rp-game-art-scale:1.282864;--rp-game-art-x:-9.846547%;--rp-game-art-y:-24.680307%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="misty"] #rp-folder-modal [data-folder-app="ggold"] .rp-folder-item-ico {--rp-game-art-scale:1.174707;--rp-game-art-x:-24.285714%;--rp-game-art-y:-1.053864%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="misty"] #rp-folder-modal [data-folder-app="gword"] .rp-folder-item-ico {--rp-game-art-scale:1.185816;--rp-game-art-x:-6.643026%;--rp-game-art-y:-3.617021%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="misty"] #rp-folder-modal [data-folder-app="gomoku"] .rp-folder-item-ico {--rp-game-art-scale:1.032099;--rp-game-art-x:-2.098765%;--rp-game-art-y:-1.646091%;}
+#rp-phone.rp-art-icons[data-rp-art-theme="misty"] #rp-folder-modal [data-folder-app="sudoku"] .rp-folder-item-ico {--rp-game-art-scale:0.994252;--rp-game-art-x:-1.575818%;--rp-game-art-y:0.168484%;}
 `;
 const RP_VISUAL_CSS = `
 #rp-phone {
@@ -16935,7 +16957,13 @@ function rpPaintArtIcon(icon, atlas, index, columns) {
   image.style.left = `${-(index % columns) * 100}%`;
   image.style.top = `${-Math.floor(index / columns) * 100}%`;
   image.src = atlas.src;
-  clip.append(image);
+  if (columns === 2) {
+    // Crop to one atlas cell before reframing, so adjacent game artwork never leaks in.
+    const tile = document.createElement('span');
+    tile.className = 'rp-game-art-tile';
+    tile.append(image);
+    clip.append(tile);
+  } else clip.append(image);
   icon.replaceChildren(clip);
   if (badge) icon.prepend(badge);
   icon.classList.add('rp-art-ready');
@@ -21530,7 +21558,7 @@ const rpDeferredGameTimers = new Map();
 let rpGamePartner = null;
 let rpGameTowers = Object.create(null);
 const RP_GAME_FIELDS = {
-  ludo: ['userPos','charPos','turn','lastDice','userSkip','charSkip','pendingReroll','_spicyLevel','taskActive','taskPlayer','taskPos','taskStage','taskReplyShown','pendingMove','lastTaskText','lastTaskTime','lastTaskPlayer'],
+  ludo: ['userPos','charPos','turn','lastDice','userSkip','charSkip','pendingReroll','_spicyLevel','taskActive','taskPlayer','taskPos','taskStage','taskDepth','taskReplyShown','pendingMove','lastTaskText','lastTaskTime','lastTaskPlayer'],
   g2048: ['board','score','best','turn','won','commentCount'],
   gm: ['mode','turn','round','userScore','charScore','towerLevel','timeLeft','hookAngle','hookDir','hookState','hookLen','hookedItem','items','coopWon'],
   gword: ['mode','answer','category','hints','guesses','round','charGiveUpRound','usedWords','retryHint','retryGuess','pendingInput','pendingClueCommitted'],
@@ -21674,6 +21702,8 @@ function rpValidateGameRound(key, raw) {
     else if(r.pendingMove)r.pendingMove={player:r.pendingMove.player,target:r.pendingMove.target,depth:integer(r.pendingMove.depth,3)?r.pendingMove.depth:0};
     if (!['confirm','task',null,undefined].includes(r.taskStage) || !['user','char'].includes(r.taskPlayer) || !integer(r.taskPos, r.path.length) || !r.events[r.taskPos]) { r.taskStage = null; r.taskActive = null; }
     else r.taskActive = r.events[r.taskPos].text;
+    r.taskDepth = integer(r.taskDepth, 2) ? r.taskDepth : 0;
+    r.taskReplyShown = r.taskReplyShown === true;
     r.userSkip = !!r.userSkip; r.charSkip = !!r.charSkip;
     r.lastTaskText = typeof r.lastTaskText === 'string' ? r.lastTaskText.slice(0, 500) : null;
     r.lastTaskTime = integer(r.lastTaskTime, Number.MAX_SAFE_INTEGER) ? r.lastTaskTime : 0;
@@ -21738,7 +21768,7 @@ async function rpResumeSavedGame(key) {
         await rpGuardAwait(lgMove(move.player, move.target - pos - (pos === 0 ? 1 : 0), move.depth || 0), token, 0);
         rpFinishLudoMove(move.player);
       } else if (LG.taskStage) {
-        await rpGuardAwait(lgTriggerSquareEvent(LG.taskPlayer, LG.taskPos), token, 0);
+        await rpGuardAwait(lgTriggerSquareEvent(LG.taskPlayer, LG.taskPos, LG.taskDepth || 0), token, 0);
         rpFinishLudoMove(LG.taskPlayer);
       } else if (LG.turn === 'char') rpGameTimer('ludo', lgCharTurn, 500);
       else { $('#rp-dice-btn').prop('disabled',false); lgStatus('你的回合 - 按🎲掷骰子!'); }
@@ -21748,6 +21778,7 @@ async function rpResumeSavedGame(key) {
   saveState();
 }
 function rpFinishLudoMove(player) {
+  if (!LG.active) return;
   LG.rolling = false;
   if (LG.userPos >= LUDO_PATH_LEN) { lgWin('user'); return; }
   if (LG.charPos >= LUDO_PATH_LEN) { lgWin('char'); return; }
@@ -22337,7 +22368,7 @@ function _lgGenerateDecos(path, theme, N) {
 // Store decorations per board so they don't change on re-render
 let _lgDecos = [];
 let _lgBoardCache = null;
-let _lgBoardCachePath = null, _lgBoardCacheTheme = null, _lgBoardCacheDecos = null;
+let _lgBoardCachePath = null, _lgBoardCacheTheme = null, _lgBoardCacheDecos = null, _lgBoardCacheScale = null;
 
 // Phase 2: Home Run removed, no eat mechanic, shared linear path
 // Both players run the same LUDO_PATH from pos 1 (index 0) to pos LUDO_PATH_LEN (win)
@@ -22696,6 +22727,7 @@ function lgStartGame(spicyLevel) {
   LG.taskChatCount = 0;
   LG.justDidTask   = false;
   LG.taskActive    = null;
+  LG.taskDepth     = 0;
   LG.taskBusy      = false;
   LG.lastTaskTime  = 0; LG.lastTaskText=null;LG.lastTaskPlayer=null;
 
@@ -22742,12 +22774,13 @@ function lgRender() {
   let C = screen;
   const CELL = 20, N = 12, W = N * CELL;
   const T = LUDO_THEME || LUDO_THEMES[0];
+  const readingScale = rpTools().prefs().scale / 100;
 
-  if (!_lgBoardCache || _lgBoardCachePath !== LUDO_PATH || _lgBoardCacheTheme !== T || _lgBoardCacheDecos !== _lgDecos) {
+  if (!_lgBoardCache || _lgBoardCachePath !== LUDO_PATH || _lgBoardCacheTheme !== T || _lgBoardCacheDecos !== _lgDecos || _lgBoardCacheScale !== readingScale) {
   _lgBoardCache = document.createElement('canvas'); _lgBoardCache.width=W; _lgBoardCache.height=W;
   C = _lgBoardCache.getContext('2d');
   if (!C) { _lgBoardCache=null; return; }
-  _lgBoardCachePath=LUDO_PATH; _lgBoardCacheTheme=T; _lgBoardCacheDecos=_lgDecos;
+  _lgBoardCachePath=LUDO_PATH; _lgBoardCacheTheme=T; _lgBoardCacheDecos=_lgDecos; _lgBoardCacheScale=readingScale;
   C.clearRect(0, 0, W, W);
 
   // ── Background ──
@@ -22814,7 +22847,7 @@ function lgRender() {
     const num = idx + 1;
     if (!isStart && !isEnd && num % 5 === 0) {
     C.fillStyle = 'rgba(64,72,80,.74)';
-    C.font = `${CELL*0.42*(rpTools().prefs().scale/100)}px -apple-system, sans-serif`;
+    C.font = `${CELL*0.42*readingScale}px -apple-system, sans-serif`;
       C.textAlign = 'center'; C.textBaseline = 'middle';
       C.fillText(String(num), c*CELL+CELL/2, r*CELL+CELL/2);
     }
@@ -22887,7 +22920,7 @@ async function lgUserRoll() {
   /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
   /* rp-cancel-boundary */ try {
 
-  if (!LG.active || LG.rolling || LG.turn !== 'user') return;
+  if (!LG.active || LG.rolling || LG.taskBusy || LG.turn !== 'user') return;
   // Check skip
   if (LG.userSkip) {
     LG.userSkip = false;
@@ -22909,6 +22942,7 @@ async function lgUserRoll() {
   lgMsg('sys', `你掷出 ${n} ${DICE_EMOJI[n]}`);
 
   await rpGuardAwait(lgMove('user', n), rpTask, 0);
+  if (!LG.active) return;
 
   // Pending reroll from square event
   if (LG.pendingReroll === 'user') {
@@ -22939,9 +22973,12 @@ async function lgCharTurn() {
   const setTimeout = (fn, ms, ...args) => rpGameTimer('ludo', fn, ms, false, args);
 
   /* rp-task-scope */ const rpTask = rpGameRuntime('ludo').task();
+  let started = false;
   /* rp-cancel-boundary */ try {
 
-  if (!LG.active) return;
+  if (!LG.active || LG.turn !== 'char' || LG.rolling || LG.taskBusy) return;
+  started = true; LG.rolling = true;
+  $('#rp-dice-btn').prop('disabled', true);
   // Check skip
   if (LG.charSkip) {
     LG.charSkip = false;
@@ -22959,6 +22996,7 @@ async function lgCharTurn() {
   lgMsg('sys', `${LG.charName} 掷出 ${n} ${DICE_EMOJI[n]}`);
 
   await rpGuardAwait(lgMove('char', n), rpTask, 0);
+  if (!LG.active) return;
 
   // Pending reroll from square event
   if (LG.pendingReroll === 'char') {
@@ -22979,7 +23017,7 @@ async function lgCharTurn() {
     $('#rp-dice-btn').prop('disabled', false);
   }
 
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
+  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (started && rpTask.valid()) { LG.rolling = false; saveState(); } }
 }
 
 async function lgMove(player, steps, eventDepth = 0) {
@@ -23033,7 +23071,9 @@ function lgStatus(txt) { $('#rp-game-status-text').text(txt); }
 function lgMsg(type, text) { rpAppendGameMessage('ludo',type,text); }
 
 function lgWin(winner) {
-  LG.active = false;
+  if (!LG.active) return;
+  LG.active = false; LG.rolling = false; LG.pendingReroll = null;
+  $('#rp-dice-btn').prop('disabled', true).removeClass('ludo-rolling');
   if (LG._animFrame) { cancelAnimationFrame(LG._animFrame); LG._animFrame = null; }
   const isUser = winner === 'user';
   $('#game-win-emoji').text(isUser ? '🎉' : '😅');
@@ -23333,8 +23373,8 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
   if (!ev) return;
   const isUser = player === 'user';
   const moverName = isUser ? '你' : LG.charName;
-  const alreadyReplied = LG.taskStage === 'task' && LG.taskPos === pos && LG.taskReplyShown;
-  LG.taskActive = ev.text; LG.taskPlayer = player; LG.taskPos = pos;
+  const alreadyReplied = ['confirm','task'].includes(LG.taskStage) && LG.taskPlayer === player && LG.taskPos === pos && LG.taskReplyShown === true;
+  LG.taskActive = ev.text; LG.taskPlayer = player; LG.taskPos = pos; LG.taskDepth = _depth || 0;
   LG.taskStage = 'confirm'; LG.taskReplyShown = !!alreadyReplied; saveState();
 
   // 填充弹窗内容
@@ -23458,7 +23498,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
         LG.userPos = Math.min(LUDO_PATH_LEN, LG.userPos + 3);
         lgMsg('sys', '你选择了前进3格!');
       } else {
-        LG.charPos = Math.max(1, LG.charPos - 3);
+        LG.charPos = LG.charPos > 0 ? Math.max(1, LG.charPos - 3) : 0;
         lgMsg('sys', `你选择了让${LG.charName}后退3格!`);
       }
     } else {
@@ -23466,7 +23506,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
         LG.charPos = Math.min(LUDO_PATH_LEN, LG.charPos + 3);
         lgMsg('sys', `${LG.charName}选择了前进3格!`);
       } else {
-        LG.userPos = Math.max(1, LG.userPos - 3);
+        LG.userPos = LG.userPos > 0 ? Math.max(1, LG.userPos - 3) : 0;
         lgMsg('sys', `${LG.charName}选择了让你后退3格!`);
       }
     }
@@ -23501,7 +23541,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
         const pending=(async()=>{
           const rawReply=await rpGuardAwait(lgCallAPI(prompt,4096,g2048GetPersona()),rpTask,0);
           const reply=cleanGameReply(rawReply,LG.charName,ev.type==='action');
-          if(reply && reply.length<=8000 && !/\*完成[^*]*\*/.test(reply) && (!reply.includes(ev.text) || (ev.type==='action' && /\*[^*]+\*/.test(reply)))){
+          if(reply && reply.length<=8000 && !/\*完成[^*]*\*/.test(reply) && (reply.split(ev.text).join('').replace(/[\s\p{P}\p{S}]/gu,'').length>=2 || (ev.type==='action' && /\*[^*]+\*/.test(reply)))){
             lgMsg('char',reply);LG.chatLog.at(-1).kind='task-result';LG.taskReplyShown=true;saveState();return true;
           }
           return false;
