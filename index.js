@@ -5669,15 +5669,26 @@ function rpClearPhoneMotion() {
     phone.style.display = 'none';
   }
 }
-function rpFadeSurface(element, opening, complete = () => {}, page = false) {
+function rpNavigationMotionDirection(previous, next) {
+  const parents = {thread:'messages','xhs-detail':'xhs','xhs-compose':'xhs','theme-studio':'themes','api-settings':'settings',stickers:'settings'};
+  return next === 'home' || next === 'lock' || parents[previous] === next ? -1 : 1;
+}
+function rpFadeSurface(element, opening, complete = () => {}, page = false, direction = 1) {
   if (!element) { complete(); return; }
   rpCancelSurfaceMotion(element);
   if (typeof element.animate !== 'function' || document.hidden || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { complete(); return; }
-  const opacity = Number.parseFloat(window.getComputedStyle(element).opacity);
+  // Move the inner frame, leaving the outer phone's drag/desktop-scale transform intact.
+  const surface = page ? element : element.querySelector('#rp-frame') || element;
+  const style = window.getComputedStyle(surface);
+  const opacity = Number.parseFloat(style.opacity);
   const finalOpacity = Number.isFinite(opacity) ? opacity : 1;
+  const baseTransform = style.transform && style.transform !== 'none' ? style.transform : '';
+  const rest = {opacity:finalOpacity,transform:baseTransform || 'none'};
+  const offset = page ? `translate3d(${direction < 0 ? -18 : 18}px,0,0)` : `translate3d(0,${opening ? 14 : 10}px,0) scale(${opening ? .975 : .985})`;
+  const displaced = {opacity:opening ? (page ? finalOpacity * .45 : 0) : 0,transform:(offset + ' ' + baseTransform).trim()};
   try {
-    const animation = element.animate(opening ? [{opacity:page ? finalOpacity * .65 : 0},{opacity:finalOpacity}] : [{opacity:finalOpacity},{opacity:0}],
-      {duration:page ? 120 : opening ? 150 : 110,easing:'cubic-bezier(.2,.7,.3,1)'});
+    const animation = surface.animate(opening ? [displaced,rest] : [rest,displaced],
+      {duration:page ? 240 : opening ? 260 : 180,easing:'cubic-bezier(.22,.61,.36,1)'});
     rpMotionJobs.set(element,animation);
     animation.onfinish = () => {
       if (rpMotionJobs.get(element) !== animation) return;
@@ -11730,7 +11741,7 @@ function go(view) {
   }
   document.getElementById('rp-phone').dataset.readingSlot=STATE.chatId;
   rpRestoreReadingPosition();
-  if (view !== previousView && rpPhoneIsOpen()) rpFadeSurface(document.getElementById('rp-view-' + view),true,undefined,true);
+  if (view !== previousView && rpPhoneIsOpen()) rpFadeSurface(document.getElementById('rp-view-' + view),true,undefined,true,rpNavigationMotionDirection(previousView,view));
 }
 
 let rpApiTest = null, rpModelRequest = null;
