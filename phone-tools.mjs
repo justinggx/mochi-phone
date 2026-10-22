@@ -301,7 +301,7 @@ export function createPhoneTools(api) {
       {label:thread.phonePinned?'取消置顶':'置顶聊天',run:()=>{if(live()){thread.phonePinned=!thread.phonePinned;thread.phonePrefsAt=Date.now();api.renderThreads();api.save();}}},
       {label:thread.phoneMuted?'关闭免打扰':'开启免打扰',run:()=>{if(live()){thread.phoneMuted=!thread.phoneMuted;thread.phonePrefsAt=Date.now();api.hideBanner();api.renderThreads();api.save();}}},
       {label:'消息收藏',run:()=>{openBookmarks(thread.id);return false;}},
-      {label:'自动翻译'+(thread.phoneAutoTranslate?.enabled?'（已开启）':''),run:()=>{conversation.openAuto(thread);return false;}},
+      {label:'好友消息一键翻译'+(api.autoTranslation?.prefs().messages?'（已开启）':''),run:()=>{conversation.openAuto();return false;}},
       {label:'聊天长图',run:()=>{conversation.openExport(thread);return false;}},
       {label:'关闭'}
     ]);
@@ -577,38 +577,9 @@ export function createConversationFeatures(api) {
     const phone=doc.getElementById('rp-phone');
     return liveThread(t)&&state().currentView==='thread'&&state().currentThread===t.id&&doc.visibilityState!=='hidden'&&phone&&win.getComputedStyle(phone).display!=='none'&&!api.blocked(t,state());
   }
-  function setAuto(t,enabled) {
-    if(!liveThread(t))return;
-    t.phoneAutoTranslate={enabled:!!enabled,known:(t.messages||[]).map(key),changedAt:Date.now()};
-    api.save();
-  }
-  function openAuto(t=state().threads[state().currentThread]) {
-    if(!supported){info('请刷新酒馆后使用此功能。');return;}
-    if(!t||!liveThread(t))return;
-    const content=node('div').append(node('strong','',t.name),note('仅在打开此会话时，逐条把开启后收到的新外语文字或语音文字翻成中文，中文消息会跳过。使用当前翻译 API，可能产生费用；已有历史不会批量翻译。失败可点消息上的翻译按钮重试。离开会话或关闭开关后停止排队。'));
-    const enabled=checkbox('rp-auto-translate-enabled','此会话自动翻译',t.phoneAutoTranslate?.enabled===true);
-    content.append(enabled.label,note('关闭后重新开启，只处理重新开启后收到的新消息。'));
-    const token=api.runtime().task();
-    api.dialog('自动翻译',content,[{label:'取消'},{label:'保存',primary:true,run:()=>{if(token.valid()&&content[0].isConnected&&liveThread(t)&&enabled.input.prop('checked')!==(t.phoneAutoTranslate?.enabled===true))setAuto(t,enabled.input.prop('checked'));}}]);
-  }
-  async function pumpAuto() {
-    if(!supported||autoBusy)return false;
-    const t=state().threads[state().currentThread],config=t?.phoneAutoTranslate;
-    if(!t||config?.enabled!==true||!Array.isArray(config.known)||!isVisible(t)||api.translationBusy())return false;
-    const known=new Set(config.known);
-    const m=t.messages.find(m=>m.from!=='user'&&['text','default','group_msg','voice','group_voice',''].includes(m.type||'')&&!known.has(key(m)));
-    if(!m)return false;
-    const id=key(m),source=api.source(m),token=api.runtime().task();
-    const valid=()=>token.valid()&&isVisible(t)&&t.phoneAutoTranslate===config&&config.enabled&&t.messages.includes(m)&&api.source(m)===source;
-    if(!source||source.length>8000||api.cached(m)){config.known.push(id);api.save();return true;}
-    autoBusy=true;
-    try {
-      await api.translate({kind:'message',threadId:t.id,item:m},valid);
-      // Canceled/edited messages remain eligible; failed requests never loop automatically.
-      if(valid()&&!config.known.includes(id)){config.known.push(id);api.save();}
-    } finally { autoBusy=false; }
-    return true;
-  }
+  function setAuto(t,enabled) {return api.autoTranslation?.set('messages',enabled) === true;}
+  function openAuto() {if(api.autoTranslation)api.autoTranslation.open('messages');else info('请刷新酒馆后使用此功能。');}
+  async function pumpAuto() {return api.autoTranslation ? api.autoTranslation.pump() : false;}
   function searchMessages({query='',threadId='',member='',memberKey='',kind=''}={}) {
     const q=query.trim().toLocaleLowerCase(),matches=[];
     for(const t of Object.values(state().threads||{})) {

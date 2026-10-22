@@ -3,7 +3,7 @@ import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-remove-agreements-81';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261022-auto-translate-100';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -638,6 +638,15 @@ const RP_UI_FINISH_CSS = `
 #rp-phone #rp-screen #rp-xhs-menu>button {display:flex;align-items:center;justify-content:flex-start;flex:0 0 auto;width:100%;height:auto;min-width:0;min-height:38px;padding:8px 14px!important;margin:0;border:0!important;border-radius:9px!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#493e46)!important;font:inherit;font-size:13px!important;line-height:1.4!important;white-space:nowrap;cursor:pointer;touch-action:manipulation;}
 #rp-phone #rp-screen #rp-xhs-menu>button:hover,#rp-phone #rp-screen #rp-xhs-menu>button:focus-visible {background:var(--rp-v-card,rgba(120,90,110,.08))!important;}
 #rp-phone #rp-screen #rp-xhs-menu>button:disabled {opacity:.5;cursor:wait;}
+#rp-phone #rp-screen #rp-view-moments>.rp-nav-bar {padding-right:6px!important;padding-left:6px!important;grid-template-columns:40px minmax(0,1fr) 40px;position:relative;z-index:5;overflow:visible!important;}
+#rp-phone #rp-screen #rp-view-moments>.rp-nav-bar>.rp-nav-title {max-width:calc(100% - 104px)!important;}
+#rp-phone #rp-screen #rp-view-moments .rp-moments-nav-actions {position:relative;display:flex;align-items:center;justify-content:flex-end;margin-left:auto;height:40px;}
+#rp-phone #rp-screen #rp-moments-more {display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-width:40px;min-height:40px;padding:0!important;margin:0;border:0!important;border-radius:50%;background:transparent!important;box-shadow:none!important;color:var(--rp-nav-btn,#99677e)!important;font:20px/1 Arial,sans-serif!important;cursor:pointer;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-moments-menu {position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:120px;max-width:220px;padding:5px;border:1px solid var(--rp-v-border,rgba(90,60,80,.14));border-radius:14px;background:var(--rp-v-surface,#fff7fa);box-shadow:0 8px 24px rgba(30,20,35,.14);box-sizing:border-box;}
+#rp-phone #rp-screen #rp-moments-menu[hidden] {display:none!important;}
+#rp-phone #rp-screen #rp-moments-menu>button {display:flex;align-items:center;justify-content:flex-start;flex:0 0 auto;width:100%;height:auto;min-width:0;min-height:38px;padding:8px 14px!important;margin:0;border:0!important;border-radius:9px!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#493e46)!important;font:inherit;font-size:13px!important;line-height:1.4!important;white-space:nowrap;cursor:pointer;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-moments-menu>button:hover,#rp-phone #rp-screen #rp-moments-menu>button:focus-visible {background:var(--rp-v-card,rgba(120,90,110,.08))!important;}
+#rp-phone #rp-screen #rp-moments-menu>button:disabled {opacity:.5;cursor:wait;}
 #rp-phone.rp-theme-misty.rp-dark #rp-screen :is(#rp-sbar,#rp-lock-time,#rp-lock-date) {color:var(--rp-v-text,#e7e0f4)!important;text-shadow:none!important;}
 #rp-phone #rp-screen #rp-xhs-detail-body {overflow-wrap:anywhere;}
 #rp-phone.rp-dark:not(.rp-art-icons) #rp-pending-queue {color:var(--rp-v-text,#e7e0f4);}
@@ -5910,7 +5919,7 @@ function rpSetPhoneOpen(open) {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
-      rpSetXhsMenu(false);
+      rpSetXhsMenu(false); rpSetMomentsMenu(false);
       rpRememberReading();
       saveState();
       phone.hide();
@@ -8529,11 +8538,14 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title">朋友圈</span>
-            <div style="display:flex;gap:4px;align-items:center">
-              <button id="rp-gen-moments" title="AI生成朋友圈"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64"/><polyline points="16 8 21 3 21 8"/><polyline points="8 16 3 21 3 16"/></svg></button>
-              <button class="rp-nav-add" id="rp-moments-add" title="我要发动态">+</button>
-            </div>
-          </div>
+            <div class="rp-moments-nav-actions">
+              <button id="rp-moments-more" type="button" aria-label="朋友圈更多操作" aria-haspopup="menu" aria-controls="rp-moments-menu" aria-expanded="false">⋯</button>
+              <div id="rp-moments-menu" role="menu" aria-label="朋友圈操作" hidden>
+                <button id="rp-gen-moments" type="button" role="menuitem" title="AI生成朋友圈">刷新</button>
+                <button id="rp-moments-add" type="button" role="menuitem" title="我要发动态">发布</button>
+                <button id="rp-moments-auto-translate" type="button" role="menuitemcheckbox" aria-checked="false">一键翻译 · 未开启</button>
+              </div>
+            </div>   </div>
           <div id="rp-moments-list"></div>
         </div>
 
@@ -8670,6 +8682,10 @@ const HTML = `
                 <label class="rp-language-choice" style="display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;min-height:40px;padding:8px 0;margin:0;cursor:pointer"><input type="radio" name="rp-phone-language-mode" value="zh" style="width:16px;height:16px;flex:0 0 16px;margin:2px 0 0;accent-color:var(--rp-nav-btn)"><span class="rp-set-key" style="white-space:normal;min-width:0">角色说中文</span></label>
               </fieldset>
               <div class="rp-set-hint" style="margin-top:12px">用于信息、群聊、朋友圈及评论。对之后生成的内容生效，已有内容保持原样。</div>
+            </div></details><details id="rp-settings-auto-translation" class="rp-settings-detail"><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">一键翻译</span><span class="rp-settings-hint">好友消息与朋友圈自动翻成中文</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
+              <label class="rp-conv-check"><input type="checkbox" id="rp-auto-messages-enabled"><span>好友消息一键翻译</span></label>
+              <label class="rp-conv-check"><input type="checkbox" id="rp-auto-moments-enabled"><span>朋友圈一键翻译</span></label>
+              <p class="rp-feature-note">覆盖所有好友、群聊，以及朋友圈动态和评论。开启的项目会自动翻译已有及新收到的外语内容，跳过中文和纯表情，复用已有译文。使用当前翻译 API，可能产生费用；关闭手机时暂停，打开后继续。</p>
             </div></details><div id="rp-settings-bookmark-slot"></div><details id="rp-settings-blocklist" class="rp-settings-detail" ><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">黑名单</span><span class="rp-settings-hint">管理不接收互动的角色</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
               <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:8px">
                 <div class="rp-set-hint" style="font-size:12px;color:#8a8a9a;line-height:1.4">拉黑后该角色不会出现在好友列表、不会发消息、不会在朋友圈互动。适用于多人卡场景。</div>
@@ -9758,6 +9774,7 @@ function rpTools() {
     source: item=>rpPhoneTranslationSource({kind:'message',item}), avatar:getAvatar,
     stickerImage: item=>rpStickerApp().imageSource(item),
     translate:(target,valid)=>rpTogglePhoneTranslation(target,{valid}),
+    autoTranslation:{prefs:rpAutoTranslationPrefs,set:rpSetAutoTranslation,open:rpOpenAutoTranslation,pump:rpPumpAutoTranslation},
     translationBusy:()=>Object.values(STATE.threads).some(t=>(t.messages||[]).some(m=>{const j=rpPhoneTranslationJobs.get(m);return j?.pending&&j.task.valid();})),
     openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
@@ -9782,7 +9799,7 @@ function rpTools() {
 
 function rpCloseFeatureDialog() { $('#rp-feature-layer').remove(); }
 function rpCloseChatOverlays() {
-  rpSetXhsMenu(false);
+  rpSetXhsMenu(false); rpSetMomentsMenu(false);
   rpCloseFeatureDialog();
   $('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create').remove();
   $('#rp-compose-modal,#rp-folder-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel').hide();
@@ -10078,6 +10095,25 @@ function rpOpenLocalSearch(event) { rpTools().conversation.openSearch(event?.cur
 
 function bindUI() {
   rpRefreshPhoneLanguageSettings();
+  $(document).on('change.mochiPhone','#rp-auto-messages-enabled,#rp-auto-moments-enabled',function(){
+    if(!rpSetAutoTranslation(this.id === 'rp-auto-messages-enabled' ? 'messages' : 'moments',this.checked)) {rpRefreshAutoTranslationSettings();toastr.info('翻译设置未保存，请重试。');}
+  });
+  $(document).on('click.mochiPhone','#rp-moments-more',function(){rpSetMomentsMenu(this.getAttribute('aria-expanded') !== 'true',true);});
+  $(document).on('click.mochiPhone focusin.mochiPhone',function(event){if(!$(event.target).closest('#rp-view-moments .rp-moments-nav-actions').length)rpSetMomentsMenu(false);});
+  $(document).on('keydown.mochiPhone','#rp-view-moments .rp-moments-nav-actions',function(event){
+    const menu=document.getElementById('rp-moments-menu');
+    if(event.key === 'Escape' && !menu.hidden){event.preventDefault();event.stopPropagation();rpSetMomentsMenu(false,true);return;}
+    if(event.key === 'Tab'){rpSetMomentsMenu(false);return;}
+    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+    event.preventDefault();const wasHidden=menu.hidden;rpSetMomentsMenu(true);
+    const items=Array.from(menu.querySelectorAll('button:not(:disabled)')),i=items.indexOf(document.activeElement);
+    if(items.length)items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length-1 : wasHidden || i<0 ? (event.key === 'ArrowUp' ? items.length-1 : 0) : (i+(event.key === 'ArrowUp' ? -1 : 1)+items.length)%items.length].focus();
+  });
+  $(document).on('click.mochiPhone','#rp-moments-auto-translate',()=>{
+    const next=!rpAutoTranslationPrefs().moments;
+    if(!rpSetAutoTranslation('moments',next))toastr.info('翻译设置未保存，请重试。');
+    rpSetMomentsMenu(false,true);
+  });
   $(document).on('change.mochiPhone', '#rp-phone-language-options input[name="rp-phone-language-mode"]', function() {
     if (!this.checked) return;
     if (!rpSetPhoneLanguageMode(this.value)) {
@@ -10195,7 +10231,7 @@ function bindUI() {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
-      rpSetXhsMenu(false);
+      rpSetXhsMenu(false); rpSetMomentsMenu(false);
       rpRememberReading();
       saveState();
       phone.hide();
@@ -10350,7 +10386,7 @@ function bindUI() {
 
   // 小红书 - 发帖按钮
   $(document).on("click.mochiPhone", '#rp-xhs-compose', function() {
-    rpSetXhsMenu(false);
+    rpSetXhsMenu(false); rpSetMomentsMenu(false);
     if (rpXhsFavoritesOnly) rpSetFavoritesOnly(false);
     go('xhs-compose');
   });
@@ -10897,9 +10933,9 @@ function bindUI() {
   });
 
   // Compose moment
-  $(document).on("click.mochiPhone", '#rp-moments-add', openCompose);
+  $(document).on("click.mochiPhone", '#rp-moments-add', () => {rpSetMomentsMenu(false,true);openCompose();});
   // AI generate moments
-  $(document).on("click.mochiPhone", '#rp-gen-moments', generateAIMoments);
+  $(document).on("click.mochiPhone", '#rp-gen-moments', () => {rpSetMomentsMenu(false,true);void generateAIMoments();});
   $(document).on("click.mochiPhone", '#rp-compose-cancel, #rp-compose-modal .rp-back', closeCompose);
   $(document).on("click.mochiPhone", '#rp-compose-post', postUserMoment);
 
@@ -11758,6 +11794,7 @@ function rpGetPhoneLanguageMode() {
   return _extSettings()?.[RP_PHONE_LANGUAGE_KEY]?.mode === 'zh' ? 'zh' : 'native';
 }
 function rpRefreshPhoneLanguageSettings() {
+  rpRefreshAutoTranslationSettings();
   const mode = rpGetPhoneLanguageMode();
   $('#rp-phone-language-options input').each(function() { this.checked = this.value === mode; });
   $('#rp-phone-language-options').prop('disabled', !_extSettings() || !rpArchiveAccountHandle);
@@ -11787,7 +11824,109 @@ function rpPhoneSpeechLanguageRule() {
   if (mode === 'zh') {
     return selection + '[手机语言] Scope:只约束手机内容，PHONE内SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。Language:✓所有发言者，包括char、NPC和其他联系人，不论国籍、母语或常用语言，统一直接用自然中文表达，保留人物语气、性格和上下文。外语人设或旧消息不能使本轮切回外语。Output:✓仅中文正文；×整句外语/双语重复/括号附外语/自动附翻译；专有姓名、必要的地址/链接与协议标记保留原样，不强行翻译。Translation:中文正文不附其他语言译文；已有外语消息仍可通过译按钮翻成中文。Preserve:姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt保持原样；×替{{user}}发言/改{{user}}手动输入/改变主楼正文语言。';
   }
-  return selection + '[手机语言] Scope:只约束手机内容，PHONE内SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。Language:✓每位发言者使用其明确母语/常用语言；缺失时参考明确国籍，英国通常英语、德国通常德语，多语言国家按具体设定；不明默认中文；不能凭名字猜，不改国籍。Output:✓仅角色原语；中文角色仅中文；×括号译文/逐句对照/双语重复/自动附中文或英文翻译。历史手机消息即使是双语，也×模仿其译文格式；角色卡或其他提示词的翻译要求不用于手机发言，替代“手机文字一律中文”或“外语附中文翻译”的泛化规则。Translation:仅用户点译按钮后另行显示，×写进消息正文。Preserve:姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt保持原样；×替{{user}}发言/改{{user}}手动输入/改变主楼正文语言。';
+  return selection + '[手机语言] Scope:只约束手机内容，PHONE内SMS/VOICE/GMSG/GVOICE/MOMENTS/COMMENT及其回复。Language:✓每位发言者使用其明确母语/常用语言；缺失时参考明确国籍，英国通常英语、德国通常德语，多语言国家按具体设定；不明默认中文；不能凭名字猜，不改国籍。Output:✓仅角色原语；中文角色仅中文；×括号译文/逐句对照/双语重复/自动附中文或英文翻译。历史手机消息即使是双语，也×模仿其译文格式；角色卡或其他提示词的翻译要求不用于手机发言，替代“手机文字一律中文”或“外语附中文翻译”的泛化规则。Translation:由插件按用户翻译设置另行显示，×写进消息正文。Preserve:姓名、FROM/TO/GROUP/REPLY_TO、标签和生图prompt保持原样；×替{{user}}发言/改{{user}}手动输入/改变主楼正文语言。';
+}
+
+const RP_AUTO_TRANSLATION_KEY = 'mochi_phone_auto_translation_v2';
+let rpAutoTranslationBusy = false;
+let rpAutoTranslationNextScope = 'messages';
+const rpAutoTranslationAttempts = new WeakMap();
+
+function rpAutoTranslationPrefs() {
+  const value = _extSettings()?.[RP_AUTO_TRANSLATION_KEY];
+  return {messages:value?.messages === true,moments:value?.moments === true,revision:typeof value?.revision === 'string' ? value.revision : ''};
+}
+function rpRefreshAutoTranslationSettings() {
+  const prefs = rpAutoTranslationPrefs(), disabled = !_extSettings() || !rpArchiveAccountHandle;
+  for (const scope of ['messages','moments']) $('#rp-auto-' + scope + '-enabled').prop('checked', prefs[scope]).prop('disabled',disabled);
+  $('#rp-moments-auto-translate').attr('aria-checked',String(prefs.moments)).prop('disabled',disabled).text(prefs.moments ? '一键翻译 · 已开启' : '一键翻译 · 未开启');
+}
+function rpSetAutoTranslation(scope, enabled) {
+  const settings = _extSettings();
+  if (!settings || !rpArchiveAccountHandle || !['messages','moments'].includes(scope)) return false;
+  const previous = settings[RP_AUTO_TRANSLATION_KEY], had = Object.hasOwn(settings,RP_AUTO_TRANSLATION_KEY), prefs = rpAutoTranslationPrefs();
+  if (prefs[scope] === !!enabled) return true;
+  settings[RP_AUTO_TRANSLATION_KEY] = {...prefs,[scope]:!!enabled,revision:Date.now().toString(36) + Math.random().toString(36).slice(2)};
+  if (!_saveSettings()) {
+    if (had) settings[RP_AUTO_TRANSLATION_KEY] = previous; else delete settings[RP_AUTO_TRANSLATION_KEY];
+    rpRefreshAutoTranslationSettings(); return false;
+  }
+  rpRefreshAutoTranslationSettings();
+  if (enabled) void rpPumpAutoTranslation();
+  return true;
+}
+function rpOpenAutoTranslation(scope = 'messages') {
+  if (!['messages','moments'].includes(scope)) return;
+  const label = scope === 'messages' ? '好友消息一键翻译' : '朋友圈一键翻译';
+  const input = $('<input type="checkbox">').attr('id','rp-global-auto-translate').prop('checked',rpAutoTranslationPrefs()[scope]);
+  const content = $('<div>').append($('<label class="rp-conv-check">').append(input,$('<span>').text(scope === 'messages' ? '所有好友和群聊自动翻译' : '所有动态和评论自动翻译')),
+    $('<p class="rp-feature-note">').text('开启后，已有和新收到的非中文内容会依次自动翻成中文，无需逐条操作；已有译文会复用。使用当前翻译 API，可能产生费用。手机关闭时暂停，重新打开后继续。失败可点击原文下方的翻译按钮重试。'));
+  const task = rpRuntime.task(), owner = rpArchiveAccountHandle;
+  input.on('change',function(){if(!task.valid() || owner !== rpArchiveAccountHandle || !rpSetAutoTranslation(scope,this.checked)){this.checked=rpAutoTranslationPrefs()[scope];toastr.info('翻译设置未保存，请重试。');}});
+  rpFeatureDialog(label,content,[{label:'完成',primary:true}]);
+}
+function rpAutoTranslationVisible() {
+  const phone = document.getElementById('rp-phone');
+  return isMochiPhoneEnabled() && !!rpArchiveAccountHandle && document.visibilityState !== 'hidden' && !!phone && window.getComputedStyle(phone).display !== 'none';
+}
+function rpAutoTranslationTargets(scope) {
+  const blocked = name => {
+    const key = normalizePhonePersonName(resolveCanonicalPhoneName(name || ''));
+    return (STATE.blocklist || []).some(n=>normalizePhonePersonName(resolveCanonicalPhoneName(n)) === key);
+  };
+  if (scope === 'messages') {
+    const threads = Object.values(STATE.threads || {}).sort((a,b)=>Number(b.id === STATE.currentThread)-Number(a.id === STATE.currentThread));
+    return threads.filter(t=>!blocked(t.name) && !STATE.deletedContacts?.[rpDeletedContactKey(t)]).flatMap(t=>(t.messages || [])
+      .filter(m=>m.from !== 'user' && m.from !== 'system' && !blocked(m.name || t.name) && ['text','default','group_msg','voice','group_voice',''].includes(m.type || ''))
+      .map(item=>({kind:'message',threadId:t.id,item})));
+  }
+  return (STATE.moments || []).flatMap(moment=>[
+    ...(moment.from !== 'user' && !blocked(moment.name || moment.from) ? [{kind:'moment',moment,item:moment}] : []),
+    ...(moment.comments || []).filter(c=>c.from !== 'user' && !blocked(c.name || c.from)).map(item=>({kind:'comment',moment,item}))
+  ]);
+}
+async function rpPumpAutoTranslation() {
+  if (rpAutoTranslationBusy || !rpAutoTranslationVisible()) return false;
+  const prefs = rpAutoTranslationPrefs();
+  if (!prefs.messages && !prefs.moments) return false;
+  const allItems = [...Object.values(STATE.threads || {}).flatMap(t=>t.messages || []),...(STATE.moments || []).flatMap(p=>[p,...(p.comments || [])])];
+  if (allItems.some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending && job.task.valid();})) return false;
+  for (const scope of [rpAutoTranslationNextScope,rpAutoTranslationNextScope === 'messages' ? 'moments' : 'messages']) {
+    if (!prefs[scope]) continue;
+    for (const target of rpAutoTranslationTargets(scope)) {
+      const source = rpPhoneTranslationSource(target), attempt = rpAutoTranslationAttempts.get(target.item);
+      if (attempt?.source === source && attempt.revision === prefs.revision || !rpCanTranslatePhone(target) || source.length > 8000) continue;
+      const cache = rpPhoneTranslationSnapshot(target.item,source);
+      rpAutoTranslationAttempts.set(target.item,{source,revision:prefs.revision});
+      if (cache?.expanded) continue;
+      rpAutoTranslationNextScope = scope === 'messages' ? 'moments' : 'messages';
+      const task = rpRuntime.task(), owner = rpArchiveAccountHandle, slot = STATE.chatId;
+      const valid = () => task.valid() && owner === rpArchiveAccountHandle && slot === STATE.chatId && getPhoneChatSlotKey(getContext()) === slot
+        && rpAutoTranslationVisible() && rpAutoTranslationPrefs()[scope] && rpAutoTranslationPrefs().revision === prefs.revision
+        && rpPhoneTranslationTargetExists(target) && rpPhoneTranslationSource(target) === source;
+      if (!valid()) {rpAutoTranslationAttempts.delete(target.item);return false;}
+      if (cache) {
+        target.item.phoneTranslation = {...cache,expanded:true}; saveState(); rpRefreshPhoneTranslationControls(target.item); return true;
+      }
+      rpAutoTranslationBusy = true;
+      try { await rpTogglePhoneTranslation(target,{valid}); }
+      finally {
+        // Canceled work may resume when the phone is opened again. Failures wait for explicit retry.
+        if (!valid() && rpAutoTranslationAttempts.get(target.item)?.revision === prefs.revision) rpAutoTranslationAttempts.delete(target.item);
+        rpAutoTranslationBusy = false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+function rpSetMomentsMenu(open, focus = false) {
+  const menu = document.getElementById('rp-moments-menu'), trigger = document.getElementById('rp-moments-more');
+  if (!menu || !trigger) return;
+  open = !!open && STATE.currentView === 'moments';
+  if (open) rpRefreshAutoTranslationSettings();
+  menu.hidden = !open; trigger.setAttribute('aria-expanded',String(open));
+  if (focus) (open ? menu.querySelector('button:not(:disabled)') : trigger)?.focus();
 }
 
 const rpPhoneTranslationJobs = new WeakMap();
