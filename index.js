@@ -691,6 +691,23 @@ const RP_PRIVATE_AVATAR_CSS = `
 #rp-phone #rp-screen #rp-moments-list .rp-moment-comment-content.rp-translation-bubble{padding:8px 10px;margin:0 0 4px;background:var(--rp-v-surface)!important;border-radius:10px}
 #rp-phone #rp-screen #rp-view-thread .rp-voice-wrap.rp-translation-bubble{box-sizing:border-box;padding:8px 12px;border-radius:14px;background:var(--rp-v-card)!important}
 `;
+const RP_SOCIAL_COMPACT_CSS = `
+/* Keep Moments continuous: comments and translations do not add nested cards. */
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment {padding-top:8px!important;padding-bottom:8px!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-hd {margin-bottom:4px!important;gap:8px;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text {margin-bottom:4px!important;line-height:1.5!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comments-wrap {background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:4px 0 0!important;margin:3px 0 0!important;gap:2px!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment {padding:2px 0!important;line-height:1.45!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment-content {background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0 0 1px!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-bar {justify-content:flex-start;flex-wrap:wrap;gap:0 4px;padding:2px 0!important;margin:2px 0 0;border:0!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list :is(.rp-moment-act,.rp-moment-reply-btn,.rp-moment-comment-del-btn,.rp-moment-translate-btn) {font-size:10px!important;min-height:24px!important;padding:1px 3px!important;margin:0!important;line-height:1.25;vertical-align:middle;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-delete-translate {gap:3px!important;align-items:center;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-translation-control {margin:3px 0 1px!important;padding:3px 0 0!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-translation-text {margin:0!important;padding:0!important;line-height:1.45!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-likes-row {padding-top:2px;padding-bottom:2px;margin-top:0;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-input-row {margin-top:4px;padding-top:4px;}
+#rp-phone #rp-screen #ggold-launch-btn {touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:32px;}
+`;
 const RP_READING_CSS = `
 #rp-phone #rp-screen #rp-view-messages .rp-tn {font-size:12px;}
 #rp-phone #rp-screen #rp-view-messages .rp-tp {font-size:10.5px;}
@@ -5537,6 +5554,7 @@ ${RP_MOMENT_TRANSLATE_CSS}
 ${RP_UI_FINISH_CSS}
 ${PHONE_TOOLS_CSS}
 ${RP_XHS_COMPOSE_CSS}
+${RP_SOCIAL_COMPACT_CSS}
 `;
 
 // ================================================================
@@ -7831,7 +7849,7 @@ function saveGlobalAvatars() {
 }
 
 function saveState(opts) {
-  rpStampThreadActivity();
+  if (opts?.activity !== false) rpStampThreadActivity();
   if (!STATE.chatId) return;
   const immediate = !!(opts && opts.immediate);
   try {
@@ -11774,9 +11792,10 @@ function rpPaintPhoneTranslation(control, target) {
   button.attr('aria-expanded', cache?.expanded ? 'true' : 'false');
   const label = pending ? '翻译中…' : source.length > 8000 ? '文字过长' : cache ? (cache.expanded ? '收起译文' : '显示译文') : currentJob?.error ? '翻译失败，重试' : '译';
   const inlineMoment = control.hasClass('rp-moment-inline-control');
-  button.text(inlineMoment ? '翻译' : label);
+  const visibleLabel = inlineMoment ? (label === '译' || label === '显示译文' ? '翻译' : label === '收起译文' ? '收起翻译' : label) : label;
+  button.text(visibleLabel);
   if (inlineMoment) {
-    const hint = label === '译' ? '将本条外语翻译成中文' : label;
+    const hint = visibleLabel === '翻译' ? '将本条外语翻译成中文' : visibleLabel;
     button.attr('aria-label', hint).attr('title', hint).attr('aria-busy', String(pending));
     control.prop('hidden', !cache?.expanded);
   }
@@ -20686,6 +20705,7 @@ const GM_HOOK_GO_SPEED_PS = 132;                  // px per second
 // cached gradient objects (rebuilt on first draw / canvas resize)
 let _gmBgGrad = null, _gmBgGradW = 0, _gmBgGradH = 0;
 let _gmPulleyGrad = null;
+const _gmHookSprites = new Map();
 let _gmFieldCanvas = null, _gmFieldCtx = null, _gmFieldW = 0, _gmFieldH = 0, _gmFieldDirty = true;
 
 const GM_ITEMS_DEF = [
@@ -21033,7 +21053,16 @@ function gmDraw() {
 
   // 抓到物品时显示在钩尖上
   if (GM.hookedItem && GM.hookState === 'return') {
-    gmDrawItem(ctx, GM.hookedItem.type, hx, hy + GM.hookedItem.r + 4, GM.hookedItem.r * 0.9);
+    const item = GM.hookedItem, radius = item.r * 0.9, key = item.type + ':' + radius;
+    let sprite = _gmHookSprites.get(key);
+    if (!sprite) {
+      const padding = Math.ceil(radius * 1.6 + 10), image = document.createElement('canvas');
+      image.width = image.height = padding * 2;
+      const painter = image.getContext('2d');
+      if (painter) { gmDrawItem(painter, item.type, padding, padding, radius); sprite = { image, padding }; _gmHookSprites.set(key, sprite); }
+    }
+    if (sprite) ctx.drawImage(sprite.image, hx - sprite.padding, hy + item.r + 4 - sprite.padding);
+    else gmDrawItem(ctx, item.type, hx, hy + item.r + 4, radius);
   }
 }
 
@@ -21047,6 +21076,12 @@ function gmLoop(ts) {
   const mySerial = GM._loopSerial;
   if (!GM.active || GM.hookState === 'idle') return;
   if (mySerial !== GM._expectedSerial) return; // 旧帧，丢弃
+  // High-refresh screens need no more than 60 gameplay draws per second. Keep elapsed-time movement.
+  const frameInterval = 1000 / 60;
+  if (!GM.lastFrameTime || !Number.isFinite(GM._nextFrameAt)) GM._nextFrameAt = ts;
+  if (ts + 0.5 < GM._nextFrameAt) { GM.rafId = requestAnimationFrame(gmLoop); return; }
+  GM._nextFrameAt += frameInterval;
+  if (GM._nextFrameAt < ts - frameInterval) GM._nextFrameAt = ts + frameInterval;
   // Delta time (seconds), capped at 100ms to avoid huge jumps after tab sleep
   const dt = GM.lastFrameTime ? Math.min((ts - GM.lastFrameTime) / 1000, 0.1) : 1 / 60;
   GM.lastFrameTime = ts;
@@ -21116,7 +21151,8 @@ function gmStartTimer(reset = true) {
     const now=performance.now();
     if(!rpGameVisible('ggold')){last=now;return;}
     GM.timeLeft=Math.max(0,GM.timeLeft-(now-last)/1000); last=now;
-    gmUpdateTimerUI(); saveState();
+    // Game-only progress must not rescan every message in every conversation four times per second.
+    gmUpdateTimerUI(); saveState({ activity: false });
     if(GM.timeLeft<=0){runtime.clearTimer(GM.timerInterval);GM.timerInterval=null;void gmEndTurn();}
   },250,true);
 }
@@ -21389,10 +21425,30 @@ function ggoldBindEvents() {
 
   $(document).on("click.mochiPhone", '#ggold-mode-vs', function() { ggoldStartGame('vs'); });
   $(document).on("click.mochiPhone", '#ggold-mode-co', function() { ggoldStartGame('coop'); });
-  $(document).on("click.mochiPhone", '#ggold-launch-btn', function() {
-    if (!GM.active || GM.turn !== 'user' || GM.hookState !== 'swing') return;
+  let ignoreLaunchClickUntil = 0, lastTouchLaunch = 0;
+  const launchHook = () => {
+    if (!GM.active || GM.turn !== 'user' || GM.hookState !== 'swing' || !rpGameVisible('ggold')) return false;
     GM.hookState = 'go';
-    $(this).prop('disabled', true);
+    document.getElementById('ggold-launch-btn').disabled = true;
+    return true;
+  };
+  const pressHook = event => {
+    const original = event.originalEvent || event;
+    if (original.isPrimary === false || (original.button != null && original.button !== 0)) return;
+    if (launchHook()) { ignoreLaunchClickUntil = Date.now() + 800; if (event.cancelable) event.preventDefault(); }
+  };
+  if (window.PointerEvent) $(document).on('pointerdown.mochiPhone', '#ggold-launch-btn', pressHook);
+  else {
+    $(document).on('touchstart.mochiPhone', '#ggold-launch-btn', event => {
+      if ((event.originalEvent || event).touches?.length !== 1) return;
+      lastTouchLaunch = Date.now(); pressHook(event);
+    });
+    $(document).on('mousedown.mochiPhone', '#ggold-launch-btn', event => { if (Date.now() - lastTouchLaunch > 800) pressHook(event); });
+  }
+  $(document).on('click.mochiPhone', '#ggold-launch-btn', event => {
+    // Pointer/touch already fired on press. Keyboard and assistive clicks (detail 0) remain available.
+    if (event.detail !== 0 && Date.now() < ignoreLaunchClickUntil) { event.preventDefault(); return; }
+    launchHook();
   });
   $(document).on("click.mochiPhone", '#ggold-newbtn', function() {
     if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
@@ -23106,13 +23162,19 @@ function lgRender() {
   if (!screen) return;
   let C = screen;
   const CELL = 20, N = 12, W = N * CELL;
+  const dpr = Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1;
+  const shownWidth = canvas.getBoundingClientRect().width || W;
+  const pixels = Math.min(W * 4, Math.max(W, Math.ceil(Math.max(W, shownWidth) * dpr)));
+  if (canvas.width !== pixels || canvas.height !== pixels) canvas.width = canvas.height = pixels;
+  screen.setTransform(pixels / W, 0, 0, pixels / W, 0, 0);
   const T = LUDO_THEME || LUDO_THEMES[0];
   const readingScale = rpTools().prefs().scale / 100;
 
-  if (!_lgBoardCache || _lgBoardCachePath !== LUDO_PATH || _lgBoardCacheTheme !== T || _lgBoardCacheDecos !== _lgDecos || _lgBoardCacheScale !== readingScale) {
-  _lgBoardCache = document.createElement('canvas'); _lgBoardCache.width=W; _lgBoardCache.height=W;
+  if (!_lgBoardCache || _lgBoardCachePath !== LUDO_PATH || _lgBoardCacheTheme !== T || _lgBoardCacheDecos !== _lgDecos || _lgBoardCacheScale !== readingScale || _lgBoardCache.width !== pixels) {
+  _lgBoardCache = document.createElement('canvas'); _lgBoardCache.width=pixels; _lgBoardCache.height=pixels;
   C = _lgBoardCache.getContext('2d');
   if (!C) { _lgBoardCache=null; return; }
+  C.setTransform(pixels / W, 0, 0, pixels / W, 0, 0);
   _lgBoardCachePath=LUDO_PATH; _lgBoardCacheTheme=T; _lgBoardCacheDecos=_lgDecos; _lgBoardCacheScale=readingScale;
   C.clearRect(0, 0, W, W);
 
@@ -23187,7 +23249,7 @@ function lgRender() {
   });
 
   }
-  C = screen; C.clearRect(0,0,W,W); C.drawImage(_lgBoardCache,0,0);
+  C = screen; C.clearRect(0,0,W,W); C.drawImage(_lgBoardCache,0,0,W,W);
 
   // Only pieces and event markers repaint; the grid, path and decorations are cached.
   {
