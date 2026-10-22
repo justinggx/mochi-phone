@@ -623,6 +623,7 @@ const RP_IMPROVEMENT_CSS = `
 `;
 
 const RP_UI_FINISH_CSS = `
+#rp-phone[data-rp-closing]{pointer-events:none!important}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
 #rp-phone.rp-mobile-pos.rp-dark:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#716d7d,#292835 20%,#585566 40%,#343340 62%,#171923 82%,#575262);--rp-art-edge:rgba(203,197,222,.37);--rp-art-screen-edge:rgba(0,0,0,.9);--rp-art-button:#585362;--rp-art-shadow:rgba(12,10,24,.45);}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame {padding:7px!important;border-radius:38px!important;background:var(--rp-art-metal)!important;box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)!important;}
@@ -5648,6 +5649,51 @@ function rpErrorInfo(error) {
   return { kind: kinds.includes(error?.name) ? error.name : 'Error' };
 }
 window.__mochiPhoneRuntime?.destroy?.();
+const rpMotionJobs = new Map();
+function rpPhoneIsOpen() {
+  const phone = document.getElementById('rp-phone');
+  return !!phone && !phone.hasAttribute('data-rp-closing') && window.getComputedStyle(phone).display !== 'none';
+}
+function rpCancelSurfaceMotion(element) {
+  const animation = rpMotionJobs.get(element);
+  if (!animation) return;
+  rpMotionJobs.delete(element);
+  animation.onfinish = animation.oncancel = null;
+  animation.cancel();
+}
+function rpClearPhoneMotion() {
+  for (const element of [...rpMotionJobs.keys()]) rpCancelSurfaceMotion(element);
+  const phone = document.getElementById('rp-phone');
+  if (phone?.hasAttribute('data-rp-closing')) {
+    phone.removeAttribute('data-rp-closing');
+    phone.style.display = 'none';
+  }
+}
+function rpFadeSurface(element, opening, complete = () => {}, page = false) {
+  if (!element) { complete(); return; }
+  rpCancelSurfaceMotion(element);
+  if (typeof element.animate !== 'function' || document.hidden || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { complete(); return; }
+  const opacity = Number.parseFloat(window.getComputedStyle(element).opacity);
+  const finalOpacity = Number.isFinite(opacity) ? opacity : 1;
+  try {
+    const animation = element.animate(opening ? [{opacity:page ? finalOpacity * .65 : 0},{opacity:finalOpacity}] : [{opacity:finalOpacity},{opacity:0}],
+      {duration:page ? 120 : opening ? 150 : 110,easing:'cubic-bezier(.2,.7,.3,1)'});
+    rpMotionJobs.set(element,animation);
+    animation.onfinish = () => {
+      if (rpMotionJobs.get(element) !== animation) return;
+      rpMotionJobs.delete(element);
+      animation.onfinish = animation.oncancel = null;
+      animation.cancel();
+      complete();
+    };
+    animation.oncancel = () => {
+      if (rpMotionJobs.get(element) !== animation) return;
+      rpMotionJobs.delete(element);
+      complete();
+    };
+  } catch (_) { complete(); }
+}
+
 function rpCreateRuntime() {
 const runtime = createPhoneRuntime(window,
   () => `${STATE.chatId || ''}|${getPhoneChatSlotKey(getContext())}`,
@@ -5655,6 +5701,7 @@ const runtime = createPhoneRuntime(window,
 MutationObserver = runtime.Observer;
 runtime.own(() => { if (rpInitialized) flushStateNow(); });
 runtime.own(rpResetGameRuntimes);
+runtime.own(rpClearPhoneMotion);
 runtime.own(() => { void rpPhoneArchive.close(); });
 runtime.own(() => $(document).off('.mochiPhone'));
 runtime.own(() => {
@@ -5686,6 +5733,7 @@ function rpAddImageWait(entry) {
   }, RP_IMAGE_WAIT_TTL);
 }
 function rpResetChatTasks() {
+  rpClearPhoneMotion();
   rpShop?.pause();
   rpGomoku?.cancel();
   rpSudoku?.cancel();
@@ -5739,7 +5787,7 @@ function rpPauseGameAnimations() {
 function rpGameVisible(view) {
   const phone = document.getElementById('rp-phone');
   if (view === 'ggold' && document.getElementById('ggold-chat-fs')?.style.display !== 'none') return false;
-  return isMochiPhoneEnabled() && !document.hidden && STATE.currentView === view && phone && window.getComputedStyle(phone).display !== 'none';
+  return isMochiPhoneEnabled() && !document.hidden && STATE.currentView === view && rpPhoneIsOpen();
 }
 function rpResumeGameAnimations() {
   rpShop?.resume();
@@ -5925,6 +5973,7 @@ function rpSetPhoneOpen(open) {
   const phone = $('#rp-phone');
   if (!phone.length) return;
   if (!open) {
+      if (!rpPhoneIsOpen()) return;
       // 关闭手机前记住当前界面，下次直接恢复，不再强迫用户从锁屏/桌面重新点
       if (STATE.currentView && STATE.currentView !== 'lock') {
         STATE._savedView = STATE.currentView;
@@ -5933,13 +5982,20 @@ function rpSetPhoneOpen(open) {
       rpSetXhsMenu(false); rpSetMomentsMenu(false);
       rpRememberReading();
       saveState();
-      phone.hide();
+      rpClearPhoneMotion();
+      phone.attr('data-rp-closing','');
       rpPauseGameAnimations();
+      if (phone[0].contains(document.activeElement)) document.activeElement?.blur?.();
+      rpFadeSurface(phone[0],false,() => {phone.hide().removeAttr('data-rp-closing');});
       return;
     }
     // 记录打开时间戳,防止 document click 在同一事件循环内把手机关掉（部分 Android 合成 click 问题）
     STATE._phoneOpenedAt = Date.now();
-    if (phone.is(':visible')) return; // Repeated opens keep the current page.
+    if (phone[0].hasAttribute('data-rp-closing')) {
+      rpCancelSurfaceMotion(phone[0]); phone.removeAttr('data-rp-closing');
+      rpResumeGameAnimations(); rpFadeSurface(phone[0],true); return;
+    }
+    if (rpPhoneIsOpen()) return; // Repeated opens keep the current page.
     // 防御性同步:若 CHAT_CHANGED 未触发(用户直接切换了对话),此处补偿
     syncToCurrentChat();
     // 从聊天历史重建联系人(服务端数据,PC/手机共享同一份聊天记录)
@@ -5966,6 +6022,8 @@ function rpSetPhoneOpen(open) {
     rpResumeGameAnimations();
     if (IS_TOUCH_DEVICE) setTimeout(rpUpdateViewport, 0);
     else rpApplyDesktopPhoneSize();
+    for (const element of [...rpMotionJobs.keys()]) rpCancelSurfaceMotion(element);
+    rpFadeSurface(phone[0],true);
 }
 async function openMochiPhoneFromExternal() {
   if (!isMochiPhoneEnabled()) return '';
@@ -5986,7 +6044,7 @@ async function toggleMochiPhoneFromExternal() {
   const instance = rpRuntime;
   await init();
   if (globalThis.__mochiPhoneRuntime !== instance || instance.stats().destroyed || !isMochiPhoneEnabled()) return '';
-  rpSetPhoneOpen(!$('#rp-phone').is(':visible'));
+  rpSetPhoneOpen(!rpPhoneIsOpen());
   return '';
 }
 
@@ -10219,13 +10277,13 @@ function bindUI() {
   $('#rp-fab').on('click', (e) => {
     e.stopPropagation();
     if (!isMochiPhoneEnabled()) return;
-    rpSetPhoneOpen(!$('#rp-phone').is(':visible'));
+    rpSetPhoneOpen(!rpPhoneIsOpen());
   });
 
   // Click outside phone → close
   $(document).on("click.mochiPhone", (e) => {
     const phone = $('#rp-phone');
-    if (!phone.is(':visible')) return;
+    if (!rpPhoneIsOpen()) return;
     // 防止 FAB 打开手机后同一帧/合成 click 立即关闭（部分 Android 问题）
     if (STATE._phoneOpenedAt && Date.now() - STATE._phoneOpenedAt < 300) return;
     // 防止 pending_image 触发主楼生图按钮时，合成 click 误关手机
@@ -10235,14 +10293,7 @@ function bindUI() {
     // 若 e.target 已被从 DOM 移除(事件传播期间被删),跳过
     if (!document.contains(e.target)) return;
     if (!$(e.target).closest('#rp-phone, #rp-fab, #mochi-phone-wand-open').length) {
-      if (STATE.currentView && STATE.currentView !== 'lock') {
-        STATE._savedView = STATE.currentView;
-        if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
-      }
-      rpSetXhsMenu(false); rpSetMomentsMenu(false);
-      rpRememberReading();
-      saveState();
-      phone.hide();
+      rpSetPhoneOpen(false);
     }
   });
 
@@ -11607,6 +11658,7 @@ function renderThreadList() {
 //  NAVIGATION
 // ================================================================
 function go(view) {
+  const previousView = STATE.currentView;
   if (view === 'shop' && !RP_SHOP_AVAILABLE) view = 'home';
   if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
   if (view === 'thread' && !STATE.threads[STATE.currentThread]) view = 'messages';
@@ -11623,6 +11675,7 @@ function go(view) {
   if (view === 'themes') { lgRenderThemePicker(); }
   if (view === 'theme-studio') { lgRenderThemeStudio(); }
   if (view === 'diary') { renderDiary(); }
+  for (const element of [...rpMotionJobs.keys()]) if (element.id !== 'rp-phone') rpCancelSurfaceMotion(element);
   $('.rp-view').hide();
   // 需要 flex 布局的视图
   const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku','sudoku','stickers','shop'];
@@ -11677,6 +11730,7 @@ function go(view) {
   }
   document.getElementById('rp-phone').dataset.readingSlot=STATE.chatId;
   rpRestoreReadingPosition();
+  if (view !== previousView && rpPhoneIsOpen()) rpFadeSurface(document.getElementById('rp-view-' + view),true,undefined,true);
 }
 
 let rpApiTest = null, rpModelRequest = null;
@@ -11875,7 +11929,7 @@ function rpOpenAutoTranslation(scope = 'messages') {
 }
 function rpAutoTranslationVisible() {
   const phone = document.getElementById('rp-phone');
-  return isMochiPhoneEnabled() && !!rpArchiveAccountHandle && document.visibilityState !== 'hidden' && !!phone && window.getComputedStyle(phone).display !== 'none';
+  return isMochiPhoneEnabled() && !!rpArchiveAccountHandle && document.visibilityState !== 'hidden' && rpPhoneIsOpen();
 }
 function rpAutoTranslationAllowed(target) {
   const item=target?.item;if(!item)return false;
