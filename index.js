@@ -624,6 +624,7 @@ const RP_IMPROVEMENT_CSS = `
 
 const RP_UI_FINISH_CSS = `
 #rp-phone[data-rp-closing]{pointer-events:none!important}
+#rp-folder-modal[data-rp-closing]{pointer-events:none!important}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
 #rp-phone.rp-mobile-pos.rp-dark:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#716d7d,#292835 20%,#585566 40%,#343340 62%,#171923 82%,#575262);--rp-art-edge:rgba(203,197,222,.37);--rp-art-screen-edge:rgba(0,0,0,.9);--rp-art-button:#585362;--rp-art-shadow:rgba(12,10,24,.45);}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame {padding:7px!important;border-radius:38px!important;background:var(--rp-art-metal)!important;box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)!important;}
@@ -5663,6 +5664,7 @@ function rpCancelSurfaceMotion(element) {
 }
 function rpClearPhoneMotion() {
   for (const element of [...rpMotionJobs.keys()]) rpCancelSurfaceMotion(element);
+  rpSetGameFolderOpen(false,true);
   const phone = document.getElementById('rp-phone');
   if (phone?.hasAttribute('data-rp-closing')) {
     phone.removeAttribute('data-rp-closing');
@@ -5672,6 +5674,54 @@ function rpClearPhoneMotion() {
 function rpNavigationMotionDirection(previous, next) {
   const parents = {thread:'messages','xhs-detail':'xhs','xhs-compose':'xhs','theme-studio':'themes','api-settings':'settings',stickers:'settings'};
   return next === 'home' || next === 'lock' || parents[previous] === next ? -1 : 1;
+}
+function rpAnimateGameFolderSurface(element, opening, content, complete = () => {}) {
+  if (!element) { complete(); return; }
+  rpCancelSurfaceMotion(element);
+  if (typeof element.animate !== 'function' || document.hidden || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { complete(); return; }
+  const style = window.getComputedStyle(element);
+  const opacity = Number.parseFloat(style.opacity);
+  const base = style.transform && style.transform !== 'none' ? style.transform : '';
+  const rest = content ? {transform:base || 'none'} : {opacity:Number.isFinite(opacity) ? opacity : 1};
+  const displaced = content ? {transform:(`translate3d(0,${opening ? 12 : 8}px,0) scale(${opening ? .94 : .96}) ` + base).trim()} : {opacity:0};
+  try {
+    const animation = element.animate(opening ? [displaced,rest] : [rest,displaced],
+      {duration:opening ? 240 : 180,easing:'cubic-bezier(.22,.61,.36,1)'});
+    rpMotionJobs.set(element,animation);
+    animation.onfinish = () => {
+      if (rpMotionJobs.get(element) !== animation) return;
+      rpMotionJobs.delete(element);
+      animation.onfinish = animation.oncancel = null;
+      animation.cancel();
+      complete();
+    };
+    animation.oncancel = () => {
+      if (rpMotionJobs.get(element) !== animation) return;
+      rpMotionJobs.delete(element);
+      complete();
+    };
+  } catch (_) { complete(); }
+}
+function rpSetGameFolderOpen(open, immediate = false) {
+  const modal = document.getElementById('rp-folder-modal');
+  if (!modal) return;
+  const popup = modal.querySelector('.rp-folder-popup');
+  const hide = () => {
+    rpCancelSurfaceMotion(modal); rpCancelSurfaceMotion(popup);
+    modal.removeAttribute('data-rp-closing');
+    $(modal).hide();
+  };
+  if (!open && (immediate || window.getComputedStyle(modal).display === 'none')) { hide(); return; }
+  if (open && window.getComputedStyle(modal).display !== 'none' && !modal.hasAttribute('data-rp-closing')) return;
+  if (!open && modal.hasAttribute('data-rp-closing')) return;
+  rpCancelSurfaceMotion(modal); rpCancelSurfaceMotion(popup);
+  if (open) {
+    modal.removeAttribute('data-rp-closing');
+    $(modal).show();
+    rpRenderGameFolderIcons();
+  } else modal.setAttribute('data-rp-closing','');
+  rpAnimateGameFolderSurface(popup,open,true);
+  rpAnimateGameFolderSurface(modal,open,false,open ? undefined : hide);
 }
 function rpFadeSurface(element, opening, complete = () => {}, page = false, direction = 1) {
   if (!element) { complete(); return; }
@@ -9879,7 +9929,8 @@ function rpCloseChatOverlays() {
   rpSetXhsMenu(false); rpSetMomentsMenu(false);
   rpCloseFeatureDialog();
   $('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create').remove();
-  $('#rp-compose-modal,#rp-folder-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel').hide();
+  rpSetGameFolderOpen(false,true);
+  $('#rp-compose-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel').hide();
 }
 function rpFeatureDialog(title, content, actions = []) {
   rpCloseFeatureDialog();
@@ -10386,19 +10437,18 @@ function bindUI() {
   // ── Games Folder ─────────────────────────────────────────────
   $(document).on("click.mochiPhone", '[data-app="folder-games"]', function(e) {
     e.stopPropagation();
-    $('#rp-folder-modal').show();
-    rpRenderGameFolderIcons();
+    rpSetGameFolderOpen(true);
   });
   $(document).on("click.mochiPhone", '#rp-folder-modal', function(e) {
     if (e.target === this) {
-      $(this).hide();
-      go('home');
+      rpSetGameFolderOpen(false);
     }
   });
   $(document).on("click.mochiPhone", '[data-folder-app]', function(e) {
     e.stopPropagation();
+    if (document.getElementById('rp-folder-modal')?.hasAttribute('data-rp-closing')) return;
     const app = $(this).data('folder-app');
-    $('#rp-folder-modal').hide();
+    rpSetGameFolderOpen(false,true);
     if (['ludo','g2048','ggold','gword','gomoku','sudoku','shop'].includes(app)) go(app);
   });
   // ── Ludo game ────────────────────────────────────────────────
@@ -11686,6 +11736,7 @@ function go(view) {
   if (view === 'themes') { lgRenderThemePicker(); }
   if (view === 'theme-studio') { lgRenderThemeStudio(); }
   if (view === 'diary') { renderDiary(); }
+  rpSetGameFolderOpen(false,true);
   for (const element of [...rpMotionJobs.keys()]) if (element.id !== 'rp-phone') rpCancelSurfaceMotion(element);
   $('.rp-view').hide();
   // 需要 flex 布局的视图
