@@ -11889,11 +11889,12 @@ function rpAutoTranslationAllowed(target) {
   return ['moment','comment'].includes(target.kind) && item.from!=='user' && !blocked(item.name||item.from);
 }
 function rpAutoTranslationTargets(scope) {
+  // Receive timelines stay intact; reverse copies prioritize the latest content.
   if (scope === 'messages') {
     const threads=Object.values(STATE.threads||{}).sort((a,b)=>Number(b.id===STATE.currentThread)-Number(a.id===STATE.currentThread));
-    return threads.flatMap(t=>(t.messages||[]).map(item=>({kind:'message',threadId:t.id,item}))).filter(rpAutoTranslationAllowed);
+    return threads.flatMap(t=>[...(t.messages||[])].reverse().map(item=>({kind:'message',threadId:t.id,item}))).filter(rpAutoTranslationAllowed);
   }
-  return (STATE.moments||[]).flatMap(moment=>[{kind:'moment',moment,item:moment},...(moment.comments||[]).map(item=>({kind:'comment',moment,item}))]).filter(rpAutoTranslationAllowed);
+  return [...(STATE.moments||[])].reverse().flatMap(moment=>[...[...(moment.comments||[])].reverse().map(item=>({kind:'comment',moment,item})),{kind:'moment',moment,item:moment}]).filter(rpAutoTranslationAllowed);
 }
 async function rpPumpAutoTranslation() {
   if (rpAutoTranslationBusy || !rpAutoTranslationVisible()) return false;
