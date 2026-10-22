@@ -9380,7 +9380,8 @@ async function rpInitBody() {
         if (gesture && event.pointerId === gesture.id) { move(event.clientX, event.clientY, event); finish(); }
       });
       rpRuntime.listenDOM(document, 'pointercancel', event => { if (gesture?.id === event.pointerId) finish(true); });
-      rpRuntime.listenDOM(pages, 'lostpointercapture', event => { if (gesture?.id === event.pointerId) finish(true); });
+      // Touch icons initially own implicit capture; their bubbling release is a handoff to pages, not a cancelled swipe.
+      rpRuntime.listenDOM(pages, 'lostpointercapture', event => { if (event.target === pages && gesture?.id === event.pointerId) finish(true); });
     } else {
       // Touch/mouse fallback for engines without Pointer Events; ignore touch-generated mouse events.
       rpRuntime.listenDOM(document, 'touchstart', event => { if (gesture && event.touches.length > 1) finish(true); }, { passive: true, capture: true });
