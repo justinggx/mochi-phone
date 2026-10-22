@@ -19401,6 +19401,72 @@ function _paintBankBody(data) {
 }
 
 /** 生成/刷新银行卡数据（force=true 强制重新 AI 生成） */
+function rpBankContextExcerpt(raw, limit) {
+  const text = String(raw || '').replace(/\r/g, '').trim();
+  if (text.length <= limit) return text;
+  const strong = /净资产|个人资产|身家|身价|持股|股权|市值|估值|负债|net\s*worth|personal\s*assets?|ownership|equity|stake|valuation/gi;
+  const finance = /资产|财富|财产|存款|现金|信托|继承|收入|年薪|贷款|集团|公司|财阀|wealth|assets?|fortune|billion|million|cash|trust|inherit|debt|liabilit|shares?|salary|[$£€¥]/gi;
+  const ranges = [];
+  for (const [pattern, weight] of [[strong, 20], [finance, 5]]) {
+    for (const match of text.matchAll(pattern)) {
+      const at = match.index, start = Math.max(0, at - 100), end = Math.min(text.length, at + 280);
+      const part = text.slice(start, end);
+      const score = weight + (/\d[\d,.]*\s*(?:亿|万|兆|billion|million|trillion|bn\b|[BM]\b)|[$£€¥]\s*\d/i.test(part) ? 10 : 0);
+      ranges.push({start,end,score});
+    }
+  }
+  if (!ranges.length) return text.slice(0, limit);
+  const picked = [], lead = text.slice(0, Math.min(180, Math.floor(limit / 4)));
+  let remaining = limit - lead.length - 1;
+  for (const range of ranges.sort((a,b)=>b.score-a.score || a.start-b.start)) {
+    if (picked.some(p=>range.start < p.end && range.end > p.start)) continue;
+    const part = text.slice(range.start, range.end);
+    if (remaining < 100) break;
+    const clipped = part.slice(0, remaining);
+    picked.push({...range,text:clipped}); remaining -= clipped.length + 1;
+  }
+  return [lead,...picked.sort((a,b)=>a.start-b.start).map(p=>p.text)].join('\n').slice(0,limit);
+}
+
+async function rpBankContext(rawCtx, charName, task) {
+  const char = rawCtx?.characters?.[rawCtx?.characterId] || rawCtx?.char || {};
+  const field = key => char[key] || char.data?.[key] || '';
+  const profile = ['description','personality','scenario','mes_example'].map(key=>{
+    const value=field(key);return typeof value === 'string' && value.trim() ? key + ': ' + value.trim() : '';
+  }).filter(Boolean).join('\n');
+  const bound = char.data?.extensions?.world || char.extensions?.world;
+  const chatBook = rawCtx?.chatMetadata?.world_info;
+  const names = [...new Set([bound,chatBook].filter(name=>typeof name === 'string' && name.trim()))];
+  const books = [];
+  for (const name of names) {
+    if (typeof rawCtx.loadWorldInfo !== 'function') throw new Error('绑定世界书暂时无法读取，请稍后重试');
+    let book;
+    try {book = await rpGuardAwait(rawCtx.loadWorldInfo(name), task);}
+    catch(error) {if (!task.valid()) throw error;throw new Error('绑定世界书读取失败，请稍后重试');}
+    if (!book || typeof (book.entries || book.content) !== 'object') throw new Error('绑定世界书内容不可用，请稍后重试');
+    books.push([name,book]);
+  }
+  if (!names.length) {
+    const embedded = char.data?.character_book || char.character_book;
+    if (embedded?.entries) books.push(['当前角色卡内嵌世界书',embedded]);
+  }
+  const isOn = v => [true,1,'true','1'].includes(v), isOff = v => [false,0,'false','0'].includes(v);
+  const sections = [];
+  for (const [name,book] of books) for (const raw of Object.values(book.entries || book.content || {})) {
+    const e = {...raw?.extensions,...raw};
+    if (isOn(e.disable) || isOn(e.disabled) || isOff(e.enabled)) continue;
+    const content = typeof (e.content || e.text) === 'string' ? (e.content || e.text).trim() : '';
+    if (!content) continue;
+    const label = String(e.comment || e.name || (e.key || e.keys || []).join?.(' / ') || '条目');
+    if (/资产|财富|财产|身家|身价|持股|股权|市值|公司|集团|信托|继承|存款|收入|负债|wealth|worth|assets?|billion|million|fortune|equity|trust|debt|valuation|salary|[$£€¥]/i.test(content+' '+label)) {
+      sections.push('['+name+' / '+label+']\n'+rpBankContextExcerpt(content,1000));
+    }
+  }
+  const triggered = [rawCtx.worldInfoBefore,rawCtx.worldInfoAfter].filter(v=>typeof v === 'string').flatMap(v=>v.split(/\n{2,}/)).filter(v=>charName && v.toLowerCase().includes(charName.toLowerCase()));
+  return {charPersona:rpBankContextExcerpt(profile,1500),wiText:rpBankContextExcerpt([...sections,...triggered].join('\n\n'),1200)};
+}
+
+
 async function generateBankData(force) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
@@ -19470,56 +19536,8 @@ async function generateBankData(force) {
     const charName = rawCtx?.name2 || rawCtx?.characters?.[rawCtx?.characterId]?.name || 'TA';
     const userName = rawCtx?.name1 || '用户';
 
-    // 人设（大幅提升截取长度，避免财富规模描述被截断）
-    let charPersona = '';
-    try {
-      const charObj = (rawCtx?.characters && rawCtx?.characterId !== undefined)
-        ? rawCtx.characters[rawCtx.characterId]
-        : (rawCtx?.char || null);
-      if (charObj) {
-        const parts = [];
-        if (charObj.description) parts.push(charObj.description.replace(/\s+/g, ' ').trim().slice(0, 1200));
-        if (charObj.personality) parts.push('性格:' + charObj.personality.trim().slice(0, 400));
-        if (charObj.scenario)    parts.push('背景:' + charObj.scenario.trim().slice(0, 600));
-        if (charObj.mes_example) parts.push('对话示例:' + charObj.mes_example.trim().slice(0, 300));
-        charPersona = parts.filter(Boolean).join('\n');
-      }
-    } catch(e) {
-    if (!rpTask.valid()) return;
-}
-
-    // 世界书（提升上限，优先提取含财富/资产/公司关键词的段落）
-    const wiTextRaw = _collectWorldInfoText(charName);
-    // 额外补充：从世界书原始数据里搜索财富相关词条（不限角色名匹配）
-    let wiText = wiTextRaw;
-    try {
-      const wealthKeywords = ['资产','财富','身家','净资产','亿','集团','公司','CEO','董事长','总裁','enterprise','billion','million','worth','wealth','corporation'];
-      const boundName = rawCtx?.characters?.[rawCtx?.characterId]?.data?.extensions?.world
-        || rawCtx?.characters?.[rawCtx?.characterId]?.extensions?.world || rawCtx?.char?.data?.extensions?.world;
-      const boundBook = boundName && typeof rawCtx.loadWorldInfo === 'function'
-        ? await rpGuardAwait(rawCtx.loadWorldInfo(boundName), rpTask) : null;
-      const wi = boundBook ? { bound: boundBook } : {};
-      const extraSegs = [];
-      Object.values(wi).forEach(function(book) {
-        const entries = book.entries || book.content || {};
-        Object.values(entries).forEach(function(e) {
-          if (!e || e.disable === true || e.disable === 'true' || e.disabled === true || e.enabled === false) return;
-          const content = (e.content || e.text || '').trim();
-          if (content.length > 10) {
-            const cl = content.toLowerCase();
-            if (wealthKeywords.some(kw => cl.includes(kw.toLowerCase()))) {
-              extraSegs.push(content);
-            }
-          }
-        });
-      });
-      if (extraSegs.length) {
-        const extra = extraSegs.join('\n').slice(0, 800);
-        wiText = wiText ? wiText + '\n' + extra : extra;
-      }
-    } catch(e) {
-    if (!rpTask.valid()) return;
-}
+    // Keep finance facts from the selected card and its explicit worldbook bindings.
+    const { charPersona, wiText } = await rpBankContext(rawCtx, charName, rpTask);
 
     // 近期对话（扩展到30条，每条保留更多内容）
     const chatMsgs = (rawCtx?.chat || []).slice(-30).map(m => {
@@ -19532,9 +19550,9 @@ async function generateBankData(force) {
 请严格按照角色设定还原资产规模，生成一份可信、细节丰富的财务报告。
 【核心原则】
 - 资产规模必须严格匹配人设身份，双向约束：
-  · 企业家/总裁/CEO/财阀/大亨：至少数十亿起步，顶级可达千亿以上，切勿缩水
+  · 明确的个人净资产、身家、持股与信托权益优先于职业刻板估算；不得因CEO等头衔设固定财富下限或擅自压低明确财富设定
   · 普通打工人/学生/平民/底层角色：资产应在合理范围内（数千至数十万），切勿虚高
-  · 若人设中明确提到公司规模、净资产、身家等数字，必须以此为基准，不得偏离
+  · 区分个人净资产、家族整体财富与公司市值；公司估值不能全部算作个人资产，应按明确持股/股权权益理解；未提供权益比例则在备注说明估算依据，不伪称精确设定
 - 若无法判断角色身份，默认按普通人处理，切勿凭空捏造巨额财富
 - 货币单位根据角色世界观决定（现代中国¥，欧美£/$，古代两/铜钱，奇幻金币等）
 - 资产项目必须包含：现金/流动资金、房产/土地、金融资产（基金/股票/信托）、贷款/债务（如有）
