@@ -1,6 +1,6 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261020-role-context-76';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
-import { createStickers } from './stickers.mjs?v=20261021-phone-presence-85';
+import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261020-remove-agreements-81';
@@ -5555,6 +5555,47 @@ ${RP_UI_FINISH_CSS}
 ${PHONE_TOOLS_CSS}
 ${RP_XHS_COMPOSE_CSS}
 ${RP_SOCIAL_COMPACT_CSS}
+/* Social feed: avatar rail, continuous content, discreet actions. Theme tokens remain authoritative. */
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment{display:grid;grid-template-columns:36px minmax(0,1fr);column-gap:10px;padding:14px 14px!important;margin:0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--rp-moment-bd)!important;border-radius:0!important;box-shadow:none!important;position:relative}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-hd{display:contents}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-av{grid-column:1;grid-row:1 / span 7;width:36px!important;height:36px!important;border-radius:5px!important;margin:0!important;align-self:start}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-meta{grid-column:2;min-width:0;align-self:start;margin:0 0 3px}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment>:not(.rp-moment-hd){grid-column:2;min-width:0}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-name{line-height:1.4;color:var(--rp-v-text)!important;overflow-wrap:anywhere}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text{padding:0!important;background:transparent!important;border-radius:0!important;white-space:pre-wrap;margin:0 0 5px!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text:empty{display:none}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-img-wrap{margin:3px 0 5px!important;max-width:100%!important;justify-self:start;border-radius:3px!important;overflow:hidden}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-img{display:block;max-width:100%!important;max-height:240px;object-fit:contain;border-radius:3px!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-bar{display:flex;justify-content:space-between!important;gap:4px!important;margin:3px 0 5px!important;padding:0!important;min-width:0}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-time{margin:0!important;align-self:center;white-space:nowrap;opacity:.75}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-foot-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0;flex-wrap:wrap;margin-left:auto}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu{position:relative;display:inline-block;align-self:start;flex-shrink:0;line-height:1}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu summary{display:flex;list-style:none;align-items:center;justify-content:center;width:30px;height:24px;border-radius:4px;cursor:pointer;color:var(--rp-v-text);background:var(--rp-v-card);font-size:16px;letter-spacing:0;white-space:nowrap;overflow-wrap:normal;user-select:none}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list summary::-webkit-details-marker{display:none}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list summary:focus-visible{outline:2px solid var(--rp-moment-name);outline-offset:2px}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu-items{position:absolute;right:0;top:100%;margin-top:3px;z-index:12;width:max-content;max-width:190px;min-width:110px;padding:4px;border-radius:7px;background:var(--rp-v-surface);color:var(--rp-v-text);border:1px solid var(--rp-moment-bd);box-shadow:0 4px 18px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:stretch}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu:not([open]) .rp-moment-menu-items{display:none}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu[open]{z-index:15}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu.rp-open-up .rp-moment-menu-items{top:auto;bottom:100%;margin-top:0;margin-bottom:3px}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu-items :is(.rp-moment-act,.rp-moment-reply-btn,.rp-moment-comment-del-btn,.rp-moment-translate-btn){background:transparent;border:0;border-radius:4px;text-align:left;justify-content:flex-start;font-family:inherit;padding:5px 9px!important;min-height:30px!important;font-size:11px!important;cursor:pointer}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu-items button:hover{background:var(--rp-v-card)}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-menu-items .rp-moment-delete-translate{display:flex;flex-direction:column;align-items:stretch!important;gap:0!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-social{background:var(--rp-v-card);border-radius:4px;padding:3px 8px;margin:2px 0 0;min-width:0}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-social.rp-empty{display:none}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-likes-row{padding:4px 0!important;margin:0!important;color:var(--rp-v-text)!important;overflow-wrap:anywhere;border:0!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-likes-row+.rp-moment-comments-wrap{border-top:1px solid var(--rp-moment-bd)!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comments-wrap{padding:2px 0!important;margin:0!important;gap:0!important;background:transparent!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment{display:grid;grid-template-columns:minmax(0,1fr) 24px;gap:3px;padding:3px 0!important;align-items:start}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment-content{overflow-wrap:anywhere;min-width:0;margin:0!important;white-space:pre-wrap}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-cname{color:var(--rp-v-text)!important;font-weight:600}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment-menu summary{width:24px;height:22px;font-size:13px;background:transparent;opacity:.65}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-sticker .rp-sticker-tile{width:96px;min-height:0;padding:0;max-width:100%;margin:3px 0 5px;background:transparent;border:0;box-shadow:none}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment-sticker{display:inline-block;vertical-align:middle;max-width:100%}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-comment-sticker .rp-sticker-tile{display:inline-flex;width:36px;max-width:100%;vertical-align:middle;background:transparent;border:0;box-shadow:none;margin:0 2px;min-height:0;padding:0}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-sticker-tile img{width:100%;height:auto;max-height:130px;object-fit:contain}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-social-sticker-status{font-size:10px;opacity:.55}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-cinput{min-width:0}
+
 `;
 
 // ================================================================
@@ -6401,12 +6442,13 @@ function buildStatePayload() {
       avatarBg: m.avatarBg,
       time: m.time,
       text: m.text,
-      phoneTranslation: rpPhoneTranslationSnapshot(m, cleanMomentText(typeof m.text === 'string' ? m.text : '')),
+      sticker: m.sticker ? { ...m.sticker } : undefined,
+      phoneTranslation: rpPhoneTranslationSnapshot(m, rpSocialText(m.text)),
       img: m.img || null,
       pendingImg: m.pendingImg || null,
       pendingImgType: m.pendingImgType || null,
       likes: Array.isArray(m.likes) ? m.likes.slice() : [],
-      comments: Array.isArray(m.comments) ? m.comments.map(c => c && typeof c === 'object' ? Object.assign({}, c, { phoneTranslation: rpPhoneTranslationSnapshot(c, cleanMomentText(typeof c.text === 'string' ? c.text : '')) }) : c) : [],
+      comments: Array.isArray(m.comments) ? m.comments.map(c => c && typeof c === 'object' ? Object.assign({}, c, { phoneTranslation: rpPhoneTranslationSnapshot(c, rpSocialText(c.text)) }) : c) : [],
     };
   });
   const diary = Array.isArray(STATE.diary) ? STATE.diary.slice() : [];
@@ -9621,7 +9663,7 @@ function rpStickerApp() {
     headers: () => getContext()?.getRequestHeaders?.() || _rp_script_mod?.getRequestHeaders?.() || {'Content-Type':'application/json'},
     context: () => [String(getContext()?.chat?.slice(-3).map(m=>String(m.mes||'')).join('\n')||''),String(document.getElementById('send_textarea')?.value||'')].join('\n').slice(-1500),
     navigate: go, dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog,
-    changed: refreshMochiPrompt, repaint: () => {if(STATE.currentView==='thread')renderBubbles(STATE.currentThread);},
+    changed: refreshMochiPrompt, repaint: () => {if(STATE.currentView==='thread')renderBubbles(STATE.currentThread);else if(STATE.currentView==='moments')renderMoments();},
   });
   return rpStickers;
 }
@@ -10871,6 +10913,7 @@ function bindUI() {
   // Moments: like
   $(document).on("click.mochiPhone", '.rp-like-btn', function(e) {
     e.stopPropagation();
+    $(this).closest('.rp-moment-menu').prop('open', false);
     toggleLike($(this).data('moment'));
   });
 
@@ -10944,13 +10987,25 @@ function bindUI() {
     $(this).trigger('input');
     if (this._rpNeedsRepaint) { this._rpNeedsRepaint = false; setTimeout(() => renderMoments(), 0); }
   });
+  // Only one social operation menu stays open; outside taps and Escape dismiss it.
+  $(document).on('click.mochiPhone', function(e) {
+    const current = $(e.target).closest('.rp-moment-menu')[0];
+    document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => {
+      if (menu !== current || $(e.target).closest('button').length) menu.open = false;
+    });
+  });
+  $(document).on('keydown.mochiPhone', function(e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => { menu.open = false; menu.querySelector('summary')?.focus(); });
+  });
   // Moments: comment toggle
   $(document).on('input.mochiPhone', '.rp-moment-cinput', function() {
     const id = $(this).closest('.rp-moment').data('mid');
-    if (id && rpIsCurrentCommentInput(this, 'moments')) { const draft = rpCommentDraft('moments', id); draft.text = this.value; draft.open = true; saveState(); }
+    if (id && rpIsCurrentCommentInput(this, 'moments')) { const draft = rpCommentDraft('moments', id); draft.text = this.value; draft.open = $(this).closest('.rp-moment-input-row')[0]?.style.display !== 'none'; saveState(); }
   });
   $(document).on("click.mochiPhone", '.rp-comment-toggle', function(e) {
     e.stopPropagation();
+    $(this).closest('.rp-moment-menu').prop('open', false);
     const id = $(this).data('moment');
     const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', id);
     row.toggle();
@@ -10966,6 +11021,7 @@ function bindUI() {
   // Moments: delete moment
   $(document).on("click.mochiPhone", '.rp-moment-del-btn', function(e) {
     e.stopPropagation();
+    $(this).closest('.rp-moment-menu').prop('open', false);
     const momentId = $(this).data('moment');
     rpDeleteMoment(momentId);
   });
@@ -10973,6 +11029,7 @@ function bindUI() {
   // Moments: reply
   $(document).on("click.mochiPhone", '.rp-moment-reply-btn', function(e) {
     e.stopPropagation();
+    $(this).closest('.rp-moment-menu').prop('open', false);
     const momentId = $(this).data('moment');
     const rname = $(this).data('rname');
     const oldIdxRaw = $(this).attr('data-oldidx');
@@ -10995,6 +11052,7 @@ function bindUI() {
   // Moments: delete single comment
   $(document).on("click.mochiPhone", '.rp-moment-comment-del-btn', function(e) {
     e.stopPropagation();
+    $(this).closest('.rp-moment-menu').prop('open', false);
     const momentId = $(this).data('moment');
     const oldIdxRaw = $(this).attr('data-oldidx');
     const oldIdx = oldIdxRaw !== undefined && oldIdxRaw !== '' ? parseInt(oldIdxRaw, 10) : NaN;
@@ -11533,6 +11591,7 @@ function go(view) {
   STATE.currentView = view;
   rpGomoku?.onNavigate(view);
   rpSudoku?.onNavigate(view);
+  document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => { menu.open = false; });
   rpStickers?.onNavigate(view);
   void rpShop?.onNavigate(view);
   rpTools().conversation.onNavigate(view);
@@ -11743,7 +11802,7 @@ function rpPhoneTranslationSource(target) {
   if (!target || !target.item || typeof target.item !== 'object') return '';
   const item = target.item;
   const text = target.kind === 'message' && item.type === 'group_voice' ? item.voiceText : item.text;
-  return cleanMomentText(typeof text === 'string' ? text : '');
+  return target.kind === 'message' ? cleanMomentText(typeof text === 'string' ? text : '') : rpSocialText(text);
 }
 
 function rpPhoneTranslationIsForeign(source) {
@@ -11826,6 +11885,7 @@ function rpMountMomentTranslation(deleteButton, target) {
   button.data('phoneTranslationTarget', target);
   const actions = $('<span class="rp-moment-delete-translate">').insertBefore(deleteButton);
   actions.append(deleteButton, button);
+  if (target.kind === 'moment') deleteButton.closest('.rp-moment').find('.rp-moment-foot-actions').prepend(button);
   const host = target.kind === 'moment' ? deleteButton.closest('.rp-moment').children('.rp-moment-text') : deleteButton.closest('.rp-moment-comment').children('.rp-moment-comment-content');
   host.addClass('rp-translation-bubble').append(control);
   rpPaintPhoneTranslation(control, target);
@@ -18322,7 +18382,7 @@ async function generateAIMoments() {
       + '\n\n请为以下角色各写1条朋友圈(每人1条,不重复,与剧情相关):'
       + charList
       + '\n格式:[{"from":"角色名","text":"内容"},...]';
-    const resp = await rpGuardAwait(lgCallAPI(prompt, 600, sysMsg), rpTask);
+    const resp = await rpGuardAwait(rpCallSocialAPI(prompt, 600, sysMsg, rpTask), rpTask);
     if (!resp) throw new Error('API无响应');
     const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
     if (!jsonStr) throw new Error('格式错误');
@@ -18392,7 +18452,7 @@ async function charRespondToUserMoment(momentId) {
   const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
     + charName + '的评论(必须写,不允许只点赞):';
   try {
-    const resp = await rpGuardAwait(lgCallAPI(prompt, 150, sysMsg), rpTask);
+    const resp = await rpGuardAwait(rpCallSocialAPI(prompt, 150, sysMsg, rpTask), rpTask);
     if (!current()) { abandon(); return; }
     if (resp) {
       const cleaned = resp.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
@@ -18445,7 +18505,7 @@ async function charRespondToUserMoment(momentId) {
       const promptNpc = '朋友圈内容:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
         + '动态作者:「' + userName + '」\n'
         + '你的用户名是"' + npc + '",请基于人设/世界书/主楼上下文写评论，必须和其他人不同:';
-      const resp = await rpGuardAwait(lgCallAPI(promptNpc, 120, sysNpc), rpTask);
+      const resp = await rpGuardAwait(rpCallSocialAPI(promptNpc, 120, sysNpc, rpTask), rpTask);
       if (!current()) { abandon(); return; }
       if (resp) {
         const cleaned = resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
@@ -18503,7 +18563,7 @@ async function momentAISocial(targetMomentId) {
     + '其他情况一律以旁观者/朋友角色评论,不要把别人之间的事当成在说我。'
     + '例:user说"julian叔叔告密了"→ char以父亲视角评论julian行为,不要当成在说自己。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
   const prompt2 = '朋友圈动态列表:\n' + momentsSummary + '\n\n只为以下角色生成2-4条社交互动(like/comment),禁止使用列表外的名字:' + charList2 + '\n格式:只返回JSON数组 [{"type":"like","from":"角色名","momentId":"完整ID"},{...}],from字段必须严格使用上方列表中的名字,momentId必须与上方完全一致。';
-  const resp = await rpGuardAwait(lgCallAPI(prompt2, 400, sysMsg2), rpTask);
+  const resp = await rpGuardAwait(rpCallSocialAPI(prompt2, 400, sysMsg2, rpTask), rpTask);
   if (!resp) return;
   const allowedFromSet = new Set(allChars.map(n => normNameKey(n)));
   try {
@@ -18612,7 +18672,7 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     + targetCommentLine
     + userReplyLine + '\n'
     + '请基于人设/世界书/最近5楼/朋友圈主楼/评论串，写出一句贴着这条评论链的回复:';
-  const resp = await rpGuardAwait(lgCallAPI(prompt3, 120, sysMsg3), rpTask);
+  const resp = await rpGuardAwait(rpCallSocialAPI(prompt3, 120, sysMsg3, rpTask), rpTask);
   if (!resp || !current()) return;
   const targetIndex = targetCommentId ? moment.comments.findIndex(c => c.id === targetCommentId) : null;
   if (targetCommentId && targetIndex < 0) return;
@@ -18639,6 +18699,53 @@ function cleanMomentText(text) {
     .replace(/<pic\b[\s\S]*?\/>/gi, '')
     .replace(/<pic\b[^>]*>/gi, '')
     .trim();
+}
+
+function rpSocialText(text) {
+  return cleanMomentText(rpStickerApp().extract(typeof text === 'string' ? text : '').text);
+}
+const rpSocialStickerJobs = new WeakMap();
+async function rpSocialStickerPrompt(task, context) {
+  try { await rpGuardAwait(rpStickerApp().prepare(), task, 2500); }
+  catch (_) { if (!task.valid()) throw _; }
+  return task.valid() ? rpStickerApp().prompt('moments', context) : '';
+}
+async function rpCallSocialAPI(prompt, maxTokens, sysMsg, task) {
+  const rule = await rpSocialStickerPrompt(task, prompt);
+  if (!task.valid()) return '';
+  return lgCallAPI(prompt, maxTokens + (rule ? 160 : 0), sysMsg + rule);
+}
+function rpResolveSocialSticker(item, moment) {
+  const id = rpStickerApp().extract(item.text).ids[0];
+  if (!id || item.from === 'user' || !isMochiPhoneEnabled()) return;
+  const owner = rpArchiveAccountHandle, slot = STATE.chatId, text = item.text;
+  if (item.sticker?.id === id && item.sticker.owner === owner) return;
+  const policyEpoch = rpStickerApp().store.state.policyEpoch;
+  const old = rpSocialStickerJobs.get(item);
+  if (old?.owner === owner && old.slot === slot && old.text === text && old.policyEpoch === policyEpoch && old.task.valid()
+    && (!old.finishedAt || Date.now() - old.finishedAt < 15000)) return old.promise;
+  const task = rpRuntime.task(), job = {owner,slot,text,policyEpoch,task};
+  rpSocialStickerJobs.set(item, job);
+  job.promise = (async () => {
+    try {
+      const entry = await rpStickerApp().verify(id);
+      if (!entry || !task.valid() || owner !== rpArchiveAccountHandle || slot !== STATE.chatId || getPhoneChatSlotKey(getContext()) !== slot || item.text !== text
+        || !(STATE.moments || []).includes(moment) || (item !== moment && !(moment.comments || []).includes(item))
+        || !rpStickerApp().store.state.prefs.enabled || rpStickerApp().store.state.policyEpoch !== policyEpoch) return;
+      item.sticker = {id:entry.id,format:entry.format,name:entry.name,owner,source:text};
+      saveState();
+      if (STATE.currentView === 'moments') renderMoments();
+    } catch (_) { /* A removed/unavailable sticker must never interrupt the post or its normal text. */ }
+    finally { job.finishedAt = Date.now(); }
+  })();
+  return job.promise;
+}
+function rpPaintSocialSticker(host, item, moment) {
+  const id = rpStickerApp().extract(item.text).ids[0], marked = !!id;
+  if (!marked && !item.sticker) { host.remove(); return; }
+  if (item.sticker && (!id || item.sticker.id === id) && (!item.sticker.source || item.sticker.source === item.text)) host.append(rpStickerApp().messageNode(item));
+  else host.append($('<span class="rp-social-sticker-status">').text('表情暂不可用'));
+  void rpResolveSocialSticker(item, moment);
 }
 
 function rpIsCurrentCommentInput(input, kind) {
@@ -18673,7 +18780,7 @@ function rpPaintMomentCommentDraft(moment, node) {
   input.data('rp-chat-slot', STATE.chatId).val(draft.text);
   if (target) input.data('reply-to', target.name).data('reply-to-idx', index).data('reply-to-text', target.text).attr('placeholder', `回复 ${target.name}...`);
   else { draft.replyId = null; input.removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder', '发表评论...'); }
-  node.find('.rp-moment-input-row').toggle(!!(draft.open || draft.text || target));
+  node.find('.rp-moment-input-row').toggle(typeof draft.open === 'boolean' ? draft.open : !!(draft.text || target));
 }
 function rpPaintXHSCommentDraft(post) {
   if (STATE.xhsCurrentPost !== post.id) return;
@@ -18716,9 +18823,11 @@ function renderMoments() {
           ? `回复 <span class="rp-moment-cname">${escHtml(visibleComments[cm.replyTo]?.name || '?')}</span>:`
           : '';
         return `<div class="rp-moment-comment">
-          <div class="rp-moment-comment-content"><span class="rp-moment-cname">${escHtml(cm.name)}</span>:${replyPart}${escHtml(cm.text)}</div>
-          <span class="rp-moment-reply-btn" data-moment="${escHtml(moment.id)}" data-cidx="${idx}" data-oldidx="${escHtml(cm.__oldIdx !== undefined ? cm.__oldIdx : idx)}" data-rname="${escHtml(cm.name)}">回复</span>
-          <span class="rp-moment-comment-del-btn" data-moment="${escHtml(moment.id)}" data-cidx="${idx}" data-oldidx="${escHtml(cm.__oldIdx !== undefined ? cm.__oldIdx : idx)}">删除</span>
+          <div class="rp-moment-comment-content"><span class="rp-moment-cname">${escHtml(cm.name)}</span>：${replyPart}${escHtml(rpSocialText(cm.text))}<span class="rp-moment-comment-sticker"></span></div>
+          <details class="rp-moment-menu rp-moment-comment-menu"><summary aria-label="评论操作">⋯</summary><div class="rp-moment-menu-items">
+          <button type="button" class="rp-moment-reply-btn" data-moment="${escHtml(moment.id)}" data-cidx="${idx}" data-oldidx="${escHtml(cm.__oldIdx !== undefined ? cm.__oldIdx : idx)}" data-rname="${escHtml(cm.name)}">回复</button>
+          <button type="button" class="rp-moment-comment-del-btn" data-moment="${escHtml(moment.id)}" data-cidx="${idx}" data-oldidx="${escHtml(cm.__oldIdx !== undefined ? cm.__oldIdx : idx)}">删除</button>
+          </div></details>
         </div>`;
       }).join('');
       commentsHtml = `<div class="rp-moment-comments-wrap">${items}</div>`;
@@ -18729,10 +18838,11 @@ function renderMoments() {
           ${(()=>{const k=moment.from==='user'?'user':moment.name;const ci=STATE.avatars&&STATE.avatars[k];return ci?`<div class="rp-moment-av rp-av-img"><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-moment-av" style="background:${escHtml(moment.avatarBg)}">${escHtml(moment.initials)}</div>`;})()}
           <div class="rp-moment-meta">
             <div class="rp-moment-name">${escHtml(moment.name)}</div>
-            <div class="rp-moment-time">${escHtml(moment.time)}</div>
+
           </div>
         </div>
-        <div class="rp-moment-text">${escHtml(cleanMomentText(moment.text))}</div>
+        <div class="rp-moment-text">${escHtml(rpSocialText(moment.text))}</div>
+        <div class="rp-moment-sticker"></div>
         ${moment.img === '__img_expired__'
           ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;font-size:12px;opacity:.7">图片已过期</div>`
           : moment.img
@@ -18744,12 +18854,18 @@ function renderMoments() {
             : ''
         }
         <div class="rp-moment-bar">
+          <span class="rp-moment-time">${escHtml(moment.time)}</span>
+          <div class="rp-moment-foot-actions">
+          <details class="rp-moment-menu"><summary aria-label="动态操作">⋯</summary><div class="rp-moment-menu-items">
           <button class="rp-moment-act rp-like-btn${liked ? ' rp-liked' : ''}" data-moment="${escHtml(moment.id)}">${liked ? '❤️' : '🤍'} ${likeCount > 0 ? likeCount : '点赞'}</button>
           <button class="rp-moment-act rp-comment-toggle" data-moment="${escHtml(moment.id)}">💬 评论</button>
           <button class="rp-moment-act rp-moment-del-btn" data-moment="${escHtml(moment.id)}" style="color:rgba(200,60,60,.6)">🗑️ 删除</button>
+          </div></details></div>
         </div>
+        <div class="rp-moment-social${likeCount || visibleComments.length ? '' : ' rp-empty'}">
         ${likeCount > 0 ? `<div class="rp-moment-likes-row">❤️ ${escHtml(likeNames.slice(0,4).join('、'))}${likeCount > 4 ? ` 等${likeCount}人` : ''}</div>` : ''}
         ${commentsHtml}
+        </div>
         <div class="rp-moment-input-row" id="rp-ci-${escHtml(moment.id)}" data-moment-row="${escHtml(moment.id)}" style="display:none">
           <input class="rp-moment-cinput" type="text" placeholder="发表评论..." autocomplete="off"/>
           <button class="rp-moment-csend" data-moment="${escHtml(moment.id)}">发送</button>
@@ -18757,12 +18873,21 @@ function renderMoments() {
       </div>
     `);
     const momentNode = container.children('.rp-moment').last();
+    momentNode.find('.rp-moment-menu').on('toggle', function() {
+      if (!this.open) return;
+      this.classList.remove('rp-open-up');
+      const box = this.querySelector('.rp-moment-menu-items')?.getBoundingClientRect();
+      const edge = container[0].getBoundingClientRect();
+      if (box && box.bottom > edge.bottom - 6) this.classList.add('rp-open-up');
+    });
+    rpPaintSocialSticker(momentNode.children('.rp-moment-sticker'), moment, moment);
     rpMountMomentTranslation(momentNode.find('.rp-moment-del-btn').first(), { kind: 'moment', item: moment, moment });
     visibleComments.forEach((cm, idx) => {
       const item = moment.comments[cm.__oldIdx];
       if (item) {
         const commentNode = momentNode.find('.rp-moment-comment').eq(idx);
-        rpMountMomentTranslation(commentNode.children('.rp-moment-comment-del-btn'), { kind: 'comment', item, moment });
+        rpPaintSocialSticker(commentNode.find('.rp-moment-comment-sticker'), item, moment);
+        rpMountMomentTranslation(commentNode.find('.rp-moment-comment-del-btn'), { kind: 'comment', item, moment });
       }
     });
     rpPaintMomentCommentDraft(moment, momentNode);
@@ -20104,6 +20229,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
       if (STATE.currentView === 'moments') renderMoments();
       saveState();
     }
+    void rpResolveSocialSticker(existingMoment, existingMoment);
     return existingMoment.id;  // 必须返回 id，否则 parsePhone 的 _pendingMomentImgs.set 会写入 undefined
   }
   let threadId = matchedThreadId;
@@ -20131,6 +20257,7 @@ function incomingMoment(fromRaw, time, text, img, pendingImgPrompt, pendingImgTy
     comments: [],
   });
   if (STATE.currentView === 'moments') renderMoments();
+  void rpResolveSocialSticker(STATE.moments[STATE.moments.length - 1], STATE.moments[STATE.moments.length - 1]);
   showBanner((th ? th.name : fromRaw), '发了朋友圈:' + (text ? text.slice(0,25) + (text.length>25?'...':'') : '📷 图片'), time);
   saveState();
   // 主楼已负责朋友圈评论输出；本地自动社交已禁用。
@@ -20242,6 +20369,7 @@ function incomingComment(momentId, fromRaw, time, text, replyTo, opts) {
   const isDup = moment.comments.slice(-8).some(c => c.name === name && c.text === cleanText && (!resolvedTime || !c.time || c.time === resolvedTime));
   if (isDup) { momentsDiag('incomingComment:skipDup', { momentId: moment.id, name, textPreview: String(cleanText || '').slice(0, 120), resolvedTime }); return; }
   moment.comments.push({ from: threadId || fromRaw, name, text: cleanText, time: resolvedTime, replyTo: replyToIdx });
+  void rpResolveSocialSticker(moment.comments[moment.comments.length - 1], moment);
   if (STATE.currentView === 'moments') renderMoments();
   saveState();
 }
