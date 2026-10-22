@@ -10044,6 +10044,7 @@ function rpTools() {
 
 function rpCloseFeatureDialog(immediate = false) { rpSetSurfaceOpen('#rp-feature-layer',false,{remove:true,immediate}); }
 function rpCloseChatOverlays() {
+  for (const key of ['ludo','g2048','gm','gword']) rpCloseGameHistoryViewport(key);
   rpSetXhsMenu(false); rpSetMomentsMenu(false);
   rpCloseFeatureDialog(true);
   rpSetSurfaceOpen('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create',false,{remove:true,immediate:true});
