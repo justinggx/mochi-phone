@@ -1,4 +1,4 @@
-import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261020-role-context-76';
+import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261022-social-polish-102';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
@@ -644,7 +644,7 @@ const RP_UI_FINISH_CSS = `
 #rp-phone #rp-screen #rp-moments-more {display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-width:40px;min-height:40px;padding:0!important;margin:0;border:0!important;border-radius:50%;background:transparent!important;box-shadow:none!important;color:var(--rp-nav-btn,#99677e)!important;font:20px/1 Arial,sans-serif!important;cursor:pointer;touch-action:manipulation;}
 #rp-phone #rp-screen #rp-moments-menu {position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:120px;max-width:220px;padding:5px;border:1px solid var(--rp-v-border,rgba(90,60,80,.14));border-radius:14px;background:var(--rp-v-surface,#fff7fa);box-shadow:0 8px 24px rgba(30,20,35,.14);box-sizing:border-box;}
 #rp-phone #rp-screen #rp-moments-menu[hidden] {display:none!important;}
-#rp-phone #rp-screen #rp-moments-menu>button {display:flex;align-items:center;justify-content:flex-start;flex:0 0 auto;width:100%;height:auto;min-width:0;min-height:38px;padding:8px 14px!important;margin:0;border:0!important;border-radius:9px!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#493e46)!important;font:inherit;font-size:13px!important;line-height:1.4!important;white-space:nowrap;cursor:pointer;touch-action:manipulation;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-menu>button {box-sizing:border-box!important;position:static!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;transform:none!important;animation:none!important;flex:0 0 auto!important;width:100%!important;height:auto!important;min-width:0!important;max-width:none!important;min-height:38px!important;max-height:none!important;padding:8px 14px!important;margin:0;border:0!important;border-radius:9px!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#493e46)!important;font:inherit;font-size:13px!important;line-height:1.4!important;white-space:nowrap;cursor:pointer;touch-action:manipulation;}
 #rp-phone #rp-screen #rp-moments-menu>button:hover,#rp-phone #rp-screen #rp-moments-menu>button:focus-visible {background:var(--rp-v-card,rgba(120,90,110,.08))!important;}
 #rp-phone #rp-screen #rp-moments-menu>button:disabled {opacity:.5;cursor:wait;}
 #rp-phone.rp-theme-misty.rp-dark #rp-screen :is(#rp-sbar,#rp-lock-time,#rp-lock-date) {color:var(--rp-v-text,#e7e0f4)!important;text-shadow:none!important;}
@@ -778,7 +778,6 @@ const RP_XHS_COMPOSE_CSS = `
   background:transparent!important; color:var(--rp-compose-accent)!important;
   border:1px solid var(--rp-compose-accent)!important; border-radius:999px!important; box-shadow:none!important; transform:none!important;
 }
-#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-btn,#rp-compose-post) .rp-xhs-post-arrow {font-size:13px;line-height:1;}
 #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(.rp-back,:is(#rp-xhs-post-btn,#rp-compose-post)):focus-visible {outline:2px solid var(--rp-compose-accent)!important;outline-offset:2px!important;}
 #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-compose-body {
   display:flex!important; flex-direction:column!important; align-items:stretch!important; flex:1 1 0!important;
@@ -5575,8 +5574,8 @@ ${RP_SOCIAL_COMPACT_CSS}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-cinput {min-width:0;}
 
 /* Social feed: sender header, full-width content, discreet actions. Theme tokens remain authoritative. */
-#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment{display:block;min-width:0;padding:14px 14px!important;margin:0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--rp-moment-bd)!important;border-radius:0!important;box-shadow:none!important;position:relative}
-#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-hd{display:flex;align-items:center;gap:10px;min-width:0;margin-bottom:8px!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment{display:block;min-width:0;padding:14px 24px!important;margin:0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--rp-moment-bd)!important;border-radius:0!important;box-shadow:none!important;position:relative}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-hd{display:flex;align-items:center;gap:10px;min-width:0;margin:0 -10px 8px!important}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-av{flex:0 0 36px;width:36px!important;height:36px!important;border-radius:5px!important;margin:0!important;align-self:center}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-meta{min-width:0;align-self:center;margin:0}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment>:not(.rp-moment-hd){min-width:0;max-width:100%;box-sizing:border-box}
@@ -8610,7 +8609,7 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="xhs" aria-label="关闭" style="background:transparent;border:none;cursor:pointer">×</button>
             <span class="rp-nav-title">写笔记</span>
-            <button id="rp-xhs-post-btn" aria-label="发帖" style="cursor:pointer"><span>发帖</span><span class="rp-xhs-post-arrow" aria-hidden="true">→</span></button>
+            <button id="rp-xhs-post-btn" aria-label="发布笔记" style="cursor:pointer">发布</button>
           </div>
           <div class="rp-xhs-compose-body">
             <div class="rp-xhs-idea-card">
@@ -8630,7 +8629,7 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back rp-compose-cancel" id="rp-compose-cancel" type="button" aria-label="关闭朋友圈发布">×</button>
             <span class="rp-nav-title">写动态</span>
-            <button class="rp-compose-post-btn" id="rp-compose-post" type="button" aria-label="发布朋友圈"><span>发布</span><span aria-hidden="true">→</span></button>
+            <button class="rp-compose-post-btn" id="rp-compose-post" type="button" aria-label="发布朋友圈">发布</button>
           </div>
           <div class="rp-xhs-compose-body">
             <div class="rp-xhs-idea-card">
@@ -19616,7 +19615,7 @@ async function xhsCallAPI(prompt, sysMsg) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
-  return await rpGuardAwait(lgCallAPI(prompt, 3500, sysMsg, { structured: true, phoneXhs: true }), rpTask);
+  return await rpGuardAwait(lgCallAPI(prompt, 3500, sysMsg, { structured: true, phoneXhs: true, phoneXhsFeed: true }), rpTask);
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
@@ -19673,12 +19672,21 @@ async function buildXHSFeedWithAI(appendMode) {
     `以${charName}为例讨论某类性格的人在关系里的表现`,
   ];
   const pick4 = (arr) => { const a=[...arr].sort(()=>Math.random()-0.5); return a.slice(0,4); };
-  const chosenTopics = pick4(topicPool);
+  const chosenTopics = [
+    '紧扣近期主楼最新事件，用路人口吻讨论这件事的一个具体细节',
+    '围绕同一段近期剧情，从另一种立场吃瓜、质疑或吐槽，不复述上一帖',
+    '围绕近期人物关系或反常举动提出猜测，猜测必须明确为猜测',
+    pick4(topicPool)[0] + '；仍须与近期主楼事件有关，不另编一个无关偶遇',
+  ];
 
   try {
-    const sysMsg = `你是一个小红书内容生成器。严格按要求生成4条帖子,每条各自独立,内容不能重复。
+    const sysMsg = `你是围绕当前剧情的小红书吃瓜内容生成器。生成4条独立帖子，内容不能重复。
 帖子要求:
-- 话题严格对应下方给出的4个不同方向,不要全写成同一种八卦
+- 以【近期主楼剧情线索】为选题依据，优先最新一两楼的事件；至少3帖紧扣这件事的不同侧面，不用泛泛的外貌/穿搭/性格评价凑数
+- 有明确事实就围绕该事实讨论；人物关系、姓名、时地沿用片段，不改写主楼结局，不凭空添加约会、出轨或新的目击事件
+- 主楼是作者提供的剧情线索，不等于路人都知道。私下对话、内心和未公开细节不可写成亲眼见闻；可用不泄露私密细节的猜测、提问或影射，明确“猜测/不确定”，不捏造消息来源
+- 无近期线索时，只做不预设具体事件的提问或讨论，不编造“刚刚发生”的事件
+- 下方4个方向用于区分立场和切口，不能脱离近期剧情另造故事
 - 陌生路人/网友视角,口语化,有具体细节,正文40-60字
 - 只生成帖子本身,不要生成评论
 
@@ -19689,7 +19697,7 @@ cover要求:headline提炼本帖核心，不添加新事实，8-28字；highligh
 输出合法JSON，对引号进行标准转义，不要Markdown。`;
 
     const charInfo = '角色名:' + charName;
-    const prompt = `角色信息:${charInfo}\n用户名:${userName}\n近期对话片段:（以本次公开背景为准）\n\n本次4条帖子话题方向:\n${chosenTopics.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\n生成JSON:`;
+    const prompt = `角色信息:${charInfo}\n用户名:${userName}\n近期主楼剧情线索：见系统资料中同名段落，优先最新事件\n\n本次4条帖子话题方向:\n${chosenTopics.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\n生成JSON:`;
 
     const resp = await rpGuardAwait(xhsCallAPI(prompt, sysMsg), rpTask);
     if (resp) {
