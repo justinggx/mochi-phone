@@ -8,7 +8,7 @@ export function roleContextRef(name,note=''){return '[MOCHI_ROLE:'+encodeURIComp
 function takeRef(text){const m=String(text||'').match(/^\[MOCHI_ROLE:([^\]\n]+)\]\s*/);if(!m)return{text:String(text||''),ref:null};try{return{text:String(text).slice(m[0].length),ref:JSON.parse(decodeURIComponent(m[1]))};}catch{return{text:String(text||''),ref:null};}}
 export function roleStoryText(raw){return String(raw||'')
  .replace(/<(think|thinking|analysis|script|style|PHONE|SMS|GMSG|STATUS|NEWSPAPER)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,' ')
- .replace(/<(think|thinking|analysis|script|style)\b[^>]*>[\s\S]*$/gi,' ')
+ .replace(/<(think|thinking|analysis|script|style|PHONE|SMS|GMSG|STATUS|NEWSPAPER)\b[^>]*>[\s\S]*$/gi,' ')
  .replace(/<[^>]+>/g,' ').replace(/\{\{[\s\S]*?\}\}/g,' ')
  .replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();}
 function safe(text,name,user){return String(text||'').replace(/\{\{char\}\}/gi,name).replace(/\{\{user\}\}/gi,user).replace(/\{\{[\s\S]*?\}\}/g,' ').replace(/<\/?(?:mochi-role|script)[^>]*>/gi,'');}

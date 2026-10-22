@@ -1,4 +1,4 @@
-import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261022-social-polish-102';
+import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261022-social-review-103';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
@@ -645,6 +645,8 @@ const RP_UI_FINISH_CSS = `
 #rp-phone #rp-screen #rp-moments-menu {position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:120px;max-width:220px;padding:5px;border:1px solid var(--rp-v-border,rgba(90,60,80,.14));border-radius:14px;background:var(--rp-v-surface,#fff7fa);box-shadow:0 8px 24px rgba(30,20,35,.14);box-sizing:border-box;}
 #rp-phone #rp-screen #rp-moments-menu[hidden] {display:none!important;}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-menu>button {box-sizing:border-box!important;position:static!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;transform:none!important;animation:none!important;flex:0 0 auto!important;width:100%!important;height:auto!important;min-width:0!important;max-width:none!important;min-height:38px!important;max-height:none!important;padding:8px 14px!important;margin:0;border:0!important;border-radius:9px!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#493e46)!important;font:inherit;font-size:13px!important;line-height:1.4!important;white-space:nowrap;cursor:pointer;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-xhs-list.rp-xhs-has-error {flex-wrap:wrap!important;align-content:flex-start!important;}
+#rp-phone #rp-screen #rp-xhs-refresh-error {flex:1 0 100%;width:100%;min-width:0;box-sizing:border-box;margin:6px 0 6px;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.5;overflow-wrap:anywhere;color:var(--rp-xhs-text,#493e46);background:var(--rp-xhs-card,#f4efed);}
 #rp-phone #rp-screen #rp-moments-menu>button:hover,#rp-phone #rp-screen #rp-moments-menu>button:focus-visible {background:var(--rp-v-card,rgba(120,90,110,.08))!important;}
 #rp-phone #rp-screen #rp-moments-menu>button:disabled {opacity:.5;cursor:wait;}
 #rp-phone.rp-theme-misty.rp-dark #rp-screen :is(#rp-sbar,#rp-lock-time,#rp-lock-date) {color:var(--rp-v-text,#e7e0f4)!important;text-shadow:none!important;}
@@ -11875,21 +11877,23 @@ function rpAutoTranslationVisible() {
   const phone = document.getElementById('rp-phone');
   return isMochiPhoneEnabled() && !!rpArchiveAccountHandle && document.visibilityState !== 'hidden' && !!phone && window.getComputedStyle(phone).display !== 'none';
 }
-function rpAutoTranslationTargets(scope) {
-  const blocked = name => {
-    const key = normalizePhonePersonName(resolveCanonicalPhoneName(name || ''));
-    return (STATE.blocklist || []).some(n=>normalizePhonePersonName(resolveCanonicalPhoneName(n)) === key);
-  };
-  if (scope === 'messages') {
-    const threads = Object.values(STATE.threads || {}).sort((a,b)=>Number(b.id === STATE.currentThread)-Number(a.id === STATE.currentThread));
-    return threads.filter(t=>!blocked(t.name) && !STATE.deletedContacts?.[rpDeletedContactKey(t)]).flatMap(t=>(t.messages || [])
-      .filter(m=>m.from !== 'user' && m.from !== 'system' && !blocked(m.name || t.name) && ['text','default','group_msg','voice','group_voice',''].includes(m.type || ''))
-      .map(item=>({kind:'message',threadId:t.id,item})));
+function rpAutoTranslationAllowed(target) {
+  const item=target?.item;if(!item)return false;
+  const blocked=name=>{if(!(STATE.blocklist||[]).length)return false;const key=normalizePhonePersonName(resolveCanonicalPhoneName(name||''));return STATE.blocklist.some(n=>normalizePhonePersonName(resolveCanonicalPhoneName(n))===key);};
+  if(target.kind==='message'){
+    const thread=STATE.threads?.[target.threadId];
+    return !!thread && !blocked(thread.name) && !STATE.deletedContacts?.[rpDeletedContactKey(thread)]
+      && item.from!=='user' && item.from!=='system' && !blocked(item.name||thread.name)
+      && ['text','default','group_msg','voice','group_voice',''].includes(item.type||'');
   }
-  return (STATE.moments || []).flatMap(moment=>[
-    ...(moment.from !== 'user' && !blocked(moment.name || moment.from) ? [{kind:'moment',moment,item:moment}] : []),
-    ...(moment.comments || []).filter(c=>c.from !== 'user' && !blocked(c.name || c.from)).map(item=>({kind:'comment',moment,item}))
-  ]);
+  return ['moment','comment'].includes(target.kind) && item.from!=='user' && !blocked(item.name||item.from);
+}
+function rpAutoTranslationTargets(scope) {
+  if (scope === 'messages') {
+    const threads=Object.values(STATE.threads||{}).sort((a,b)=>Number(b.id===STATE.currentThread)-Number(a.id===STATE.currentThread));
+    return threads.flatMap(t=>(t.messages||[]).map(item=>({kind:'message',threadId:t.id,item}))).filter(rpAutoTranslationAllowed);
+  }
+  return (STATE.moments||[]).flatMap(moment=>[{kind:'moment',moment,item:moment},...(moment.comments||[]).map(item=>({kind:'comment',moment,item}))]).filter(rpAutoTranslationAllowed);
 }
 async function rpPumpAutoTranslation() {
   if (rpAutoTranslationBusy || !rpAutoTranslationVisible()) return false;
@@ -11901,15 +11905,16 @@ async function rpPumpAutoTranslation() {
     if (!prefs[scope]) continue;
     for (const target of rpAutoTranslationTargets(scope)) {
       const source = rpPhoneTranslationSource(target), attempt = rpAutoTranslationAttempts.get(target.item);
-      if (attempt?.source === source && attempt.revision === prefs.revision || !rpCanTranslatePhone(target) || source.length > 8000) continue;
-      const cache = rpPhoneTranslationSnapshot(target.item,source);
+      if (attempt?.source === source && attempt.revision === prefs.revision) continue;
       rpAutoTranslationAttempts.set(target.item,{source,revision:prefs.revision});
+      if (source.length > 8000 || !rpCanTranslatePhone(target)) continue;
+      const cache = rpPhoneTranslationSnapshot(target.item,source);
       if (cache?.expanded) continue;
       rpAutoTranslationNextScope = scope === 'messages' ? 'moments' : 'messages';
       const task = rpRuntime.task(), owner = rpArchiveAccountHandle, slot = STATE.chatId;
       const valid = () => task.valid() && owner === rpArchiveAccountHandle && slot === STATE.chatId && getPhoneChatSlotKey(getContext()) === slot
         && rpAutoTranslationVisible() && rpAutoTranslationPrefs()[scope] && rpAutoTranslationPrefs().revision === prefs.revision
-        && rpPhoneTranslationTargetExists(target) && rpPhoneTranslationSource(target) === source;
+        && rpPhoneTranslationTargetExists(target) && rpAutoTranslationAllowed(target) && rpPhoneTranslationSource(target) === source;
       if (!valid()) {rpAutoTranslationAttempts.delete(target.item);return false;}
       if (cache) {
         target.item.phoneTranslation = {...cache,expanded:true}; saveState(); rpRefreshPhoneTranslationControls(target.item); return true;
@@ -19155,6 +19160,7 @@ function renderXHSFeed(forceRefresh) {
   }
 
   if (forceRefresh) {
+    $('#rp-xhs-refresh-error').remove();box.removeClass('rp-xhs-has-error');
     // 刷新不清空旧内容：保留原页面，只在顶部显示刷新提示；新内容回来后插到最上方。
     if ($('#rp-xhs-refresh-loading').length || $('#rp-xhs-loading').length) return;
     const xhsEst1 = _xhsGetEstSeconds();
@@ -19189,7 +19195,7 @@ function renderXHSFeed(forceRefresh) {
 function _renderXHSList(box) {
   mergeGlobalAvatars();
   box = box || $('#rp-xhs-list');
-  box.empty().removeClass('rp-xhs-masonry rp-xhs-refreshing').addClass('rp-xhs-waterfall');
+  box.empty().removeClass('rp-xhs-masonry rp-xhs-refreshing rp-xhs-has-error').addClass('rp-xhs-waterfall');
   const list = (STATE.xhsFeed || []).filter(post=>!rpXhsFavoritesOnly || post.favoritedByUser);
   if (!list.length) {
     box.removeClass('rp-xhs-waterfall').append($('<div class="rp-xhs-empty">').text(rpXhsFavoritesOnly?'暂无收藏，在笔记详情点击收藏即可。':'✦ 点击右上角 ⋯ → 刷新，读取最新小红书动态'));
@@ -19615,7 +19621,7 @@ async function xhsCallAPI(prompt, sysMsg) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
-  return await rpGuardAwait(lgCallAPI(prompt, 3500, sysMsg, { structured: true, phoneXhs: true, phoneXhsFeed: true }), rpTask);
+  return await rpGuardAwait(lgCallAPI(prompt, 3500, sysMsg, { structured: true, phoneXhs: true, phoneXhsFeed: true, reportErrors: true }), rpTask);
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
@@ -19624,6 +19630,7 @@ async function buildXHSFeedWithAI(appendMode) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
+  let failure = rpPhoneApiError("empty");
   const xhsGenStart = Date.now();
   const now = new Date();
   const todayStr = `${now.getMonth()+1}-${now.getDate()}`;
@@ -19706,18 +19713,21 @@ cover要求:headline提炼本帖核心，不添加新事实，8-28字；highligh
         items = rpParseModelJSON(resp, 'array');
       } catch(e) {
     if (!rpTask.valid()) return;
- console.warn('[XHS] JSON parse error', { responseLength: String(resp || '').length }); }
+ failure=rpPhoneApiError('format');console.warn('[XHS] JSON parse error', { responseLength: String(resp || '').length }); }
       if (Array.isArray(items) && items.length > 0) {
-        const aiPosts = items.slice(0, 4).map((p, i) => {
+        const page=items.slice(0,4);
+        if(page.some(p=>!p||typeof p!=='object'||Array.isArray(p)||typeof p.body!=='string'||!p.body.trim()))throw rpPhoneApiError('format');
+        const aiPosts = page.map((p, i) => {
+          const body=p.body.trim(),title=typeof p.title==='string'&&p.title.trim()?p.title.trim():body.slice(0,20);
           const coverRatio = i === 1 ? '1/1' : '3/4';
           const id = `xhs_ai_${Date.now()}_${i}`;
           return {
             id, from: 'stranger',
-            user: p.user||`路人${i+1}🌿`, title: p.title||'', body: p.body||'',
-            likes: typeof p.likes==='number' ? p.likes : rndInt(500,20000),
+            user: typeof p.user==='string'&&p.user.trim()?p.user.trim():`路人${i+1}🌿`, title, body,
+            likes: typeof p.likes==='number'&&Number.isFinite(p.likes) ? Math.max(0,Math.floor(p.likes)) : rndInt(500,20000),
             likedByUser: false, followedByUser: false, favoritedByUser: false, comments: [], time: ts(), date: todayStr,
             coverRatio,
-            coverDesign: normalizeXHSCover({ id, title: p.title, body: p.body, coverRatio, coverDesign: p.cover }),
+            coverDesign: normalizeXHSCover({ id, title, body, coverRatio, coverDesign: p.cover }),
             coverVersion: XHS_COVER_VERSION,
             coverStyle: XHS_COVER_STYLE,
             coverImg: '',
@@ -19733,15 +19743,17 @@ cover要求:headline提炼本帖核心，不添加新事实，8-28字；highligh
     }
   } catch(e) {
     if (!rpTask.valid()) return;
- console.error('[XHS] AI feed build EXCEPTION:', rpErrorInfo(e)); }
+ failure=rpPhoneApiError(e?.phoneApiCode || 'request');console.error('[XHS] AI feed build EXCEPTION:', rpErrorInfo(e)); }
 
   // AI 失败 → 显示错误提示,让用户刷新重试(不用 fallback 池避免重复)
   _xhsClearEtaTimer();
   $('#rp-xhs-loading,#rp-xhs-refresh-loading').remove();
   $('#rp-xhs-list').removeClass('rp-xhs-refreshing');
   const box = $('#rp-xhs-list');
-  if (box.length && !box.find('.rp-xhs-card').length) {
-    box.append('<div style="text-align:center;color:#aaa;padding:40px 20px;font-size:13px">加载失败，点右上角 ⋯ → 刷新重试</div>');
+  if (box.length) {
+    $('#rp-xhs-refresh-error').remove();
+    const retained=(STATE.xhsFeed||[]).length>0?'原有帖子已保留。':'';
+    box.addClass('rp-xhs-has-error').prepend($('<div id="rp-xhs-refresh-error" role="status">').text('刷新失败：'+failure.message+'。'+retained+'可在右上角 ⋯ → 刷新重试。')).scrollTop(0);
   }
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
@@ -23950,7 +23962,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       const finishReason = data.choices[0]?.finish_reason;
       if (finishReason === 'length') throw rpPhoneApiError('truncated');
       if (finishReason && finishReason !== 'stop') throw rpPhoneApiError('interrupted');
-      if(options.gameTask)return rpGameApiText(data,d=>d.choices?.[0]?.message?.content);
+      if(options.gameTask || options.phoneXhs || options.phoneTranslation)return rpGameApiText(data,d=>d.choices?.[0]?.message?.content);
       const _msg = data.choices?.[0]?.message;
       // 优先用 content；若 content 为空且 reasoning_content 存在，
       // 尝试从 reasoning_content 提取 </think> 之后的正文部分
@@ -24003,16 +24015,16 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   // 未设置自定义 API → 走 ST generateRaw，用 messages 数组格式避免 text completion 续写单字
   try {
     const { generateRaw, generateRawData, extractMessageFromData } = await rpGuardAwait(import('../../../../script.js').catch(rpRuntime.guard(() => ({}))), rpTask);
-    if(options.gameTask && typeof generateRawData==='function' && typeof extractMessageFromData==='function'){
+    if((options.gameTask || options.phoneXhs || options.phoneTranslation) && typeof generateRawData==='function' && typeof extractMessageFromData==='function'){
       const messages=[];if(sysMsg)messages.push({role:'system',content:sysMsg});messages.push({role:'user',content:prompt});
-      const data=await rpGuardAwait(generateRawData({prompt:messages,responseLength:maxTokens,...(options.phoneShop?{instructOverride:true}:{})}),rpTask,timeout);
+      const data=await rpGuardAwait(generateRawData({prompt:messages,responseLength:maxTokens,...(options.phoneXhs || options.phoneTranslation ? {trimNames:false}:{}),...(options.phoneShop?{instructOverride:true}:{})}),rpTask,timeout);
       return rpGameApiText(data,extractMessageFromData);
     }
     if (typeof generateRaw === 'function') {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
       msgs.push({ role: 'user', content: prompt });
-      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneShop ? { instructOverride:true } : {}), ...(options.phoneTranslation || options.phoneDiary || options.gameTask ? { trimNames: false } : {}), ...(options.gameTask || options.phoneDiary ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
+      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneShop ? { instructOverride:true } : {}), ...(options.phoneTranslation || options.phoneXhs || options.phoneDiary || options.gameTask ? { trimNames: false } : {}), ...(options.gameTask || options.phoneDiary || options.phoneXhs || options.phoneTranslation ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
       if(options.gameTask)return rpGameApiText(resp,d=>d);
       if (resp && resp.trim()) {
         // ST 路径也统一清洗 think/thinking 标签
