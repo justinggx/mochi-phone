@@ -625,6 +625,8 @@ const RP_IMPROVEMENT_CSS = `
 const RP_UI_FINISH_CSS = `
 #rp-phone[data-rp-closing]{pointer-events:none!important}
 #rp-folder-modal[data-rp-closing]{pointer-events:none!important}
+#rp-phone [data-rp-surface-closing]{pointer-events:none!important}
+#rp-phone #rp-view-settings details[data-rp-collapsing]>summary .rp-settings-chevron{transform:rotate(0deg)}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
 #rp-phone.rp-mobile-pos.rp-dark:not(.rp-art-icons) {--rp-art-metal:linear-gradient(120deg,#716d7d,#292835 20%,#585566 40%,#343340 62%,#171923 82%,#575262);--rp-art-edge:rgba(203,197,222,.37);--rp-art-screen-edge:rgba(0,0,0,.9);--rp-art-button:#585362;--rp-art-shadow:rgba(12,10,24,.45);}
 #rp-phone.rp-mobile-pos:not(.rp-art-icons) #rp-frame {padding:7px!important;border-radius:38px!important;background:var(--rp-art-metal)!important;box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)!important;}
@@ -5663,6 +5665,8 @@ function rpCancelSurfaceMotion(element) {
   animation.cancel();
 }
 function rpClearPhoneMotion() {
+  rpFinishAuxMotion();
+  rpCloseChatOverlays();
   for (const element of [...rpMotionJobs.keys()]) rpCancelSurfaceMotion(element);
   rpSetGameFolderOpen(false,true);
   const phone = document.getElementById('rp-phone');
@@ -5671,6 +5675,120 @@ function rpClearPhoneMotion() {
     phone.style.display = 'none';
   }
 }
+const rpAuxMotion = new Map();
+const RP_MOTION_SURFACES = '#rp-feature-layer,#rp-compose-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel,#rp-api-panel,#rp-model-list,#rp-moments-menu,#rp-xhs-menu,#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create,#rp-game-chat-fs,#g2048-chat-fs,#ggold-chat-fs,#gword-chat-fs';
+function rpCancelAuxMotion(element, finish = false) {
+  const previous = rpAuxMotion.get(element);
+  rpAuxMotion.delete(element);
+  rpCancelSurfaceMotion(element);
+  if (finish) previous?.done();
+}
+function rpFinishAuxMotion() {
+  for (const element of [...rpAuxMotion.keys()]) rpCancelAuxMotion(element,true);
+}
+function rpRunUiMotion(element, frames, duration, done, open) {
+  const record = {done,open};
+  rpAuxMotion.set(element,record);
+  const finish = () => {
+    if (rpAuxMotion.get(element) !== record) return;
+    rpAuxMotion.delete(element);
+    rpCancelSurfaceMotion(element);
+    done();
+  };
+  if (typeof element.animate !== 'function' || document.hidden || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
+  try {
+    const animation = element.animate(frames,{duration,easing:'cubic-bezier(.22,.61,.36,1)'});
+    rpMotionJobs.set(element,animation);
+    animation.onfinish = animation.oncancel = finish;
+  } catch (_) { finish(); }
+}
+function rpSurfaceIsOpen(target) {
+  const element = $(target)[0];
+  return !!element && !element.hidden && !element.hasAttribute('data-rp-surface-closing') && window.getComputedStyle(element).display !== 'none';
+}
+function rpSetSurfaceOpen(target, open, options = {}) {
+  $(target).each(function() {
+    const element = this, previous = rpAuxMotion.get(element);
+    if (!options.immediate && previous?.open === open) return;
+    rpCancelAuxMotion(element);
+    const finish = () => {
+      element.removeAttribute('data-rp-surface-closing');
+      if (!open) {
+        if (options.remove) element.remove();
+        else { $(element).hide(); if (options.empty) $(element).empty(); if (options.hidden) element.hidden = true; }
+      }
+    };
+    if (!open && (options.immediate || !rpSurfaceIsOpen(element))) { finish(); return; }
+    if (open) {
+      element.removeAttribute('data-rp-surface-closing'); element.hidden = false;
+      if (options.display) $(element).css('display',options.display); else $(element).show();
+    } else { element.setAttribute('data-rp-surface-closing',''); if (element.contains(document.activeElement)) document.activeElement?.blur?.(); }
+    if (options.immediate) { finish(); return; }
+    const style = window.getComputedStyle(element), opacity = Number.parseFloat(style.opacity);
+    const base = style.transform && style.transform !== 'none' ? style.transform : '';
+    const rest = {opacity:Number.isFinite(opacity) ? opacity : 1,transform:base || 'none'};
+    const displaced = {opacity:0,transform:(`translate3d(0,${open ? 12 : 8}px,0) scale(.98) ` + base).trim()};
+    rpRunUiMotion(element,open ? [displaced,rest] : [rest,displaced],open ? 220 : 160,finish,open);
+  });
+}
+function rpSetPanelOpen(target, open, owner = null, display = null) {
+  const element = $(target)[0]; if (!element) return;
+  const wasShown = owner ? owner.open : rpSurfaceIsOpen(element);
+  const previous = rpAuxMotion.get(element);
+  if (previous?.open === open) return;
+  const before = window.getComputedStyle(element);
+  const snapshot = {height:element.offsetHeight+'px',paddingTop:before.paddingTop,paddingBottom:before.paddingBottom,marginTop:before.marginTop,marginBottom:before.marginBottom,opacity:before.opacity || '1'};
+  rpCancelAuxMotion(element);
+  if (owner) { owner.open = true; owner.toggleAttribute('data-rp-collapsing',!open); owner.querySelector('summary')?.setAttribute('aria-expanded',String(open)); }
+  element.hidden = false; element.removeAttribute('data-rp-surface-closing');
+  if (display) $(element).css('display',display); else $(element).show();
+  const style = window.getComputedStyle(element);
+  const full = {height:Math.max(element.offsetHeight,element.scrollHeight)+'px',paddingTop:style.paddingTop,paddingBottom:style.paddingBottom,marginTop:style.marginTop,marginBottom:style.marginBottom,opacity:style.opacity || '1'};
+  const empty = {height:'0px',paddingTop:'0px',paddingBottom:'0px',marginTop:'0px',marginBottom:'0px',opacity:0};
+  const frame = value => ({...value,boxSizing:'border-box',overflow:'hidden'});
+  const done = () => {
+    element.removeAttribute('data-rp-surface-closing');
+    if (owner) { owner.open = open; owner.removeAttribute('data-rp-collapsing'); }
+    else if (!open) $(element).hide();
+  };
+  if (!open) element.setAttribute('data-rp-surface-closing','');
+  rpRunUiMotion(element,[frame(wasShown ? snapshot : empty),frame(open ? full : empty)],open ? 240 : 180,done,open);
+}
+function rpMotionScreenKey(view) {
+  if (view === 'gomoku') return STATE.gomoku?.screen;
+  if (view === 'sudoku') return STATE.sudoku?.screen;
+  const root = document.getElementById('rp-view-'+view);
+  if (view === 'game') return String(root?.classList.contains('rp-ludo-choosing'));
+  if (view === 'ggold') return String(root?.classList.contains('rp-gold-choosing'));
+  if (view === 'gword') return String(root?.classList.contains('rp-word-choosing'));
+  return null;
+}
+function rpCaptureScreenMotion() {
+  const view = STATE.currentView, before = rpMotionScreenKey(view);
+  if (before == null) return;
+  const task = rpRuntime.task();
+  queueMicrotask(() => {
+    if (task.valid() && STATE.currentView === view && before !== rpMotionScreenKey(view) && rpPhoneIsOpen() && !rpMotionJobs.has(document.getElementById('rp-view-'+view)))
+      rpFadeSurface(document.getElementById('rp-view-'+view),true,undefined,true);
+  });
+}
+
+function rpGameScreenSave(view) {
+  let previous = rpMotionScreenKey(view);
+  return options => {
+    saveState(options);
+    const next = rpMotionScreenKey(view);
+    if (previous === next) return;
+    previous = next;
+    const task = rpRuntime.task();
+    queueMicrotask(() => {
+      const surface = document.getElementById('rp-view-'+view);
+      if (task.valid() && STATE.currentView === view && rpPhoneIsOpen() && !rpMotionJobs.has(surface))
+        rpFadeSurface(surface,true,undefined,true);
+    });
+  };
+}
+
 function rpNavigationMotionDirection(previous, next) {
   const parents = {thread:'messages','xhs-detail':'xhs','xhs-compose':'xhs','theme-studio':'themes','api-settings':'settings',stickers:'settings'};
   return next === 'home' || next === 'lock' || parents[previous] === next ? -1 : 1;
@@ -5847,7 +5965,7 @@ function rpPauseGameAnimations() {
 }
 function rpGameVisible(view) {
   const phone = document.getElementById('rp-phone');
-  if (view === 'ggold' && document.getElementById('ggold-chat-fs')?.style.display !== 'none') return false;
+  if (view === 'ggold' && rpSurfaceIsOpen('#ggold-chat-fs')) return false;
   return isMochiPhoneEnabled() && !document.hidden && STATE.currentView === view && rpPhoneIsOpen();
 }
 function rpResumeGameAnimations() {
@@ -9767,7 +9885,7 @@ function rpGomokuIconUrl(theme,local=false) {
 function rpGomokuApp() {
   if (rpGomoku) return rpGomoku;
   rpGomoku = createGomoku({
-    document, state: () => STATE, runtime: () => rpRuntime, save: saveState,
+    document, state: () => STATE, runtime: () => rpRuntime, save: rpGameScreenSave('gomoku'),
     navigate: go, visible: () => rpGameVisible('gomoku'), partner: gameGetCurrentPartner,
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog, notify: text => toastr.info(text),
     call: (prompt,max,sys,token) => rpGuardAwait(lgCallAPI(prompt,max,sys,{gameTask:token,reportErrors:true,phoneGomoku:true}),token),
@@ -9788,7 +9906,7 @@ function rpSudokuIconUrl(theme,local=false) {
 }
 function rpSudokuApp() {
   if (!rpSudoku) rpSudoku = createSudoku({
-    document, state: () => STATE, runtime: () => rpRuntime, save: saveState,
+    document, state: () => STATE, runtime: () => rpRuntime, save: rpGameScreenSave('sudoku'),
     navigate: go, visible: () => rpGameVisible('sudoku'), partner: gameGetCurrentPartner,
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog,
     iconTheme: () => document.getElementById('rp-phone')?.dataset.rpArtTheme || null,
@@ -9924,20 +10042,20 @@ function rpTools() {
   return rpPhoneTools;
 }
 
-function rpCloseFeatureDialog() { $('#rp-feature-layer').remove(); }
+function rpCloseFeatureDialog(immediate = false) { rpSetSurfaceOpen('#rp-feature-layer',false,{remove:true,immediate}); }
 function rpCloseChatOverlays() {
   rpSetXhsMenu(false); rpSetMomentsMenu(false);
-  rpCloseFeatureDialog();
-  $('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create').remove();
+  rpCloseFeatureDialog(true);
+  rpSetSurfaceOpen('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create',false,{remove:true,immediate:true});
   rpSetGameFolderOpen(false,true);
-  $('#rp-compose-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel').hide();
+  rpSetSurfaceOpen(RP_MOTION_SURFACES,false,{immediate:true});
 }
 function rpFeatureDialog(title, content, actions = []) {
-  rpCloseFeatureDialog();
+  rpCloseFeatureDialog(true);
   const task = rpRuntime.task(), previous = document.activeElement;
   const layer = $('<div id="rp-feature-layer" class="rp-feature-layer">');
   const panel = $('<section class="rp-feature-panel" role="dialog" aria-modal="true" aria-labelledby="rp-feature-title">');
-  const close = () => { layer.remove(); if (task.valid() && previous?.isConnected) previous.focus?.({preventScroll:true}); };
+  const close = () => { rpSetSurfaceOpen(layer,false,{remove:true}); if (task.valid() && previous?.isConnected) previous.focus?.({preventScroll:true}); };
   const header = $('<div class="rp-feature-header">').append($('<strong id="rp-feature-title">').text(title));
   header.append($('<button type="button" class="rp-feature-close" aria-label="关闭">').text('×').on('click', close));
   panel.append(header, content);
@@ -9956,7 +10074,7 @@ function rpFeatureDialog(title, content, actions = []) {
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }
   });
-  $('#rp-screen').append(layer); panel.on('scroll',rpAvoidFabControls); rpAvoidFabControls(); panel.find('textarea,input,button').first().trigger('focus');
+  $('#rp-screen').append(layer); rpSetSurfaceOpen(layer,true); panel.on('scroll',rpAvoidFabControls); rpAvoidFabControls(); panel.find('textarea,input,button').first().trigger('focus');
   return panel;
 }
 
@@ -10108,7 +10226,7 @@ function rpDeleteContacts(ids) {
   }
   STATE.moments=STATE.moments.filter(m=>!removedPosts.includes(m));
   if(contacts.some(t=>t.id===STATE.currentThread)){STATE.currentThread=null;STATE.pendingMessages=[];$('#rp-input').val('');renderPendingQueue();}
-  $('#rp-del-picker').remove();renderThreadList();if(STATE.currentView==='moments')renderMoments();saveState();
+  rpSetSurfaceOpen('#rp-del-picker',false,{remove:true});renderThreadList();if(STATE.currentView==='moments')renderMoments();saveState();
   rpOfferUndo('已删除 '+contacts.length+' 个聊天及相关内容',()=>{
     if(contacts.some(t=>STATE.threads[t.id])||removedPosts.some(p=>STATE.moments.some(m=>m.id===p.id))||[...newTombstones].some(([key,value])=>STATE.deletedContacts[key]!==value))return false;
     for(const contact of contacts)STATE.threads[contact.id]=contact;
@@ -10136,7 +10254,7 @@ function rpSetXhsMenu(open, focus = false) {
   const trigger = document.getElementById('rp-xhs-more');
   if (!menu || !trigger) return;
   open = !!open && STATE.currentView === 'xhs';
-  menu.hidden = !open;
+  rpSetSurfaceOpen(menu,open,{hidden:true});
   trigger.setAttribute('aria-expanded', String(open));
   if (focus) (open ? menu.querySelector('button:not(:disabled)') : trigger)?.focus();
 }
@@ -10365,6 +10483,7 @@ function bindUI() {
     const app = $(this).data('app');
     if (app === 'folder-games') return; // The folder opens over home; it is not a page.
     if (app === 'settings') { openSettings(); return; }
+    if (app === 'diary') { STATE.diary = STATE.diary || []; mergeGlobalAvatars(); }
     go(app);
   });
 
@@ -10411,18 +10530,18 @@ function bindUI() {
   });
   $(document).on("click.mochiPhone", (e) => {
     if (!$(e.target).closest('#rp-attach-panel, #rp-attach-btn').length) {
-      $('#rp-attach-panel').hide();
+      rpSetSurfaceOpen('#rp-attach-panel',false);
     }
   });
 
   $('#rp-add-cancel').on('click', () => {
-    $('#rp-add-modal').hide();
+    rpSetSurfaceOpen('#rp-add-modal',false);
   });
 
   $('#rp-add-confirm').on('click', addContact);
 
   $('#rp-add-modal').on('click', function (e) {
-    if (e.target === this) $(this).hide();
+    if (e.target === this) rpSetSurfaceOpen(this,false);
   });
 
   $(document).on("click.mochiPhone", '#rp-hd-av.rp-group-members-trigger', function(e) {
@@ -10430,10 +10549,21 @@ function bindUI() {
     showGroupMembersModal(STATE.currentThread);
   });
   $(document).on("click.mochiPhone", '#rp-group-members-modal, #rp-gm-close', function(e) {
-    if (e.target === this || e.currentTarget.id === 'rp-gm-close') $('#rp-group-members-modal').hide().empty();
+    if (e.target === this || e.currentTarget.id === 'rp-gm-close') rpSetSurfaceOpen('#rp-group-members-modal',false);
   });
 
 
+  rpRuntime.listenDOM(document.getElementById('rp-phone'),'click',rpCaptureScreenMotion,true);
+  $(document).on('click.mochiPhone','#rp-view-settings details.rp-settings-detail>summary,#rp-moments-list .rp-moment-menu>summary',function(event) {
+    event.preventDefault();
+    const owner=this.parentElement,panel=owner.querySelector('.rp-settings-panel,.rp-moment-menu-items');
+    rpSetPanelOpen(panel,!(rpAuxMotion.get(panel)?.open ?? owner.open),owner);
+  });
+  $(document).on('click.mochiPhone','[data-rp-motion-dismiss],[data-rp-motion-backdrop]',function(event) {
+    if (this.hasAttribute('data-rp-motion-backdrop') && event.target!==this) return;
+    const id=this.getAttribute('data-rp-motion-dismiss') || this.getAttribute('data-rp-motion-backdrop');
+    if (['rp-hb-modal','rp-loc-modal'].includes(id)) rpSetSurfaceOpen(document.getElementById(id),false,{remove:true});
+  });
   // ── Games Folder ─────────────────────────────────────────────
   $(document).on("click.mochiPhone", '[data-app="folder-games"]', function(e) {
     e.stopPropagation();
@@ -10452,10 +10582,7 @@ function bindUI() {
     if (['ludo','g2048','ggold','gword','gomoku','sudoku','shop'].includes(app)) go(app);
   });
   // ── Ludo game ────────────────────────────────────────────────
-  $(document).on("click.mochiPhone", '[data-app="ludo"]', function(e) {
-    e.stopPropagation();
-    go('ludo');
-  });
+
 
   $(document).on("click.mochiPhone", '.rp-game-partner-change', function(e) {
     e.preventDefault();
@@ -10473,11 +10600,7 @@ function bindUI() {
   // ── API 面板事件 ──
   // ── API Settings VIEW (首页入口) ──
   // ── Diary app ──
-  $(document).on("click.mochiPhone", '[data-app="diary"]', function() {
-    STATE.diary = STATE.diary || [];
-    mergeGlobalAvatars();
-    go('diary');
-  });
+
   $(document).on("click.mochiPhone", '#rp-gen-diary', generateAIDiary);
   $(document).on("click.mochiPhone", '#rp-diary-send', postUserDiary);
   $(document).on("keydown.mochiPhone", '#rp-diary-input', function(e) {
@@ -10586,13 +10709,9 @@ function bindUI() {
     deleteXHSComment(postId, cidx);
   });
 
-  $(document).on("click.mochiPhone", '[data-app="api-settings"]', function() {
-    lgFillAPIView();
-    go('api-settings');
-  });
+
   $(document).on("change.mochiPhone", 'input[name="rp-api-mode-v"]', function() {
-    if ($(this).val() === 'custom') $('#rp-api-custom-fields-v').css('display','flex');
-    else $('#rp-api-custom-fields-v').hide();
+    rpSetPanelOpen('#rp-api-custom-fields-v',$(this).val() === 'custom',null,'flex');
   });
   $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, #rp-api-model-v, input[name="rp-api-mode-v"]', () => rpResetApiTest());
   $(document).on("click.mochiPhone", '#rp-api-test-v', async function() {
@@ -10678,7 +10797,7 @@ function bindUI() {
       $('#rp-api-mode-st').prop('checked', true);
       $('#rp-api-custom-fields').hide();
     }
-    $('#rp-api-panel').show();
+    rpSetSurfaceOpen('#rp-api-panel',true);
   });
   $(document).on("change.mochiPhone", 'input[name="rp-api-mode"]', function() {
     if ($(this).val() === 'custom') $('#rp-api-custom-fields').show();
@@ -10709,13 +10828,13 @@ function bindUI() {
       catch(e) { lgMsg('sys', e.message); return; }
     }
     if (!rpSaveCustomApiConfig(cfg)) { lgMsg('sys', 'API设置未保存，请检查浏览器存储空间后重试。'); return; }
-    $('#rp-api-panel').hide();
+    rpSetSurfaceOpen('#rp-api-panel',false);
     lgMsg('sys', mode === 'custom'
       ? `⚡ 已切换到 ${cfg.model}(自定义 API)`
       : '⚡ 已切换回 SillyTavern API');
   });
   $(document).on("click.mochiPhone", '#rp-api-cancel', function() {
-    $('#rp-api-panel').hide();
+    rpSetSurfaceOpen('#rp-api-panel',false);
   });
 
   // 获取模型列表
@@ -10736,7 +10855,7 @@ function bindUI() {
       if (!current()) return;
       const models = parseCustomApiModels(data);
       if (!models.length) $('#rp-api-status-v').text('未获取到模型,请检查 URL/Key');
-      else { models.forEach(m => appendModelListItem($list, m)); $list.show(); $('#rp-api-status-v').text('找到 ' + models.length + ' 个模型,点击选择'); }
+      else { models.forEach(m => appendModelListItem($list, m)); rpSetPanelOpen($list,true); $('#rp-api-status-v').text('找到 ' + models.length + ' 个模型,点击选择'); }
     } catch(error) {
       if (current()) $('#rp-api-status-v').text('请求失败:' + error.message);
     } finally {
@@ -10745,7 +10864,7 @@ function bindUI() {
   });
   $(document).on("click.mochiPhone", '.rp-model-item', function() {
     $('#rp-api-model-v').val($(this).attr('data-model')).trigger('input');
-    $('#rp-model-list').hide();
+    rpSetPanelOpen('#rp-model-list',false);
     $('#rp-api-status-v').text('已选择:' + $(this).data('model'));
   });
 
@@ -10902,11 +11021,11 @@ function bindUI() {
     go('g2048');
   });
   $(document).on("click.mochiPhone", '#g2048-newbtn,#g2048-restart', function() {
-    $('#g2048-over').hide();
+    rpSetSurfaceOpen('#g2048-over',false);
     g2048Init();
   });
   $(document).on("click.mochiPhone", '#g2048-continue', function() {
-    $('#g2048-over').hide();
+    rpSetSurfaceOpen('#g2048-over',false);
     LG2048.active = true;
     LG2048.processing = false;
     LG2048.turn = 'user';
@@ -10915,7 +11034,7 @@ function bindUI() {
     g2048Msg('sys', '继续挑战!目标:4096!');
   });
   $(document).on("click.mochiPhone", '#g2048-quit', function() {
-    $('#g2048-over').hide();
+    rpSetSurfaceOpen('#g2048-over',false);
     LG2048.active = false;
     go('home');
   });
@@ -11024,11 +11143,11 @@ function bindUI() {
       });
     }
     body.innerHTML = document.getElementById('rp-game-chat').innerHTML;
-    jQuery('#rp-game-chat-fs').show();
+    rpSetSurfaceOpen('#rp-game-chat-fs',true);
     body.scrollTop = body.scrollHeight;
 
     // Bind close button directly (not via delegation)
-    jQuery('#rp-game-chat-fs-close').off('click').on('click', function(e) { if(typeof e !== 'undefined'){e.stopPropagation();e.preventDefault();} $('#rp-game-chat-fs').hide(); });
+    jQuery('#rp-game-chat-fs-close').off('click').on('click', function(e) { if(typeof e !== 'undefined'){e.stopPropagation();e.preventDefault();} rpSetSurfaceOpen('#rp-game-chat-fs',false); });
   });
 
   // ─────────────────────────────────────────────────────────────
@@ -11047,10 +11166,7 @@ function bindUI() {
   });
 
   // Settings app - go to settings view (override data-app handler)
-  $(document).on("click.mochiPhone", '[data-app="settings"]', function(e) {
-    e.stopPropagation();
-    openSettings();
-  });
+
 
   // Compose moment
   $(document).on("click.mochiPhone", '#rp-moments-add', () => {rpSetMomentsMenu(false,true);openCompose();});
@@ -11069,7 +11185,7 @@ function bindUI() {
   // Moments: like
   $(document).on("click.mochiPhone", '.rp-like-btn', function(e) {
     e.stopPropagation();
-    $(this).closest('.rp-moment-menu').prop('open', false);
+    $(this).closest('.rp-moment-menu').each(function(){rpSetPanelOpen(this.querySelector('.rp-moment-menu-items'),false,this);});
     toggleLike($(this).data('moment'));
   });
 
@@ -11147,12 +11263,12 @@ function bindUI() {
   $(document).on('click.mochiPhone', function(e) {
     const current = $(e.target).closest('.rp-moment-menu')[0];
     document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => {
-      if (menu !== current || $(e.target).closest('button').length) menu.open = false;
+      if (menu !== current || $(e.target).closest('button').length) rpSetPanelOpen(menu.querySelector('.rp-moment-menu-items'),false,menu);
     });
   });
   $(document).on('keydown.mochiPhone', function(e) {
     if (e.key !== 'Escape') return;
-    document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => { menu.open = false; menu.querySelector('summary')?.focus(); });
+    document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => { rpSetPanelOpen(menu.querySelector('.rp-moment-menu-items'),false,menu); menu.querySelector('summary')?.focus(); });
   });
   // Moments: comment toggle
   $(document).on('input.mochiPhone', '.rp-moment-cinput', function() {
@@ -11161,12 +11277,13 @@ function bindUI() {
   });
   $(document).on("click.mochiPhone", '.rp-comment-toggle', function(e) {
     e.stopPropagation();
-    $(this).closest('.rp-moment-menu').prop('open', false);
+    $(this).closest('.rp-moment-menu').each(function(){rpSetPanelOpen(this.querySelector('.rp-moment-menu-items'),false,this);});
     const id = $(this).data('moment');
     const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', id);
-    row.toggle();
+    const opening = !rpSurfaceIsOpen(row);
+    rpSetPanelOpen(row,opening);
     const draft = rpCommentDraft('moments', id);
-    draft.open = row[0]?.style.display !== 'none';
+    draft.open = opening;
     if (draft.open) draft.replyId = null;
     saveState();
     if (row.is(':visible')) {
@@ -11177,7 +11294,7 @@ function bindUI() {
   // Moments: delete moment
   $(document).on("click.mochiPhone", '.rp-moment-del-btn', function(e) {
     e.stopPropagation();
-    $(this).closest('.rp-moment-menu').prop('open', false);
+    $(this).closest('.rp-moment-menu').each(function(){rpSetPanelOpen(this.querySelector('.rp-moment-menu-items'),false,this);});
     const momentId = $(this).data('moment');
     rpDeleteMoment(momentId);
   });
@@ -11185,7 +11302,7 @@ function bindUI() {
   // Moments: reply
   $(document).on("click.mochiPhone", '.rp-moment-reply-btn', function(e) {
     e.stopPropagation();
-    $(this).closest('.rp-moment-menu').prop('open', false);
+    $(this).closest('.rp-moment-menu').each(function(){rpSetPanelOpen(this.querySelector('.rp-moment-menu-items'),false,this);});
     const momentId = $(this).data('moment');
     const rname = $(this).data('rname');
     const oldIdxRaw = $(this).attr('data-oldidx');
@@ -11196,7 +11313,7 @@ function bindUI() {
     draft.replyId = targetComment ? rpCommentIdentity(targetComment) : null; draft.open = true;
     saveState();
     const row = rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId);
-    row.show();
+    rpSetPanelOpen(row,true);
     row.find('.rp-moment-cinput')
       .data('reply-to', rname)
       .data('reply-to-idx', Number.isFinite(oldIdx) ? oldIdx : null)
@@ -11208,7 +11325,7 @@ function bindUI() {
   // Moments: delete single comment
   $(document).on("click.mochiPhone", '.rp-moment-comment-del-btn', function(e) {
     e.stopPropagation();
-    $(this).closest('.rp-moment-menu').prop('open', false);
+    $(this).closest('.rp-moment-menu').each(function(){rpSetPanelOpen(this.querySelector('.rp-moment-menu-items'),false,this);});
     const momentId = $(this).data('moment');
     const oldIdxRaw = $(this).attr('data-oldidx');
     const oldIdx = oldIdxRaw !== undefined && oldIdxRaw !== '' ? parseInt(oldIdxRaw, 10) : NaN;
@@ -11232,7 +11349,7 @@ function bindUI() {
     if (!text) return;
     sendMomentComment(momentId, text, replyMeta || replyTo);
     input.val('').removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder','发表评论...');
-    row.hide();
+    rpSetPanelOpen(row,false);
   });
 
   // Moments: send comment via enter
@@ -11251,7 +11368,7 @@ function bindUI() {
       if (!text) return;
       sendMomentComment(momentId, text, replyMeta || replyTo);
       $(this).val('').removeData('reply-to').removeData('reply-to-idx').removeData('reply-to-text').attr('placeholder','发表评论...');
-      rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId).hide();
+      rpSetPanelOpen(rpFindByDataAttr('#rp-moments-list', '.rp-moment-input-row', 'data-moment-row', momentId),false);
     }
   });
 
@@ -11260,11 +11377,11 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#rp-add-choice .rp-add-choice-item', function(e) {
     e.stopPropagation();
     const action = $(this).data('action');
-    $('#rp-add-choice').remove();
+    rpSetSurfaceOpen('#rp-add-choice',false,{remove:true});
     if (action === 'contact') {
       $('#rp-add-name').val('');
       $('#rp-add-initials').val('');
-      $('#rp-add-modal').show();
+      rpSetSurfaceOpen('#rp-add-modal',true);
     } else if (action === 'group') {
       showGroupPicker();
     } else if (action === 'delete') {
@@ -11273,10 +11390,10 @@ function bindUI() {
   });
   $(document).on("click.mochiPhone", '#rp-add-choice .rp-add-choice-cancel', (e) => {
     e.stopPropagation();
-    $('#rp-add-choice').remove();
+    rpSetSurfaceOpen('#rp-add-choice',false,{remove:true});
   });
   $(document).on("click.mochiPhone", '#rp-add-choice', function(e) {
-    if (e.target === this) $('#rp-add-choice').remove();
+    if (e.target === this) rpSetSurfaceOpen('#rp-add-choice',false,{remove:true});
   });
 
   // ── Delete picker: toggle + confirm ──
@@ -11293,7 +11410,7 @@ function bindUI() {
   });
   $(document).on("click.mochiPhone", '#rp-del-cancel', function(e) {
     e.stopPropagation();
-    $('#rp-del-picker').remove();
+    rpSetSurfaceOpen('#rp-del-picker',false,{remove:true});
   });
 
   // ── Group picker: toggle selection ──
@@ -11301,11 +11418,11 @@ function bindUI() {
     e.stopPropagation();
     $(this).toggleClass('selected');
   });
-  $(document).on("click.mochiPhone", '[data-action="grp-cancel"]', (e) => { e.stopPropagation(); $('#rp-grp-create').remove(); });
+  $(document).on("click.mochiPhone", '[data-action="grp-cancel"]', (e) => { e.stopPropagation(); rpSetSurfaceOpen('#rp-grp-create',false,{remove:true}); });
   $(document).on("click.mochiPhone", '[data-action="grp-confirm"]', (e) => { e.stopPropagation(); confirmCreateGroup(); });
   $(document).on("click.mochiPhone", '#rp-grp-create', function(e) {
     e.stopPropagation();
-    if (e.target === this) $(this).remove();
+    if (e.target === this) rpSetSurfaceOpen(this,false,{remove:true});
   });
 
   // ── Wallpaper upload / reset ──
@@ -11624,7 +11741,7 @@ function addContact() {
     unread: 0
   };
 
-  $('#rp-add-modal').hide();
+  rpSetSurfaceOpen('#rp-add-modal',false);
   renderThreadList();
   saveState(); // FIX2: 持久化新联系人
 
@@ -11737,6 +11854,7 @@ function go(view) {
   if (view === 'theme-studio') { lgRenderThemeStudio(); }
   if (view === 'diary') { renderDiary(); }
   rpSetGameFolderOpen(false,true);
+  rpFinishAuxMotion();
   for (const element of [...rpMotionJobs.keys()]) if (element.id !== 'rp-phone') rpCancelSurfaceMotion(element);
   $('.rp-view').hide();
   // 需要 flex 布局的视图
@@ -11750,7 +11868,7 @@ function go(view) {
   STATE.currentView = view;
   rpGomoku?.onNavigate(view);
   rpSudoku?.onNavigate(view);
-  document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => { menu.open = false; });
+  document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => { rpSetPanelOpen(menu.querySelector('.rp-moment-menu-items'),false,menu); });
   rpStickers?.onNavigate(view);
   void rpShop?.onNavigate(view);
   rpTools().conversation.onNavigate(view);
@@ -11800,7 +11918,7 @@ function rpResetModelRequest() {
   const request = rpModelRequest; rpModelRequest = null;
   request?.abort();
   $('#rp-api-fetch-models').text('获取模型').prop('disabled', false);
-  $('#rp-model-list').hide().empty();
+  rpCancelAuxMotion(document.getElementById('rp-model-list')); $('#rp-model-list').hide().empty();
 }
 function rpApiTestFingerprint() {
   return JSON.stringify([$('input[name="rp-api-mode-v"]:checked').val(), ...['url', 'key', 'model'].map(k => $('#rp-api-' + k + '-v').val())]);
@@ -11874,7 +11992,8 @@ function showGroupMembersModal(threadId) {
       </div>
       <div class="rp-gm-list">${rows || '<div class="rp-gm-row"><div class="rp-gm-name">暂无成员</div></div>'}</div>
     </div>
-  `).show();
+  `);
+  rpSetSurfaceOpen('#rp-group-members-modal',true);
 }
 
 function openThread(threadId) {
@@ -12053,7 +12172,7 @@ function rpSetMomentsMenu(open, focus = false) {
   if (!menu || !trigger) return;
   open = !!open && STATE.currentView === 'moments';
   if (open) rpRefreshAutoTranslationSettings();
-  menu.hidden = !open; trigger.setAttribute('aria-expanded',String(open));
+  rpSetSurfaceOpen(menu,open,{hidden:true}); trigger.setAttribute('aria-expanded',String(open));
   if (focus) (open ? menu.querySelector('button:not(:disabled)') : trigger)?.focus();
 }
 
@@ -16164,12 +16283,12 @@ function makeDraggable() {
 //  COMPOSE MOMENT
 // ================================================================
 function openCompose() {
-  $('#rp-compose-modal').css('display', 'flex');
+  rpSetSurfaceOpen('#rp-compose-modal',true,{display:'flex'});
   $('#rp-compose-text').val(STATE.composeDraft || '').focus();
 }
 
 function closeCompose() {
-  $('#rp-compose-modal').hide();
+  rpSetSurfaceOpen('#rp-compose-modal',false);
 }
 
 // ================================================================
@@ -16528,7 +16647,8 @@ function incomingCall(fromRaw, time, source) {
         <div class="rp-call-lbl">接听</div>
       </div>
     </div>
-  `).show();
+  `);
+  rpSetSurfaceOpen('#rp-call-overlay',true);
   STATE._pendingCall = { fromRaw, time, threadId: thread.id, chatSlot: STATE.chatId, source };
   clearTimeout(STATE._callTimer);
   STATE._callTimer = setTimeout(() => resolveCall('missed'), 15000);
@@ -16539,7 +16659,7 @@ function resolveCall(result) {
   clearTimeout(STATE._callTimer);
   const call = STATE._pendingCall;
   STATE._pendingCall = null;
-  $('#rp-call-overlay').hide().empty();
+  rpSetSurfaceOpen('#rp-call-overlay',false,{empty:true});
   if (!call || call.chatSlot !== STATE.chatId) return;
   const thread = STATE.threads[call.threadId];
   if (!thread) return;
@@ -16695,7 +16815,7 @@ function incomingGroupMsg(fromRaw, groupName, time, text, source) {
 // ================================================================
 function toggleAttachPanel() {
   const p = $('#rp-attach-panel');
-  if (p.is(':visible')) { p.hide(); return; }
+  if (rpSurfaceIsOpen(p)) { rpSetSurfaceOpen(p,false); return; }
   p.html(`
     <div class="rp-attach-row">
       <div class="rp-attach-item" onclick="showHongbaoSheet()">
@@ -16708,12 +16828,13 @@ function toggleAttachPanel() {
         <div class="rp-attach-ico">📍</div><span>位置</span>
       </div>
     </div>
-  `).show();
+  `);
+  rpSetSurfaceOpen(p,true);
   p.find('.rp-attach-row').append(rpStickerApp().attachment());
 }
 
 function showHongbaoSheet() {
-  $('#rp-attach-panel').hide();
+  rpSetSurfaceOpen('#rp-attach-panel',false);
   if ($('#rp-hb-modal').length) { $('#rp-hb-amount').trigger('focus'); return; }
   $('#rp-screen').append(`
     <div class="rp-hb-modal" id="rp-hb-modal">
@@ -16722,10 +16843,11 @@ function showHongbaoSheet() {
         <input id="rp-hb-amount" type="number" placeholder="金额(¥)" min="1"/>
         <input id="rp-hb-note"   type="text"   placeholder="祝福语(选填)" maxlength="15"/>
         <button class="rp-hb-send-btn" onclick="sendUserHongbao()">发送红包</button>
-        <button class="rp-hb-cancel-btn" onclick="$('#rp-hb-modal').remove()">取消</button>
+        <button class="rp-hb-cancel-btn" data-rp-motion-dismiss="rp-hb-modal">取消</button>
       </div>
     </div>
   `);
+  rpSetSurfaceOpen('#rp-hb-modal',true);
 }
 
 function sendUserHongbao() {
@@ -16735,7 +16857,7 @@ function sendUserHongbao() {
   const thread = STATE.threads[STATE.currentThread]; if (!thread) return;
   const message = {id:'uhb_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),from:'user',type:'hongbao',name:'我',time:resolvePhoneTime(),amount,note,opened:true};
   rpSubmitThreadAction(thread, '*{{user}}发给'+thread.name+'一个¥'+amount+'的红包,备注"'+note+'"*', message);
-  $('#rp-hb-modal').remove();
+  rpSetSurfaceOpen('#rp-hb-modal',false,{remove:true});
 }
 
 function triggerImagePick() {
@@ -16743,7 +16865,7 @@ function triggerImagePick() {
   const targetId = STATE.currentThread;
   const targetThread = STATE.threads[targetId];
   if (!targetThread || !task.valid()) return;
-  $('#rp-attach-panel').hide();
+  rpSetSurfaceOpen('#rp-attach-panel',false);
   const fi = $('<input type="file" accept="image/*" style="display:none">');
   $('body').append(fi);
   fi.on('click', event=>event.stopPropagation()); // This phone-owned picker is not an outside click.
@@ -16787,20 +16909,21 @@ function sendImageMessage(thread, messageId) {
 }
 
 function showLocationInput() {
-  $('#rp-attach-panel').hide();
-  $('#rp-loc-modal').remove();
+  rpSetSurfaceOpen('#rp-attach-panel',false);
+  rpSetSurfaceOpen('#rp-loc-modal',false,{remove:true,immediate:true});
   const dark = $('#rp-phone').hasClass('rp-dark') ? 'rp-dark' : '';
   $('#rp-screen').append(`
-    <div class="rp-loc-modal ${dark}" id="rp-loc-modal" onclick="if(event.target===this)$('#rp-loc-modal').remove()">
+    <div class="rp-loc-modal ${dark}" id="rp-loc-modal" data-rp-motion-backdrop="rp-loc-modal">
       <div class="rp-loc-sheet">
         <h3>📍 发送位置</h3>
         <input id="rp-loc-inp" type="text" placeholder="输入你的位置..."/>
         <button class="rp-loc-send-btn" onclick="sendLocation()">发送</button>
-        <button class="rp-loc-cancel-btn" onclick="$('#rp-loc-modal').remove()">取消</button>
+        <button class="rp-loc-cancel-btn" data-rp-motion-dismiss="rp-loc-modal">取消</button>
       </div>
     </div>
   `);
   setTimeout(() => document.getElementById('rp-loc-inp')?.focus(), 60);
+  rpSetSurfaceOpen('#rp-loc-modal',true);
 }
 
 function sendLocation() {
@@ -16808,7 +16931,7 @@ function sendLocation() {
   const thread = STATE.threads[STATE.currentThread]; if (!place || !thread) return;
   const message = {id:'uloc_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),from:'user',type:'location',time:resolvePhoneTime(),place};
   rpSubmitThreadAction(thread, '*{{user}}向'+thread.name+'共享了位置:'+place+'*', message);
-  $('#rp-loc-modal').remove(); $('#rp-attach-panel').hide();
+  rpSetSurfaceOpen('#rp-loc-modal',false,{remove:true}); rpSetSurfaceOpen('#rp-attach-panel',false);
 }
 
 
@@ -16816,7 +16939,7 @@ function sendLocation() {
 //  DELETE CONTACT PICKER
 // ================================================================
 function showDeletePicker() {
-  $('#rp-del-picker').remove();
+  rpSetSurfaceOpen('#rp-del-picker',false,{remove:true,immediate:true});
   const contacts = Object.values(STATE.threads);
   if (!contacts.length) return;
   const items = contacts.map(t => {
@@ -16837,13 +16960,14 @@ function showDeletePicker() {
       <div id="rp-del-list" style="flex:1;overflow-y:auto;padding:8px 0">${items}</div>
     </div>
   `);
+  rpSetSurfaceOpen('#rp-del-picker',true);
 }
 
 // ================================================================
 //  ADD CHOICE / CREATE GROUP
 // ================================================================
 function showAddChoice() {
-  $('#rp-add-choice').remove();
+  rpSetSurfaceOpen('#rp-add-choice',false,{remove:true,immediate:true});
   $('#rp-screen').append(`
     <div class="rp-add-choice" id="rp-add-choice">
       <div class="rp-add-choice-box">
@@ -16854,12 +16978,13 @@ function showAddChoice() {
       <div class="rp-add-choice-cancel" data-action="cancel">取消</div>
     </div>
   `);
+  rpSetSurfaceOpen('#rp-add-choice',true);
 }
 
-function hideAddChoice() { $('#rp-add-choice').remove(); }
+function hideAddChoice() { rpSetSurfaceOpen('#rp-add-choice',false,{remove:true}); }
 
 function showGroupPicker() {
-  $('#rp-grp-create').remove();
+  rpSetSurfaceOpen('#rp-grp-create',false,{remove:true,immediate:true});
   const contacts = Object.values(STATE.threads).filter(t => !rpIsGroupThread(t));
   const items = contacts.map(t => {
     const img = STATE.avatars?.[t.name];
@@ -16886,6 +17011,7 @@ function showGroupPicker() {
     </div>
   `);
   setTimeout(() => $('#rp-grp-name-inp').focus(), 80);
+  rpSetSurfaceOpen('#rp-grp-create',true);
 }
 
 function confirmCreateGroup() {
@@ -16900,7 +17026,7 @@ function confirmCreateGroup() {
     $('#rp-grp-name-inp').trigger('focus');
     return;
   }
-  $('#rp-grp-create').remove();
+  rpSetSurfaceOpen('#rp-grp-create',false,{remove:true});
   const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
   STATE.threads[groupId] = {
     id: groupId, name, initials: name.slice(0,2),
@@ -20990,12 +21116,12 @@ function gameOpenPartnerModal() {
   var cur = gameGetCurrentPartner(ctx);
   $('#rp-game-partner-name-input').val(cur.name || gameGetCardName(ctx) || '');
   $('#rp-game-partner-note-input').val(cur.note || '');
-  $('#rp-game-partner-modal').css('display', 'flex');
+  rpSetSurfaceOpen('#rp-game-partner-modal',true,{display:'flex'});
   setTimeout(function(){ try { document.getElementById('rp-game-partner-name-input').focus(); } catch(e) {} }, 0);
 }
 
 function gameClosePartnerModal() {
-  $('#rp-game-partner-modal').hide();
+  rpSetSurfaceOpen('#rp-game-partner-modal',false);
 }
 
 function gameSavePartnerFromModal() {
@@ -21762,7 +21888,7 @@ async function gmEndGame() {
       if (replayBtn) replayBtn.textContent = '再试一次';
     }
   }
-  if (over) over.style.display = 'flex';
+  if (over) rpSetSurfaceOpen(over,true,{display:'flex'});
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) saveState(); }
 }
@@ -21799,7 +21925,7 @@ function ggoldOpen() {
   GM.hookState = 'idle';
   const overEl = document.getElementById('ggold-over');
   ggoldSetModeSelection(true);
-  if (overEl) overEl.style.display = 'none';
+  if (overEl) rpSetSurfaceOpen(overEl,false);
   saveState();
 }
 
@@ -21825,7 +21951,7 @@ function ggoldStartGame(mode) {
   const chatEl = document.getElementById('ggold-chat');
   const coopBar = document.getElementById('ggold-coop-bar');
   ggoldSetModeSelection(false);
-  if (overEl) overEl.style.display = 'none';
+  if (overEl) rpSetSurfaceOpen(overEl,false);
   renderPhoneGameHistory('gm');
   if (coopBar) coopBar.style.display = mode === 'coop' ? 'block' : 'none';
   gmUpdateScoreUI();
@@ -21844,9 +21970,9 @@ function ggoldBindEvents() {
     if($(e.target).closest('button,textarea').length)return;
     const body=document.getElementById('ggold-chat-fs-body');
     body.replaceChildren(...Array.from(document.getElementById('ggold-chat').children,node=>node.cloneNode(true)));
-    $('#ggold-chat-fs').css('display','flex');body.scrollTop=body.scrollHeight;rpPauseGameAnimations();
+    rpSetSurfaceOpen('#ggold-chat-fs',true,{display:'flex'});body.scrollTop=body.scrollHeight;rpPauseGameAnimations();
   });
-  $(document).on('click.mochiPhone','#ggold-chat-fs-close',function(e) { e.stopPropagation();$('#ggold-chat-fs').hide();rpResumeGameAnimations(); });
+  $(document).on('click.mochiPhone','#ggold-chat-fs-close',function(e) { e.stopPropagation();rpSetSurfaceOpen('#ggold-chat-fs',false);rpResumeGameAnimations(); });
   const gameRuntime = rpGameRuntime('gm');
   const clearInterval = id => gameRuntime.clearTimer(id);
   const cancelAnimationFrame = id => gameRuntime.cancelFrame(id);
@@ -21957,7 +22083,7 @@ function gwordOpen() {
   const overEl = document.getElementById('gword-over');
   const chatEl = document.getElementById('gword-chat');
   rpSetWordModeSelection(true);
-  if (overEl) overEl.style.display = 'none';
+  if (overEl) rpSetSurfaceOpen(overEl,false);
   renderPhoneGameHistory('gword');
   $('#gword-status').text('');
   $('#gword-category-badge').text('分类：--');
@@ -21981,7 +22107,7 @@ async function gwordStartGame(mode) {
   const overEl = document.getElementById('gword-over');
   const chatEl = document.getElementById('gword-chat');
   rpSetWordModeSelection(false);
-  if (overEl) overEl.style.display = 'none';
+  if (overEl) rpSetSurfaceOpen(overEl,false);
   renderPhoneGameHistory('gword');
   $('#gword-input').attr('placeholder', mode === 'char-describe' ? '猜答案、提问或聊天...' : '输入描述提示...');
   gwordMsg('sys', '✨ 正在出题中...');
@@ -22294,7 +22420,7 @@ function gwordEndRound(won) {
   $('#gword-over-emoji').text(emoji);
   $('#gword-over-title').text(title);
   $('#gword-over-sub').text(sub);
-  $('#gword-over').css('display', 'flex');
+  rpSetSurfaceOpen('#gword-over',true,{display:'flex'});
   saveState();
 }
 
@@ -22322,11 +22448,11 @@ function gwordBindEvents() {
   $(document).on("click.mochiPhone", '#gword-giveup-btn', function() { gwordGiveUp(); });
   $(document).on("click.mochiPhone", '#gword-newbtn', function() { gwordOpen(); });
   $(document).on("click.mochiPhone", '#gword-next', function() {
-    $('#gword-over').hide();
+    rpSetSurfaceOpen('#gword-over',false);
     gwordStartGame(GWORD.mode);
   });
   $(document).on("click.mochiPhone", '#gword-quit', function() {
-    $('#gword-over').hide();
+    rpSetSurfaceOpen('#gword-over',false);
     gwordOpen();
   });
   // fullscreen chat
@@ -22335,10 +22461,10 @@ function gwordBindEvents() {
     if (!body) return;
     body.innerHTML = document.getElementById('gword-chat').innerHTML;
     body.scrollTop = body.scrollHeight;
-    $('#gword-chat-fs').css('display', 'flex');
+    rpSetSurfaceOpen('#gword-chat-fs',true,{display:'flex'});
   });
   $(document).on("click.mochiPhone", '#gword-chat-hint', function() { $('#gword-chat').trigger('click'); });
-  $(document).on("click.mochiPhone", '#gword-chat-fs-close', function() { $('#gword-chat-fs').hide(); });
+  $(document).on("click.mochiPhone", '#gword-chat-fs-close', function() { rpSetSurfaceOpen('#gword-chat-fs',false); });
 }
 
 function ggoldInit() {
@@ -22544,12 +22670,12 @@ function rpShowGameResume(key) {
     const label = document.createElement('div'); label.textContent = '已保存本局进度'; overlay.append(label);
     const resume = document.createElement('button'); resume.type = 'button'; resume.textContent = '继续本局';
     resume.className = 'rp-game-resume-primary';
-    resume.onclick = () => { overlay.style.display = 'none'; void rpResumeSavedGame(key); };
+    resume.onclick = () => { rpSetSurfaceOpen(overlay,false); void rpResumeSavedGame(key); };
     const restart = document.createElement('button'); restart.type = 'button'; restart.textContent = '开始新局';
-    restart.onclick = () => { overlay.style.display = 'none'; game._paused = false; if(key==='ludo')lgInit();else if(key==='g2048')g2048Init();else if(key==='gm')ggoldOpen();else gwordOpen(); };
+    restart.onclick = () => { rpSetSurfaceOpen(overlay,false); game._paused = false; if(key==='ludo')lgInit();else if(key==='g2048')g2048Init();else if(key==='gm')ggoldOpen();else gwordOpen(); };
     overlay.append(resume,restart); document.getElementById('rp-view-' + view)?.append(overlay);
   }
-  overlay.style.display = 'flex';
+  rpSetSurfaceOpen(overlay,true,{display:'flex'});
   return true;
 }
 async function rpResumeSavedGame(key) {
@@ -22625,14 +22751,14 @@ function rpOpenGameHistoryViewport(key) {
   if(!game._historyViewport)game._historyViewport={view,scrollTop:view.scrollTop,overflow:view.style.getPropertyValue('overflow-y'),priority:view.style.getPropertyPriority('overflow-y')};
   if(view.contains(document.activeElement))document.activeElement.blur?.();
   view.style.setProperty('overflow-y','hidden','important');view.scrollTop=0;
-  panel.style.display='flex';
+  rpSetSurfaceOpen(panel,true,{display:'flex'});
   const body=document.getElementById(id+'-chat-fs-body');if(body)body.scrollTop=body.scrollHeight;
 }
 function rpCloseGameHistoryViewport(key) {
   const game=getPhoneGameRecordSource(key),saved=game?._historyViewport;
   if(!saved)return;
   const id={g2048:'g2048',gm:'ggold',ludo:'rp-game',gword:'gword'}[key];
-  const panel=document.getElementById(id+'-chat-fs');if(panel)panel.style.display='none';
+  const panel=document.getElementById(id+'-chat-fs');if(panel)rpSetSurfaceOpen(panel,false);
   if(saved.overflow)saved.view.style.setProperty('overflow-y',saved.overflow,saved.priority);
   else saved.view.style.removeProperty('overflow-y');
   saved.view.scrollTop=saved.scrollTop;delete game._historyViewport;
@@ -22871,7 +22997,7 @@ function g2048Init() {
   LG2048.won = false;
   if (!Array.isArray(LG2048.chatLog)) LG2048.chatLog = [];
   g2048AddTile(); g2048AddTile();
-  $('#g2048-over').hide();
+  rpSetSurfaceOpen('#g2048-over',false);
   renderPhoneGameHistory('g2048');
   g2048Render();
   g2048Msg('sys', '\u6e38\u620f\u5f00\u59cb\uff01\u4e00\u8d77\u5e72\u5230 2048 \u5427\uff01\ud83c\udf89');
@@ -22902,7 +23028,7 @@ function g2048UserMove(dir) {
     $('#g2048-over-emoji').text('\ud83c\udf89');
     $('#g2048-over-title').text('\u8fbe\u62102048\uff01');
     $('#g2048-over-sub').text('\u4f60\u4eec\u5408\u529b\u5b8c\u6210\u4e86\uff01');
-    $('#g2048-over').css('display', 'flex');
+    rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
     var persona = g2048GetPersona();
     var wp = (persona ? persona + '\n' : '') + '[2048游戏场景]我们在一起玩2048数字拼盘游戏中合力达成了2048！\n请以' + LG2048.charName + '的身份用中文口语说一句庆祝的话，20字以内，纯对话台词，不带括号、*号、动作描写、省略号。';
     lgCallAPI(wp, 150).then(rpGameRuntime('g2048').guard(function(r) {
@@ -22944,7 +23070,7 @@ function g2048CharTurn() {
     $('#g2048-over-emoji').text('\ud83c\udf89');
     $('#g2048-over-title').text('\u8fbe\u62102048\uff01');
     $('#g2048-over-sub').text('\u5927\u5bb6\u4e00\u8d77\u5b8c\u6210\u4e86\uff01');
-    $('#g2048-over').css('display', 'flex');
+    rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
     LG2048.active = false;
     LG2048.processing = false;
     return;
@@ -22968,7 +23094,7 @@ function g2048GameOver() {
   $('#g2048-over-emoji').text('\ud83d\ude05');
   $('#g2048-over-title').text('\u6e38\u620f\u7ed3\u675f');
   $('#g2048-over-sub').text('\u6700\u7ec8\u5f97\u5206\uff1a' + LG2048.score + '\uff0c\u4e0b\u6b21\u52a0\u6cb9\uff01');
-  $('#g2048-over').css('display', 'flex');
+  rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
 }
 
 // ── In-game chat ──────────────────────────────────────────────
@@ -23553,7 +23679,7 @@ function lgStartGame(spicyLevel) {
   LG.charName = gameGetCurrentPartner(ctx).name || '对方';
   gameApplyPartnerToGames({ name: LG.charName });
   $('#rp-game-char-name').text(LG.charName);
-  $('#rp-game-win').hide();
+  rpSetSurfaceOpen('#rp-game-win',false);
   renderPhoneGameHistory('ludo');
   $('#rp-dice-btn').prop('disabled', false);
 
@@ -23905,7 +24031,7 @@ function lgWin(winner) {
   $('#game-win-sub').text(isUser
     ? `你率先抵达终点!${LG.charName}甘拜下风~`
     : `${LG.charName}率先抵达终点!再来一局?`);
-  $('#rp-game-win').show();
+  rpSetSurfaceOpen('#rp-game-win',true);
   saveState();
 }
 
