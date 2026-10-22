@@ -735,40 +735,40 @@ const RP_READING_CSS = `
 `;
 const RP_XHS_COMPOSE_CSS = `
 /* C cream stationery: one final composer layer, after the shared theme rules. */
-#rp-wrapper #rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery.rp-view {
+#rp-wrapper #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery.rp-view {
   --rp-compose-bg:#f2ede3; --rp-compose-paper:#fffbf3; --rp-compose-ink:#392f26;
   --rp-compose-muted:#756958; --rp-compose-accent:#62694b; --rp-compose-line:#aaa98f; --rp-compose-tape:#cc9982;
   --rp-compose-serif:'Noto Serif SC','Songti SC','STSong','SimSun',serif;
   background:radial-gradient(ellipse at 18% 4%,rgba(255,255,255,.48),transparent 72%),var(--rp-compose-bg)!important;
   color:var(--rp-compose-ink)!important;
 }
-#rp-wrapper #rp-phone.rp-dark #rp-screen #rp-view-xhs-compose.rp-xhs-stationery.rp-view {
+#rp-wrapper #rp-phone.rp-dark #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery.rp-view {
   --rp-compose-bg:#24231f; --rp-compose-paper:#302e27; --rp-compose-ink:#f1e8d9;
   --rp-compose-muted:#c1b7a6; --rp-compose-accent:#c2c99f; --rp-compose-line:#777961; --rp-compose-tape:#b7846c;
   background:var(--rp-compose-bg)!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery>.rp-nav-bar {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery>.rp-nav-bar {
   display:grid!important; grid-template-columns:30px minmax(0,1fr) max(64px,calc(64px * var(--mochi-phone-font-scale,1)))!important;
   column-gap:8px!important; align-items:center!important; position:relative!important;
   box-sizing:border-box!important; height:96px!important; min-height:96px!important;
   padding:56px 14px 8px 12px!important; margin:0!important;
   background:transparent!important; border:0!important; box-shadow:none!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery>.rp-nav-bar>.rp-back {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery>.rp-nav-bar>.rp-back {
   position:static!important; inset:auto!important; grid-column:1!important; align-self:center!important;
   display:inline-flex!important; align-items:center!important; justify-content:center!important;
   width:30px!important; min-width:30px!important; height:32px!important; min-height:32px!important;
   margin:0!important; padding:0!important; transform:none!important; background:transparent!important;
   color:var(--rp-compose-accent)!important; font-size:22px!important; font-weight:300!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery>.rp-nav-bar>.rp-nav-title {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery>.rp-nav-bar>.rp-nav-title {
   position:static!important; inset:auto!important; grid-column:2!important; justify-self:start!important;
   width:auto!important; min-width:0!important; max-width:100%!important; margin:0!important; padding:0!important;
   transform:none!important; text-align:left!important; overflow:hidden!important; text-overflow:ellipsis!important;
   white-space:nowrap!important; font-family:var(--rp-compose-serif)!important; font-size:11px!important;
   font-weight:400!important; line-height:1.4!important; letter-spacing:.08em!important; color:var(--rp-compose-accent)!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery #rp-xhs-post-btn {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-btn,#rp-compose-post) {
   position:static!important; inset:auto!important; grid-column:3!important; justify-self:stretch!important;
   display:inline-flex!important; justify-content:center!important; align-items:center!important; gap:5px!important;
   box-sizing:border-box!important; width:100%!important; min-width:0!important; max-width:none!important;
@@ -778,14 +778,14 @@ const RP_XHS_COMPOSE_CSS = `
   background:transparent!important; color:var(--rp-compose-accent)!important;
   border:1px solid var(--rp-compose-accent)!important; border-radius:999px!important; box-shadow:none!important; transform:none!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery #rp-xhs-post-btn .rp-xhs-post-arrow {font-size:13px;line-height:1;}
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery :is(.rp-back,#rp-xhs-post-btn):focus-visible {outline:2px solid var(--rp-compose-accent)!important;outline-offset:2px!important;}
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-compose-body {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-btn,#rp-compose-post) .rp-xhs-post-arrow {font-size:13px;line-height:1;}
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(.rp-back,:is(#rp-xhs-post-btn,#rp-compose-post)):focus-visible {outline:2px solid var(--rp-compose-accent)!important;outline-offset:2px!important;}
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-compose-body {
   display:flex!important; flex-direction:column!important; align-items:stretch!important; flex:1 1 0!important;
   min-height:0!important; box-sizing:border-box!important; padding:8px 16px 30px!important;
   background:transparent!important; overflow-y:auto!important; overflow-x:hidden!important; overscroll-behavior:contain;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-idea-card {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-idea-card {
   display:flex!important; flex-direction:column!important; position:relative!important; isolation:isolate;
   z-index:0!important; flex:1 0 auto!important; box-sizing:border-box!important; width:100%!important;
   max-width:100%!important; height:auto!important; min-height:360px!important; margin:0!important;
@@ -793,29 +793,29 @@ const RP_XHS_COMPOSE_CSS = `
   box-shadow:none!important; background:transparent!important; color:var(--rp-compose-ink)!important;
   overflow:visible!important; transform:none!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-idea-card::before {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-idea-card::before {
   content:''!important; display:block!important; position:absolute!important; inset:0 5px 2px!important;
   box-sizing:border-box!important; width:auto!important; height:auto!important; border:1px solid var(--rp-compose-line)!important;
   border-radius:0!important; background:transparent!important; transform:rotate(-3.4deg)!important;
   transform-origin:50% 50%!important; pointer-events:none!important; z-index:-2!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-idea-card::after {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-idea-card::after {
   content:''!important; display:block!important; position:absolute!important; inset:0!important;
   background:linear-gradient(115deg,rgba(255,255,255,.22),transparent 68%),var(--rp-compose-paper)!important;
   border:0!important; border-radius:0!important; transform:rotate(1.35deg)!important; transform-origin:50% 50%!important;
   box-shadow:0 5px 24px rgba(54,42,28,.045)!important; pointer-events:none!important; z-index:-1!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-paper-tape {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-paper-tape {
   position:absolute!important; right:10px!important; top:-2px!important; width:40px!important; height:15px!important;
   background:linear-gradient(110deg,rgba(255,255,255,.1),transparent),var(--rp-compose-tape)!important;
   opacity:.76!important; transform:rotate(5deg)!important; pointer-events:none!important; z-index:2!important;
 }
 /* Labels remain available to assistive technology; the sheet reads like a note, rather than a form. */
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-field-label {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-field-label {
   position:absolute!important; width:1px!important; height:1px!important; min-height:0!important; padding:0!important;
   margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery #rp-xhs-post-title {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery #rp-xhs-post-title {
   display:block!important; flex:none!important; position:relative!important; z-index:1!important;
   box-sizing:border-box!important; width:100%!important; min-width:0!important; max-width:100%!important;
   height:1.5em!important; min-height:1.5em!important; margin:0!important; padding:0!important;
@@ -824,12 +824,12 @@ const RP_XHS_COMPOSE_CSS = `
   font-family:var(--rp-compose-serif)!important; font-size:22px!important; font-weight:400!important;
   line-height:1.5!important; letter-spacing:.01em!important; -webkit-appearance:none; appearance:none;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-compose-divider {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-compose-divider {
   flex:none!important; box-sizing:border-box!important; width:100%!important; height:0!important;
   margin:12px 0 16px!important; padding:0!important; border:0!important; border-top:1px dashed var(--rp-compose-line)!important;
   opacity:.62; pointer-events:none!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery #rp-xhs-post-body {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-body,#rp-compose-text) {
   display:block!important; position:relative!important; z-index:1!important; flex:1 0 132px!important;
   box-sizing:border-box!important; width:100%!important; min-width:0!important; max-width:100%!important;
   height:auto!important; min-height:132px!important; max-height:none!important; margin:0!important; padding:0!important;
@@ -839,21 +839,25 @@ const RP_XHS_COMPOSE_CSS = `
   line-height:1.85!important; letter-spacing:.04em!important; resize:none!important; overflow-y:auto!important;
   overflow-x:hidden!important; overflow-wrap:anywhere; overscroll-behavior:contain; -webkit-appearance:none; appearance:none;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery :is(#rp-xhs-post-title,#rp-xhs-post-body)::placeholder {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-title,:is(#rp-xhs-post-body,#rp-compose-text))::placeholder {
   color:var(--rp-compose-ink)!important; opacity:.72!important; font-size:inherit!important;
   font-family:inherit!important; font-weight:400!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery :is(#rp-xhs-post-title,#rp-xhs-post-body):focus-visible {outline:0!important;box-shadow:none!important;}
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-paper-signature {
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-title,:is(#rp-xhs-post-body,#rp-compose-text)):focus-visible {outline:0!important;box-shadow:none!important;}
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-paper-signature {
   display:flex!important; align-items:center!important; gap:9px!important; flex:none!important;
   width:max-content!important; max-width:100%!important; margin:22px 0 0 -6px!important; padding:0!important;
   line-height:1.5!important; font-family:Georgia,serif!important; font-size:9px!important;
   font-style:italic!important; font-weight:400!important; letter-spacing:.22em!important;
   color:var(--rp-compose-tape)!important; pointer-events:none!important;
 }
-#rp-phone #rp-screen #rp-view-xhs-compose.rp-xhs-stationery .rp-xhs-paper-signature::after {content:'';width:44px;max-width:18vw;height:1px;background:currentColor;transform:rotate(-4deg);}
-`;
+#rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery .rp-xhs-paper-signature::after {content:'';width:44px;max-width:18vw;height:1px;background:currentColor;transform:rotate(-4deg);}
 
+#rp-wrapper #rp-phone #rp-screen #rp-compose-modal.rp-xhs-stationery {top:0!important;bottom:0!important;height:100%!important;z-index:198!important;flex-direction:column;animation:none!important;isolation:isolate;}
+#rp-wrapper #rp-phone #rp-screen #rp-compose-modal.rp-xhs-stationery::before,
+#rp-wrapper #rp-phone #rp-screen #rp-compose-modal.rp-xhs-stationery::after {content:none!important;display:none!important;}
+#rp-phone #rp-screen #rp-compose-modal.rp-xhs-stationery .rp-xhs-idea-card {min-height:360px!important;}
+`;
 const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:9998; }
 
@@ -5564,12 +5568,18 @@ ${RP_UI_FINISH_CSS}
 ${PHONE_TOOLS_CSS}
 ${RP_XHS_COMPOSE_CSS}
 ${RP_SOCIAL_COMPACT_CSS}
-/* Social feed: avatar rail, continuous content, discreet actions. Theme tokens remain authoritative. */
-#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment{display:grid;grid-template-columns:36px minmax(0,1fr);column-gap:10px;padding:14px 14px!important;margin:0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--rp-moment-bd)!important;border-radius:0!important;box-shadow:none!important;position:relative}
-#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-hd{display:contents}
-#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-av{grid-column:1;grid-row:1 / span 7;width:36px!important;height:36px!important;border-radius:5px!important;margin:0!important;align-self:start}
-#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-meta{grid-column:2;min-width:0;align-self:start;margin:0 0 3px}
-#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment>:not(.rp-moment-hd){grid-column:2;min-width:0}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list {min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:18px;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment {flex:0 0 auto;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list :is(.rp-moment-text,.rp-moment-comment-content,.rp-translation-text) {height:auto;max-height:none;overflow:visible;overflow-wrap:anywhere;word-break:normal;-webkit-line-clamp:unset;text-overflow:clip;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list :is(.rp-moment-comments-wrap,.rp-moment-comment) {flex-shrink:0;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-cinput {min-width:0;}
+
+/* Social feed: sender header, full-width content, discreet actions. Theme tokens remain authoritative. */
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment{display:block;min-width:0;padding:14px 14px!important;margin:0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--rp-moment-bd)!important;border-radius:0!important;box-shadow:none!important;position:relative}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-hd{display:flex;align-items:center;gap:10px;min-width:0;margin-bottom:8px!important}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-av{flex:0 0 36px;width:36px!important;height:36px!important;border-radius:5px!important;margin:0!important;align-self:center}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-meta{min-width:0;align-self:center;margin:0}
+#rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment>:not(.rp-moment-hd){min-width:0;max-width:100%;box-sizing:border-box}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-name{line-height:1.4;color:var(--rp-v-text)!important;overflow-wrap:anywhere}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text{padding:0!important;background:transparent!important;border-radius:0!important;white-space:pre-wrap;margin:0 0 5px!important}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list .rp-moment-text:empty{display:none}
@@ -8615,22 +8625,19 @@ const HTML = `
           </div>
         </div>
 
-        <!-- 发朋友圈 -->
-        <div id="rp-compose-modal" class="rp-view" style="display:none">
+        <!-- 发朋友圈：与笔记共用纸张样式，仅正文 -->
+        <div id="rp-compose-modal" class="rp-view rp-xhs-stationery" style="display:none">
           <div class="rp-nav-bar">
-            <button class="rp-back rp-compose-cancel" id="rp-compose-cancel">取消</button>
-            <span class="rp-nav-title">发朋友圈</span>
-            <button class="rp-compose-post-btn" id="rp-compose-post">发布</button>
+            <button class="rp-back rp-compose-cancel" id="rp-compose-cancel" type="button" aria-label="关闭朋友圈发布">×</button>
+            <span class="rp-nav-title">写动态</span>
+            <button class="rp-compose-post-btn" id="rp-compose-post" type="button" aria-label="发布朋友圈"><span>发布</span><span aria-hidden="true">→</span></button>
           </div>
-          <div class="rp-compose-body">
-            <div class="rp-compose-card">
-              <div class="rp-compose-user-row">
-                <div class="rp-compose-avatar" id="rp-compose-av">我</div>
-                <div class="rp-compose-uname" id="rp-compose-uname">我</div>
-              </div>
-              <div class="rp-compose-sep"></div>
-              <textarea id="rp-compose-text" placeholder="这一刻的想法..." rows="4"></textarea>
-              <div class="rp-compose-hint">分享给朋友圈里的每个人</div>
+          <div class="rp-xhs-compose-body">
+            <div class="rp-xhs-idea-card">
+              <span class="rp-xhs-paper-tape" aria-hidden="true"></span>
+              <label class="rp-xhs-field-label" for="rp-compose-text">朋友圈正文</label>
+              <textarea id="rp-compose-text" placeholder="写下此刻的心情，&#10;或一件想记住的小事。" rows="10"></textarea>
+              <span class="rp-xhs-paper-signature" aria-hidden="true">a little moment</span>
             </div>
           </div>
         </div>
@@ -16036,7 +16043,7 @@ function makeDraggable() {
 //  COMPOSE MOMENT
 // ================================================================
 function openCompose() {
-  $('#rp-compose-modal').show();
+  $('#rp-compose-modal').css('display', 'flex');
   $('#rp-compose-text').val(STATE.composeDraft || '').focus();
 }
 
