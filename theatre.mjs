@@ -3,35 +3,35 @@ import { validateTheatrePreset, theatrePresetSnapshot } from "./theatre-preset.m
 export const THEATRE_END = '__MOCHI_THEATRE_END__';
 export const THEATRE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 4h18v16H3zM3 5c5 0 5 7 0 8m18-8c-5 0-5 7 0 8M8 20v-5m8 5v-5M3 4l9 4 9-4"/><path d="M9 12c2 2 4 2 6 0" stroke-linecap="round"/></svg>';
 export const THEATRE_CSS = `
-#rp-phone #rp-view-theatre,#rp-phone #rp-view-theatre-write,#rp-phone #rp-view-theatre-read{flex-direction:column;min-height:0;overflow:hidden;color:var(--rp-v-text,var(--rp-text,#4b3e46));background:var(--rp-v-bg,var(--rp-bg,#faf7f4))}
-#rp-phone .rp-theatre-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 18px 26px;box-sizing:border-box;overflow-wrap:anywhere}
-#rp-phone .rp-theatre-kicker{font-size:.76em;letter-spacing:.18em;opacity:.64;margin:2px 0 8px}
-#rp-phone .rp-theatre-lead{font-size:1.55em;line-height:1.4;margin:0 0 6px;font-weight:600}
-#rp-phone .rp-theatre-muted{font-size:.86em;line-height:1.7;opacity:.7;margin:6px 0 16px}
-#rp-phone .rp-theatre-card{display:block;width:100%;box-sizing:border-box;text-align:left;padding:15px 14px;margin:10px 0;border:1px solid currentColor;border-color:rgba(128,100,115,.22);border-radius:15px;background:rgba(128,100,115,.065);color:inherit;font:inherit;cursor:pointer;line-height:1.6}
-#rp-phone .rp-theatre-card strong{display:block;font-weight:600;font-size:1.03em}
-#rp-phone .rp-theatre-card small{display:block;opacity:.68;line-height:1.6;margin-top:4px}
+#rp-phone #rp-view-theatre,#rp-phone #rp-view-theatre-write,#rp-phone #rp-view-theatre-read{flex-direction:column;min-height:0;overflow:hidden;color:var(--rp-v-text,var(--rp-text,#4b3e46));background:var(--rp-v-bg,var(--rp-bg,#faf7f4));font-size:13px;line-height:1.6}
+#rp-phone .rp-theatre-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 16px 18px;box-sizing:border-box;overflow-wrap:anywhere}
+#rp-phone .rp-theatre-kicker{font-size:10px;letter-spacing:.14em;opacity:.64;margin:0 0 4px}
+#rp-phone .rp-theatre-lead{font-size:18px;line-height:1.4;margin:0 0 5px;font-weight:600}
+#rp-phone .rp-theatre-muted{font-size:11.5px;line-height:1.6;opacity:.7;margin:5px 0 10px}
+#rp-phone .rp-theatre-card{display:block;width:100%;box-sizing:border-box;text-align:left;padding:11px 12px;margin:8px 0;border:1px solid currentColor;border-color:rgba(128,100,115,.22);border-radius:15px;background:rgba(128,100,115,.065);color:inherit;font:inherit;cursor:pointer;line-height:1.6}
+#rp-phone .rp-theatre-card strong{display:block;font-weight:600;font-size:13px}
+#rp-phone .rp-theatre-card small{display:block;font-size:11px;opacity:.68;line-height:1.6;margin-top:3px}
 #rp-phone .rp-theatre-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 #rp-phone .rp-theatre-library{margin-top:26px}
-#rp-phone .rp-theatre-label{display:block;font-size:.9em;font-weight:600;margin:16px 0 7px}
-#rp-phone .rp-theatre-input{display:block;box-sizing:border-box;width:100%;max-width:100%;border:1px solid rgba(128,100,115,.3);border-radius:11px;background:rgba(128,100,115,.065);color:inherit;font:inherit;padding:10px 11px;line-height:1.65}
-#rp-phone textarea.rp-theatre-input{min-height:135px;resize:vertical}
-#rp-phone .rp-theatre-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
-#rp-phone .rp-theatre-button{font:inherit;font-size:.88em;line-height:1.5;min-height:38px;padding:7px 12px;border:1px solid rgba(128,100,115,.25);border-radius:20px;background:rgba(128,100,115,.07);color:inherit;cursor:pointer}
+#rp-phone .rp-theatre-label{display:block;font-size:12px;line-height:1.5;font-weight:600;margin:11px 0 5px}
+#rp-phone .rp-theatre-input{display:block;box-sizing:border-box;width:100%;max-width:100%;border:1px solid rgba(128,100,115,.3);border-radius:11px;background:rgba(128,100,115,.065);color:inherit;font:inherit;font-size:13px;padding:7px 9px;line-height:1.6;min-height:36px}
+#rp-phone textarea.rp-theatre-input{height:140px;min-height:112px;resize:vertical}
+#rp-phone .rp-theatre-actions{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+#rp-phone .rp-theatre-button{font:inherit;font-size:12px;line-height:1.5;min-height:36px;padding:6px 10px;border:1px solid rgba(128,100,115,.25);border-radius:20px;background:rgba(128,100,115,.07);color:inherit;cursor:pointer}
 #rp-phone .rp-theatre-primary{background:var(--rp-nav-btn,#aa637e);color:var(--rp-btn-text,#fff);border-color:transparent;flex:1}
 #rp-phone .rp-theatre-button:disabled{opacity:.5;cursor:default}
-#rp-phone .rp-theatre-status{font-size:.85em;line-height:1.65;padding:0 18px;flex-shrink:0;overflow-wrap:anywhere}
-#rp-phone .rp-theatre-status:not(:empty){padding-top:10px;padding-bottom:8px}
-#rp-phone .rp-theatre-body{white-space:pre-wrap;font-size:1em;line-height:1.95;overflow-wrap:anywhere;margin:20px 0 28px;user-select:text}
-#rp-phone .rp-theatre-title{font-size:1.45em;line-height:1.5;margin:8px 0 12px;overflow-wrap:anywhere}
-#rp-phone .rp-theatre-note{white-space:pre-wrap;font-size:.86em;line-height:1.75;opacity:.8;padding:10px 0}
-#rp-phone .rp-theatre-details{margin:18px 0}
-#rp-phone .rp-theatre-details summary{cursor:pointer;padding:8px 0;font-size:.9em}
+#rp-phone .rp-theatre-status{font-size:11px;line-height:1.6;padding:0 16px;flex-shrink:0;overflow-wrap:anywhere}
+#rp-phone .rp-theatre-status:not(:empty){padding-top:6px;padding-bottom:5px}
+#rp-phone .rp-theatre-body{white-space:pre-wrap;font-size:13px;line-height:1.8;overflow-wrap:anywhere;margin:12px 0 18px;user-select:text}
+#rp-phone .rp-theatre-title{font-size:18px;line-height:1.45;margin:4px 0 8px;overflow-wrap:anywhere}
+#rp-phone .rp-theatre-note{white-space:pre-wrap;font-size:12px;line-height:1.65;opacity:.8;padding:6px 0}
+#rp-phone .rp-theatre-details{margin:12px 0}
+#rp-phone .rp-theatre-details summary{cursor:pointer;padding:7px 0;font-size:11.5px;line-height:1.5}
 #rp-phone .rp-theatre-details>div{overflow:hidden}
-#rp-phone .rp-theatre-empty{opacity:.6;font-size:.9em;line-height:1.8;padding:12px 0}
+#rp-phone .rp-theatre-empty{opacity:.6;font-size:11.5px;line-height:1.7;padding:9px 0}
 #rp-phone #rp-theatre-reader-top{scroll-margin-top:12px}
 #rp-phone #rp-view-theatre-write [hidden]{display:none!important}
-#rp-phone .rp-theatre-draw-card{cursor:default;margin:15px 0}
+#rp-phone .rp-theatre-draw-card{cursor:default;margin:10px 0}
 #rp-phone .rp-theatre-draw-card .rp-theatre-note{margin:0;padding:2px 0 0}
 #rp-phone .rp-theatre-card:focus-visible,#rp-phone .rp-theatre-button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 /* A — ivory literary editorial. All decoration is local CSS; home view only. */
@@ -41,7 +41,7 @@ export const THEATRE_CSS = `
  --rp-v-surface:var(--rp-theatre-paper);--rp-v-text:var(--rp-theatre-ink);
  --rp-theatre-serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",Georgia,serif;
  color:var(--rp-theatre-ink)!important;background:var(--rp-theatre-paper)!important;
- font-family:var(--rp-theatre-serif)!important;font-size:14px;line-height:1.65;isolation:isolate;
+ font-family:var(--rp-theatre-serif)!important;font-size:13px;line-height:1.6;isolation:isolate;
 }
 #rp-phone.rp-dark #rp-screen #rp-view-theatre{
  --rp-theatre-paper:#292320;--rp-theatre-ink:#f0e6db;--rp-theatre-muted:#c2b1a5;
@@ -53,7 +53,7 @@ export const THEATRE_CSS = `
 }
 #rp-phone #rp-screen #rp-view-theatre>.rp-nav-bar .rp-nav-title{
  color:var(--rp-theatre-ink)!important;font-family:var(--rp-theatre-serif)!important;
- font-size:18px;font-weight:400!important;letter-spacing:.08em;
+ font-size:15px;font-weight:400!important;letter-spacing:.08em;
 }
 #rp-phone #rp-screen #rp-view-theatre>.rp-nav-bar .rp-back{
  color:var(--rp-theatre-ink)!important;min-width:44px;min-height:44px;
@@ -65,11 +65,11 @@ export const THEATRE_CSS = `
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-directory-lines{width:16px;height:1px;background:currentColor;box-shadow:0 -5px currentColor,0 5px currentColor;}
 #rp-phone #rp-screen #rp-view-theatre>.rp-theatre-scroll{
- padding:14px 20px 26px;position:relative;scroll-behavior:smooth;
+ padding:10px 18px 20px;position:relative;scroll-behavior:smooth;
  container-type:inline-size;overflow-x:hidden;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-hero{
- position:relative;isolation:isolate;overflow:hidden;padding-top:4px;margin-bottom:22px;
+ position:relative;isolation:isolate;overflow:hidden;padding-top:2px;margin-bottom:15px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-hero::after{
  content:"";position:absolute;pointer-events:none;z-index:-1;
@@ -77,7 +77,7 @@ export const THEATRE_CSS = `
  border-radius:50%;transform:rotate(-24deg);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-masthead{
- display:flex;align-items:flex-end;gap:12px;width:63%;margin:0 0 20px;
+ display:flex;align-items:flex-end;gap:12px;width:63%;margin:0 0 14px;
  font:9px/1.8 Georgia,serif;color:var(--rp-theatre-muted);letter-spacing:.36em;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-masthead::after{
@@ -88,15 +88,15 @@ export const THEATRE_CSS = `
  line-height:1.75;letter-spacing:.02em;color:var(--rp-theatre-muted);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-editorial-title{
- margin:0;font:400 32px/1.28 var(--rp-theatre-serif);letter-spacing:-.045em;
+ margin:0;font:400 26px/1.3 var(--rp-theatre-serif);letter-spacing:-.045em;
  overflow-wrap:normal;word-break:normal;text-wrap:wrap;
- font-size:clamp(26px,11.5cqi,40px);
+ font-size:clamp(22px,8cqi,28px);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-editorial-title>span{display:block}
-#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entries{display:flex;flex-direction:column;gap:14px;margin:0 0 22px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entries{display:flex;flex-direction:column;gap:10px;margin:0 0 16px}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry{
- box-sizing:border-box;display:block;width:84%;max-width:100%;margin:0;min-height:74px;
- padding:5px 3px 12px;text-align:left;font:inherit;color:var(--rp-theatre-accent)!important;
+ box-sizing:border-box;display:block;width:84%;max-width:100%;margin:0;min-height:62px;
+ padding:4px 3px 9px;text-align:left;font:inherit;color:var(--rp-theatre-accent)!important;
  background:transparent!important;border:0;border-bottom:1px solid var(--rp-theatre-accent);
  border-radius:0!important;box-shadow:none!important;cursor:pointer;touch-action:manipulation;
 }
@@ -105,7 +105,7 @@ export const THEATRE_CSS = `
  display:flex;gap:12px;align-items:center;justify-content:space-between;min-width:0;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry strong{
- font-weight:400;font-size:20px;line-height:1.4;overflow-wrap:normal;white-space:nowrap;flex:1;min-width:0;
+ font-weight:400;font-size:16px;line-height:1.4;overflow-wrap:normal;white-space:nowrap;flex:1;min-width:0;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-arrow{
  flex:0 0 28px;width:28px;height:12px;position:relative;display:block;
@@ -118,29 +118,29 @@ export const THEATRE_CSS = `
  border-top:1px solid currentColor;border-right:1px solid currentColor;transform:translateY(-50%) rotate(45deg);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry small{
- display:block;font-size:12px;line-height:1.75;color:var(--rp-theatre-muted);margin-top:4px;
+ display:block;font-size:11px;line-height:1.6;color:var(--rp-theatre-muted);margin-top:3px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry:disabled{opacity:.5;cursor:default}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-library{margin:0;scroll-margin-top:14px}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-library-head{
- display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;
+ display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-library-head h3{
- margin:0;font-size:21px;line-height:1.5;font-weight:400;outline-offset:4px;
+ margin:0;font-size:18px;line-height:1.5;font-weight:400;outline-offset:4px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filters{display:flex;gap:7px;align-items:center}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter{
  position:relative;min-width:44px;min-height:44px;padding:8px 4px;
  border:0;background:transparent!important;box-shadow:none;border-radius:0;font:inherit;
- font-size:12px;color:var(--rp-theatre-muted);cursor:pointer;touch-action:manipulation;
+ font-size:11px;color:var(--rp-theatre-muted);cursor:pointer;touch-action:manipulation;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter[aria-pressed="true"]{color:var(--rp-theatre-ink)}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter[aria-pressed="true"]::after{
  content:"";position:absolute;bottom:3px;left:5px;right:5px;border-bottom:1px solid var(--rp-theatre-accent);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book{
- display:grid;grid-template-columns:minmax(24px,auto) minmax(0,1fr) 25px;gap:14px;
- box-sizing:border-box;width:100%;margin:0;padding:17px 0 16px;
+ display:grid;grid-template-columns:minmax(24px,auto) minmax(0,1fr) 25px;gap:10px;
+ box-sizing:border-box;width:100%;margin:0;padding:12px 0 11px;
  text-align:left;font:inherit;color:inherit!important;background:transparent!important;
  border:0;border-bottom:1px solid var(--rp-theatre-rule);border-radius:0!important;box-shadow:none!important;
  cursor:pointer;touch-action:manipulation;
@@ -151,18 +151,18 @@ export const THEATRE_CSS = `
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-copy{min-width:0}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book strong{
- display:block;font-size:18px;font-weight:400;line-height:1.55;overflow-wrap:anywhere;
+ display:block;font-size:14px;font-weight:400;line-height:1.55;overflow-wrap:anywhere;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book small{
- display:block;font-size:12px;line-height:1.75;color:var(--rp-theatre-muted);margin-top:5px;
+ display:block;font-size:11px;line-height:1.6;color:var(--rp-theatre-muted);margin-top:4px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-excerpt{
  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
- margin-top:11px;color:var(--rp-theatre-muted);font-size:13px;line-height:1.8;overflow-wrap:anywhere;
+ margin-top:7px;color:var(--rp-theatre-muted);font-size:11.5px;line-height:1.7;overflow-wrap:anywhere;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book>.rp-theatre-arrow{width:25px;flex-basis:25px;margin-top:14px}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-empty{
- color:var(--rp-theatre-muted);opacity:1;padding:22px 0 28px;border-bottom:1px solid var(--rp-theatre-rule);
+ color:var(--rp-theatre-muted);opacity:1;padding:15px 0 20px;border-bottom:1px solid var(--rp-theatre-rule);
 }
 #rp-phone #rp-screen #rp-view-theatre :is(.rp-theatre-entry,.rp-theatre-book,.rp-theatre-filter,.rp-theatre-directory):focus-visible{
  outline:2px solid var(--rp-theatre-accent);outline-offset:3px;
@@ -171,6 +171,12 @@ export const THEATRE_CSS = `
  #rp-phone #rp-screen #rp-view-theatre>.rp-theatre-scroll{scroll-behavior:auto}
 }
 
+
+/* Stable inner-page type; the existing display scale is still applied once. */
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read)>.rp-nav-bar .rp-nav-title{font-size:15px}
+#rp-phone #rp-theatre-random-idea{height:108px;min-height:96px}
+#rp-phone .rp-theatre-mode{min-width:0}
+#rp-phone .rp-theatre-input{font-family:inherit}
 `;
 const nav = (title,to) => '<div class="rp-nav-bar"><button type="button" class="rp-back" data-to="'+to+'" aria-label="返回">‹</button><span class="rp-nav-title">'+title+'</span><span></span></div>';
 export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view rp-theatre-editorial" style="display:none">'+nav('小剧场','home').replace('<span></span>','<button type="button" class="rp-theatre-directory" data-theatre-action="directory" aria-label="前往我的剧场" title="作品目录"><span class="rp-theatre-directory-lines" aria-hidden="true"></span></button>')+
