@@ -97,9 +97,14 @@ export const THEATRE_CSS = `
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry{
  box-sizing:border-box;display:block;width:84%;max-width:100%;margin:0;min-height:62px;
  padding:4px 3px 9px;text-align:left;font:inherit;color:var(--rp-theatre-accent)!important;
- background:transparent!important;border:0;border-bottom:1px solid var(--rp-theatre-accent);
+ background:transparent!important;border:0;border-bottom:1px solid transparent;position:relative;
  border-radius:0!important;box-shadow:none!important;cursor:pointer;touch-action:manipulation;
 }
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry::after{
+ content:"";position:absolute;left:0;bottom:0;width:50%;max-width:138px;
+ border-bottom:1px solid var(--rp-theatre-accent);pointer-events:none;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-random::after{left:auto;right:0}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-random{align-self:flex-end;text-align:right;width:84%}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-line{
  display:flex;gap:12px;align-items:center;justify-content:space-between;min-width:0;
