@@ -1,8 +1,8 @@
 {
-  "display_name": "mochiphone",
-  "author": "justinggx",
-  "version": "4.6.1-audit.20261023.113",
-  "loading_order": 1,
-  "requires": [],
-  "js": "index.js?v=20261023-swipe-back-113"
+    "display_name": "mochiphone",
+    "author": "justinggx",
+    "version": "4.6.1-audit.20261023.114",
+    "loading_order": 1,
+    "requires": [],
+    "js": "index.js?v=20261023-theatre-114"
 }

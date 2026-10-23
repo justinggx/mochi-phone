@@ -1,3 +1,4 @@
+import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261023-theatre-114';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
 '#rp-phone #rp-screen #rp-lock-notifs{box-sizing:border-box;min-width:0;min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:70px}',
@@ -92,7 +93,7 @@ export const PHONE_TOOLS_CSS = [
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const forbidden = new Set(['__proto__','prototype','constructor']);
 const secret = /^(?:api[_-]?key|access[_-]?token|authorization|cookie|password|rp_ludo_api)$/i;
-const fields = ['threads','notifications','sync','moments','diary','xhsFeed','darkMode','themeSettings','nameAliases','avatars','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
+const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
 const clone = value => JSON.parse(JSON.stringify(value));
 const uid = () => 'pt_' + Date.now() + '_' + Math.random().toString(36).slice(2,11);
 function clean(value, depth = 0) {
@@ -408,6 +409,7 @@ export function createPhoneTools(api) {
     if(!object(value)||value.format!=='mochi-phone-backup'||value.version!==1||!object(value.origin)||!object(value.data)||!object(value.data.threads))throw new Error('文件不是受支持的小手机备份。');
     if(value.origin.account!==api.account()||!(value.origin.slot===state().chatId||api.compatibleSlot?.(value.origin.slot)))throw new Error('请切换到备份对应的账号和聊天后重试。');
     for(const field of ['moments','diary','xhsFeed','themeStudioMessages'])if(value.data[field]!==undefined&&!Array.isArray(value.data[field]))throw new Error('备份记录格式不完整。');
+    if(value.data.theatre!=null)validateTheatreArchive(value.data.theatre);
     if(value.data.bankData!=null&&!object(value.data.bankData))throw new Error('备份银行卡记录格式不完整。');
     for(const field of ['diary','themeStudioMessages'])if((value.data[field]||[]).some(item=>!object(item)))throw new Error('备份记录格式不完整。');
     for(const field of ['avatars','nameAliases'])if(value.data[field]!==undefined&&(!object(value.data[field])||Object.values(value.data[field]).some(item=>typeof item!=='string')))throw new Error('备份联系人设置格式不完整。');
@@ -427,7 +429,7 @@ export function createPhoneTools(api) {
   }
   function planMerge(backup, current=api.snapshot()) {
     if(backup.origin.account!==api.account()||!(backup.origin.slot===state().chatId||api.compatibleSlot?.(backup.origin.slot)))throw new Error('备份与当前账号或聊天不一致。');
-    const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,themeMessages:0,skipped:0};
+    const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,themeMessages:0,theatre:0,skipped:0};
     result.threads ||= {};
     for(const[id,thread]of Object.entries(source.threads)){
       if(api.blocked(thread,current)){stats.skipped++;continue;}
@@ -450,6 +452,7 @@ export function createPhoneTools(api) {
         return post;
       });stats.skipped+=(source[field]||[]).length-records.length;mergeList(result[field],records,stats,key,field!=='diary');
     }
+    if(source.theatre){const merged=mergeTheatreArchives(result.theatre,source.theatre);result.theatre=merged.data;stats.theatre=merged.added;}
     result.phoneTools=normalizePhoneToolData(result.phoneTools,result.recovery ||= []);
     const bookmarks=source.phoneTools?.bookmarks||[];const known=new Set(result.phoneTools.bookmarks.map(e=>JSON.stringify([e.threadId,e.messageId])));
     for(const entry of bookmarks)if(object(entry)&&typeof entry.threadId==='string'&&typeof entry.messageId==='string'&&typeof entry.text==='string'){const key=JSON.stringify([entry.threadId,entry.messageId]);if(!known.has(key)){result.phoneTools.bookmarks.push(clone(entry));known.add(key);stats.bookmarks++;}}
@@ -518,7 +521,7 @@ export function createPhoneTools(api) {
   function previewBackup(backup) {
     const task=api.runtime().task(),origin=signature(),plan=planMerge(backup),s=plan.stats,content=node('div'),status=node('p','rp-feature-note');
     const token={valid:()=>task.valid()&&!!content[0]?.isConnected};
-    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏及'+s.themeMessages+' 条主题对话'+(s.gomokuMessages?'、'+s.gomokuMessages+' 条五子棋对话':'')+(s.gomokuRound?'及缺失的五子棋棋局':'')+(s.sudokuRound?'及缺失的数独局面':'')+'。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
+    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏及'+s.themeMessages+' 条主题对话'+(s.theatre?'、'+s.theatre+' 篇小剧场':'')+(s.gomokuMessages?'、'+s.gomokuMessages+' 条五子棋对话':'')+(s.gomokuRound?'及缺失的五子棋棋局':'')+(s.sudokuRound?'及缺失的数独局面':'')+'。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
     let running=false;
     api.dialog('恢复预览',content,[{label:'取消'},{label:'合并恢复',primary:true,run:()=>{if(running)return false;running=true;status.text('正在备份并校验…');void restoreBackup(backup,origin,token).then(ok=>{if(ok)api.closeDialog();else if(token.valid()){running=false;status.text('未合并，请检查提示或重新选择备份。');}}).catch(()=>{if(token.valid()){running=false;status.text('恢复未完成，原存档与自动备份仍保留。');}});return false;}}]);
   }

@@ -1,9 +1,10 @@
-import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261022-social-review-103';
+import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261023-theatre-114';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261023-theatre-114';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261022-auto-translate-100';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261023-theatre-114';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -56,7 +57,7 @@ async function rpClaimLegacyStorage() {
     if (key.startsWith('rp-phone-v1-')) {
       let data; try { data = JSON.parse(value); } catch (_) { continue; }
       const slot = key.slice('rp-phone-v1-'.length), current = _extSettings()?.[EXT_KEY]?.[slot];
-      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title || s.sudoku?.round
+      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.theatre?.stories?.length || s.theatre?.draft?.idea || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title || s.sudoku?.round
         || ['ludo','g2048','gm','gword'].some(key=>s.gameState?.[key]?.round || s.gameState?.[key]?.chatLog?.length) || s.gameState?.partner?.name || Object.keys(s.gameState?.towers || {}).length);
       if (hasContent(current)) continue; // Never replace current non-empty account data.
       if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
@@ -5571,6 +5572,7 @@ ${RP_MESSAGE_ACTIONS_CSS}
 ${RP_MOMENT_TRANSLATE_CSS}
 ${RP_UI_FINISH_CSS}
 ${PHONE_TOOLS_CSS}
+${THEATRE_CSS}
 ${RP_XHS_COMPOSE_CSS}
 ${RP_SOCIAL_COMPACT_CSS}
 #rp-wrapper #rp-phone #rp-screen #rp-view-moments #rp-moments-list {min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:18px;}
@@ -5792,7 +5794,7 @@ function rpGameScreenSave(view) {
 }
 
 function rpNavigationMotionDirection(previous, next) {
-  const parents = {thread:'messages','xhs-detail':'xhs','xhs-compose':'xhs','theme-studio':'themes','api-settings':'settings',stickers:'settings'};
+  const parents = {thread:'messages','xhs-detail':'xhs','xhs-compose':'xhs','theatre-write':'theatre','theatre-read':'theatre','theme-studio':'themes','api-settings':'settings',stickers:'settings'};
   return next === 'home' || next === 'lock' || parents[previous] === next ? -1 : 1;
 }
 function rpAnimateGameFolderSurface(element, opening, content, complete = () => {}) {
@@ -5914,6 +5916,7 @@ function rpAddImageWait(entry) {
   }, RP_IMAGE_WAIT_TTL);
 }
 function rpResetChatTasks() {
+  rpTheatre?.reset();
   rpClearPhoneMotion();
   rpShop?.pause();
   rpGomoku?.cancel();
@@ -6157,6 +6160,7 @@ function rpSetPhoneOpen(open) {
   const phone = $('#rp-phone');
   if (!phone.length) return;
   if (!open) {
+      rpTheatre?.cancel('已停止接收本次生成，已有作品保留。');
       if (!rpPhoneIsOpen()) return;
       // 关闭手机前记住当前界面，下次直接恢复，不再强迫用户从锁屏/桌面重新点
       if (STATE.currentView && STATE.currentView !== 'lock') {
@@ -6718,6 +6722,7 @@ function buildStatePayload() {
   const payload = enrichPayloadMeta({
     threads,
     phoneTools: JSON.parse(JSON.stringify(STATE.phoneTools || {version:1,bookmarks:[]})),
+    theatre: JSON.parse(JSON.stringify(STATE.theatre || theatreDefaults())),
     notifications: Array.isArray(STATE.notifications) ? STATE.notifications.slice() : [],
     sync: STATE.sync,
     moments,
@@ -6943,6 +6948,7 @@ const STATE = {
   pendingMessages: [], // FIX3: 多条消息队列
   moments: [],
   diary: [],
+  theatre: theatreDefaults(),
   xhsFeed: [],
   xhsCurrentPost: null,
   xhsReplyToCidx: null,
@@ -7448,6 +7454,7 @@ function restorePhoneChatState(saved) {
   STATE.composeDraft = typeof s.composeDraft === 'string' ? s.composeDraft : '';
   STATE.themeStudioDraft = typeof s.themeStudioDraft === 'string' ? s.themeStudioDraft : '';
   STATE.diaryDraft = typeof s.diaryDraft === 'string' ? s.diaryDraft : '';
+  STATE.theatre = s.theatre ? JSON.parse(JSON.stringify(s.theatre)) : theatreDefaults();
   STATE.xhsCurrentPost = STATE.xhsFeed.some(post => post.id === s.xhsCurrentPost) ? s.xhsCurrentPost : null;
   STATE.xhsReplyToCidx = null;
   STATE.readingPositions = s.readingPositions && typeof s.readingPositions==='object' && !Array.isArray(s.readingPositions) ? JSON.parse(JSON.stringify(s.readingPositions)) : {};
@@ -8377,6 +8384,10 @@ function rpNormalizePhoneState(state) {
     if (typeof thread.name !== 'string') { preserve('threads.' + id + '.name', thread.name); thread.name = id; }
     thread.unread = Number.isFinite(thread.unread) && thread.unread >= 0 ? thread.unread : 0;
   }
+  if (state.theatre != null && (typeof state.theatre !== 'object' || Array.isArray(state.theatre))) { preserve('theatre',state.theatre); state.theatre = theatreDefaults(); }
+  state.theatre ||= theatreDefaults();
+  array(state.theatre,'stories','theatre.stories',x=>x && typeof x==='object' && typeof x.id==='string' && typeof x.body==='string');
+  if (!state.theatre.draft || typeof state.theatre.draft !== 'object' || Array.isArray(state.theatre.draft)) { if (state.theatre.draft != null) preserve('theatre.draft',state.theatre.draft); state.theatre.draft=theatreDefaults().draft; }
   state.recovery = recovery;
   return state;
 }
@@ -8605,6 +8616,7 @@ const HTML = `
                     <div class="rp-app-ico"></div>
                     <div class="rp-app-lbl">银行卡</div>
                   </div>
+                  <div class="rp-app" data-app="theatre" title="小剧场"><div class="rp-app-ico"></div><div class="rp-app-lbl">小剧场</div></div>
                 </div>
               </div>
             </div>
@@ -8771,6 +8783,8 @@ const HTML = `
             <button id="rp-send" type="button">↑</button>
           </div>
         </div>
+
+        ${THEATRE_HTML}
 
         <!-- 日记 -->
         <div id="rp-view-diary" class="rp-view" style="display:none">
@@ -10035,7 +10049,7 @@ function rpTools() {
       return rpPhoneLegacySlotKeys(ctx).includes(slot) && !!saved?._slotMeta?.charName && rpPhoneStateOwnedBy(saved, ctx);
     },
     blockedPost: (post,current) => post.from !== 'user' && blocked({name:post.name || post.user || post.author || post.from || ''},current),
-    canRestore: () => !rpStickers?.busy() && !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
+    canRestore: () => !rpTheatre?.busy() && !rpStickers?.busy() && !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
       && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
       && !(window.rpImgWaitQueue || []).some(item => item?.source === 'mochi-phone') && !STATE._pendingCall,
     applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshWidget(); refreshLockNotifs(); saveState({immediate:true}); },
@@ -10477,6 +10491,7 @@ function rpInstallBackSwipe() {
 
 function bindUI() {
   rpInstallBackSwipe();
+  rpTheatreApp().mount();
   rpRefreshPhoneLanguageSettings();
   $(document).on('change.mochiPhone','#rp-auto-messages-enabled,#rp-auto-moments-enabled',function(){
     if(!rpSetAutoTranslation(this.id === 'rp-auto-messages-enabled' ? 'messages' : 'moments',this.checked)) {rpRefreshAutoTranslationSettings();toastr.info('翻译设置未保存，请重试。');}
@@ -11722,17 +11737,17 @@ const RP_WORD_HINT_MAX_TOKENS = 2048;
 function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
   const body = {
     model: cfg.model || 'deepseek-chat', messages,
-    max_tokens: Math.max(1, Math.min(8192, Number(maxTokens) || 150)),
+    max_tokens: Math.max(1, Math.min(options.phoneTheatre ? 32768 : 8192, Number(maxTokens) || 150)),
     temperature: 0.9,
   };
   let officialDeepSeek = false;
   try { officialDeepSeek = new URL(cfg.url).hostname === 'api.deepseek.com'; } catch(e) {}
   const switchable = ['deepseek-flash', 'deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-v4-flash-vision-exp', 'deepseek-chat'].includes(body.model);
-  if (officialDeepSeek && switchable && (options.structured || options.phoneDiary || options.phoneWordHint || options.gameTask)) {
+  if (officialDeepSeek && switchable && (options.structured || options.phoneTheatre || options.phoneDiary || options.phoneWordHint || options.gameTask)) {
     // Bounded data, diary and word-hint tasks request final text, not reasoning.
     // Other providers and ordinary game/chat requests retain their policy.
     body.thinking = { type: 'disabled' };
-    body.temperature = options.phoneDiary ? 0.8 : options.phoneWordHint ? 0.7 : 0.3;
+    body.temperature = options.phoneTheatre ? 0.9 : options.phoneDiary ? 0.8 : options.phoneWordHint ? 0.7 : 0.3;
     body.max_tokens = Math.max(body.max_tokens, options.jsonMode === 'object' ? 4096 : 2048);
     if (options.jsonMode === 'object') body.response_format = { type: 'json_object' };
   }
@@ -11979,6 +11994,7 @@ function go(view) {
   if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
   if (view === 'thread' && !STATE.threads[STATE.currentThread]) view = 'messages';
   if(view==='xhs-detail' && !STATE.xhsFeed.some(post=>post.id===STATE.xhsCurrentPost))view='xhs';
+  if(view==='theatre-read' && !STATE.theatre?.stories?.some(story=>story.id===STATE.theatre.currentId && typeof story.body==='string'))view='theatre';
   if(view!==STATE.currentView){rpRememberReading();rpCloseChatOverlays();}
   rpPauseGameAnimations();
   if (view === 'darkmode') { toggleDarkMode(); return; }
@@ -11996,7 +12012,7 @@ function go(view) {
   for (const element of [...rpMotionJobs.keys()]) if (element.id !== 'rp-phone') rpCancelSurfaceMotion(element);
   $('.rp-view').hide();
   // 需要 flex 布局的视图
-  const flexViews = ['xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku','sudoku','stickers','shop'];
+  const flexViews = ['theatre','theatre-write','theatre-read','xhs','xhs-detail','xhs-compose','theme-studio','gword','game','g2048','ggold','gomoku','sudoku','stickers','shop'];
   if (flexViews.includes(view)) {
     rpFindByDataAttr(null, '.rp-view', 'id', 'rp-view-' + view).css('display','flex');
   } else {
@@ -12004,6 +12020,7 @@ function go(view) {
   }
   $('#rp-home-ind').toggle(view !== 'lock');
   STATE.currentView = view;
+  rpTheatreApp().onNavigate(view);
   rpGomoku?.onNavigate(view);
   rpSudoku?.onNavigate(view);
   document.querySelectorAll('#rp-moments-list .rp-moment-menu[open]').forEach(menu => { rpSetPanelOpen(menu.querySelector('.rp-moment-menu-items'),false,menu); });
@@ -17700,6 +17717,7 @@ const RP_THEME_ICONS = {
   diary:         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="13" height="20" rx="2.5"/><circle cx="6"  cy="7"  r="1.6" stroke-width="1.5"/><circle cx="6"  cy="12" r="1.6" stroke-width="1.5"/><circle cx="6"  cy="17" r="1.6" stroke-width="1.5"/><line x1="10" y1="8.5"  x2="17" y2="8.5"  stroke-width="1.5"/><line x1="10" y1="12.5" x2="17" y2="12.5" stroke-width="1.5" opacity=".7"/><line x1="10" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" opacity=".5"/></svg>',
   xhs:           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8.5 9.5L12 7l-.7 4 4-3.5" stroke-width="1.8"/><line x1="8" y1="15" x2="16" y2="15" stroke-width="1.6" opacity=".9"/><line x1="10" y1="18" x2="14" y2="18" stroke-width="1.6" opacity=".65"/></svg>',
   g2048:         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2"  y="2"  width="9" height="9" rx="2"/><rect x="13" y="2"  width="9" height="9" rx="2"/><rect x="2"  y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>',
+  theatre: THEATRE_ICON,
   bank:          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><line x1="2" y1="10" x2="22" y2="10" stroke-width="2"/><line x1="6" y1="15" x2="9" y2="15" stroke-width="1.5"/><line x1="12" y1="15" x2="16" y2="15" stroke-width="1.5" opacity=".65"/></svg>'
 };
 
@@ -24307,6 +24325,45 @@ function lgGetPersona() {
 
 // ── Square event trigger (两步流程) ──────────────────────────────
 // ── 自定义 API 调用(支持 DeepSeek / 通义 / GLM 等 OpenAI 兼容格式)──
+let rpTheatre = null;
+function rpTheatreApp() {
+  if (!rpTheatre) {
+    rpTheatre = createTheatre({
+      document, state:()=>STATE, save:saveState, go, isOpen:rpPhoneIsOpen,
+      owner:()=>String(rpArchiveAccountHandle || '')+'|'+getPhoneChatSlotKey(getContext()),
+      task:()=>rpRuntime.task(), AbortController:window.AbortController, random:Math.random,
+      canStart:()=>isMochiPhoneEnabled() && !!(getContext()?.characterId!=null || getContext()?.groupId!=null),
+      listen:(...args)=>rpRuntime.listenDOM(...args),
+      details:owner=>{ const summary=owner?.querySelector('summary'),panel=owner?.querySelector('div');if(summary)rpRuntime.listenDOM(summary,'click',event=>{event.preventDefault();rpSetPanelOpen(panel,!(rpAuxMotion.get(panel)?.open ?? owner.open),owner);}); },
+      confirm:text=>window.confirm(text),
+      copy:text=>navigator.clipboard.writeText(text),
+      download:(title,text)=>{
+        const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),link=document.createElement('a');
+        link.href=url;link.download=String(title).replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,80)+'.txt';
+        document.body.append(link);link.click();link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+      },
+      error:error=>rpClassifyPhoneApiError(error).message,
+      background:async (pack,recipe,token,maxTokens)=>{
+        const cfg=readCustomApiConfig();
+        return rpGuardAwait(rpRoleBackgroundApp().build(pack.prompt,pack.system,{phoneTheatre:true,theatreAU:recipe.world==='au'},token,cfg,maxTokens),token,30000);
+      },
+      checkBudget:async (prompt,system,maxTokens,token)=>{
+        const ctx=getContext()||{},cfg=readCustomApiConfig(),text=system+'\n'+prompt;
+        let cost=new TextEncoder().encode(text).length;
+        if(cfg.mode!=='custom' && typeof ctx.getTokenCountAsync==='function'){
+          const measured=await rpGuardAwait(Promise.resolve(ctx.getTokenCountAsync(text)),token,20000);
+          if(Number.isFinite(measured)&&measured>0)cost=Math.ceil(measured);
+        }
+        const cap=cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.min(64000,Number(ctx.maxContext)-maxTokens-512):64000;
+        if(cost>cap)throw rpPhoneApiError('contextLimit');
+      },
+      call:(prompt,maxTokens,system,token)=>lgCallAPI(prompt,maxTokens,system,{phoneTheatre:true,theatreTask:token,reportErrors:true}),
+    });
+    rpRuntime.own(()=>{rpTheatre?.reset();rpTheatre=null;});
+  }
+  return rpTheatre;
+}
+
 let rpRoleBackground = null;
 function rpRoleBackgroundApp() {
   if (!rpRoleBackground) rpRoleBackground = createRoleContext({
@@ -24318,7 +24375,7 @@ function rpRoleBackgroundApp() {
   return rpRoleBackground;
 }
 async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
-  /* rp-task-scope */ const rpTask = options.gameTask || rpRuntime.task();
+  /* rp-task-scope */ const rpTask = options.theatreTask || options.gameTask || rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
   const storedCfg = readCustomApiConfig();
@@ -24331,7 +24388,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
     const rolePackage = await rpGuardAwait(rpRoleBackgroundApp().build(prompt, sysMsg, options, rpTask, cfg, maxTokens), rpTask, 0);
     prompt = rolePackage.prompt; sysMsg = rolePackage.system;
   }
-  const timeout = options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 120000;
+  const timeout = options.phoneTheatre ? 300000 : options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 120000;
 
   // 短回复场景：不硬限 token，用 prompt 引导长度
   // 只对 <=100 的调用加提示（游戏闲聊），任务格 150 不加
@@ -24354,10 +24411,11 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
         signal: rpTask.signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
         body: JSON.stringify(rpCustomApiRequestBody(cfg, msgs, maxTokens, options))
-      }, options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 60000), rpTask, timeout);
+      }, options.phoneTheatre ? 300000 : options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 60000), rpTask, timeout);
       if (!data || typeof data !== 'object' || data.error || !Array.isArray(data.choices)) {
         throw rpPhoneApiError('format');
       }
+      if (options.phoneTheatre) return theatreText(data,d=>d.choices?.[0]?.message?.content);
       const finishReason = data.choices[0]?.finish_reason;
       if (finishReason === 'length') throw rpPhoneApiError('truncated');
       if (finishReason && finishReason !== 'stop') throw rpPhoneApiError('interrupted');
@@ -24414,16 +24472,17 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   // 未设置自定义 API → 走 ST generateRaw，用 messages 数组格式避免 text completion 续写单字
   try {
     const { generateRaw, generateRawData, extractMessageFromData } = await rpGuardAwait(import('../../../../script.js').catch(rpRuntime.guard(() => ({}))), rpTask);
-    if((options.gameTask || options.phoneXhs || options.phoneTranslation) && typeof generateRawData==='function' && typeof extractMessageFromData==='function'){
+    if((options.phoneTheatre || options.gameTask || options.phoneXhs || options.phoneTranslation) && typeof generateRawData==='function' && typeof extractMessageFromData==='function'){
       const messages=[];if(sysMsg)messages.push({role:'system',content:sysMsg});messages.push({role:'user',content:prompt});
-      const data=await rpGuardAwait(generateRawData({prompt:messages,responseLength:maxTokens,...(options.phoneXhs || options.phoneTranslation ? {trimNames:false}:{}),...(options.phoneShop?{instructOverride:true}:{})}),rpTask,timeout);
-      return rpGameApiText(data,extractMessageFromData);
+      const data=await rpGuardAwait(generateRawData({prompt:messages,responseLength:maxTokens,...(options.phoneTheatre || options.phoneXhs || options.phoneTranslation ? {trimNames:false}:{}),...(options.phoneShop?{instructOverride:true}:{})}),rpTask,timeout);
+      return options.phoneTheatre ? theatreText(data,extractMessageFromData) : rpGameApiText(data,extractMessageFromData);
     }
     if (typeof generateRaw === 'function') {
       const msgs = [];
       if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
       msgs.push({ role: 'user', content: prompt });
-      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneShop ? { instructOverride:true } : {}), ...(options.phoneTranslation || options.phoneXhs || options.phoneDiary || options.gameTask ? { trimNames: false } : {}), ...(options.gameTask || options.phoneDiary || options.phoneXhs || options.phoneTranslation ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
+      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneShop ? { instructOverride:true } : {}), ...(options.phoneTheatre || options.phoneTranslation || options.phoneXhs || options.phoneDiary || options.gameTask ? { trimNames: false } : {}), ...(options.phoneTheatre || options.gameTask || options.phoneDiary || options.phoneXhs || options.phoneTranslation ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
+      if(options.phoneTheatre)return theatreText(resp);
       if(options.gameTask)return rpGameApiText(resp,d=>d);
       if (resp && resp.trim()) {
         // ST 路径也统一清洗 think/thinking 标签

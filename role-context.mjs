@@ -57,7 +57,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
  const counts=new Map();let last=null;
  async function build(prompt,system,options,task,cfg,maxTokens){
   const p=takeRef(prompt),s=takeRef(system),ref=s.ref||p.ref;
-  const enabled=ref||options.phoneDiary||options.phoneXhs||options.gameTask&&!options.phoneShop||options.phoneWordHint;
+  const enabled=ref||options.phoneTheatre||options.phoneDiary||options.phoneXhs||options.gameTask&&!options.phoneShop||options.phoneWordHint;
   if(!enabled||options.phoneShop)return{prompt,system};
   const scope=String(owner()),ctx=context()||{};
   let char=ctx.characters?.[ctx.characterId]||ctx.char;
@@ -67,7 +67,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   const label=s=>String(s).replace(/\{\{[\s\S]*?\}\}/g,'').replace(/[<>\r\n]/g,' ').trim();
   const name=label(ref?.name||ctx.name2||char.name||'对方')||'对方',user=label(ctx.name1||'用户')||'用户',manual=norm(name)!==norm(char.name||ctx.name2),names=manual?[name]:namesOf(char,name);
   const isPublic=!!options.phoneXhs,isFeed=isPublic&&options.phoneXhsFeed===true,automatic=/GameEventComment|GomokuEventComment/.test(p.text);
-  let cap=isFeed?9000:isPublic?4000:automatic?2500:6000;
+  let cap=options.phoneTheatre?18000:isFeed?9000:isPublic?4000:automatic?2500:6000;
   if(cfg.mode!=='custom'&&Number(ctx.maxContext)>0)cap=Math.min(cap,Math.floor(ctx.maxContext)-maxTokens-384);
   if(cap<512)throw failure('contextLimit');
   const count=async text=>{text=String(text);const k=hash(text),old=counts.get(k);if(old?.text===text)return old.n;check();const n=new TextEncoder().encode(text).length;
@@ -107,7 +107,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   const baseCost=await measure(base+'\n'+rules)+64;if(baseCost+160>cap)throw failure('contextLimit');
   const room=cap-baseCost,profileBudget=Math.floor(room*(isFeed ? .15 : .32)),worldBudget=Math.floor(room*(isFeed ? .15 : .26)),storyBudget=room-profileBudget-worldBudget;
   const selected=field=>safe(rolePartnerText(char[field]||char.data?.[field]||'',names,manual),name,user);
-  let profile=(isPublic?'相关人物：':'你只扮演：')+name+'；用户：'+user+'。其他人物仅作背景，不混用其性格，不替用户发言或决定动作。';
+  let profile=options.phoneTheatre?'小说中的角色：'+name+'；玩家角色：'+user+'。本任务是独立成篇小说，允许描写双方台词、行动和心理；其他人物保持各自性格。':(isPublic?'相关人物：':'你只扮演：')+name+'；用户：'+user+'。其他人物仅作背景，不混用其性格，不替用户发言或决定动作。';
   if(isPublic){
    profile+='\n你模拟的是公开帖的路人讨论，不是角色本人；不要补写未公开的私聊或内心。';
    const relation=/父亲|母亲|爸爸|妈妈|女儿|儿子|兄弟|姐妹|丈夫|妻子|男友|女友|father|mother|daughter|son\b|husband|wife|boyfriend|girlfriend/i;
@@ -116,11 +116,12 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    const facts=await fit(known.join('\n'),Math.floor(profileBudget*.6),query);if(facts)profile+='\n公开帖已提到称谓的关系校验（勿补充帖外经历）：'+facts;
   }
   else{
-   const sections=[['性格',selected('personality'),.22],['背景与关系',selected('scenario'),.22],['语气示例',selected('mes_example')||selected('first_mes'),.14],['人物设定',selected('description'),.42]];
+   if(options.phoneTheatre){const persona=await fit(safe(ctx.powerUserSettings?.persona_description||'',name,user),Math.floor(profileBudget*.2),query);if(persona)profile+='\n玩家角色人设：'+persona;}
+   const sections=[['性格',selected('personality'),options.phoneTheatre ? .18 : .22],[options.theatreAU?'原设背景与关系（AU 按本篇重设）':'背景与关系',selected('scenario'),options.phoneTheatre ? .16 : .22],['语气示例',selected('mes_example')||selected('first_mes'),options.phoneTheatre ? .1 : .14],['人物设定',selected('description'),options.phoneTheatre ? .36 : .42]];
    for(const[label,text,share]of sections){const picked=await fit(text,Math.floor(profileBudget*share),query);if(picked)profile+='\n'+label+'：'+picked;}
    if(ref?.note)profile+='\n搭子补充：'+await fit(safe(ref.note,name,user),Math.floor(profileBudget*.2),query);
   }
-  const rawChat=(ctx.chat||[]).filter(m=>m&&!m.is_system).slice(-12),story=[];
+  const rawChat=(options.phoneTheatre && options.theatreAU ? [] : ctx.chat||[]).filter(m=>m&&!m.is_system).slice(-12),story=[];
   for(const m of rawChat){if(isPublic&&!isFeed&&!on(m.extra?.public)&&!on(m.is_public))continue;const text=roleStoryText(m.mes);if(text)story.push({who:m.is_user?user:(m.name||ctx.name2||name),text});}
   if(isPublic&&(!isFeed||!story.length))for(const m of publicPosts().slice(-8)){const text=roleStoryText(m.text);if(text)story.push({who:String(m.name||user)+'（已发布动态）',text});}
   // Feed context prefers the newest story, even when one floor has no sentence breaks.
@@ -159,7 +160,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   // Count the final package, including all headings and output-format instructions.
   while(total>cap&&recent){const lines=recent.trim().split('\n');lines.shift();recent=lines.join('\n');sys=wrap();total=await measure(base+'\n'+sys)+64;}
   if(total>cap||isFeed&&story.length&&!recent)throw failure('contextLimit');check();
-  last={kind:isPublic?'xhs':options.phoneDiary?'diary':automatic?'comment':'game',inputTokens:total,inputCap:cap,bookCount:books.length,worldEntries:entries.length,storyFloors:story.length,countMethod:measured?'host-tokenizer':'conservative-utf8-bound'};
+  last={kind:options.phoneTheatre?'theatre':isPublic?'xhs':options.phoneDiary?'diary':automatic?'comment':'game',inputTokens:total,inputCap:cap,bookCount:books.length,worldEntries:entries.length,storyFloors:story.length,countMethod:measured?'host-tokenizer':'conservative-utf8-bound'};
   return{prompt:base,system:sys};
  }
  return{build,diagnostics:()=>last};
