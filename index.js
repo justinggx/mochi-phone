@@ -1,10 +1,11 @@
-import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261023-theatre-114';
-import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261023-theatre-pov-117';
+import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261023-theatre-preset-118';
+import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261023-theatre-preset-118';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261023-theatre-preset-118';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261023-theatre-pov-117';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261023-theatre-preset-118';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -11751,6 +11752,7 @@ function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
     body.max_tokens = Math.max(body.max_tokens, options.jsonMode === 'object' ? 4096 : 2048);
     if (options.jsonMode === 'object') body.response_format = { type: 'json_object' };
   }
+  if(options.phoneTheatre && options.theatrePreset)Object.assign(body,theatrePresetSnapshot(options.theatrePreset).sampling);
   return body;
 }
 
@@ -17794,7 +17796,8 @@ const rpArtFolderFallbacks = new Map();
 let rpArtPaintEpoch = 0;
 
 function rpArtAtlasUrl(theme, kind, local = false) {
-  if (!['candy','star','misty'].includes(theme) || !['home','games'].includes(kind)) return '';
+  if (!['candy','star','misty'].includes(theme) || !['home','games','theatre'].includes(kind)) return '';
+  if (kind === 'theatre') { const name=`mochi-phone-theatre-${theme}-icon-20261023-v118.png`;return local ? new URL(`scripts/extensions/third-party/mochi-phone/theatre-art-20261023/${name}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${name}`; }
   const name = `mochi-phone-${theme}-${kind}-20261013.png`;
   return local ? new URL(`scripts/extensions/third-party/mochi-phone/icons-20261013/${name}`, document.baseURI).href
     : `https://preview.taliatang1.xyz/assets/${name}`;
@@ -17914,6 +17917,11 @@ function lgRenderHomeIcons() {
       const icon = el.querySelector('.rp-app-ico');
       if (icon && index >= 0) rpPaintArtIcon(icon,atlas,index,3);
     });
+  });
+  rpLoadArtAtlas(theme,'theatre').then(atlas => {
+    if (!atlas || !phone.isConnected || epoch !== rpArtPaintEpoch || phone.dataset.rpArtTheme !== theme || !phone.classList.contains('rp-art-icons')) return;
+    const icon=phone.querySelector('#rp-app-grid [data-app="theatre"] .rp-app-ico');
+    if(icon)rpPaintArtIcon(icon,atlas,0,1);
   });
   if (document.getElementById('rp-folder-modal')?.style.display !== 'none') rpRenderGameFolderIcons();
 }
@@ -24344,11 +24352,14 @@ function rpTheatreApp() {
       },
       error:error=>rpClassifyPhoneApiError(error).message,
       background:async (pack,recipe,token,maxTokens)=>{
-        const cfg=readCustomApiConfig();
-        return rpGuardAwait(rpRoleBackgroundApp().build(pack.prompt,pack.system,{phoneTheatre:true,theatreAU:recipe.world==='au'},token,cfg,maxTokens),token,30000);
+        const cfg=readCustomApiConfig(),ctx=getContext()||{};
+        const host=ctx.mainApi==='openai'?await rpGuardAwait(import('../../../openai.js').catch(()=>({})),token,10000):{};
+        const preset=readTheatrePreset(ctx,{manager:host.promptManager,au:recipe.world==='au'});
+        const background=await rpGuardAwait(rpRoleBackgroundApp().build(pack.prompt,pack.system,{phoneTheatre:true,theatreAU:recipe.world==='au',theatrePresetText:JSON.stringify(preset.messages)},token,cfg,maxTokens),token,30000);
+        return {...background,preset:theatrePresetSnapshot(preset)};
       },
-      checkBudget:async (prompt,system,maxTokens,token)=>{
-        const ctx=getContext()||{},cfg=readCustomApiConfig(),text=system+'\n'+prompt;
+      checkBudget:async (prompt,system,maxTokens,token,snapshot)=>{
+        const ctx=getContext()||{},cfg=readCustomApiConfig(),text=JSON.stringify(theatreRequestMessages(prompt,system,snapshot?.preset));
         let cost=new TextEncoder().encode(text).length;
         if(cfg.mode!=='custom' && typeof ctx.getTokenCountAsync==='function'){
           const measured=await rpGuardAwait(Promise.resolve(ctx.getTokenCountAsync(text)),token,20000);
@@ -24357,7 +24368,7 @@ function rpTheatreApp() {
         const cap=cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.min(64000,Number(ctx.maxContext)-maxTokens-512):64000;
         if(cost>cap)throw rpPhoneApiError('contextLimit');
       },
-      call:(prompt,maxTokens,system,token)=>lgCallAPI(prompt,maxTokens,system,{phoneTheatre:true,theatreTask:token,reportErrors:true}),
+      call:(prompt,maxTokens,system,token,snapshot)=>lgCallAPI(prompt,maxTokens,system,{phoneTheatre:true,theatreTask:token,theatrePreset:snapshot?.preset,reportErrors:true}),
     });
     rpRuntime.own(()=>{rpTheatre?.reset();rpTheatre=null;});
   }
@@ -24403,9 +24414,8 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       return null;
     }
     try {
-      const msgs = [];
-      if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
-      msgs.push({ role: 'user', content: prompt });
+      const msgs = options.phoneTheatre ? theatreRequestMessages(prompt,sysMsg,options.theatrePreset) : [];
+      if (!options.phoneTheatre) { if (sysMsg) msgs.push({ role: 'system', content: sysMsg }); msgs.push({ role: 'user', content: prompt }); }
       const data = await rpGuardAwait(rpRuntime.fetchJSON(buildCustomApiEndpoint(cfg.url, 'chat/completions'), {
         method: 'POST',
         signal: rpTask.signal,
@@ -24473,14 +24483,13 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   try {
     const { generateRaw, generateRawData, extractMessageFromData } = await rpGuardAwait(import('../../../../script.js').catch(rpRuntime.guard(() => ({}))), rpTask);
     if((options.phoneTheatre || options.gameTask || options.phoneXhs || options.phoneTranslation) && typeof generateRawData==='function' && typeof extractMessageFromData==='function'){
-      const messages=[];if(sysMsg)messages.push({role:'system',content:sysMsg});messages.push({role:'user',content:prompt});
+      const messages=options.phoneTheatre?theatreRequestMessages(prompt,sysMsg,options.theatrePreset):[];if(!options.phoneTheatre){if(sysMsg)messages.push({role:'system',content:sysMsg});messages.push({role:'user',content:prompt});}
       const data=await rpGuardAwait(generateRawData({prompt:messages,responseLength:maxTokens,...(options.phoneTheatre || options.phoneXhs || options.phoneTranslation ? {trimNames:false}:{}),...(options.phoneShop?{instructOverride:true}:{})}),rpTask,timeout);
       return options.phoneTheatre ? theatreText(data,extractMessageFromData) : rpGameApiText(data,extractMessageFromData);
     }
     if (typeof generateRaw === 'function') {
-      const msgs = [];
-      if (sysMsg) msgs.push({ role: 'system', content: sysMsg });
-      msgs.push({ role: 'user', content: prompt });
+      const msgs = options.phoneTheatre ? theatreRequestMessages(prompt,sysMsg,options.theatrePreset) : [];
+      if (!options.phoneTheatre) { if (sysMsg) msgs.push({ role: 'system', content: sysMsg }); msgs.push({ role: 'user', content: prompt }); }
       const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneShop ? { instructOverride:true } : {}), ...(options.phoneTheatre || options.phoneTranslation || options.phoneXhs || options.phoneDiary || options.gameTask ? { trimNames: false } : {}), ...(options.phoneTheatre || options.gameTask || options.phoneDiary || options.phoneXhs || options.phoneTranslation ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
       if(options.phoneTheatre)return theatreText(resp);
       if(options.gameTask)return rpGameApiText(resp,d=>d);
