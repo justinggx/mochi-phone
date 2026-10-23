@@ -59,7 +59,7 @@ export const THEATRE_CSS = `
  color:var(--rp-theatre-ink)!important;min-width:44px;min-height:44px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-directory{
- width:44px;min-height:44px;padding:10px;border:0;border-radius:0;
+ width:44px;min-height:44px;padding:10px;border:0;border-radius:0;margin-left:auto!important;
  display:inline-flex;align-items:center;justify-content:center;background:transparent!important;
  color:var(--rp-theatre-ink)!important;cursor:pointer;
 }
