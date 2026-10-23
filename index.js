@@ -6103,6 +6103,7 @@ function rpInstallWandLauncher(runtime) {
       if (menu) observer.observe(menu, { childList: true });
       watchedMenu = menu;
     }
+    if (!isMochiPhoneEnabled()) { item?.remove(); return; }
     if (!menu || item?.parentElement === menu) return;
     if (!item) {
       item = document.createElement('div');
@@ -6142,8 +6143,10 @@ function rpInstallWandLauncher(runtime) {
   // releases detached menus and also repairs a removed launcher without polling.
   const observer = new window.MutationObserver(mount);
   if (root) observer.observe(root, { childList: true });
+  runtime.listenDOM(document, 'mochi-phone-launch-settings', mount);
   runtime.own(() => { observer.disconnect(); item?.remove(); });
-  mount();
+  // Settings bindings are initialized later in this module evaluation.
+  window.queueMicrotask(mount);
 }
 
 
@@ -6406,6 +6409,7 @@ async function rpPrepareMochiPrompt(type, options = {}, dryRun = false) {
 function applyMochiLaunchSettings() {
   const st = getMochiLaunchSettings();
   const enabled = st.enabled !== false;
+  document.dispatchEvent(new window.Event('mochi-phone-launch-settings'));
   if (!enabled && rpInitialized) {
     flushStateNow();
     rpResetChatTasks();
