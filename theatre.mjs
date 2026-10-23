@@ -41,7 +41,7 @@ export const THEATRE_CSS = `
  --rp-v-surface:var(--rp-theatre-paper);--rp-v-text:var(--rp-theatre-ink);
  --rp-theatre-serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",Georgia,serif;
  color:var(--rp-theatre-ink)!important;background:var(--rp-theatre-paper)!important;
- font-family:var(--rp-theatre-serif)!important;isolation:isolate;
+ font-family:var(--rp-theatre-serif)!important;font-size:14px;line-height:1.65;isolation:isolate;
 }
 #rp-phone.rp-dark #rp-screen #rp-view-theatre{
  --rp-theatre-paper:#292320;--rp-theatre-ink:#f0e6db;--rp-theatre-muted:#c2b1a5;
@@ -65,50 +65,50 @@ export const THEATRE_CSS = `
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-directory-lines{width:16px;height:1px;background:currentColor;box-shadow:0 -5px currentColor,0 5px currentColor;}
 #rp-phone #rp-screen #rp-view-theatre>.rp-theatre-scroll{
- padding:18px 22px 30px;position:relative;scroll-behavior:smooth;
+ padding:14px 20px 26px;position:relative;scroll-behavior:smooth;
  container-type:inline-size;overflow-x:hidden;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-hero{
- position:relative;isolation:isolate;overflow:hidden;padding-top:4px;margin-bottom:29px;
+ position:relative;isolation:isolate;overflow:hidden;padding-top:4px;margin-bottom:22px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-hero::after{
  content:"";position:absolute;pointer-events:none;z-index:-1;
- width:260px;height:285px;left:72%;top:-42px;border:1px solid var(--rp-theatre-rule);
+ width:230px;height:240px;left:76%;top:-32px;border:1px solid var(--rp-theatre-rule);
  border-radius:50%;transform:rotate(-24deg);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-masthead{
- display:flex;align-items:flex-end;gap:12px;width:66%;margin:0 0 28px;
+ display:flex;align-items:flex-end;gap:12px;width:63%;margin:0 0 20px;
  font:9px/1.8 Georgia,serif;color:var(--rp-theatre-muted);letter-spacing:.36em;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-masthead::after{
  content:"";flex:1;min-width:12px;border-bottom:1px solid var(--rp-theatre-rule);margin-bottom:3px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-aside{
- position:absolute;right:0;top:1px;margin:0;width:24%;font-size:10px;
- line-height:1.9;letter-spacing:.1em;color:var(--rp-theatre-muted);
+ position:absolute;right:0;top:1px;margin:0;width:108px;max-width:34%;font-size:10px;
+ line-height:1.75;letter-spacing:.02em;color:var(--rp-theatre-muted);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-editorial-title{
- margin:0;font:400 3.6em/1.22 var(--rp-theatre-serif);letter-spacing:-.045em;
+ margin:0;font:400 32px/1.28 var(--rp-theatre-serif);letter-spacing:-.045em;
  overflow-wrap:normal;word-break:normal;text-wrap:wrap;
- font-size:clamp(30px,16cqi,58px);
+ font-size:clamp(26px,11.5cqi,40px);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-editorial-title>span{display:block}
-#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entries{display:flex;flex-direction:column;gap:15px;margin:0 0 27px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entries{display:flex;flex-direction:column;gap:14px;margin:0 0 22px}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry{
- box-sizing:border-box;display:block;width:77%;max-width:100%;margin:0;min-height:80px;
- padding:5px 3px 13px;text-align:left;font:inherit;color:var(--rp-theatre-accent)!important;
+ box-sizing:border-box;display:block;width:84%;max-width:100%;margin:0;min-height:74px;
+ padding:5px 3px 12px;text-align:left;font:inherit;color:var(--rp-theatre-accent)!important;
  background:transparent!important;border:0;border-bottom:1px solid var(--rp-theatre-accent);
  border-radius:0!important;box-shadow:none!important;cursor:pointer;touch-action:manipulation;
 }
-#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-random{align-self:flex-end;text-align:right;width:74%}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-random{align-self:flex-end;text-align:right;width:84%}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-line{
- display:flex;gap:16px;align-items:center;justify-content:space-between;min-width:0;
+ display:flex;gap:12px;align-items:center;justify-content:space-between;min-width:0;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry strong{
- font-weight:400;font-size:1.65em;line-height:1.5;overflow-wrap:normal;
+ font-weight:400;font-size:20px;line-height:1.4;overflow-wrap:normal;white-space:nowrap;flex:1;min-width:0;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-arrow{
- flex:0 0 37px;width:37px;height:12px;position:relative;display:block;
+ flex:0 0 28px;width:28px;height:12px;position:relative;display:block;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-arrow::before{
  content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid currentColor;
@@ -118,7 +118,7 @@ export const THEATRE_CSS = `
  border-top:1px solid currentColor;border-right:1px solid currentColor;transform:translateY(-50%) rotate(45deg);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry small{
- display:block;font-size:max(12px,.8em);line-height:1.8;color:var(--rp-theatre-muted);margin-top:4px;
+ display:block;font-size:12px;line-height:1.75;color:var(--rp-theatre-muted);margin-top:4px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry:disabled{opacity:.5;cursor:default}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-library{margin:0;scroll-margin-top:14px}
@@ -126,13 +126,13 @@ export const THEATRE_CSS = `
  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-library-head h3{
- margin:0;font-size:1.6em;line-height:1.5;font-weight:400;outline-offset:4px;
+ margin:0;font-size:21px;line-height:1.5;font-weight:400;outline-offset:4px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filters{display:flex;gap:7px;align-items:center}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter{
  position:relative;min-width:44px;min-height:44px;padding:8px 4px;
  border:0;background:transparent!important;box-shadow:none;border-radius:0;font:inherit;
- font-size:.88em;color:var(--rp-theatre-muted);cursor:pointer;touch-action:manipulation;
+ font-size:12px;color:var(--rp-theatre-muted);cursor:pointer;touch-action:manipulation;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter[aria-pressed="true"]{color:var(--rp-theatre-ink)}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter[aria-pressed="true"]::after{
@@ -140,7 +140,7 @@ export const THEATRE_CSS = `
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book{
  display:grid;grid-template-columns:minmax(24px,auto) minmax(0,1fr) 25px;gap:14px;
- box-sizing:border-box;width:100%;margin:0;padding:21px 0 19px;
+ box-sizing:border-box;width:100%;margin:0;padding:17px 0 16px;
  text-align:left;font:inherit;color:inherit!important;background:transparent!important;
  border:0;border-bottom:1px solid var(--rp-theatre-rule);border-radius:0!important;box-shadow:none!important;
  cursor:pointer;touch-action:manipulation;
@@ -151,14 +151,14 @@ export const THEATRE_CSS = `
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-copy{min-width:0}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book strong{
- display:block;font-size:1.36em;font-weight:400;line-height:1.55;overflow-wrap:anywhere;
+ display:block;font-size:18px;font-weight:400;line-height:1.55;overflow-wrap:anywhere;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book small{
- display:block;font-size:max(12px,.78em);line-height:1.75;color:var(--rp-theatre-muted);margin-top:5px;
+ display:block;font-size:12px;line-height:1.75;color:var(--rp-theatre-muted);margin-top:5px;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-excerpt{
  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
- margin-top:13px;color:var(--rp-theatre-muted);font-size:.9em;line-height:1.8;overflow-wrap:anywhere;
+ margin-top:11px;color:var(--rp-theatre-muted);font-size:13px;line-height:1.8;overflow-wrap:anywhere;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book>.rp-theatre-arrow{width:25px;flex-basis:25px;margin-top:14px}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-empty{
@@ -174,7 +174,7 @@ export const THEATRE_CSS = `
 `;
 const nav = (title,to) => '<div class="rp-nav-bar"><button type="button" class="rp-back" data-to="'+to+'" aria-label="返回">‹</button><span class="rp-nav-title">'+title+'</span><span></span></div>';
 export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view rp-theatre-editorial" style="display:none">'+nav('小剧场','home').replace('<span></span>','<button type="button" class="rp-theatre-directory" data-theatre-action="directory" aria-label="前往我的剧场" title="作品目录"><span class="rp-theatre-directory-lines" aria-hidden="true"></span></button>')+
- '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><header class="rp-theatre-hero"><div class="rp-theatre-masthead"><span>MOCHI<br>THEATRE</span></div><p class="rp-theatre-aside">在这里，<br>让每一种可能<br>都被温柔书写。</p><h2 class="rp-theatre-editorial-title"><span>故事，</span><span>换一种可能。</span></h2></header>'+
+ '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><header class="rp-theatre-hero"><div class="rp-theatre-masthead"><span>MOCHI<br>THEATRE</span></div><p class="rp-theatre-aside">在这里，<br>让每种可能<br>被温柔书写。</p><h2 class="rp-theatre-editorial-title"><span>故事，</span><span>换一种可能。</span></h2></header>'+
  '<div class="rp-theatre-entries"><button type="button" class="rp-theatre-entry" data-theatre-mode="custom"><span class="rp-theatre-entry-line"><strong>自定义脑洞</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>写下你的设定，开启专属故事。</small></button>'+
  '<button type="button" class="rp-theatre-entry rp-theatre-entry-random" data-theatre-mode="random"><span class="rp-theatre-entry-line"><strong>随机开演</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>让灵感出场，邂逅意想不到的故事。</small></button></div>'+
  '<section class="rp-theatre-library" aria-labelledby="rp-theatre-library-title"><div class="rp-theatre-library-head"><h3 id="rp-theatre-library-title" tabindex="-1">我的剧场</h3><div class="rp-theatre-filters" role="group" aria-label="筛选作品"><button type="button" class="rp-theatre-filter" data-theatre-action="filter-all" aria-pressed="true">全部</button><button type="button" class="rp-theatre-filter" data-theatre-action="filter" aria-pressed="false">收藏</button></div></div><div id="rp-theatre-books"></div></section></div></div>'+
