@@ -17797,7 +17797,7 @@ let rpArtPaintEpoch = 0;
 
 function rpArtAtlasUrl(theme, kind, local = false) {
   if (!['candy','star','misty'].includes(theme) || !['home','games','theatre'].includes(kind)) return '';
-  if (kind === 'theatre') { const name=`mochi-phone-theatre-${theme}-icon-20261023-v118.png`;return local ? new URL(`scripts/extensions/third-party/mochi-phone/theatre-art-20261023/${name}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${name}`; }
+  if (kind === 'theatre') { const name=`mochi-phone-theatre-${theme}-icon-20261023-v121.png`;return local ? new URL(`scripts/extensions/third-party/mochi-phone/theatre-art-20261023/${name}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${name}`; }
   const name = `mochi-phone-${theme}-${kind}-20261013.png`;
   return local ? new URL(`scripts/extensions/third-party/mochi-phone/icons-20261013/${name}`, document.baseURI).href
     : `https://preview.taliatang1.xyz/assets/${name}`;
