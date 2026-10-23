@@ -182,10 +182,57 @@ export const THEATRE_CSS = `
 #rp-phone #rp-theatre-random-idea{height:108px;min-height:96px}
 #rp-phone .rp-theatre-mode{min-width:0}
 #rp-phone .rp-theatre-input{font-family:inherit}
+/* Theatre-only appearance; unset preference follows the existing phone mode. */
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read){
+ --rp-theatre-paper:#f7f3ec;--rp-theatre-ink:#352a26;--rp-theatre-muted:#796c65;
+ --rp-theatre-accent:#a55768;--rp-theatre-rule:rgba(165,87,104,.28);
+ --rp-theatre-soft:rgba(128,100,115,.065);--rp-theatre-button-ink:#fff;
+ --rp-v-surface:var(--rp-theatre-paper);--rp-v-bg:var(--rp-theatre-paper);--rp-v-text:var(--rp-theatre-ink);
+ color:var(--rp-theatre-ink)!important;background:var(--rp-theatre-paper)!important;
+}
+#rp-phone.rp-dark #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read){
+ --rp-theatre-paper:#292320;--rp-theatre-ink:#f0e6db;--rp-theatre-muted:#c2b1a5;
+ --rp-theatre-accent:#e4a6b2;--rp-theatre-rule:rgba(228,166,178,.3);
+ --rp-theatre-soft:rgba(240,230,219,.07);--rp-theatre-button-ink:#292320;
+}
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read)[data-theatre-theme="day"]{
+ --rp-theatre-paper:#f7f3ec;--rp-theatre-ink:#352a26;--rp-theatre-muted:#796c65;
+ --rp-theatre-accent:#a55768;--rp-theatre-rule:rgba(165,87,104,.28);
+ --rp-theatre-soft:rgba(128,100,115,.065);--rp-theatre-button-ink:#fff;color-scheme:light;
+}
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read)[data-theatre-theme="night"]{
+ --rp-theatre-paper:#292320;--rp-theatre-ink:#f0e6db;--rp-theatre-muted:#c2b1a5;
+ --rp-theatre-accent:#e4a6b2;--rp-theatre-rule:rgba(228,166,178,.3);
+ --rp-theatre-soft:rgba(240,230,219,.07);--rp-theatre-button-ink:#292320;color-scheme:dark;
+}
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read)>.rp-nav-bar{background:transparent!important;border-color:var(--rp-theatre-rule)!important}
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read)>.rp-nav-bar :is(.rp-nav-title,.rp-back){color:var(--rp-theatre-ink)!important}
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read) :is(.rp-theatre-input,.rp-theatre-card,.rp-theatre-button){background:var(--rp-theatre-soft);border-color:var(--rp-theatre-rule);color:var(--rp-theatre-ink)}
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read) .rp-theatre-primary{background:var(--rp-theatre-accent)!important;color:var(--rp-theatre-button-ink)!important;border-color:transparent}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-menu[hidden]{display:none!important}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-menu{
+ position:absolute;right:14px;top:56px;z-index:30;width:172px;max-width:calc(100% - 28px);box-sizing:border-box;
+ padding:5px;border:1px solid var(--rp-theatre-rule);border-radius:12px;
+ color:var(--rp-theatre-ink);background:var(--rp-theatre-paper);box-shadow:0 6px 20px rgba(0,0,0,.12);
+ animation:rp-theatre-menu-in .14s ease-out;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-menu-choice{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box;
+ min-height:38px;padding:8px 9px;border:0;border-radius:8px;background:transparent!important;
+ font:inherit;font-size:12px;line-height:1.5;color:var(--rp-theatre-ink)!important;text-align:left;cursor:pointer;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-menu-choice:hover{background:var(--rp-theatre-soft)!important}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-menu-choice:focus-visible{outline:2px solid var(--rp-theatre-accent);outline-offset:-2px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-mode-switch{position:relative;flex:0 0 28px;height:16px;border-radius:12px;background:var(--rp-theatre-rule);pointer-events:none}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-mode-switch::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--rp-theatre-paper);transition:transform .14s ease}
+#rp-phone #rp-screen #rp-view-theatre [aria-checked="true"] .rp-theatre-mode-switch{background:var(--rp-theatre-accent)}
+#rp-phone #rp-screen #rp-view-theatre [aria-checked="true"] .rp-theatre-mode-switch::after{transform:translateX(12px)}
+@keyframes rp-theatre-menu-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){#rp-phone #rp-screen #rp-view-theatre .rp-theatre-menu{animation:none}#rp-phone #rp-screen #rp-view-theatre .rp-theatre-mode-switch::after{transition:none}}
 `;
 const nav = (title,to) => '<div class="rp-nav-bar"><button type="button" class="rp-back" data-to="'+to+'" aria-label="返回">‹</button><span class="rp-nav-title">'+title+'</span><span></span></div>';
-export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view rp-theatre-editorial" style="display:none">'+nav('小剧场','home').replace('<span></span>','<button type="button" class="rp-theatre-directory" data-theatre-action="directory" aria-label="前往我的剧场" title="作品目录"><span class="rp-theatre-directory-lines" aria-hidden="true"></span></button>')+
- '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><header class="rp-theatre-hero"><div class="rp-theatre-masthead"><span>MOCHI<br>THEATRE</span></div><p class="rp-theatre-aside">在这里，<br>让每种可能<br>被温柔书写。</p><h2 class="rp-theatre-editorial-title"><span>故事，</span><span>换一种可能。</span></h2></header>'+
+export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view rp-theatre-editorial" style="display:none">'+nav('小剧场','home').replace('<span></span>','<button type="button" class="rp-theatre-directory" data-theatre-action="menu" aria-label="小剧场菜单" title="小剧场菜单" aria-expanded="false" aria-controls="rp-theatre-menu"><span class="rp-theatre-directory-lines" aria-hidden="true"></span></button>')+
+ '<div id="rp-theatre-menu" class="rp-theatre-menu" role="group" aria-label="小剧场菜单" hidden><button type="button" class="rp-theatre-menu-choice" data-theatre-action="appearance" role="switch" aria-label="夜间模式" aria-checked="false"><span>夜间模式</span><span class="rp-theatre-mode-switch" aria-hidden="true"></span></button><button type="button" class="rp-theatre-menu-choice" data-theatre-action="directory">我的剧场</button></div><div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><header class="rp-theatre-hero"><div class="rp-theatre-masthead"><span>MOCHI<br>THEATRE</span></div><p class="rp-theatre-aside">在这里，<br>让每种可能<br>被温柔书写。</p><h2 class="rp-theatre-editorial-title"><span>故事，</span><span>换一种可能。</span></h2></header>'+
  '<div class="rp-theatre-entries"><button type="button" class="rp-theatre-entry" data-theatre-mode="custom"><span class="rp-theatre-entry-line"><strong>自定义脑洞</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>写下你的设定，开启专属故事。</small></button>'+
  '<button type="button" class="rp-theatre-entry rp-theatre-entry-random" data-theatre-mode="random"><span class="rp-theatre-entry-line"><strong>随机开演</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>让灵感出场，邂逅意想不到的故事。</small></button></div>'+
  '<section class="rp-theatre-library" aria-labelledby="rp-theatre-library-title"><div class="rp-theatre-library-head"><h3 id="rp-theatre-library-title" tabindex="-1">我的剧场</h3><div class="rp-theatre-filters" role="group" aria-label="筛选作品"><button type="button" class="rp-theatre-filter" data-theatre-action="filter-all" aria-pressed="true">全部</button><button type="button" class="rp-theatre-filter" data-theatre-action="filter" aria-pressed="false">收藏</button></div></div><div id="rp-theatre-books"></div></section></div></div>'+
@@ -279,6 +326,21 @@ export function createTheatre(h){
  const stories=()=>Array.isArray(data()?.stories)?data().stories.filter(x=>x&&typeof x.id==='string'&&typeof x.body==='string'):[];
  const selected=()=>stories().find(x=>x.id===data()?.currentId);
  const save=()=>h.save({activity:false});
+ const appearanceKey='mochi-phone-theatre-appearance-v1';
+ const viewIds=['rp-view-theatre','rp-view-theatre-write','rp-view-theatre-read'];
+ function readAppearance(){try{const value=h.storage?.getItem(appearanceKey);return value==='day'||value==='night'?value:null;}catch{return null;}}
+ function night(value=readAppearance()){return value?value==='night':!!by('rp-phone')?.classList.contains('rp-dark');}
+ function applyAppearance(value=readAppearance()){
+  for(const id of viewIds){const el=by(id);if(el){if(value)el.dataset.theatreTheme=value;else delete el.dataset.theatreTheme;}}
+  by('rp-theatre-menu')?.querySelector('[data-theatre-action="appearance"]')?.setAttribute('aria-checked',String(night(value)));
+ }
+ function closeMenu(focus=false){const menu=by('rp-theatre-menu'),button=by('rp-view-theatre')?.querySelector('[data-theatre-action="menu"]');if(menu)menu.hidden=true;button?.setAttribute('aria-expanded','false');if(focus)button?.focus({preventScroll:true});}
+ function toggleMenu(){const menu=by('rp-theatre-menu');if(!menu)return;applyAppearance();menu.hidden=!menu.hidden;by('rp-view-theatre').querySelector('[data-theatre-action="menu"]').setAttribute('aria-expanded',String(!menu.hidden));}
+ function toggleAppearance(){
+  const value=night()?'day':'night';
+  try{if(!h.storage?.setItem)throw new Error('storage unavailable');h.storage.setItem(appearanceKey,value);}catch{say('显示偏好未能保存，暂未切换；请检查本机存储后重试。');return;}
+  applyAppearance(value);
+ }
  function say(text){status=String(text||'');doc.querySelectorAll('[id^="rp-view-theatre"] .rp-theatre-status').forEach(x=>x.textContent=status);}
  function busyUI(){
   const r={...theatreDefaults().draft,...data()?.draft};
@@ -422,11 +484,13 @@ export function createTheatre(h){
  }
  async function action(name){
   const s=selected();
+  if(name==='menu'){toggleMenu();return;}
+  if(name==='appearance'){toggleAppearance();return;}
   if(name==='generate')return generate();
   if(name==='continue'||name==='rewrite')return generate(name);
   if(name==='cancel')return cancel();
   if(name==='filter'||name==='filter-all'){filter=name==='filter';library();return;}
-  if(name==='directory'){const scroll=by('rp-view-theatre').querySelector('.rp-theatre-scroll'),heading=by('rp-theatre-library-title');scroll.scrollTo({top:Math.max(0,heading.offsetTop-12),behavior:doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});heading.focus({preventScroll:true});return;}
+  if(name==='directory'){closeMenu();const scroll=by('rp-view-theatre').querySelector('.rp-theatre-scroll'),heading=by('rp-theatre-library-title');scroll.scrollTo({top:Math.max(0,heading.offsetTop-12),behavior:doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});heading.focus({preventScroll:true});return;}
   if(name==='draw'){draw();return;}
   if(!s)return;
   if(name==='favorite'){s.favorite=!s.favorite;save();reader();library();}
@@ -436,7 +500,9 @@ export function createTheatre(h){
   if(name==='download'){try{h.download(s.title,s.title+'\n\n'+s.body);say('已导出正文。');}catch{say('导出失败，请复制正文。');}}
  }
  function mount(){
-  if(bound)return;bound=true;
+  if(bound)return;bound=true;applyAppearance();
+  h.listen(doc,'pointerdown',e=>{if(!e.target?.closest?.('#rp-theatre-menu,[data-theatre-action="menu"]'))closeMenu();});
+  h.listen(doc,'keydown',e=>{if(e.key==='Escape'&&by('rp-theatre-menu')&&!by('rp-theatre-menu').hidden){e.preventDefault();e.stopPropagation();closeMenu(true);}});
   for(const id of['rp-view-theatre','rp-view-theatre-write','rp-view-theatre-read']){
    const el=by(id);if(!el)continue;
    h.listen(el,'click',e=>{
@@ -451,10 +517,11 @@ export function createTheatre(h){
   h.details(by('rp-theatre-options'));h.details(by('rp-theatre-recipe'));h.details(by('rp-theatre-random-edit'));
  }
  function onNavigate(view){
+  closeMenu();applyAppearance();
   if(!family(view)){cancel('');status='';return;}
   mount();if(view==='theatre')library();if(view==='theatre-write')fields();if(view==='theatre-read')reader();say(status);busyUI();
  }
- return{mount,onNavigate,cancel,reset:()=>{cancel('');status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
+ return{mount,onNavigate,cancel,reset:()=>{cancel('');closeMenu();status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
 }
 
 export function validateTheatreArchive(value){

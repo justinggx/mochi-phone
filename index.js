@@ -1,11 +1,11 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261023-theatre-preset-118';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261023-theatre-preset-118';
-import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261023-theatre-rules-123';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-appearance-124';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261023-theatre-rules-123';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-appearance-124';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -24337,7 +24337,7 @@ let rpTheatre = null;
 function rpTheatreApp() {
   if (!rpTheatre) {
     rpTheatre = createTheatre({
-      document, state:()=>STATE, save:saveState, go, isOpen:rpPhoneIsOpen,
+      document, state:()=>STATE, save:saveState, go, isOpen:rpPhoneIsOpen, storage:localStorage,
       owner:()=>String(rpArchiveAccountHandle || '')+'|'+getPhoneChatSlotKey(getContext()),
       task:()=>rpRuntime.task(), AbortController:window.AbortController, random:Math.random,
       canStart:()=>isMochiPhoneEnabled() && !!(getContext()?.characterId!=null || getContext()?.groupId!=null),
