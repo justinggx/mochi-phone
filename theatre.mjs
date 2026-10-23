@@ -34,13 +34,150 @@ export const THEATRE_CSS = `
 #rp-phone .rp-theatre-draw-card{cursor:default;margin:15px 0}
 #rp-phone .rp-theatre-draw-card .rp-theatre-note{margin:0;padding:2px 0 0}
 #rp-phone .rp-theatre-card:focus-visible,#rp-phone .rp-theatre-button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+/* A — ivory literary editorial. All decoration is local CSS; home view only. */
+#rp-phone #rp-screen #rp-view-theatre{
+ --rp-theatre-paper:#f7f3ec;--rp-theatre-ink:#352a26;--rp-theatre-muted:#796c65;
+ --rp-theatre-accent:#a55768;--rp-theatre-rule:rgba(165,87,104,.28);
+ --rp-v-surface:var(--rp-theatre-paper);--rp-v-text:var(--rp-theatre-ink);
+ --rp-theatre-serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",Georgia,serif;
+ color:var(--rp-theatre-ink)!important;background:var(--rp-theatre-paper)!important;
+ font-family:var(--rp-theatre-serif)!important;isolation:isolate;
+}
+#rp-phone.rp-dark #rp-screen #rp-view-theatre{
+ --rp-theatre-paper:#292320;--rp-theatre-ink:#f0e6db;--rp-theatre-muted:#c2b1a5;
+ --rp-theatre-accent:#e4a6b2;--rp-theatre-rule:rgba(228,166,178,.3);
+}
+#rp-phone #rp-screen #rp-view-theatre>.rp-nav-bar{
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ padding-right:12px;z-index:2;
+}
+#rp-phone #rp-screen #rp-view-theatre>.rp-nav-bar .rp-nav-title{
+ color:var(--rp-theatre-ink)!important;font-family:var(--rp-theatre-serif)!important;
+ font-size:18px;font-weight:400!important;letter-spacing:.08em;
+}
+#rp-phone #rp-screen #rp-view-theatre>.rp-nav-bar .rp-back{
+ color:var(--rp-theatre-ink)!important;min-width:44px;min-height:44px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-directory{
+ width:44px;min-height:44px;padding:10px;border:0;border-radius:0;
+ display:inline-flex;align-items:center;justify-content:center;background:transparent!important;
+ color:var(--rp-theatre-ink)!important;cursor:pointer;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-directory-lines{width:16px;height:1px;background:currentColor;box-shadow:0 -5px currentColor,0 5px currentColor;}
+#rp-phone #rp-screen #rp-view-theatre>.rp-theatre-scroll{
+ padding:18px 22px 30px;position:relative;scroll-behavior:smooth;
+ container-type:inline-size;overflow-x:hidden;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-hero{
+ position:relative;isolation:isolate;overflow:hidden;padding-top:4px;margin-bottom:29px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-hero::after{
+ content:"";position:absolute;pointer-events:none;z-index:-1;
+ width:260px;height:285px;left:72%;top:-42px;border:1px solid var(--rp-theatre-rule);
+ border-radius:50%;transform:rotate(-24deg);
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-masthead{
+ display:flex;align-items:flex-end;gap:12px;width:66%;margin:0 0 28px;
+ font:9px/1.8 Georgia,serif;color:var(--rp-theatre-muted);letter-spacing:.36em;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-masthead::after{
+ content:"";flex:1;min-width:12px;border-bottom:1px solid var(--rp-theatre-rule);margin-bottom:3px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-aside{
+ position:absolute;right:0;top:1px;margin:0;width:24%;font-size:10px;
+ line-height:1.9;letter-spacing:.1em;color:var(--rp-theatre-muted);
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-editorial-title{
+ margin:0;font:400 3.6em/1.22 var(--rp-theatre-serif);letter-spacing:-.045em;
+ overflow-wrap:normal;word-break:normal;text-wrap:wrap;
+ font-size:clamp(30px,16cqi,58px);
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-editorial-title>span{display:block}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entries{display:flex;flex-direction:column;gap:15px;margin:0 0 27px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry{
+ box-sizing:border-box;display:block;width:77%;max-width:100%;margin:0;min-height:80px;
+ padding:5px 3px 13px;text-align:left;font:inherit;color:var(--rp-theatre-accent)!important;
+ background:transparent!important;border:0;border-bottom:1px solid var(--rp-theatre-accent);
+ border-radius:0!important;box-shadow:none!important;cursor:pointer;touch-action:manipulation;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-random{align-self:flex-end;text-align:right;width:74%}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry-line{
+ display:flex;gap:16px;align-items:center;justify-content:space-between;min-width:0;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry strong{
+ font-weight:400;font-size:1.65em;line-height:1.5;overflow-wrap:normal;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-arrow{
+ flex:0 0 37px;width:37px;height:12px;position:relative;display:block;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-arrow::before{
+ content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid currentColor;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-arrow::after{
+ content:"";position:absolute;right:1px;top:50%;width:7px;height:7px;
+ border-top:1px solid currentColor;border-right:1px solid currentColor;transform:translateY(-50%) rotate(45deg);
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry small{
+ display:block;font-size:max(12px,.8em);line-height:1.8;color:var(--rp-theatre-muted);margin-top:4px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-entry:disabled{opacity:.5;cursor:default}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-library{margin:0;scroll-margin-top:14px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-library-head{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-library-head h3{
+ margin:0;font-size:1.6em;line-height:1.5;font-weight:400;outline-offset:4px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-filters{display:flex;gap:7px;align-items:center}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter{
+ position:relative;min-width:44px;min-height:44px;padding:8px 4px;
+ border:0;background:transparent!important;box-shadow:none;border-radius:0;font:inherit;
+ font-size:.88em;color:var(--rp-theatre-muted);cursor:pointer;touch-action:manipulation;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter[aria-pressed="true"]{color:var(--rp-theatre-ink)}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-filter[aria-pressed="true"]::after{
+ content:"";position:absolute;bottom:3px;left:5px;right:5px;border-bottom:1px solid var(--rp-theatre-accent);
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book{
+ display:grid;grid-template-columns:minmax(24px,auto) minmax(0,1fr) 25px;gap:14px;
+ box-sizing:border-box;width:100%;margin:0;padding:21px 0 19px;
+ text-align:left;font:inherit;color:inherit!important;background:transparent!important;
+ border:0;border-bottom:1px solid var(--rp-theatre-rule);border-radius:0!important;box-shadow:none!important;
+ cursor:pointer;touch-action:manipulation;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-number{
+ font:12px/1.6 Georgia,serif;color:var(--rp-theatre-accent);border-right:1px solid var(--rp-theatre-rule);
+ padding-right:9px;min-height:43px;align-self:start;margin-top:3px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-copy{min-width:0}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book strong{
+ display:block;font-size:1.36em;font-weight:400;line-height:1.55;overflow-wrap:anywhere;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book small{
+ display:block;font-size:max(12px,.78em);line-height:1.75;color:var(--rp-theatre-muted);margin-top:5px;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-excerpt{
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+ margin-top:13px;color:var(--rp-theatre-muted);font-size:.9em;line-height:1.8;overflow-wrap:anywhere;
+}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book>.rp-theatre-arrow{width:25px;flex-basis:25px;margin-top:14px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-empty{
+ color:var(--rp-theatre-muted);opacity:1;padding:22px 0 28px;border-bottom:1px solid var(--rp-theatre-rule);
+}
+#rp-phone #rp-screen #rp-view-theatre :is(.rp-theatre-entry,.rp-theatre-book,.rp-theatre-filter,.rp-theatre-directory):focus-visible{
+ outline:2px solid var(--rp-theatre-accent);outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce){
+ #rp-phone #rp-screen #rp-view-theatre>.rp-theatre-scroll{scroll-behavior:auto}
+}
+
 `;
 const nav = (title,to) => '<div class="rp-nav-bar"><button type="button" class="rp-back" data-to="'+to+'" aria-label="返回">‹</button><span class="rp-nav-title">'+title+'</span><span></span></div>';
-export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view" style="display:none">'+nav('小剧场','home')+
- '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><div class="rp-theatre-kicker">MOCHI THEATRE</div><h2 class="rp-theatre-lead">故事的另一种可能</h2><p class="rp-theatre-muted">把一个“如果”，写成一篇番外。<br>独立收藏在这里，不改变主线。</p>'+
- '<button type="button" class="rp-theatre-card" data-theatre-mode="custom"><strong>自定义脑洞</strong><small>关键词、完整设定，或不同世界观的 AU</small></button>'+
- '<button type="button" class="rp-theatre-card" data-theatre-mode="random"><strong>随机开演</strong><small>选一种心情，偶遇一个故事</small></button>'+
- '<div class="rp-theatre-library"><div class="rp-theatre-row"><strong>我的剧场</strong><button type="button" class="rp-theatre-button" data-theatre-action="filter" aria-pressed="false">只看收藏</button></div><div id="rp-theatre-books"></div></div></div></div>'+
+export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view rp-theatre-editorial" style="display:none">'+nav('小剧场','home').replace('<span></span>','<button type="button" class="rp-theatre-directory" data-theatre-action="directory" aria-label="前往我的剧场" title="作品目录"><span class="rp-theatre-directory-lines" aria-hidden="true"></span></button>')+
+ '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><header class="rp-theatre-hero"><div class="rp-theatre-masthead"><span>MOCHI<br>THEATRE</span></div><p class="rp-theatre-aside">在这里，<br>让每一种可能<br>都被温柔书写。</p><h2 class="rp-theatre-editorial-title"><span>故事，</span><span>换一种可能。</span></h2></header>'+
+ '<div class="rp-theatre-entries"><button type="button" class="rp-theatre-entry" data-theatre-mode="custom"><span class="rp-theatre-entry-line"><strong>自定义脑洞</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>写下你的设定，开启专属故事。</small></button>'+
+ '<button type="button" class="rp-theatre-entry rp-theatre-entry-random" data-theatre-mode="random"><span class="rp-theatre-entry-line"><strong>随机开演</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>让灵感出场，邂逅意想不到的故事。</small></button></div>'+
+ '<section class="rp-theatre-library" aria-labelledby="rp-theatre-library-title"><div class="rp-theatre-library-head"><h3 id="rp-theatre-library-title" tabindex="-1">我的剧场</h3><div class="rp-theatre-filters" role="group" aria-label="筛选作品"><button type="button" class="rp-theatre-filter" data-theatre-action="filter-all" aria-pressed="true">全部</button><button type="button" class="rp-theatre-filter" data-theatre-action="filter" aria-pressed="false">收藏</button></div></div><div id="rp-theatre-books"></div></section></div></div>'+
  '<div id="rp-view-theatre-write" class="rp-view" style="display:none">'+nav('开一个小剧场','theatre')+
  '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><div class="rp-theatre-kicker" id="rp-theatre-mode-name"></div>'+
  '<section id="rp-theatre-custom-panel" class="rp-theatre-mode" hidden><h2 class="rp-theatre-lead">把你的脑洞写成故事</h2><p class="rp-theatre-muted">几个关键词，或一段完整的设定，都可以。</p>'+
@@ -193,8 +330,18 @@ export function createTheatre(h){
   const root=by('rp-theatre-books');if(!root)return;root.replaceChildren();
   const list=stories().slice().reverse().filter(s=>!filter||s.favorite);
   if(!list.length){const p=doc.createElement('p');p.className='rp-theatre-empty';p.textContent=filter?'还没有收藏的故事。':'还没有作品。第一场故事，从你的一个脑洞开始。';root.append(p);}
-  for(const s of list){const b=doc.createElement('button');b.type='button';b.className='rp-theatre-card';b.dataset.theatreStory=s.id;const title=doc.createElement('strong');title.textContent=(s.favorite?'☆ ':'')+(s.title||'未命名番外');const meta=doc.createElement('small');meta.textContent=(MODES[s.recipe?.mode]||'番外')+' · '+theatreCount(s.body)+' 字 · '+(s.complete?'已完结':'未完 / 待续')+(s.parentId?' · '+(s.operation==='continue'?'续写版':'重写版'):'');b.append(title,meta);root.append(b);}
-  const button=by('rp-view-theatre')?.querySelector('[data-theatre-action="filter"]');if(button){button.setAttribute('aria-pressed',String(filter));button.textContent=filter?'查看全部':'只看收藏';}
+  for(const [index,s] of list.entries()){
+   const b=doc.createElement('button');b.type='button';b.className='rp-theatre-book';b.dataset.theatreStory=s.id;
+   const number=doc.createElement('span');number.className='rp-theatre-book-number';number.textContent=String(index+1).padStart(2,'0');number.setAttribute('aria-hidden','true');
+   const copy=doc.createElement('span');copy.className='rp-theatre-book-copy';
+   const title=doc.createElement('strong');title.textContent=(s.favorite?'☆ ':'')+(s.title||'未命名番外');
+   const meta=doc.createElement('small');meta.textContent=theatreCount(s.body)+' 字 · '+(s.complete?'已完结':'未完 / 待续')+(s.parentId?' · '+(s.operation==='continue'?'续写版':'重写版'):'');
+   meta.title=MODES[s.recipe?.mode]||'番外';
+   const excerpt=doc.createElement('span');excerpt.className='rp-theatre-excerpt';excerpt.textContent=s.body.slice(0,320).replace(/\s+/g,' ').trim().slice(0,140);
+   const arrow=doc.createElement('span');arrow.className='rp-theatre-arrow';arrow.setAttribute('aria-hidden','true');
+   copy.append(title,meta,excerpt);b.append(number,copy,arrow);root.append(b);
+  }
+  for(const button of by('rp-view-theatre')?.querySelectorAll('.rp-theatre-filter')||[])button.setAttribute('aria-pressed',String(button.dataset.theatreAction==='filter'?filter:!filter));
  }
  function setting(r={}){return[MODES[r.mode]||'番外',r.world==='au'?'AU · 本篇独立世界观':'原世界观',TONES[r.tone]||'随缘',ENDINGS[r.ending]||'不限定',POVS[r.pov]||'第三人称',r.words?'目标约 '+r.words+' 字':'目标 4000–5000 字',(r.mode==='branch'?'分岔起点：'+(r.branchPoint||'当前主线节点')+'\n改变的选择：'+(r.idea||'让 AI 寻找合理转折'):r.idea||'未填写脑洞')].join('\n');}
  function reader(){
@@ -267,7 +414,8 @@ export function createTheatre(h){
   if(name==='generate')return generate();
   if(name==='continue'||name==='rewrite')return generate(name);
   if(name==='cancel')return cancel();
-  if(name==='filter'){filter=!filter;library();return;}
+  if(name==='filter'||name==='filter-all'){filter=name==='filter';library();return;}
+  if(name==='directory'){const scroll=by('rp-view-theatre').querySelector('.rp-theatre-scroll'),heading=by('rp-theatre-library-title');scroll.scrollTo({top:Math.max(0,heading.offsetTop-12),behavior:doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});heading.focus({preventScroll:true});return;}
   if(name==='draw'){draw();return;}
   if(!s)return;
   if(name==='favorite'){s.favorite=!s.favorite;save();reader();library();}
