@@ -5664,7 +5664,9 @@ function rpCancelSurfaceMotion(element) {
   animation.onfinish = animation.oncancel = null;
   animation.cancel();
 }
+let rpBackSwipeCancel = null;
 function rpClearPhoneMotion() {
+  rpBackSwipeCancel?.();
   rpFinishAuxMotion();
   rpCloseChatOverlays();
   for (const element of [...rpMotionJobs.keys()]) rpCancelSurfaceMotion(element);
@@ -10344,7 +10346,137 @@ function rpInstallReadingListener() {
 }
 function rpOpenLocalSearch(event) { rpTools().conversation.openSearch(event?.currentTarget?.id==='rp-thread-search'?STATE.currentThread:''); }
 
+function rpInstallBackSwipe() {
+  const screen = document.getElementById('rp-screen');
+  if (!screen || rpBackSwipeCancel) return;
+  const runtime = rpRuntime;
+  let gesture = null, suppressUntil = 0;
+  const layers = [
+    ['rp-folder-modal', null], ['rp-compose-modal', '#rp-compose-cancel'],
+    ['rp-feature-layer', '.rp-feature-close'], ['rp-group-members-modal', '#rp-gm-close'],
+    ['rp-add-modal', '#rp-add-cancel'], ['rp-game-partner-modal', '#rp-game-partner-cancel'],
+    ['rp-del-picker', '#rp-del-cancel'], ['rp-add-choice', '.rp-add-choice-cancel'],
+    ['rp-grp-create', '[data-action="grp-cancel"]'], ['rp-hb-modal', '.rp-hb-cancel-btn'],
+    ['rp-loc-modal', '.rp-loc-cancel-btn'], ['rp-api-panel', '#rp-api-cancel'],
+    ['rp-game-chat-fs', '#rp-game-chat-fs-close'], ['g2048-chat-fs', '#g2048-chat-fs-close'],
+    ['ggold-chat-fs', '#ggold-chat-fs-close'], ['gword-chat-fs', '#gword-chat-fs-close'],
+    ['rp-call-overlay', null], ['rp-sq-event', null]
+  ];
+  function shown(element) {
+    if (!element?.isConnected) return false;
+    for (let node = element; node && node !== screen.parentElement; node = node.parentElement) {
+      if (node.hidden || node.hasAttribute('data-rp-surface-closing') || node.hasAttribute('data-rp-closing')) return false;
+      const style = window.getComputedStyle(node);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+    }
+    return true;
+  }
+  function action() {
+    const open = layers.map(([id, selector]) => ({element:document.getElementById(id),selector})).filter(v => shown(v.element));
+    open.sort((a,b) => (parseInt(window.getComputedStyle(b.element).zIndex) || 0) - (parseInt(window.getComputedStyle(a.element).zIndex) || 0)
+      || (a.element.compareDocumentPosition(b.element) & window.Node.DOCUMENT_POSITION_FOLLOWING ? 1 : -1));
+    if (open.length) {
+      const {element,selector} = open[0];
+      if (element.id === 'rp-folder-modal') return {root:element,control:element,folder:true};
+      const control = selector && element.querySelector(selector);
+      return control && shown(control) && !control.disabled ? {root:element,control} : null;
+    }
+    // Unknown dialogs keep their own confirmation/input semantics.
+    if ([...screen.querySelectorAll('[role="dialog"][aria-modal="true"]')].some(shown)) return null;
+    if (['home','lock'].includes(STATE.currentView)) return null;
+    const view = document.getElementById('rp-view-' + STATE.currentView);
+    const control = view && [...view.querySelectorAll('.rp-back,#gmk-back,.sdk-back,.stk-back')].find(el => shown(el) && !el.disabled);
+    return control ? {root:view,control} : null;
+  }
+  const active = () => !runtime.stats().destroyed && isMochiPhoneEnabled() && rpPhoneIsOpen() && !document.hidden;
+  const selected = () => { const s = window.getSelection?.(); return !!s && !s.isCollapsed && screen.contains(s.anchorNode); };
+  function excluded(target) {
+    if (!screen.contains(target) || target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="slider"],[draggable="true"],[data-no-swipe-back],canvas,video,audio,#g2048-board-wrap,.gmk-board,.sdk-board,[role="grid"],#ggold-launch-btn')) return true;
+    for (let node = target; node && node !== screen; node = node.parentElement) {
+      const style = window.getComputedStyle(node);
+      if (node.scrollWidth > node.clientWidth + 4 && /auto|scroll/.test(style.overflowX)) return true;
+    }
+    return false;
+  }
+  function reset() {
+    const g = gesture;
+    if (!g) return;
+    gesture = null;
+    g.token.signal.removeEventListener('abort', reset);
+    if (g.claimed) suppressUntil = Date.now() + 650;
+    window._rpSwipeLocked = false;
+  }
+  function valid(g, checkAction = false) {
+    if (!active() || !g.token.valid() || STATE.currentView !== g.view || selected() || Date.now() - g.time > 1200 || !shown(g.root) || !shown(g.control)) return false;
+    if (!checkAction) return true;
+    const current = action();
+    return current?.root === g.root && current.control === g.control;
+  }
+  function move(touch, event) {
+    const g = gesture;
+    if (!g) return;
+    if (!valid(g)) { reset(); return; }
+    g.dx = touch.clientX - g.x; g.dy = touch.clientY - g.y;
+    if (!g.claimed) {
+      if (Math.max(Math.abs(g.dx), Math.abs(g.dy)) < 8) return;
+      if (g.dx <= 0 || Math.abs(g.dy) >= g.dx / 1.4) { reset(); return; }
+      g.claimed = true;
+    }
+    if (!event.cancelable) { reset(); return; }
+    event.preventDefault();
+  }
+  runtime.listenDOM(screen, 'touchstart', event => {
+    if (event.touches.length !== 1) { reset(); return; }
+    reset(); // Recover even if a removed touch target never delivered its final event.
+    suppressUntil = 0;
+    if (!active() || window._rpSwipeLocked || selected()) return;
+    const target = event.target.nodeType === 1 ? event.target : event.target.parentElement;
+    if (!target || excluded(target)) return;
+    const current = action(), rect = screen.getBoundingClientRect(), touch = event.touches[0];
+    if (!current || !(rect.width > 0 && rect.height > 0) || touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) return;
+    const token = runtime.task();
+    gesture = {...current,token,id:touch.identifier,x:touch.clientX,y:touch.clientY,dx:0,dy:0,view:STATE.currentView,time:Date.now(),threshold:Math.max(36,Math.min(90,rect.width * .18)),claimed:false};
+    token.signal.addEventListener('abort', reset, {once:true});
+    window._rpSwipeLocked = true;
+  }, {passive:true,capture:true});
+  runtime.listenDOM(document, 'touchstart', event => { if (gesture && event.touches.length !== 1) reset(); }, {passive:true,capture:true});
+  runtime.listenDOM(screen, 'touchmove', event => {
+    if (!gesture) return;
+    if (event.touches.length !== 1) { reset(); return; }
+    const touch = [...event.touches].find(t => t.identifier === gesture.id);
+    if (touch) move(touch,event); else reset();
+  }, {passive:false,capture:true});
+  runtime.listenDOM(screen, 'touchend', event => {
+    const g = gesture;
+    if (!g) return;
+    const touch = [...event.changedTouches].find(t => t.identifier === g.id);
+    if (!touch) return;
+    if (event.touches.length) { reset(); return; }
+    move(touch,event);
+    if (gesture !== g) return;
+    const rect = screen.getBoundingClientRect();
+    const accepted = g.claimed && g.dx >= g.threshold && g.dx > Math.abs(g.dy) * 1.4
+      && touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom && valid(g,true);
+    if (g.claimed) { if (event.cancelable) event.preventDefault(); event.stopPropagation(); }
+    reset();
+    if (accepted) {
+      if (g.folder) rpSetGameFolderOpen(false);
+      else g.control.click(); // Reuse the actual back control, including draft/game guards.
+    }
+  }, {passive:false,capture:true});
+  runtime.listenDOM(document, 'touchcancel', reset, {passive:true,capture:true});
+  runtime.listenDOM(screen, 'click', event => {
+    if (event.detail !== 0 && Date.now() < suppressUntil) { event.preventDefault(); event.stopImmediatePropagation(); }
+  }, true);
+  runtime.listenDOM(window, 'blur', reset);
+  runtime.listenDOM(window, 'resize', reset);
+  runtime.listenDOM(document, 'visibilitychange', () => { if (document.hidden) reset(); });
+  rpBackSwipeCancel = reset;
+  runtime.own(() => { reset(); if (rpBackSwipeCancel === reset) rpBackSwipeCancel = null; });
+}
+
 function bindUI() {
+  rpInstallBackSwipe();
   rpRefreshPhoneLanguageSettings();
   $(document).on('change.mochiPhone','#rp-auto-messages-enabled,#rp-auto-moments-enabled',function(){
     if(!rpSetAutoTranslation(this.id === 'rp-auto-messages-enabled' ? 'messages' : 'moments',this.checked)) {rpRefreshAutoTranslationSettings();toastr.info('翻译设置未保存，请重试。');}
@@ -11841,6 +11973,7 @@ function renderThreadList() {
 //  NAVIGATION
 // ================================================================
 function go(view) {
+  rpBackSwipeCancel?.();
   const previousView = STATE.currentView;
   if (view === 'shop' && !RP_SHOP_AVAILABLE) view = 'home';
   if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
