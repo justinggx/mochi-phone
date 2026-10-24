@@ -1,5 +1,6 @@
 // Standalone fiction. This module never appends host chat or publishes phone events.
 import { validateTheatrePreset, theatrePresetSnapshot } from "./theatre-preset.mjs?v=20261024-context-home-128";
+import { theatrePlainOutput } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 export const THEATRE_END = '__MOCHI_THEATRE_END__';
 export const THEATRE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 4h18v16H3zM3 5c5 0 5 7 0 8m18-8c-5 0-5 7 0 8M8 20v-5m8 5v-5M3 4l9 4 9-4"/><path d="M9 12c2 2 4 2 6 0" stroke-linecap="round"/></svg>';
 export const THEATRE_CSS = `
@@ -20,6 +21,12 @@ export const THEATRE_CSS = `
 #rp-phone .rp-theatre-button{font:inherit;font-size:12px;line-height:1.5;min-height:36px;padding:6px 10px;border:1px solid rgba(128,100,115,.25);border-radius:20px;background:rgba(128,100,115,.07);color:inherit;cursor:pointer}
 #rp-phone .rp-theatre-primary{background:var(--rp-nav-btn,#aa637e);color:var(--rp-btn-text,#fff);border-color:transparent;flex:1}
 #rp-phone .rp-theatre-button:disabled{opacity:.5;cursor:default}
+#rp-phone #rp-screen #rp-view-theatre-read #rp-theatre-reader .rp-theatre-reader-actions{display:flex;flex-wrap:wrap;align-items:center;gap:2px 13px;margin:9px 0 3px;padding:6px 0 0;border-top:1px solid var(--rp-theatre-rule)}
+#rp-phone #rp-screen #rp-view-theatre-read #rp-theatre-reader .rp-theatre-reader-actions .rp-theatre-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:0!important;min-height:28px;height:auto!important;padding:3px 0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font-size:10.5px;line-height:1.5;font-weight:400;color:var(--rp-theatre-muted)!important;letter-spacing:.02em;touch-action:manipulation}
+#rp-phone #rp-screen #rp-view-theatre-read #rp-theatre-reader .rp-theatre-reader-actions .rp-theatre-button:is(:hover,:focus-visible){color:var(--rp-theatre-accent)!important;text-decoration:underline;text-underline-offset:4px}
+#rp-phone #rp-screen #rp-view-theatre-read #rp-theatre-reader .rp-theatre-reader-actions .rp-theatre-button:focus-visible{outline:0}
+#rp-phone #rp-screen #rp-view-theatre-read #rp-theatre-reader .rp-theatre-reader-actions .rp-theatre-button[hidden]{display:none!important}
+#rp-phone #rp-screen #rp-view-theatre-read #rp-theatre-reader>.rp-theatre-muted:last-child{font-size:10.5px;line-height:1.6;margin:4px 0 8px}
 #rp-phone .rp-theatre-status{font-size:11px;line-height:1.6;padding:0 16px;flex-shrink:0;overflow-wrap:anywhere}
 #rp-phone .rp-theatre-status:not(:empty){padding-top:6px;padding-bottom:5px}
 #rp-phone .rp-theatre-body{white-space:pre-wrap;font-size:13px;line-height:1.8;overflow-wrap:anywhere;margin:12px 0 18px;user-select:text}
@@ -272,8 +279,8 @@ export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view rp-theatre
  '<div id="rp-view-theatre-read" class="rp-view" style="display:none">'+nav('阅读番外','theatre')+
  '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div id="rp-theatre-reader" class="rp-theatre-scroll"><div id="rp-theatre-reader-top"></div><h2 id="rp-theatre-title" class="rp-theatre-title"></h2><div id="rp-theatre-meta" class="rp-theatre-muted"></div>'+
  '<details class="rp-theatre-details" id="rp-theatre-recipe"><summary>本篇设定</summary><div id="rp-theatre-setting" class="rp-theatre-note"></div></details>'+
- '<article id="rp-theatre-body" class="rp-theatre-body"></article><div class="rp-theatre-actions"><button type="button" class="rp-theatre-button" data-theatre-action="favorite">收藏</button><button type="button" class="rp-theatre-button" data-theatre-action="copy">复制</button><button type="button" class="rp-theatre-button" data-theatre-action="download">导出</button></div>'+
- '<div class="rp-theatre-actions"><button type="button" class="rp-theatre-button" data-theatre-action="continue">继续写</button><button type="button" class="rp-theatre-button" data-theatre-action="rewrite">重写一版</button><button type="button" class="rp-theatre-button" data-theatre-action="reuse">修改设定再写</button><button type="button" class="rp-theatre-button" data-theatre-action="delete">删除</button><button type="button" class="rp-theatre-button" data-theatre-action="cancel" hidden>停止生成</button></div><p class="rp-theatre-muted">续写和重写都会保存为新版本，原稿保留。</p></div></div>';
+ '<article id="rp-theatre-body" class="rp-theatre-body"></article><div class="rp-theatre-actions rp-theatre-reader-actions"><button type="button" class="rp-theatre-button" data-theatre-action="favorite">收藏</button><button type="button" class="rp-theatre-button" data-theatre-action="copy">复制</button><button type="button" class="rp-theatre-button" data-theatre-action="download">导出</button>'+
+ '<button type="button" class="rp-theatre-button" data-theatre-action="continue">继续写</button><button type="button" class="rp-theatre-button" data-theatre-action="rewrite">重写一版</button><button type="button" class="rp-theatre-button" data-theatre-action="reuse">修改设定再写</button><button type="button" class="rp-theatre-button" data-theatre-action="delete">删除</button><button type="button" class="rp-theatre-button" data-theatre-action="cancel" hidden>停止生成</button></div><p class="rp-theatre-muted">续写和重写都会保存为新版本，原稿保留。</p></div></div>';
 const MODES={branch:'主线分岔',custom:'自定义脑洞',random:'随机开演'}; // branch labels saved records only.
 const CREATION_MODES=['custom','random'];
 const TONES={any:'随缘',sweet:'甜甜的',bittersweet:'酸涩的',angst:'虐虐的',comedy:'轻松沙雕'};
@@ -309,8 +316,7 @@ export function theatreText(data,extract=x=>x){
  let text=extract(data);
  if(Array.isArray(text))text=text.map(p=>typeof p==='string'?p:typeof p?.text==='string'?p.text:'').join('');
  if(typeof text!=='string')throw Object.assign(new Error('API 返回格式不正确'),{phoneApiCode:'format'});
- const last=[...text.matchAll(/<\/think(?:ing)?>/gi)].at(-1);if(last)text=text.slice(last.index+last[0].length);
- text=text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi,'').replace(/<think(?:ing)?>[\s\S]*$/gi,'').trim();
+ text=theatrePlainOutput(text);
  const ended=text.endsWith(THEATRE_END),complete=ended&&(!finish||['stop','end_turn','stop_sequence','eos_token'].includes(finish));
  text=text.replaceAll(THEATRE_END,'').trim();
  if(!text)throw Object.assign(new Error('API 未返回正文'),{phoneApiCode:'empty'});
@@ -335,7 +341,8 @@ export function theatrePrompt(recipe){
 }
 export function createTheatre(h){
  const doc=h.document,by=id=>doc.getElementById(id),family=v=>String(v).startsWith('theatre');
- let job=null,filter=false,status='',bound=false,sequence=0,drag=null;
+ let job=null,filter=false,status='',bound=false,sequence=0,drag=null,readController=null,readPending=false,readSequence=0;
+ const projections=new Map();
  const data=()=>h.state().theatre;
  const stories=()=>Array.isArray(data()?.stories)?data().stories.filter(x=>x&&typeof x.id==='string'&&typeof x.body==='string'):[];
  const localEntry=s=>({slot:h.shelf?.slot?.()||'',id:s.id,story:s,charName:s.charName||h.shelf?.charName?.()||'未记录角色',key:JSON.stringify([h.shelf?.slot?.()||'',s.id])});
@@ -344,7 +351,7 @@ export function createTheatre(h){
  const selected=()=>selection()?.story;
  function select(entry){if(entry.slot===(h.shelf?.slot?.()||'')){delete data().readingRef;data().currentId=entry.id;}else data().readingRef={slot:entry.slot,id:entry.id};save();}
  function change(entry,fn){if(!entry)return false;if(h.shelf)return h.shelf.change(entry,fn);fn(data());save();return true;}
- function editSelected(patch){const entry=selection();return change(entry,slot=>{const s=slot.stories.find(x=>x.id===entry.id);if(s)Object.assign(s,patch);});}
+ function editSelected(patch){const entry=selection();return change(entry,slot=>{const s=slot.stories.find(x=>x?.id===entry.id);if(s)Object.assign(s,patch);});}
  function preferences(){let p;try{p=h.shelf?.prefs?.()||JSON.parse(h.storage?.getItem('mochi-phone-theatre-shelf-v1')||'{}');}catch{}return{sort:['newest','oldest','char','custom'].includes(p?.sort)?p.sort:'newest',order:Array.isArray(p?.order)?p.order.filter(x=>typeof x==='string'):[]};}
  function savePreferences(next){try{if(h.shelf){if(!h.shelf.savePrefs(next))throw Error();}else h.storage.setItem('mochi-phone-theatre-shelf-v1',JSON.stringify(next));return true;}catch{say('排序未能保存，请检查存储后重试。');return false;}}
  function ordered(all,prefs=preferences()){
@@ -376,11 +383,25 @@ export function createTheatre(h){
   const r={...theatreDefaults().draft,...data()?.draft};
   doc.querySelectorAll('[id^="rp-view-theatre"] [data-theatre-action]').forEach(b=>{
    const action=b.dataset.theatreAction;if(action==='cancel')b.hidden=!job;
-   b.disabled=!!job&&['generate','continue','rewrite','reuse','delete','draw'].includes(action)||action==='generate'&&r.mode==='random'&&!String(r.idea||'').trim();
+   b.disabled=!!job&&['generate','continue','rewrite','reuse','delete','draw'].includes(action)||readPending&&['copy','download','continue','rewrite'].includes(action)||action==='generate'&&r.mode==='random'&&!String(r.idea||'').trim();
   });
   doc.querySelectorAll('[data-theatre-mode]').forEach(b=>b.disabled=!!job);
   doc.querySelectorAll('#rp-view-theatre-write input,#rp-view-theatre-write textarea,#rp-view-theatre-write select').forEach(x=>x.disabled=!!job);
  }
+ function stopReading(){readSequence++;readController?.abort();readController=null;readPending=false;}
+ function outputProfile(snapshot={},charName=''){try{return h.outputProfile?.(snapshot,charName)||{scripts:[]};}catch{return{scripts:[]};}}
+ function cleanText(text,profile,signal){
+  if(!h.cleanOutput)return{text};
+  try{const result=h.cleanOutput(text,profile,signal);return result?.then?result.catch(error=>{if(error?.name==='AbortError')throw error;return{...(error.outputFallback||{text}),warning:'unavailable'};}):result;}catch(error){if(error?.name==='AbortError')throw error;return{...(error.outputFallback||{text}),warning:'unavailable'};}
+ }
+ function outputFor(entry,signal){
+  const s=entry.story;if(s.outputCleaned)return{text:s.body};
+  const profile=outputProfile(s.snapshot,entry.charName),signature=JSON.stringify(profile),cached=projections.get(entry.key);
+  if(cached?.source===s.body&&cached.signature===signature)return cached.result;
+  const owner=h.owner(),finish=result=>{if(owner===h.owner()&&!result.warning&&!result.skipped){projections.set(entry.key,{source:s.body,signature,result});while(projections.size>4)projections.delete(projections.keys().next().value);}return result;};
+  const result=cleanText(s.body,profile,signal);return result?.then?result.then(finish):finish(result);
+ }
+ function outputWarning(result){return result?.warning==='reasoningOnly'?'这篇作品暂未找到正文，原存档仍保留。':result?.warning==='empty'?'预设正则清理后没有找到正文，已保留原文。':result?.warning||result?.skipped?'部分预设正则暂未完成清理，已保留可读正文和原稿。':'';}
  function modeDrafts(){
   if(!data().modeDrafts||typeof data().modeDrafts!=='object'||Array.isArray(data().modeDrafts))data().modeDrafts={};
   return data().modeDrafts;
@@ -436,13 +457,13 @@ export function createTheatre(h){
   by('rp-theatre-sort').value=prefs.sort;by('rp-view-theatre').querySelector('.rp-theatre-sort-hint').hidden=prefs.sort!=='custom';
   if(!list.length){const p=doc.createElement('p');p.className='rp-theatre-empty';p.textContent=filter?'还没有收藏的故事。':'还没有作品。第一场故事，从你的一个脑洞开始。';root.append(p);}
   for(const [index,entry] of list.entries()){
-   const s=entry.story,b=doc.createElement('div');b.className='rp-theatre-book';b.dataset.shelfKey=entry.key;
+   const s=entry.story,b=doc.createElement('div'),cached=projections.get(entry.key),body=cached?.source===s.body?cached.result.text:s.body;b.className='rp-theatre-book';b.dataset.shelfKey=entry.key;
    const number=doc.createElement('span');number.className='rp-theatre-book-number';number.textContent=String(index+1).padStart(2,'0');number.setAttribute('aria-hidden','true');
    const copy=doc.createElement('button');copy.type='button';copy.className='rp-theatre-book-copy rp-theatre-book-open';copy.dataset.theatreStory=s.id;copy.dataset.theatreSlot=entry.slot;
    const title=doc.createElement('strong');title.textContent=(s.favorite?'☆ ':'')+(s.title||'未命名番外');
-   const meta=doc.createElement('small');meta.textContent=theatreCount(s.body)+' 字 · '+entry.charName;
+   const meta=doc.createElement('small');meta.textContent=theatreCount(body)+' 字 · '+entry.charName;
    meta.title=MODES[s.recipe?.mode]||'番外';
-   const excerpt=doc.createElement('span');excerpt.className='rp-theatre-excerpt';excerpt.textContent=s.body.slice(0,320).replace(/\s+/g,' ').trim().slice(0,140);
+   const excerpt=doc.createElement('span');excerpt.className='rp-theatre-excerpt';excerpt.textContent=body.slice(0,320).replace(/\s+/g,' ').trim().slice(0,140);
    const arrow=doc.createElement('span');arrow.className='rp-theatre-arrow';arrow.setAttribute('aria-hidden','true');
    const actions=doc.createElement('span');actions.className='rp-theatre-book-actions';
    const tool=(action,label)=>{const el=doc.createElement('button');el.type='button';el.className='rp-theatre-book-tool';el.dataset.theatreAction=action;el.setAttribute('aria-label',label);el.title=label;return el;};
@@ -457,7 +478,7 @@ export function createTheatre(h){
  function openEntry(entry){if(!entry)return;select(entry);say('');h.go('theatre-read');}
  function deleteEntry(entry){
   if(!entry||job||!h.confirm('删除“'+(entry.story.title||'未命名番外')+'”？其他作品和版本仍会保留。'))return;
-  if(!change(entry,slot=>{slot.stories=slot.stories.filter(s=>s.id!==entry.id);if(slot.currentId===entry.id)slot.currentId=null;})){say('删除未能保存，作品仍保留，请重试。');return;}
+  if(!change(entry,slot=>{slot.stories=slot.stories.filter(s=>s?.id!==entry.id);if(slot.currentId===entry.id)slot.currentId=null;})){say('删除未能保存，作品仍保留，请重试。');return;}
   if(data().readingRef?.slot===entry.slot&&data().readingRef?.id===entry.id){delete data().readingRef;save();}
   say('已删除这篇作品。');if(h.state().currentView==='theatre-read')h.go('theatre');else library();
  }
@@ -492,12 +513,16 @@ export function createTheatre(h){
  }
  function setting(r={}){return[MODES[r.mode]||'番外',r.world==='au'?'AU · 本篇独立世界观':'原世界观',TONES[r.tone]||'随缘',ENDINGS[r.ending]||'不限定',POVS[r.pov]||'第三人称',r.words?'目标约 '+r.words+' 字':'目标 4000–5000 字',(r.mode==='branch'?'分岔起点：'+(r.branchPoint||'当前主线节点')+'\n改变的选择：'+(r.idea||'让 AI 寻找合理转折'):r.idea||'未填写脑洞')].join('\n');}
  function reader(){
-  const s=selected();if(!s){return;}
-  by('rp-theatre-title').textContent=s.title||'未命名番外';by('rp-theatre-body').textContent=s.body;
-  by('rp-theatre-meta').textContent=theatreCount(s.body)+' 字 · '+(s.complete?'已完结':'未完 / 待续')+(s.reason==='truncated'?' · 模型输出达到上限':s.reason==='interrupted'?' · 模型中断':!s.complete?' · 尚未确认完结':'');
+  stopReading();const entry=selection(),s=entry?.story;if(!s){return;}
+  const owner=h.owner(),serial=readSequence,controller=new h.AbortController();readController=controller;
+  const valid=()=>serial===readSequence&&h.owner()===owner&&h.state().currentView==='theatre-read'&&selection()?.key===entry.key;
+  by('rp-theatre-title').textContent=s.title||'未命名番外';
+  const render=result=>{if(!valid())return;readPending=false;by('rp-theatre-body').textContent=result.text;by('rp-theatre-meta').textContent=theatreCount(result.text)+' 字 · '+(s.complete?'已完结':'未完 / 待续')+(s.reason==='truncated'?' · 模型输出达到上限':s.reason==='interrupted'?' · 模型中断':!s.complete?' · 尚未确认完结':'');by('rp-theatre-reader').scrollTop=Number(s.readingTop)||0;const warning=outputWarning(result);if(warning)say(warning);busyUI();};
+  const result=outputFor(entry,controller.signal);
+  if(result?.then){readPending=true;by('rp-theatre-body').textContent='';by('rp-theatre-meta').textContent='正在整理正文……';result.then(render).catch(()=>{});}else render(result);
   by('rp-theatre-setting').textContent=setting(s.recipe)+'\n预设：'+(s.snapshot?.preset?s.snapshot.preset.name+' · '+s.snapshot.preset.messages.length+' 条'+(s.snapshot.preset.unresolvedMacros?' · 含 '+s.snapshot.preset.unresolvedMacros+' 处未展开宏，按原文参考':''):'旧作品未记录；“修改设定再写”可读取当前预设');
   const b=by('rp-view-theatre-read').querySelector('[data-theatre-action="favorite"]');b.textContent=s.favorite?'取消收藏':'收藏';b.setAttribute('aria-pressed',String(!!s.favorite));
-  by('rp-theatre-reader').scrollTop=Number(s.readingTop)||0;busyUI();
+  busyUI();
  }
  function draw(){
   if(job||data().draft.mode!=='random')return;
@@ -508,6 +533,7 @@ export function createTheatre(h){
   rememberDraft();save();by('rp-theatre-random-idea').value=r.idea;randomPreview();busyUI();
  }
  function cancel(message='已停止接收本次生成，已有作品保留。'){
+  stopReading();
   finishDrag(false);
   const old=job;if(!old)return;job=null;old.controller.abort();old.parent.signal.removeEventListener('abort',old.abort);busyUI();say(message);
  }
@@ -530,29 +556,34 @@ export function createTheatre(h){
    let snapshot;
    if(original){if(!original.snapshot?.system||!original.snapshot?.prompt){say('这篇作品缺少创作依据，请用“修改设定再写”生成新篇。');return false;}snapshot={...original.snapshot};}
    else{const p=theatrePrompt(recipe);snapshot=await h.background(p,recipe,token,maxTokens);}
+   const profile=outputProfile(snapshot,originalEntry?.charName);
+   snapshot.outputRegex={apiId:profile.apiId||'',name:profile.name||snapshot.preset?.name||'',user:profile.user||'',char:profile.char||originalEntry?.charName||h.shelf?.charName?.()||''};
    if(Number.isFinite(snapshot.maxTokens)&&snapshot.maxTokens>0)maxTokens=Math.min(maxTokens,snapshot.maxTokens);
    const narration=theatreNarration(recipe);if(!snapshot.system.endsWith(narration))snapshot.system+='\n\n'+narration;
    if(!valid())return false;
    if(operation==='new'&&snapshot.preset)say('正在写这一场故事……已读取预设：'+snapshot.preset.name+(snapshot.preset.unresolvedMacros?'（含未展开宏，按原文参考）':''));
-   let prompt=snapshot.prompt;
-   if(operation==='continue')prompt+='\n\n续写任务：只接续下面这篇作品的末尾，不复述、不重写标题或前文，不读取后来的主线。若原篇已完结，写自然的后续篇章；若未完，先接完当前故事。仍允许写双方的台词与行动。续写目标约 '+(recipe.words||4500)+' 字，写完结局后输出 '+THEATRE_END+'。\n【本篇已经写出的标题与正文】\n'+original.title+'\n'+original.body+'\n【正文结束，开始接续】';
+   let prompt=snapshot.prompt,originalBody=original?.body,originalCleaned=true;
+   if(operation==='continue'){const clean=await outputFor(originalEntry,token.signal);originalBody=clean.text;originalCleaned=!outputWarning(clean);prompt+='\n\n续写任务：只接续下面这篇作品的末尾，不复述、不重写标题或前文，不读取后来的主线。若原篇已完结，写自然的后续篇章；若未完，先接完当前故事。仍允许写双方的台词与行动。续写目标约 '+(recipe.words||4500)+' 字，写完结局后输出 '+THEATRE_END+'。\n【本篇已经写出的标题与正文】\n'+original.title+'\n'+originalBody+'\n【正文结束，开始接续】';}
    if(operation==='rewrite')prompt+='\n请按同一份创作依据重新构思一篇完整番外，不延续其他作品。';
    const allowed=await h.checkBudget(prompt,snapshot.system,maxTokens,token,snapshot);
    if(Number.isFinite(allowed)&&allowed>0)maxTokens=Math.min(maxTokens,allowed);
    if(snapshot.budgetAdjusted||maxTokens<theatreTokens(recipe))say('已自动整理背景并适配当前窗口，正在创作……未写完的正文会保存，可继续写。');
    if(!valid())return false;
-   const result=await h.call(prompt,maxTokens,snapshot.system,token,snapshot);
-   if(!valid()||!result?.text)return false;
+   const rawResult=await h.call(prompt,maxTokens,snapshot.system,token,snapshot);
+   if(!valid()||!rawResult?.text)return false;
+   const clean=await cleanText(rawResult.text,profile,token.signal),result={...rawResult,text:clean.text};
+   if(!valid())return false;
+   if(!result?.text)throw Object.assign(new Error('API 未返回正文'),{phoneApiCode:'empty'});
    const lines=result.text.split(/\r?\n/),first=lines[0].replace(/^#{1,6}\s*/,'').trim(),hasTitle=operation!=='continue'&&first.length<=100&&lines.length>1;
    const title=operation==='continue'?original.title:hasTitle?first:(recipe.idea.slice(0,36)||'故事的另一种可能');
    const addition=hasTitle?lines.slice(1).join('\n').trim():result.text;
    if(!addition.trim())throw Object.assign(new Error('empty'),{phoneApiCode:'empty'});
-   const story={id:'theatre-'+Date.now().toString(36)+'-'+id+'-'+Math.floor(h.random()*0xffffff).toString(36),charName:originalEntry?.charName||h.shelf?.charName?.()||'',title,body:operation==='continue'?original.body+'\n\n'+addition:addition,recipe:{...recipe},snapshot:{prompt:snapshot.prompt,system:snapshot.system,...(snapshot.preset?{preset:theatrePresetSnapshot(snapshot.preset)}:{})},createdAt:Date.now(),complete:!!result.complete,reason:result.reason||'unconfirmed',favorite:false,parentId:original?.id||null,operation,readingTop:0};
+   const story={id:'theatre-'+Date.now().toString(36)+'-'+id+'-'+Math.floor(h.random()*0xffffff).toString(36),charName:originalEntry?.charName||h.shelf?.charName?.()||'',title,body:operation==='continue'?originalBody+'\n\n'+addition:addition,recipe:{...recipe},snapshot:{prompt:snapshot.prompt,system:snapshot.system,...(snapshot.preset?{preset:theatrePresetSnapshot(snapshot.preset)}:{}),outputRegex:snapshot.outputRegex},outputCleaned:!!profile.scripts?.length&&originalCleaned&&!outputWarning(clean),createdAt:Date.now(),complete:!!result.complete,reason:result.reason||'unconfirmed',favorite:false,parentId:original?.id||null,operation,readingTop:0};
    if(originalEntry&&originalEntry.slot!==(h.shelf?.slot?.()||'')){
     if(!change(originalEntry,target=>target.stories.push(story)))throw new Error('作品保存失败，原稿保留。');
     select({...originalEntry,id:story.id,story});
    }else{slot.stories.push(story);slot.currentId=story.id;delete slot.readingRef;save();}
-   say(story.complete?'新作品已保存。':'已保存已有正文，尚未完结，可以继续写。');
+   say(outputWarning(clean)||(story.complete?'新作品已保存。':'已保存已有正文，尚未完结，可以继续写。'));
    library();
    if(h.isOpen()&&h.state().currentView===startedView&&(operation==='new'||oldId===original.id)){h.go('theatre-read');reader();}
    return true;
@@ -578,8 +609,7 @@ export function createTheatre(h){
   if(name==='favorite'){if(!editSelected({favorite:!s.favorite}))say('收藏未能保存，请重试。');reader();library();}
   if(name==='reuse'){if(selection()?.slot!==(h.shelf?.slot?.()||'')){say('请先切换到这篇作品所属角色的聊天，再修改设定创作。原作品保留。');return;}rememberDraft();data().draft={...theatreDefaults().draft,...s.recipe};prepareEditableDraft(false);rememberDraft();save();say('');h.go('theatre-write');}
   if(name==='delete')deleteEntry(selection());
-  if(name==='copy'){try{await h.copy(s.title+'\n\n'+s.body);say('正文已复制。');}catch{say('复制失败，可用“导出”保存正文。');}}
-  if(name==='download'){try{h.download(s.title,s.title+'\n\n'+s.body);say('已导出正文。');}catch{say('导出失败，请复制正文。');}}
+  if(name==='copy'||name==='download'){const entry=selection(),owner=h.owner();try{const clean=await outputFor(entry);if(owner!==h.owner()||selection()?.key!==entry.key||h.state().currentView!=='theatre-read')return;if(name==='copy')await h.copy(s.title+'\n\n'+clean.text);else h.download(s.title,s.title+'\n\n'+clean.text);say(outputWarning(clean)||(name==='copy'?'正文已复制。':'已导出正文。'));}catch{say(name==='copy'?'复制失败，可用“导出”保存正文。':'导出失败，请复制正文。');}}
  }
  function mount(){
   if(bound)return;bound=true;applyAppearance();
@@ -595,7 +625,7 @@ export function createTheatre(h){
    });
   }
   for(const type of['input','change'])h.listen(by('rp-view-theatre-write'),type,e=>{if(e.target.matches('input,textarea,select'))draft();});
-  h.listen(by('rp-theatre-reader'),'scroll',()=>{if(selected())editSelected({readingTop:by('rp-theatre-reader').scrollTop});},{passive:true});
+  h.listen(by('rp-theatre-reader'),'scroll',()=>{if(!readPending&&selected())editSelected({readingTop:by('rp-theatre-reader').scrollTop});},{passive:true});
   h.listen(by('rp-theatre-sort'),'change',e=>{finishDrag(false);const prefs=preferences(),next=e.target.value;if(next==='custom'&&!prefs.order.length)prefs.order=ordered(entries(),prefs).map(e=>e.key);if(savePreferences({...prefs,sort:next}))library();else e.target.value=prefs.sort;});
   const books=by('rp-theatre-books');h.listen(books,'pointerdown',startDrag);
   h.listen(doc,'pointermove',moveDrag,{passive:false});
@@ -606,12 +636,13 @@ export function createTheatre(h){
   h.details(by('rp-theatre-options'));h.details(by('rp-theatre-recipe'));h.details(by('rp-theatre-random-edit'));
  }
  function onNavigate(view){
+  stopReading();
   finishDrag(false);
   closeMenu();applyAppearance();
   if(!family(view)){cancel('');status='';return;}
   mount();if(view==='theatre')library();if(view==='theatre-write')fields();if(view==='theatre-read')reader();say(status);busyUI();
  }
- return{mount,onNavigate,cancel,reset:()=>{finishDrag(false);cancel('');closeMenu();status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
+ return{mount,onNavigate,cancel,reset:()=>{stopReading();projections.clear();finishDrag(false);cancel('');closeMenu();status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
 }
 
 export function validateTheatreArchive(value){

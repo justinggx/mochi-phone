@@ -1,13 +1,14 @@
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
-import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-library-131';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-reader-132';
+import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-library-131';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-reader-132';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
-import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-library-131';
+import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-reader-132';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
 
 // Temporarily unlisted; keep the game sources and account saves for a future return.
@@ -6050,7 +6051,9 @@ function rpUpdateViewport() {
 let _rp_ext_settings = null;
 let _rp_save_fn = null;
 let _rp_script_mod = null;
+let rpTheatrePresetManagers = null;
 const rpModulesReady = (async function _rpLoadModules() {
+  try { rpTheatrePresetManagers = await import('../../../preset-manager.js'); } catch {}
   try {
     const ext = await import('../../../extensions.js');
     if (ext && ext.extension_settings) {
@@ -24408,11 +24411,25 @@ function rpTheatreSaveShelfPrefs(prefs) {
 
 
 let rpTheatre = null;
+let rpTheatreOutput = null;
+function rpTheatreOutputApp() {
+  if(!rpTheatreOutput){
+    rpTheatreOutput=createTheatreOutputProcessor({worker:()=>new window.Worker(new URL('scripts/extensions/third-party/mochi-phone/theatre-output-worker.mjs?v=20261024-theatre-reader-132',document.baseURI).href,{type:'module'}),setTimer:window.setTimeout.bind(window),clearTimer:window.clearTimeout.bind(window)});
+    rpRuntime.own(()=>{rpTheatreOutput?.reset();rpTheatreOutput=null;});
+  }
+  return rpTheatreOutput;
+}
+function rpTheatreOutputProfile(snapshot={},charName='') {
+  const ctx=getContext()||{},ref=snapshot.outputRegex||{},apiId=ref.apiId||(snapshot.preset?.source==='chat-completion'?'openai':ctx.mainApi),manager=rpTheatrePresetManagers?.getPresetManager?.(apiId);
+  return theatreOutputProfile(manager,_extSettings()||{},{apiId,name:ref.name||(snapshot.preset?.source==='chat-completion'?snapshot.preset.name:undefined),user:ref.user??ctx.name1,char:ref.char||charName||getCurrentCharName(ctx)});
+}
 function rpTheatreApp() {
   if (!rpTheatre) {
     rpTheatre = createTheatre({
       document, state:()=>STATE, save:saveState, go, isOpen:rpPhoneIsOpen, storage:localStorage,
       theme:()=>readPhoneThemeValue('rp_theme'),
+      outputProfile:rpTheatreOutputProfile,
+      cleanOutput:(text,profile,signal)=>rpTheatreOutputApp().process(text,profile,signal),
       shelf:{entries:rpTheatreShelfEntries,read:rpTheatreShelfRead,change:rpTheatreShelfChange,prefs:rpTheatreShelfPrefs,savePrefs:rpTheatreSaveShelfPrefs,slot:()=>STATE.chatId,charName:()=>getCurrentCharName(getContext())},
       owner:()=>String(rpArchiveAccountHandle || '')+'|'+getPhoneChatSlotKey(getContext()),
       task:()=>rpRuntime.task(), AbortController:window.AbortController, random:Math.random,
