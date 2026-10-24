@@ -1,4 +1,4 @@
-import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261023-theatre-preset-118';
+import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-theme-default-129';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
@@ -24357,10 +24357,11 @@ function rpTheatreApp() {
       background:async (pack,recipe,token,maxTokens)=>{
         const cfg=readCustomApiConfig(),ctx=getContext()||{};
         const host=ctx.mainApi==='openai'?await rpGuardAwait(import('../../../openai.js').catch(()=>({})),token,10000):{};
-        const windowSize=cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
+        const windowSize=roleContextWindow(ctx,cfg);
         const outputs=[...new Set([maxTokens,...(windowSize?[Math.min(maxTokens,Math.max(2048,Math.floor(windowSize*.35))),Math.min(maxTokens,2048)]:[])])];
         // Retries only repack local data. No model request until one package fits.
         const randomValues=[];let randomIndex=0;
+        let payloadLimitReached=false;
         const random=()=>randomValues[randomIndex++]??(randomValues[randomIndex-1]=Math.random());
         for(const output of outputs){
           if(windowSize&&windowSize-output-512<512)continue;
@@ -24370,10 +24371,12 @@ function rpTheatreApp() {
               randomIndex=0;
               const preset=readTheatrePreset(ctx,{manager:host.promptManager,au:recipe.world==='au',dataBudget,query:recipe.idea,random});
               const background=await rpGuardAwait(rpRoleBackgroundApp().build(pack.prompt,pack.system,{phoneTheatre:true,theatreAU:recipe.world==='au',theatrePresetText:JSON.stringify(preset.messages)},token,cfg,output),token,30000);
+              if(new TextEncoder().encode(JSON.stringify(theatreRequestMessages(background.prompt,background.system,preset))).length>2000000)throw Object.assign(new Error('创作资料超过请求体保护上限，草稿已保留。'),{phoneApiCode:'contextLimit',localPayloadLimit:true});
               return {...background,preset:theatrePresetSnapshot(preset),maxTokens:output,budgetAdjusted:Number.isFinite(dataBudget)||output<maxTokens};
-            }catch(error){if(!token.valid()||error?.phoneApiCode!=='contextLimit')throw error;}
+            }catch(error){if(!token.valid()||error?.phoneApiCode!=='contextLimit')throw error;if(error.localPayloadLimit)payloadLimitReached=true;}
           }
         }
+        if(payloadLimitReached)throw Object.assign(new Error('创作资料过大，自动整理后仍无法完成打包。草稿已保留。'),{phoneApiCode:'contextLimit'});
         throw Object.assign(new Error('已自动整理创作资料，当前预设的固定规则与本篇要求仍放不进可用上下文。草稿已保留，请换用更大上下文的模型后重试。'),{phoneApiCode:'contextLimit'});
       },
       checkBudget:async (prompt,system,maxTokens,token,snapshot)=>{
@@ -24385,9 +24388,10 @@ function rpTheatreApp() {
             if(Number.isFinite(measured)&&measured>0)cost=Math.ceil(measured);
           }catch(error){if(!token.valid())throw error;}
         }
-        const windowSize=cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
+        const windowSize=roleContextWindow(ctx,cfg);
         const output=windowSize?Math.min(maxTokens,windowSize-cost-512):maxTokens;
-        if(cost>64000||output<1024)throw Object.assign(new Error('自动整理后仍超过当前模型可用上下文。草稿和原稿已保留，请换用更大上下文的模型后重试。'),{phoneApiCode:'contextLimit'});
+        if(new TextEncoder().encode(text).length>2000000)throw Object.assign(new Error('创作资料超过请求体保护上限，草稿和原稿已保留。'),{phoneApiCode:'contextLimit'});
+        if(output<1024)throw Object.assign(new Error('自动整理后仍超过当前模型可用上下文。草稿和原稿已保留，请换用更大上下文的模型后重试。'),{phoneApiCode:'contextLimit'});
         return output;
       },
       call:(prompt,maxTokens,system,token,snapshot)=>lgCallAPI(prompt,maxTokens,system,{phoneTheatre:true,theatreTask:token,theatrePreset:snapshot?.preset,reportErrors:true}),

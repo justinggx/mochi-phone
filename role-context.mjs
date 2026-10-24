@@ -4,6 +4,13 @@ const on=x=>x===true||x===1||x==='true';
 const off=x=>x===false||x===0||x==='false';
 const hash=s=>{let h=2166136261;for(const c of String(s))h=Math.imul(h^c.codePointAt(0),16777619);return(h>>>0).toString(36);};
 const failure=code=>Object.assign(new Error(code==='background'?'角色背景读取失败，请重试。':'本次内容超过可用上下文，请缩短输入或提高模型上下文。'),{phoneApiCode:code});
+// maxContext is the legacy text-completion setting in SillyTavern's getContext.
+// Independent APIs have no declared model window here; never borrow the host's.
+export function roleContextWindow(ctx={},cfg={}){
+ if(cfg.mode==='custom')return 0;
+ const positive=value=>Number.isFinite(Number(value))&&Number(value)>0?Math.floor(Number(value)):0;
+ return (ctx.mainApi==='openai'?positive(ctx.chatCompletionSettings?.openai_max_context):0)||positive(ctx.maxContext);
+}
 export function roleContextRef(name,note=''){return '[MOCHI_ROLE:'+encodeURIComponent(JSON.stringify({name:String(name||''),note:String(note||'')}))+']';}
 function takeRef(text){const m=String(text||'').match(/^\[MOCHI_ROLE:([^\]\n]+)\]\s*/);if(!m)return{text:String(text||''),ref:null};try{return{text:String(text).slice(m[0].length),ref:JSON.parse(decodeURIComponent(m[1]))};}catch{return{text:String(text||''),ref:null};}}
 export function roleStoryText(raw){return String(raw||'')
@@ -69,13 +76,21 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   const isPublic=!!options.phoneXhs,isFeed=isPublic&&options.phoneXhsFeed===true,automatic=/GameEventComment|GomokuEventComment/.test(p.text);
   const presetCost=options.phoneTheatre&&typeof options.theatrePresetText==='string'?options.theatrePresetText:'';
   let cap=options.phoneTheatre?(presetCost?64000:18000):isFeed?9000:isPublic?4000:automatic?2500:6000;
-  if(cfg.mode!=='custom'&&Number(ctx.maxContext)>0)cap=Math.min(cap,Math.floor(ctx.maxContext)-maxTokens-(options.phoneTheatre?512:384));
+  const windowLimit=options.phoneTheatre?roleContextWindow(ctx,cfg):cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
+  if(windowLimit)cap=Math.min(cap,windowLimit-maxTokens-(options.phoneTheatre?512:384));
   if(cap<512)throw failure('contextLimit');
   const count=async text=>{text=String(text);const k=hash(text),old=counts.get(k);if(old?.text===text)return old.n;check();const n=new TextEncoder().encode(text).length;
    if(counts.size>256)counts.clear();counts.set(k,{text,n});return n;
   };
   let measured=false;
   const measure=async text=>{if(cfg.mode!=='custom'&&typeof ctx.getTokenCountAsync==='function'){try{const n=await guard(Promise.resolve(ctx.getTokenCountAsync(text)),task);check();if(Number.isFinite(n)&&n>0){measured=true;return Math.ceil(n);}}catch(error){check();}}return count(text);};
+  if(options.phoneTheatre&&presetCost){
+   // Fixed writing rules are mandatory input, not optional character-background
+   // budget. Keep the extra background bounded instead of inventing a model cap.
+   cap=await measure(presetCost)+18000;
+   if(windowLimit)cap=Math.min(cap,windowLimit-maxTokens-512);
+   if(cap<512)throw failure('contextLimit');
+  }
   const fit=async(text,budget,query='')=>{if(budget<1)return'';text=String(text||'').trim();if(!text)return'';if(await count(text)<=budget)return text;
    const ps=paragraphs(text),ranked=ps.map((t,i)=>({t,i,score:rank(t,query)})).sort((a,b)=>b.score-a.score||b.i-a.i),keep=[];let spent=0;
    for(const v of ranked){const n=await count(v.t+'\n');if(spent+n<=budget){keep.push(v);spent+=n;}}
