@@ -326,19 +326,22 @@ export function createTheatre(h){
  const stories=()=>Array.isArray(data()?.stories)?data().stories.filter(x=>x&&typeof x.id==='string'&&typeof x.body==='string'):[];
  const selected=()=>stories().find(x=>x.id===data()?.currentId);
  const save=()=>h.save({activity:false});
- const appearanceKey='mochi-phone-theatre-appearance-v1';
+ const appearanceKey='mochi-phone-theatre-appearance-v2:';
  const viewIds=['rp-view-theatre','rp-view-theatre-write','rp-view-theatre-read'];
- function readAppearance(){try{const value=h.storage?.getItem(appearanceKey);return value==='day'||value==='night'?value:null;}catch{return null;}}
- function night(value=readAppearance()){return value?value==='night':!!by('rp-phone')?.classList.contains('rp-dark');}
+ function appearanceTheme(){return String(h.theme?.()|| (by('rp-phone')?.classList.contains('rp-theme-star')?'star':by('rp-phone')?.classList.contains('rp-theme-misty')?'misty':'candy'));}
+ function appearanceStorageKey(){return appearanceKey+encodeURIComponent(appearanceTheme());}
+ function readAppearance(){try{const value=h.storage?.getItem(appearanceStorageKey());return value==='day'||value==='night'?value:null;}catch{return null;}}
+ function night(value=readAppearance()){return value?value==='night':appearanceTheme()==='star';}
  function applyAppearance(value=readAppearance()){
-  for(const id of viewIds){const el=by(id);if(el){if(value)el.dataset.theatreTheme=value;else delete el.dataset.theatreTheme;}}
+  const resolved=night(value)?'night':'day';
+  for(const id of viewIds){const el=by(id);if(el)el.dataset.theatreTheme=resolved;}
   by('rp-theatre-menu')?.querySelector('[data-theatre-action="appearance"]')?.setAttribute('aria-checked',String(night(value)));
  }
  function closeMenu(focus=false){const menu=by('rp-theatre-menu'),button=by('rp-view-theatre')?.querySelector('[data-theatre-action="menu"]');if(menu)menu.hidden=true;button?.setAttribute('aria-expanded','false');if(focus)button?.focus({preventScroll:true});}
  function toggleMenu(){const menu=by('rp-theatre-menu');if(!menu)return;applyAppearance();menu.hidden=!menu.hidden;by('rp-view-theatre').querySelector('[data-theatre-action="menu"]').setAttribute('aria-expanded',String(!menu.hidden));}
  function toggleAppearance(){
   const value=night()?'day':'night';
-  try{if(!h.storage?.setItem)throw new Error('storage unavailable');h.storage.setItem(appearanceKey,value);}catch{say('显示偏好未能保存，暂未切换；请检查本机存储后重试。');return;}
+  try{if(!h.storage?.setItem)throw new Error('storage unavailable');h.storage.setItem(appearanceStorageKey(),value);}catch{say('显示偏好未能保存，暂未切换；请检查本机存储后重试。');return;}
   applyAppearance(value);
  }
  function say(text){status=String(text||'');doc.querySelectorAll('[id^="rp-view-theatre"] .rp-theatre-status').forEach(x=>x.textContent=status);}

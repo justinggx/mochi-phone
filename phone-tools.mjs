@@ -1,4 +1,4 @@
-import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261024-context-home-128';
+import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261024-theatre-theme-default-129';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
 '#rp-phone #rp-screen #rp-lock-notifs{box-sizing:border-box;min-width:0;min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:70px}',
