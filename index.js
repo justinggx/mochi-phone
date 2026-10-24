@@ -1,13 +1,13 @@
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
-import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-theme-default-129';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-library-131';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-theme-default-129';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-library-131';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
-import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
+import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-library-131';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
 
 // Temporarily unlisted; keep the game sources and account saves for a future return.
@@ -11998,7 +11998,7 @@ function go(view) {
   if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
   if (view === 'thread' && !STATE.threads[STATE.currentThread]) view = 'messages';
   if(view==='xhs-detail' && !STATE.xhsFeed.some(post=>post.id===STATE.xhsCurrentPost))view='xhs';
-  if(view==='theatre-read' && !STATE.theatre?.stories?.some(story=>story.id===STATE.theatre.currentId && typeof story.body==='string'))view='theatre';
+  if(view==='theatre-read' && !(STATE.theatre?.readingRef ? rpTheatreShelfRead(STATE.theatre.readingRef) : STATE.theatre?.stories?.some(story=>story.id===STATE.theatre.currentId && typeof story.body==='string')))view='theatre';
   if(view!==STATE.currentView){rpRememberReading();rpCloseChatOverlays();}
   rpPauseGameAnimations();
   if (view === 'darkmode') { toggleDarkMode(); return; }
@@ -24335,12 +24335,85 @@ function lgGetPersona() {
 
 // ── Square event trigger (两步流程) ──────────────────────────────
 // ── 自定义 API 调用(支持 DeepSeek / 通义 / GLM 等 OpenAI 兼容格式)──
+// Account-wide shelf: aggregate existing slots without moving or duplicating fiction.
+const RP_THEATRE_SHELF_KEY = 'mochi_phone_theatre_shelf_v1';
+function rpTheatreShelfSources() {
+  if (!rpArchiveAccountHandle) return new Map();
+  const copies=new Map(),add=(slot,payload)=>{
+    if (!slot || !payload || typeof payload!=='object' || payload.__light || !Array.isArray(payload.theatre?.stories)) return;
+    const meta=payload._slotMeta || {};
+    let canonical=meta.slotKey || slot;
+    if (meta.characterAvatar && meta.rawChatId!=null) canonical='card_'+encodeURIComponent(rpPhoneCanonicalCardAvatar(meta.characterAvatar))+'::'+meta.rawChatId;
+    else if (meta.groupId!=null && meta.rawChatId!=null) canonical='group_'+encodeURIComponent(String(meta.groupId))+'::'+meta.rawChatId;
+    const previous=copies.get(canonical);
+    if (!previous || choosePhoneStateCopy(previous.payload,payload)===payload) copies.set(canonical,{slot:canonical,payload});
+  };
+  for(const [slot,payload] of Object.entries(_extSettings()?.[EXT_KEY] || {})) add(slot,payload);
+  const prefix=rpAccountStoragePrefix();
+  try {
+    for(let i=0;i<window.localStorage.length;i++){
+      const key=window.localStorage.key(i);
+      if(key?.startsWith(prefix+'rp-phone-v1-')&&!key.endsWith('::corrupt-backup')){
+        try{add(key.slice((prefix+'rp-phone-v1-').length),JSON.parse(window.localStorage.getItem(key)));}catch{}
+      }
+    }
+  }catch{}
+  for(const [slot,payload] of rpPhoneArchive.entries()) add(slot,payload);
+  // Active unsaved edits/deletions take priority over every persisted replica.
+  if(STATE.chatId && STATE.chatId!=='default') copies.set(STATE.chatId,{slot:STATE.chatId,payload:{theatre:STATE.theatre,_slotMeta:STATE._slotMeta || {charName:getCurrentCharName(getContext())}}});
+  return copies;
+}
+function rpTheatreShelfEntry(slot,story,payload) {
+  const ctx=getContext(),meta=payload?._slotMeta || {};
+  const card=meta.characterAvatar ? ctx?.characters?.find(c=>c?.avatar && rpPhoneCanonicalCardAvatar(c.avatar)===rpPhoneCanonicalCardAvatar(meta.characterAvatar)) : null;
+  const charName=String(story.charName || card?.name || meta.charName || (slot===STATE.chatId?getCurrentCharName(ctx):'') || '未记录角色');
+  return {slot,id:story.id,story,charName,key:JSON.stringify([slot,story.id])};
+}
+function rpTheatreShelfEntries() {
+  const result=[];
+  for(const {slot,payload} of rpTheatreShelfSources().values()) for(const story of payload.theatre.stories)
+    if(story && typeof story.id==='string' && typeof story.body==='string') result.push(rpTheatreShelfEntry(slot,story,payload));
+  return result;
+}
+function rpTheatreShelfRead(ref) {
+  if(!ref || typeof ref.slot!=='string' || typeof ref.id!=='string') return null;
+  const payload=ref.slot===STATE.chatId ? {theatre:STATE.theatre,_slotMeta:STATE._slotMeta} : rpTheatreShelfSources().get(ref.slot)?.payload;
+  const story=payload?.theatre?.stories?.find(s=>s?.id===ref.id && typeof s.body==='string');
+  return story ? rpTheatreShelfEntry(ref.slot,story,payload) : null;
+}
+function rpTheatreShelfChange(ref,change) {
+  if(!rpArchiveAccountHandle || !ref || PHONE_STATE_BLOCKED_SLOTS.has(ref.slot) || PHONE_STATE_PROTECTED_KEYS.has('rp-phone-v1-'+ref.slot)) return false;
+  if(ref.slot===STATE.chatId){change(STATE.theatre);saveState({activity:false,immediate:true});return true;}
+  const source=rpTheatreShelfSources().get(ref.slot)?.payload;
+  if(!source)return false;
+  const payload=JSON.parse(JSON.stringify(source));change(payload.theatre);payload.__savedAt=Math.max(Date.now(),(Number(source.__savedAt)||0)+1);
+  const settings=_extSettings();let saved=false;
+  if(settings){settings[EXT_KEY] ||= {};settings[EXT_KEY][ref.slot]=payload;saved=_saveSettings();}
+  try{localStorage.setItem('rp-phone-v1-'+ref.slot,JSON.stringify(payload));saved=true;}catch{}
+  if(!saved)return false;
+  void rpPhoneArchive.put(ref.slot,payload);return true;
+}
+function rpTheatreShelfPrefs() {
+  let local;try{local=JSON.parse(localStorage.getItem(RP_THEATRE_SHELF_KEY));}catch{}
+  const remote=_extSettings()?.[RP_THEATRE_SHELF_KEY];
+  return local && (!remote || Number(local.savedAt)>Number(remote.savedAt)) ? local : remote || {};
+}
+function rpTheatreSaveShelfPrefs(prefs) {
+  if(!rpArchiveAccountHandle)return false;
+  const next={...prefs,savedAt:Math.max(Date.now(),(Number(rpTheatreShelfPrefs().savedAt)||0)+1)},settings=_extSettings();let saved=false;
+  if(settings){settings[RP_THEATRE_SHELF_KEY]=next;saved=_saveSettings();}
+  try{localStorage.setItem(RP_THEATRE_SHELF_KEY,JSON.stringify(next));saved=true;}catch{}
+  return saved;
+}
+
+
 let rpTheatre = null;
 function rpTheatreApp() {
   if (!rpTheatre) {
     rpTheatre = createTheatre({
       document, state:()=>STATE, save:saveState, go, isOpen:rpPhoneIsOpen, storage:localStorage,
       theme:()=>readPhoneThemeValue('rp_theme'),
+      shelf:{entries:rpTheatreShelfEntries,read:rpTheatreShelfRead,change:rpTheatreShelfChange,prefs:rpTheatreShelfPrefs,savePrefs:rpTheatreSaveShelfPrefs,slot:()=>STATE.chatId,charName:()=>getCurrentCharName(getContext())},
       owner:()=>String(rpArchiveAccountHandle || '')+'|'+getPhoneChatSlotKey(getContext()),
       task:()=>rpRuntime.task(), AbortController:window.AbortController, random:Math.random,
       canStart:()=>isMochiPhoneEnabled() && !!(getContext()?.characterId!=null || getContext()?.groupId!=null),

@@ -144,11 +144,11 @@ export const THEATRE_CSS = `
  content:"";position:absolute;bottom:3px;left:5px;right:5px;border-bottom:1px solid var(--rp-theatre-accent);
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book{
- display:grid;grid-template-columns:minmax(24px,auto) minmax(0,1fr) 25px;gap:10px;
+ display:grid;grid-template-columns:minmax(24px,auto) minmax(0,1fr) 60px;gap:8px;
  box-sizing:border-box;width:100%;margin:0;padding:12px 0 11px;
  text-align:left;font:inherit;color:inherit!important;background:transparent!important;
  border:0;border-bottom:1px solid var(--rp-theatre-rule);border-radius:0!important;box-shadow:none!important;
- cursor:pointer;touch-action:manipulation;
+ touch-action:pan-y;
 }
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-number{
  font:12px/1.6 Georgia,serif;color:var(--rp-theatre-accent);border-right:1px solid var(--rp-theatre-rule);
@@ -165,7 +165,21 @@ export const THEATRE_CSS = `
  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
  margin-top:7px;color:var(--rp-theatre-muted);font-size:11.5px;line-height:1.7;overflow-wrap:anywhere;
 }
-#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book>.rp-theatre-arrow{width:25px;flex-basis:25px;margin-top:14px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-open{display:block;min-width:0;width:100%;padding:0;text-align:left;font:inherit;color:inherit!important;background:transparent!important;border:0;box-shadow:none;border-radius:0;cursor:pointer}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-actions{display:flex;align-items:flex-start;justify-content:flex-end;gap:0;padding-top:5px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-tool{display:inline-flex;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:36px;min-width:0;min-height:36px;padding:0;border:0;border-radius:5px;background:transparent!important;color:var(--rp-theatre-muted)!important;box-shadow:none;cursor:pointer;font:inherit;font-size:15px;touch-action:manipulation}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-tool .rp-theatre-arrow{width:16px;flex-basis:16px;height:10px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-tool .rp-theatre-arrow::after{width:5px;height:5px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-tool svg{width:13px;height:15px;fill:none;stroke:currentColor;stroke-width:1.4}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-sort-row{display:flex;align-items:center;gap:8px;margin:0 0 5px;color:var(--rp-theatre-muted);font-size:11px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-sort-row select{width:auto;max-width:100%;min-width:100px;min-height:30px;padding:3px 6px;font:inherit;color:inherit;border:1px solid var(--rp-theatre-rule);border-radius:5px;background:var(--rp-theatre-paper)}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-sort-hint{font-size:10px;opacity:.75}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-drag{touch-action:none;cursor:grab;font-size:17px}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-drag:active{cursor:grabbing}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book[data-dragging]{opacity:.55;background:var(--rp-theatre-soft)!important}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book-tool[hidden],#rp-phone #rp-screen #rp-view-theatre .rp-theatre-sort-hint[hidden]{display:none!important}
+#rp-phone #rp-screen #rp-view-theatre .rp-theatre-book:has(.rp-theatre-drag:not([hidden])){grid-template-columns:minmax(24px,auto) minmax(0,1fr) 90px}
+#rp-phone #rp-screen #rp-view-theatre :is(.rp-theatre-book-open,.rp-theatre-book-tool,#rp-theatre-sort):focus-visible{outline:2px solid var(--rp-theatre-accent);outline-offset:2px}
 #rp-phone #rp-screen #rp-view-theatre .rp-theatre-empty{
  color:var(--rp-theatre-muted);opacity:1;padding:15px 0 20px;border-bottom:1px solid var(--rp-theatre-rule);
 }
@@ -235,7 +249,7 @@ export const THEATRE_HTML = '<div id="rp-view-theatre" class="rp-view rp-theatre
  '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><header class="rp-theatre-hero"><div class="rp-theatre-masthead"><span>MOCHI<br>THEATRE</span></div><p class="rp-theatre-aside">在这里，<br>让每种可能<br>被温柔书写。</p><h2 class="rp-theatre-editorial-title"><span>故事，</span><span>换一种可能。</span></h2></header>'+
  '<div class="rp-theatre-entries"><button type="button" class="rp-theatre-entry" data-theatre-mode="custom"><span class="rp-theatre-entry-line"><strong>自定义脑洞</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>写下你的设定，开启专属故事。</small></button>'+
  '<button type="button" class="rp-theatre-entry rp-theatre-entry-random" data-theatre-mode="random"><span class="rp-theatre-entry-line"><strong>随机开演</strong><span class="rp-theatre-arrow" aria-hidden="true"></span></span><small>让灵感出场，邂逅意想不到的故事。</small></button></div>'+
- '<section class="rp-theatre-library" aria-labelledby="rp-theatre-library-title"><div class="rp-theatre-library-head"><h3 id="rp-theatre-library-title" tabindex="-1">我的剧场</h3><div class="rp-theatre-filters" role="group" aria-label="筛选作品"><button type="button" class="rp-theatre-filter" data-theatre-action="filter-all" aria-pressed="true">全部</button><button type="button" class="rp-theatre-filter" data-theatre-action="filter" aria-pressed="false">收藏</button></div></div><div id="rp-theatre-books"></div></section></div></div>'+
+ '<section class="rp-theatre-library" aria-labelledby="rp-theatre-library-title"><div class="rp-theatre-library-head"><h3 id="rp-theatre-library-title" tabindex="-1">我的剧场</h3><div class="rp-theatre-filters" role="group" aria-label="筛选作品"><button type="button" class="rp-theatre-filter" data-theatre-action="filter-all" aria-pressed="true">全部</button><button type="button" class="rp-theatre-filter" data-theatre-action="filter" aria-pressed="false">收藏</button></div></div><div class="rp-theatre-sort-row"><label for="rp-theatre-sort">排序</label><select id="rp-theatre-sort"><option value="newest">时间 · 新到旧</option><option value="oldest">时间 · 旧到新</option><option value="char">角色名字</option><option value="custom">自定义</option></select><span class="rp-theatre-sort-hint" hidden>拖动 ≡ 调整顺序</span></div><div id="rp-theatre-books"></div></section></div></div>'+
  '<div id="rp-view-theatre-write" class="rp-view" style="display:none">'+nav('开一个小剧场','theatre')+
  '<div class="rp-theatre-status" role="status" aria-live="polite"></div><div class="rp-theatre-scroll"><div class="rp-theatre-kicker" id="rp-theatre-mode-name"></div>'+
  '<section id="rp-theatre-custom-panel" class="rp-theatre-mode" hidden><h2 class="rp-theatre-lead">把你的脑洞写成故事</h2><p class="rp-theatre-muted">几个关键词，或一段完整的设定，都可以。</p>'+
@@ -321,10 +335,23 @@ export function theatrePrompt(recipe){
 }
 export function createTheatre(h){
  const doc=h.document,by=id=>doc.getElementById(id),family=v=>String(v).startsWith('theatre');
- let job=null,filter=false,status='',bound=false,sequence=0;
+ let job=null,filter=false,status='',bound=false,sequence=0,drag=null;
  const data=()=>h.state().theatre;
  const stories=()=>Array.isArray(data()?.stories)?data().stories.filter(x=>x&&typeof x.id==='string'&&typeof x.body==='string'):[];
- const selected=()=>stories().find(x=>x.id===data()?.currentId);
+ const localEntry=s=>({slot:h.shelf?.slot?.()||'',id:s.id,story:s,charName:s.charName||h.shelf?.charName?.()||'未记录角色',key:JSON.stringify([h.shelf?.slot?.()||'',s.id])});
+ const entries=()=>h.shelf?.entries?.()||stories().map(localEntry);
+ const selection=()=>data()?.readingRef ? h.shelf?.read?.(data().readingRef) : (()=>{const s=stories().find(x=>x.id===data()?.currentId);return s?localEntry(s):null;})();
+ const selected=()=>selection()?.story;
+ function select(entry){if(entry.slot===(h.shelf?.slot?.()||'')){delete data().readingRef;data().currentId=entry.id;}else data().readingRef={slot:entry.slot,id:entry.id};save();}
+ function change(entry,fn){if(!entry)return false;if(h.shelf)return h.shelf.change(entry,fn);fn(data());save();return true;}
+ function editSelected(patch){const entry=selection();return change(entry,slot=>{const s=slot.stories.find(x=>x.id===entry.id);if(s)Object.assign(s,patch);});}
+ function preferences(){let p;try{p=h.shelf?.prefs?.()||JSON.parse(h.storage?.getItem('mochi-phone-theatre-shelf-v1')||'{}');}catch{}return{sort:['newest','oldest','char','custom'].includes(p?.sort)?p.sort:'newest',order:Array.isArray(p?.order)?p.order.filter(x=>typeof x==='string'):[]};}
+ function savePreferences(next){try{if(h.shelf){if(!h.shelf.savePrefs(next))throw Error();}else h.storage.setItem('mochi-phone-theatre-shelf-v1',JSON.stringify(next));return true;}catch{say('排序未能保存，请检查存储后重试。');return false;}}
+ function ordered(all,prefs=preferences()){
+  const recent=(a,b)=>(Number(b.story.createdAt)||0)-(Number(a.story.createdAt)||0)||b.index-a.index;
+  const rank=new Map(prefs.order.map((key,index)=>[key,index]));
+  return all.map((e,index)=>({...e,index})).sort((a,b)=>prefs.sort==='char'?a.charName.localeCompare(b.charName,'zh-CN',{numeric:true,sensitivity:'base'})||recent(a,b):prefs.sort==='oldest'?-recent(a,b):prefs.sort==='custom'?(rank.get(a.key)??Infinity)-(rank.get(b.key)??Infinity)||recent(a,b):recent(a,b));
+ }
  const save=()=>h.save({activity:false});
  const appearanceKey='mochi-phone-theatre-appearance-v2:';
  const viewIds=['rp-view-theatre','rp-view-theatre-write','rp-view-theatre-read'];
@@ -403,21 +430,65 @@ export function createTheatre(h){
   rememberDraft();save();say('');h.go('theatre-write');by('rp-view-theatre-write').querySelector('.rp-theatre-scroll').scrollTop=0;
  }
  function library(){
+  finishDrag(false);
   const root=by('rp-theatre-books');if(!root)return;root.replaceChildren();
-  const list=stories().slice().reverse().filter(s=>!filter||s.favorite);
+  const prefs=preferences(),list=ordered(entries(),prefs).filter(e=>!filter||e.story.favorite);
+  by('rp-theatre-sort').value=prefs.sort;by('rp-view-theatre').querySelector('.rp-theatre-sort-hint').hidden=prefs.sort!=='custom';
   if(!list.length){const p=doc.createElement('p');p.className='rp-theatre-empty';p.textContent=filter?'还没有收藏的故事。':'还没有作品。第一场故事，从你的一个脑洞开始。';root.append(p);}
-  for(const [index,s] of list.entries()){
-   const b=doc.createElement('button');b.type='button';b.className='rp-theatre-book';b.dataset.theatreStory=s.id;
+  for(const [index,entry] of list.entries()){
+   const s=entry.story,b=doc.createElement('div');b.className='rp-theatre-book';b.dataset.shelfKey=entry.key;
    const number=doc.createElement('span');number.className='rp-theatre-book-number';number.textContent=String(index+1).padStart(2,'0');number.setAttribute('aria-hidden','true');
-   const copy=doc.createElement('span');copy.className='rp-theatre-book-copy';
+   const copy=doc.createElement('button');copy.type='button';copy.className='rp-theatre-book-copy rp-theatre-book-open';copy.dataset.theatreStory=s.id;copy.dataset.theatreSlot=entry.slot;
    const title=doc.createElement('strong');title.textContent=(s.favorite?'☆ ':'')+(s.title||'未命名番外');
-   const meta=doc.createElement('small');meta.textContent=theatreCount(s.body)+' 字 · '+(s.complete?'已完结':'未完 / 待续')+(s.parentId?' · '+(s.operation==='continue'?'续写版':'重写版'):'');
+   const meta=doc.createElement('small');meta.textContent=theatreCount(s.body)+' 字 · '+entry.charName;
    meta.title=MODES[s.recipe?.mode]||'番外';
    const excerpt=doc.createElement('span');excerpt.className='rp-theatre-excerpt';excerpt.textContent=s.body.slice(0,320).replace(/\s+/g,' ').trim().slice(0,140);
    const arrow=doc.createElement('span');arrow.className='rp-theatre-arrow';arrow.setAttribute('aria-hidden','true');
-   copy.append(title,meta,excerpt);b.append(number,copy,arrow);root.append(b);
+   const actions=doc.createElement('span');actions.className='rp-theatre-book-actions';
+   const tool=(action,label)=>{const el=doc.createElement('button');el.type='button';el.className='rp-theatre-book-tool';el.dataset.theatreAction=action;el.setAttribute('aria-label',label);el.title=label;return el;};
+   const handle=tool('reorder','拖动排序；也可按上下方向键');handle.classList.add('rp-theatre-drag');handle.textContent='≡';handle.hidden=prefs.sort!=='custom';
+   const open=tool('open-book','阅读：'+(s.title||'未命名番外'));open.append(arrow);
+   const del=tool('delete-book','删除：'+(s.title||'未命名番外'));del.innerHTML='<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M2 5h12M6 2h4l1 3M3 5l1 11h8l1-11M6 8v5m4-5v5"/></svg>';del.disabled=!!job;
+   copy.append(title,meta,excerpt);actions.append(handle,open,del);b.append(number,copy,actions);root.append(b);
   }
   for(const button of by('rp-view-theatre')?.querySelectorAll('.rp-theatre-filter')||[])button.setAttribute('aria-pressed',String(button.dataset.theatreAction==='filter'?filter:!filter));
+ }
+ function rowEntry(row){const key=row?.dataset.shelfKey;return entries().find(e=>e.key===key);}
+ function openEntry(entry){if(!entry)return;select(entry);say('');h.go('theatre-read');}
+ function deleteEntry(entry){
+  if(!entry||job||!h.confirm('删除“'+(entry.story.title||'未命名番外')+'”？其他作品和版本仍会保留。'))return;
+  if(!change(entry,slot=>{slot.stories=slot.stories.filter(s=>s.id!==entry.id);if(slot.currentId===entry.id)slot.currentId=null;})){say('删除未能保存，作品仍保留，请重试。');return;}
+  if(data().readingRef?.slot===entry.slot&&data().readingRef?.id===entry.id){delete data().readingRef;save();}
+  say('已删除这篇作品。');if(h.state().currentView==='theatre-read')h.go('theatre');else library();
+ }
+ function commitOrder(keys){
+  const prefs=preferences(),full=ordered(entries(),prefs).map(e=>e.key),visible=new Set(keys);let index=0;
+  // Reordering favorites only replaces their positions; hidden works keep theirs.
+  const order=full.map(key=>visible.has(key)?keys[index++]:key);
+  return savePreferences({sort:'custom',order});
+ }
+ function finishDrag(commit=false){
+  const current=drag;if(!current)return;drag=null;
+  current.row.removeAttribute('data-dragging');
+  try{current.capture.releasePointerCapture?.(current.id);}catch{}
+  if(commit&&current.moved)commitOrder([...by('rp-theatre-books').children].map(row=>row.dataset.shelfKey));
+  if(current.moved){library();by('rp-theatre-books')?.querySelectorAll('.rp-theatre-book').forEach(row=>{if(row.dataset.shelfKey===current.key)row.querySelector('.rp-theatre-drag')?.focus({preventScroll:true});});}
+ }
+ function startDrag(e){
+  const handle=e.target.closest?.('.rp-theatre-drag');if(!handle||handle.hidden||job||e.button!==0||e.isPrimary===false||preferences().sort!=='custom')return;
+  finishDrag(false);const row=handle.closest('.rp-theatre-book'),capture=by('rp-theatre-books');drag={row,handle,capture,id:e.pointerId,key:row.dataset.shelfKey,startY:e.clientY,moved:false,owner:h.owner()};
+  // Capture on the stable list: moving a row must not release its active pointer.
+  e.preventDefault();e.stopPropagation();try{capture.setPointerCapture?.(e.pointerId);}catch{}
+ }
+ function moveDrag(e){
+  if(!drag||e.pointerId!==drag.id)return;
+  if(drag.owner!==h.owner()||h.state().currentView!=='theatre'||!h.isOpen()){finishDrag(false);return;}
+  e.preventDefault();e.stopPropagation();if(!drag.moved&&Math.abs(e.clientY-drag.startY)<5)return;
+  drag.moved=true;drag.row.setAttribute('data-dragging','');
+  const root=by('rp-theatre-books'),rows=[...root.children].filter(row=>row!==drag.row),before=rows.find(row=>{const r=row.getBoundingClientRect();return e.clientY<r.top+r.height/2;});
+  root.insertBefore(drag.row,before||null);
+  const scroll=by('rp-view-theatre').querySelector('.rp-theatre-scroll'),rect=scroll.getBoundingClientRect();
+  if(e.clientY>rect.bottom-35)scroll.scrollTop+=18;else if(e.clientY<rect.top+35)scroll.scrollTop-=18;
  }
  function setting(r={}){return[MODES[r.mode]||'番外',r.world==='au'?'AU · 本篇独立世界观':'原世界观',TONES[r.tone]||'随缘',ENDINGS[r.ending]||'不限定',POVS[r.pov]||'第三人称',r.words?'目标约 '+r.words+' 字':'目标 4000–5000 字',(r.mode==='branch'?'分岔起点：'+(r.branchPoint||'当前主线节点')+'\n改变的选择：'+(r.idea||'让 AI 寻找合理转折'):r.idea||'未填写脑洞')].join('\n');}
  function reader(){
@@ -437,11 +508,12 @@ export function createTheatre(h){
   rememberDraft();save();by('rp-theatre-random-idea').value=r.idea;randomPreview();busyUI();
  }
  function cancel(message='已停止接收本次生成，已有作品保留。'){
+  finishDrag(false);
   const old=job;if(!old)return;job=null;old.controller.abort();old.parent.signal.removeEventListener('abort',old.abort);busyUI();say(message);
  }
  async function generate(operation='new'){
   if(job)return false;
-  const original=operation==='new'?null:selected();
+  const originalEntry=operation==='new'?null:selection(),original=originalEntry?.story;
   let recipe;try{recipe=theatreRecipe(operation==='new'?draft():original?.recipe);}catch(e){say(e.message);return false;}
   if(operation!=='new'&&!original){say('请先打开一篇作品。');return false;}
   if(recipe.mode!=='branch'&&!recipe.idea){say('请先写下想看的脑洞，或随机抽取一个。');return false;}
@@ -450,7 +522,7 @@ export function createTheatre(h){
   const token={signal:controller.signal,valid:()=>parent.valid()&&!controller.signal.aborted&&h.owner()===owner&&h.state().theatre===slot};
   const current={id,controller,parent,abort:()=>cancel('生成已停止，已有作品保留。')};job=current;parent.signal.addEventListener('abort',current.abort,{once:true});
   const valid=()=>job===current&&token.valid();
-  const startedView=h.state().currentView,oldId=slot.currentId;
+  const startedView=h.state().currentView,oldId=selected()?.id;
   busyUI();say(operation==='continue'?'正在续写，原稿会保留……':operation==='rewrite'?'正在重写，新版本不会覆盖原稿……':'正在写这一场故事，请稍候……');
   try{
    if(!token.valid())return false;
@@ -475,8 +547,12 @@ export function createTheatre(h){
    const title=operation==='continue'?original.title:hasTitle?first:(recipe.idea.slice(0,36)||'故事的另一种可能');
    const addition=hasTitle?lines.slice(1).join('\n').trim():result.text;
    if(!addition.trim())throw Object.assign(new Error('empty'),{phoneApiCode:'empty'});
-   const story={id:'theatre-'+Date.now().toString(36)+'-'+id+'-'+Math.floor(h.random()*0xffffff).toString(36),title,body:operation==='continue'?original.body+'\n\n'+addition:addition,recipe:{...recipe},snapshot:{prompt:snapshot.prompt,system:snapshot.system,...(snapshot.preset?{preset:theatrePresetSnapshot(snapshot.preset)}:{})},createdAt:Date.now(),complete:!!result.complete,reason:result.reason||'unconfirmed',favorite:false,parentId:original?.id||null,operation,readingTop:0};
-   slot.stories.push(story);slot.currentId=story.id;save();say(story.complete?'新作品已保存。':'已保存已有正文，尚未完结，可以继续写。');
+   const story={id:'theatre-'+Date.now().toString(36)+'-'+id+'-'+Math.floor(h.random()*0xffffff).toString(36),charName:originalEntry?.charName||h.shelf?.charName?.()||'',title,body:operation==='continue'?original.body+'\n\n'+addition:addition,recipe:{...recipe},snapshot:{prompt:snapshot.prompt,system:snapshot.system,...(snapshot.preset?{preset:theatrePresetSnapshot(snapshot.preset)}:{})},createdAt:Date.now(),complete:!!result.complete,reason:result.reason||'unconfirmed',favorite:false,parentId:original?.id||null,operation,readingTop:0};
+   if(originalEntry&&originalEntry.slot!==(h.shelf?.slot?.()||'')){
+    if(!change(originalEntry,target=>target.stories.push(story)))throw new Error('作品保存失败，原稿保留。');
+    select({...originalEntry,id:story.id,story});
+   }else{slot.stories.push(story);slot.currentId=story.id;delete slot.readingRef;save();}
+   say(story.complete?'新作品已保存。':'已保存已有正文，尚未完结，可以继续写。');
    library();
    if(h.isOpen()&&h.state().currentView===startedView&&(operation==='new'||oldId===original.id)){h.go('theatre-read');reader();}
    return true;
@@ -499,9 +575,9 @@ export function createTheatre(h){
   if(name==='directory'){closeMenu();const scroll=by('rp-view-theatre').querySelector('.rp-theatre-scroll'),heading=by('rp-theatre-library-title');scroll.scrollTo({top:Math.max(0,heading.offsetTop-12),behavior:doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});heading.focus({preventScroll:true});return;}
   if(name==='draw'){draw();return;}
   if(!s)return;
-  if(name==='favorite'){s.favorite=!s.favorite;save();reader();library();}
-  if(name==='reuse'){rememberDraft();data().draft={...theatreDefaults().draft,...s.recipe};prepareEditableDraft(false);rememberDraft();save();say('');h.go('theatre-write');}
-  if(name==='delete'&&!job&&h.confirm('删除这篇番外？其他版本仍会保留。')){data().stories=data().stories.filter(x=>x!==s);data().currentId=null;save();h.go('theatre');}
+  if(name==='favorite'){if(!editSelected({favorite:!s.favorite}))say('收藏未能保存，请重试。');reader();library();}
+  if(name==='reuse'){if(selection()?.slot!==(h.shelf?.slot?.()||'')){say('请先切换到这篇作品所属角色的聊天，再修改设定创作。原作品保留。');return;}rememberDraft();data().draft={...theatreDefaults().draft,...s.recipe};prepareEditableDraft(false);rememberDraft();save();say('');h.go('theatre-write');}
+  if(name==='delete')deleteEntry(selection());
   if(name==='copy'){try{await h.copy(s.title+'\n\n'+s.body);say('正文已复制。');}catch{say('复制失败，可用“导出”保存正文。');}}
   if(name==='download'){try{h.download(s.title,s.title+'\n\n'+s.body);say('已导出正文。');}catch{say('导出失败，请复制正文。');}}
  }
@@ -514,20 +590,28 @@ export function createTheatre(h){
    h.listen(el,'click',e=>{
     const mode=e.target.closest('[data-theatre-mode]'),book=e.target.closest('[data-theatre-story]'),button=e.target.closest('[data-theatre-action]');
     if(mode){enterMode(mode.dataset.theatreMode);}
-    else if(book){data().currentId=book.dataset.theatreStory;save();say('');h.go('theatre-read');}
-    else if(button&&!button.disabled){void action(button.dataset.theatreAction);}
+    else if(book){openEntry(h.shelf?.read?.({slot:book.dataset.theatreSlot,id:book.dataset.theatreStory})||entries().find(x=>x.id===book.dataset.theatreStory));}
+    else if(button&&!button.disabled){const name=button.dataset.theatreAction;if(name==='open-book')openEntry(rowEntry(button.closest('.rp-theatre-book')));else if(name==='delete-book')deleteEntry(rowEntry(button.closest('.rp-theatre-book')));else void action(name);}
    });
   }
   for(const type of['input','change'])h.listen(by('rp-view-theatre-write'),type,e=>{if(e.target.matches('input,textarea,select'))draft();});
-  h.listen(by('rp-theatre-reader'),'scroll',()=>{const s=selected();if(s){s.readingTop=by('rp-theatre-reader').scrollTop;save();}},{passive:true});
+  h.listen(by('rp-theatre-reader'),'scroll',()=>{if(selected())editSelected({readingTop:by('rp-theatre-reader').scrollTop});},{passive:true});
+  h.listen(by('rp-theatre-sort'),'change',e=>{finishDrag(false);const prefs=preferences(),next=e.target.value;if(next==='custom'&&!prefs.order.length)prefs.order=ordered(entries(),prefs).map(e=>e.key);if(savePreferences({...prefs,sort:next}))library();else e.target.value=prefs.sort;});
+  const books=by('rp-theatre-books');h.listen(books,'pointerdown',startDrag);
+  h.listen(doc,'pointermove',moveDrag,{passive:false});
+  h.listen(doc,'pointerup',e=>{if(drag&&e.pointerId===drag.id)finishDrag(drag.owner===h.owner());});
+  h.listen(doc,'pointercancel',e=>{if(drag&&e.pointerId===drag.id)finishDrag(false);});
+  h.listen(books,'lostpointercapture',e=>{if(drag&&e.pointerId===drag.id&&e.target===drag.capture)finishDrag(false);});
+  h.listen(books,'keydown',e=>{const handle=e.target.closest?.('.rp-theatre-drag');if(!handle||handle.hidden||job||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();const row=handle.closest('.rp-theatre-book'),keys=[...books.children].map(x=>x.dataset.shelfKey),index=keys.indexOf(row.dataset.shelfKey),to=index+(e.key==='ArrowUp'?-1:1);if(to<0||to>=keys.length)return;[keys[index],keys[to]]=[keys[to],keys[index]];if(commitOrder(keys)){const key=row.dataset.shelfKey;library();[...books.children].find(x=>x.dataset.shelfKey===key)?.querySelector('.rp-theatre-drag').focus();}});
   h.details(by('rp-theatre-options'));h.details(by('rp-theatre-recipe'));h.details(by('rp-theatre-random-edit'));
  }
  function onNavigate(view){
+  finishDrag(false);
   closeMenu();applyAppearance();
   if(!family(view)){cancel('');status='';return;}
   mount();if(view==='theatre')library();if(view==='theatre-write')fields();if(view==='theatre-read')reader();say(status);busyUI();
  }
- return{mount,onNavigate,cancel,reset:()=>{cancel('');closeMenu();status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
+ return{mount,onNavigate,cancel,reset:()=>{finishDrag(false);cancel('');closeMenu();status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
 }
 
 export function validateTheatreArchive(value){

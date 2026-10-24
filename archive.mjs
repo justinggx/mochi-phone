@@ -83,5 +83,5 @@ export function createPhoneArchive({ indexedDB, databaseName = 'mochi-phone-stat
         closing = (async () => { await drain(); connection?.close(); cache.clear(); })();
         return closing;
     }
-    return { open, get, put, drain, close };
+    return { open, get, put, drain, close, entries: () => [...cache.entries()] };
 }
