@@ -1,5 +1,5 @@
 // Standalone fiction. This module never appends host chat or publishes phone events.
-import { validateTheatrePreset, theatrePresetSnapshot } from "./theatre-preset.mjs?v=20261023-theatre-preset-118";
+import { validateTheatrePreset, theatrePresetSnapshot } from "./theatre-preset.mjs?v=20261024-context-home-128";
 export const THEATRE_END = '__MOCHI_THEATRE_END__';
 export const THEATRE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 4h18v16H3zM3 5c5 0 5 7 0 8m18-8c-5 0-5 7 0 8M8 20v-5m8 5v-5M3 4l9 4 9-4"/><path d="M9 12c2 2 4 2 6 0" stroke-linecap="round"/></svg>';
 export const THEATRE_CSS = `
@@ -451,17 +451,20 @@ export function createTheatre(h){
   busyUI();say(operation==='continue'?'正在续写，原稿会保留……':operation==='rewrite'?'正在重写，新版本不会覆盖原稿……':'正在写这一场故事，请稍候……');
   try{
    if(!token.valid())return false;
-   const maxTokens=theatreTokens(recipe);
+   let maxTokens=theatreTokens(recipe);
    let snapshot;
    if(original){if(!original.snapshot?.system||!original.snapshot?.prompt){say('这篇作品缺少创作依据，请用“修改设定再写”生成新篇。');return false;}snapshot={...original.snapshot};}
    else{const p=theatrePrompt(recipe);snapshot=await h.background(p,recipe,token,maxTokens);}
+   if(Number.isFinite(snapshot.maxTokens)&&snapshot.maxTokens>0)maxTokens=Math.min(maxTokens,snapshot.maxTokens);
    const narration=theatreNarration(recipe);if(!snapshot.system.endsWith(narration))snapshot.system+='\n\n'+narration;
    if(!valid())return false;
    if(operation==='new'&&snapshot.preset)say('正在写这一场故事……已读取预设：'+snapshot.preset.name+(snapshot.preset.unresolvedMacros?'（含未展开宏，按原文参考）':''));
    let prompt=snapshot.prompt;
    if(operation==='continue')prompt+='\n\n续写任务：只接续下面这篇作品的末尾，不复述、不重写标题或前文，不读取后来的主线。若原篇已完结，写自然的后续篇章；若未完，先接完当前故事。仍允许写双方的台词与行动。续写目标约 '+(recipe.words||4500)+' 字，写完结局后输出 '+THEATRE_END+'。\n【本篇已经写出的标题与正文】\n'+original.title+'\n'+original.body+'\n【正文结束，开始接续】';
    if(operation==='rewrite')prompt+='\n请按同一份创作依据重新构思一篇完整番外，不延续其他作品。';
-   await h.checkBudget(prompt,snapshot.system,maxTokens,token,snapshot);
+   const allowed=await h.checkBudget(prompt,snapshot.system,maxTokens,token,snapshot);
+   if(Number.isFinite(allowed)&&allowed>0)maxTokens=Math.min(maxTokens,allowed);
+   if(snapshot.budgetAdjusted||maxTokens<theatreTokens(recipe))say('已自动整理背景并适配当前窗口，正在创作……未写完的正文会保存，可继续写。');
    if(!valid())return false;
    const result=await h.call(prompt,maxTokens,snapshot.system,token,snapshot);
    if(!valid()||!result?.text)return false;

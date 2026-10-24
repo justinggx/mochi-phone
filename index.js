@@ -1,11 +1,11 @@
 import { createRoleContext, roleContextRef } from './role-context.mjs?v=20261023-theatre-preset-118';
-import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261023-theatre-preset-118';
-import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-appearance-127';
+import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-context-home-128';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261022-moments-stickers-99';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-appearance-127';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-context-home-128';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261015-boundaries1';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -1899,6 +1899,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 
 /* ── SHARED: icon grid spacing & app grid for icon-only style ── */
 #rp-phone #rp-app-grid { gap: 16px !important; }
+/* Shared across Candy, Star and Misty, including their saved-theme variants. */
+#rp-phone #rp-screen #rp-app-grid { position:relative; top:-12px; }
 /* ══════════════════════════════════════════════════════ */
 
 /* ── LOCK SCREEN WIDGET ── */
@@ -24354,19 +24356,38 @@ function rpTheatreApp() {
       background:async (pack,recipe,token,maxTokens)=>{
         const cfg=readCustomApiConfig(),ctx=getContext()||{};
         const host=ctx.mainApi==='openai'?await rpGuardAwait(import('../../../openai.js').catch(()=>({})),token,10000):{};
-        const preset=readTheatrePreset(ctx,{manager:host.promptManager,au:recipe.world==='au'});
-        const background=await rpGuardAwait(rpRoleBackgroundApp().build(pack.prompt,pack.system,{phoneTheatre:true,theatreAU:recipe.world==='au',theatrePresetText:JSON.stringify(preset.messages)},token,cfg,maxTokens),token,30000);
-        return {...background,preset:theatrePresetSnapshot(preset)};
+        const windowSize=cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
+        const outputs=[...new Set([maxTokens,...(windowSize?[Math.min(maxTokens,Math.max(2048,Math.floor(windowSize*.35))),Math.min(maxTokens,2048)]:[])])];
+        // Retries only repack local data. No model request until one package fits.
+        const randomValues=[];let randomIndex=0;
+        const random=()=>randomValues[randomIndex++]??(randomValues[randomIndex-1]=Math.random());
+        for(const output of outputs){
+          if(windowSize&&windowSize-output-512<512)continue;
+          for(const dataBudget of [Infinity,8192,4096,2048,1024,512]){
+            if(!token.valid())throw Object.assign(new Error('Cancelled'),{name:'AbortError'});
+            try{
+              randomIndex=0;
+              const preset=readTheatrePreset(ctx,{manager:host.promptManager,au:recipe.world==='au',dataBudget,query:recipe.idea,random});
+              const background=await rpGuardAwait(rpRoleBackgroundApp().build(pack.prompt,pack.system,{phoneTheatre:true,theatreAU:recipe.world==='au',theatrePresetText:JSON.stringify(preset.messages)},token,cfg,output),token,30000);
+              return {...background,preset:theatrePresetSnapshot(preset),maxTokens:output,budgetAdjusted:Number.isFinite(dataBudget)||output<maxTokens};
+            }catch(error){if(!token.valid()||error?.phoneApiCode!=='contextLimit')throw error;}
+          }
+        }
+        throw Object.assign(new Error('已自动整理创作资料，当前预设的固定规则与本篇要求仍放不进可用上下文。草稿已保留，请换用更大上下文的模型后重试。'),{phoneApiCode:'contextLimit'});
       },
       checkBudget:async (prompt,system,maxTokens,token,snapshot)=>{
         const ctx=getContext()||{},cfg=readCustomApiConfig(),text=JSON.stringify(theatreRequestMessages(prompt,system,snapshot?.preset));
         let cost=new TextEncoder().encode(text).length;
         if(cfg.mode!=='custom' && typeof ctx.getTokenCountAsync==='function'){
-          const measured=await rpGuardAwait(Promise.resolve(ctx.getTokenCountAsync(text)),token,20000);
-          if(Number.isFinite(measured)&&measured>0)cost=Math.ceil(measured);
+          try{
+            const measured=await rpGuardAwait(Promise.resolve(ctx.getTokenCountAsync(text)),token,20000);
+            if(Number.isFinite(measured)&&measured>0)cost=Math.ceil(measured);
+          }catch(error){if(!token.valid())throw error;}
         }
-        const cap=cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.min(64000,Number(ctx.maxContext)-maxTokens-512):64000;
-        if(cost>cap)throw rpPhoneApiError('contextLimit');
+        const windowSize=cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
+        const output=windowSize?Math.min(maxTokens,windowSize-cost-512):maxTokens;
+        if(cost>64000||output<1024)throw Object.assign(new Error('自动整理后仍超过当前模型可用上下文。草稿和原稿已保留，请换用更大上下文的模型后重试。'),{phoneApiCode:'contextLimit'});
+        return output;
       },
       call:(prompt,maxTokens,system,token,snapshot)=>lgCallAPI(prompt,maxTokens,system,{phoneTheatre:true,theatreTask:token,theatrePreset:snapshot?.preset,reportErrors:true}),
     });

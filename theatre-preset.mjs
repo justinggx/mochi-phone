@@ -28,7 +28,25 @@ function argsOf(body){
  for(let i=0;i<body.length;i++){if(body.startsWith('{{',i)){depth++;i++;}else if(body.startsWith('}}',i)){depth--;i++;}else if(!depth&&body.startsWith('::',i)){out.push(body.slice(start,i));start=i+2;i++;}}
  out.push(body.slice(start));return out;
 }
-function compiler(ctx,{au=false,random=Math.random}={}){
+// Only data-valued macros may be excerpted; preset instructions stay intact.
+export function theatreDataExcerpt(raw,budget,query='',tail=false){
+ const value=String(raw||''),size=s=>new TextEncoder().encode(s).length;
+ if(!Number.isFinite(budget)||size(value)<=budget)return value;
+ const marker='\n[背景节选；未展示部分已省略]\n',room=Math.max(0,Math.floor(budget)-size(marker));
+ if(!room)return '';
+ const terms=[...new Set((String(query).toLowerCase().match(/[a-z0-9_]{3,}|[\u3400-\u9fff]{2}/g)||[]))].slice(0,160);
+ const chunks=[];let pos=0;
+ for(const paragraph of value.split(/(?<=[。！？.!?\n])\s*/u)){
+  const points=Array.from(paragraph);for(let i=0;i<points.length;i+=180){const text=points.slice(i,i+180).join('');chunks.push({text,index:pos++,score:terms.reduce((n,w)=>n+(text.toLowerCase().includes(w)?1:0),0)});}
+ }
+ const keep=[],pick=(v,limit)=>{if(!v||keep.includes(v))return;const remaining=Math.min(limit,room-keep.reduce((n,x)=>n+size(x.text+'\n'),0));if(size(v.text+'\n')<=remaining)keep.push(v);};
+ pick(chunks[0],Math.floor(room*.3));pick(chunks.at(-1),Math.floor(room*.3));
+ const ranked=chunks.slice().sort((a,b)=>tail?b.index-a.index:b.score-a.score||a.index-b.index);
+ for(const v of ranked)pick(v,room);
+ if(!keep.length){const points=Array.from(value);let text='',used=0;for(const c of tail?points.reverse():points){const n=size(c);if(used+n>room)break;text+=c;used+=n;}return marker+(tail?Array.from(text).reverse().join(''):text);}
+ return marker+keep.sort((a,b)=>a.index-b.index).map(x=>x.text).join('\n');
+}
+function compiler(ctx,{au=false,random=Math.random,dataBudget=Infinity,query=''}={}){
  const local=new Map(Object.entries(object(ctx.chatMetadata?.variables)?ctx.chatMetadata.variables:{})),global=new Map(Object.entries(object(ctx.extensionSettings?.variables?.global)?ctx.extensionSettings.variables.global:{}));
  const char=ctx.characters?.[ctx.characterId]||ctx.char||{},field=k=>text(char[k]??char.data?.[k]),chat=au?[]:(ctx.chat||[]).filter(m=>m&&!m.is_system).slice(-12);
  const user=text(ctx.name1)||'用户',name=text(ctx.name2)||text(char.name)||'角色',unknown={count:0};let steps=0;
@@ -66,7 +84,7 @@ function compiler(ctx,{au=false,random=Math.random}={}){
     }
     if(op==='random'||op==='pick'){const choices=(parts.length>2?parts.slice(1):String(parts[1]||'').split(',')).filter(x=>x.trim());if(choices.length)result+=expand(choices[Math.min(choices.length-1,Math.floor(random()*choices.length))],depth+1);continue;}
     if(op==='date'||op==='time'||op==='weekday'){const now=new Date();result+=op==='date'?now.toLocaleDateString('zh-CN'):op==='time'?now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):now.toLocaleDateString('zh-CN',{weekday:'long'});continue;}
-    if(Object.hasOwn(pure,op)&&parts.length===1){result+=text(pure[op]);continue;}
+    if(Object.hasOwn(pure,op)&&parts.length===1){const value=text(pure[op]);result+=['persona','description','personality','scenario','mesexamples','mesexamplesraw','lastmessage','lastusermessage','lastcharmessage','history'].includes(op)?theatreDataExcerpt(value,dataBudget,query,op==='history'||op.startsWith('last')):value;continue;}
     result+=inert(token.raw);
    }
    return{result,stop:null};
@@ -79,7 +97,7 @@ function samplingOf(settings,chat=true){
  const out={},map=chat?{temperature:'temp_openai',top_p:'top_p_openai',frequency_penalty:'freq_pen_openai',presence_penalty:'pres_pen_openai'}:{temperature:'temperature',top_p:'top_p',frequency_penalty:'frequency_penalty',presence_penalty:'presence_penalty'};
  for(const[k,key]of Object.entries(map)){const v=settings?.[key];if(typeof v!=='number'||!Number.isFinite(v))continue;if(k==='temperature'?v>=0&&v<=2:k==='top_p'?v>0&&v<=1:v>=-2&&v<=2)out[k]=v;}return out;
 }
-export function readTheatrePreset(ctx,{manager=null,au=false,random=Math.random}={}){
+export function readTheatrePreset(ctx,{manager=null,au=false,random=Math.random,dataBudget=Infinity,query=''}={}){
  let prompts=[],name='',sampling={},source='';const api=String(ctx.mainApi||'openai');
  if(api==='openai'){
   const settings=ctx.chatCompletionSettings||manager?.serviceSettings;if(!object(settings)||!Array.isArray(settings.prompts)||!Array.isArray(settings.prompt_order))throw fail();
@@ -95,7 +113,7 @@ export function readTheatrePreset(ctx,{manager=null,au=false,random=Math.random}
   const settings=ctx.powerUserSettings?.sysprompt;if(!object(settings))throw fail();source='text-completion';name=text(settings.name||settings.preset)||'当前文本补全系统预设';sampling=samplingOf(ctx.textCompletionSettings,false);
   if(on(settings.enabled)){if(text(settings.content).trim())prompts.push({role:'system',content:text(settings.content)});if(text(settings.post_history).trim())prompts.push({role:'system',content:text(settings.post_history)});}
  }
- const compile=compiler(ctx,{au,random}),messages=prompts.map(p=>({role:p.role,content:compile.expand(p.content)})).filter(p=>p.content.trim());
+ const compile=compiler(ctx,{au,random,dataBudget,query}),messages=prompts.map(p=>({role:p.role,content:compile.expand(p.content)})).filter(p=>p.content.trim());
  const result={name,source,messages,sampling,unresolvedMacros:compile.unknown.count};validateTheatrePreset(result);return result;
 }
 export function validateTheatrePreset(preset){
