@@ -8695,6 +8695,7 @@ const HTML = `
                 <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                 <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
                 <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">GLM</button>
+                <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">火山方舟</button>
                 <button class="rp-api-preset-btn" data-url="" data-model="">其他OpenAI</button>
               </div>
               <label class="rp-api-field-label" for="rp-api-url-v">API 地址</label>
@@ -8707,12 +8708,13 @@ const HTML = `
                 <button id="rp-api-fetch-models" style="flex-shrink:0;padding:7px 10px;border-radius:12px;border:1.5px solid rgba(168,85,247,.3);background:rgba(168,85,247,.08);color:#7c3aed;font-size:11px;cursor:pointer;white-space:nowrap;font-weight:600">获取模型</button>
               </div>
               <div id="rp-model-list" style="display:none;background:rgba(255,255,255,.95);border:1px solid rgba(168,85,247,.2);border-radius:12px;max-height:140px;overflow-y:auto"></div>
+              <div id="rp-api-provider-note-v" class="rp-set-hint" style="display:none;line-height:1.6"></div>
               <div class="rp-api-privacy" style="font-size:11px;color:#9070b0;line-height:1.6">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
             </div>
             <div id="rp-api-status-v" role="status" aria-live="polite" style="font-size:11px;color:#a855f7;min-height:18px;margin-top:8px"></div>
             <div class="rp-api-explanation" style="font-size:11px;color:#9070b0;line-height:1.7;background:rgba(168,85,247,.06);border-radius:12px;padding:10px 12px">
               信息仍用酒馆 API；其他小手机功能可使用此接口，需自备 Key。
-              <span id="rp-api-blink" style="color:#a855f7;font-weight:700">可接入 DeepSeek 等模型。</span>
+              <span id="rp-api-blink" style="color:#a855f7;font-weight:700">可接入 DeepSeek、火山方舟等模型。</span>
             </div>
           </div>
           <div class="rp-api-footer" style="padding:10px 18px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
@@ -9181,11 +9183,13 @@ const HTML = `
                   <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                   <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
                   <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">GLM</button>
+                  <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">火山方舟</button>
                   <button class="rp-api-preset-btn" data-url="" data-model="">其他 OpenAI</button>
                 </div>
                 <input class="rp-api-input" id="rp-api-url" placeholder="API 地址 (如 https://api.deepseek.com/v1)" type="url">
                 <input class="rp-api-input" id="rp-api-key" placeholder="API Key" type="password">
                 <input class="rp-api-input" id="rp-api-model" placeholder="模型名称 (如 deepseek-chat)">
+                <div id="rp-api-provider-note" class="rp-set-hint" style="display:none;line-height:1.6"></div>
               </div>
               <div class="rp-api-save-row">
                 <button class="rp-api-save-btn" id="rp-api-save">保存</button>
@@ -10872,6 +10876,7 @@ function bindUI() {
     rpSetPanelOpen('#rp-api-custom-fields-v',$(this).val() === 'custom',null,'flex');
   });
   $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, #rp-api-model-v, input[name="rp-api-mode-v"]', () => rpResetApiTest());
+  $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-url', () => rpUpdateCustomApiHints());
   $(document).on("click.mochiPhone", '#rp-api-test-v', async function() {
     rpResetApiTest();
     const $btn = $(this), fingerprint = rpApiTestFingerprint(), task = rpRuntime.task();
@@ -10888,21 +10893,16 @@ function bindUI() {
     if (mode !== 'custom') { finish('fail', '⚠️ 请先选择「接入其他 API」'); return; }
     const url = ($('#rp-api-url-v').val() || '').trim().replace(/\/+$/, '');
     const key = ($('#rp-api-key-v').val() || '').trim();
-    const model = ($('#rp-api-model-v').val() || 'gpt-3.5-turbo').trim();
+    let model = ($('#rp-api-model-v').val() || '').trim();
     if (!url || !key) { finish('fail', '⚠️ 请先填写URL和Key'); return; }
     const t0 = Date.now();
     try {
-      const endpoint = buildCustomApiEndpoint(url, 'chat/completions');
+      buildCustomApiEndpoint(url, 'chat/completions');
+      model = rpResolveCustomApiModel({ url, model });
       $btn.prop('disabled', true).addClass('testing').text('连接中...');
-      test.timeout = setTimeout(() => test.request.abort(), 8000);
-      const r = await fetch(endpoint, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify(rpCustomApiRequestBody({ url, model }, [{ role: 'user', content: '只回复 OK' }], 32, { structured: true })),
-        signal: test.request.signal
-      });
-      if (!current()) return;
-      if (!r.ok) { finish('fail', '❌ HTTP ' + r.status); return; }
-      const d = await r.json();
+      const d = await rpFetchCustomApi({ url, key, model },
+        rpCustomApiRequestBody({ url, model }, [{ role: 'user', content: '只回复 OK' }], 128, { structured: true }),
+        test.request.signal, rpIsVolcengineApi(url) ? 120000 : 60000);
       if (!current()) return;
       if (d?.error) { finish('fail', '❌ 接口返回错误'); return; }
       const choice = d?.choices?.[0], content = choice?.message?.content;
@@ -10913,7 +10913,10 @@ function bindUI() {
       finish('ok', '✅ ' + String(d.model || model).replace(/^.+\//, '') + ' ' + (Date.now() - t0) + 'ms');
       $('#rp-api-status-v').text('连接与正文生成正常；更改配置后仍需点击「保存设置」');
     } catch (error) {
-      if (current()) finish('fail', '❌ 请求失败或超时');
+      if (current()) {
+        finish('fail', '❌ 连接未完成');
+        $('#rp-api-status-v').text(rpClassifyPhoneApiError(error).message);
+      }
     }
   });
 
@@ -10923,12 +10926,12 @@ function bindUI() {
     if (mode === 'custom') {
       cfg.url   = $('#rp-api-url-v').val().trim();
       cfg.key   = $('#rp-api-key-v').val().trim();
-      cfg.model = $('#rp-api-model-v').val().trim() || 'deepseek-chat';
+      cfg.model = $('#rp-api-model-v').val().trim();
       if (!cfg.url || !cfg.key) {
         $('#rp-api-status-v').text('⚠️ 请填写 API 地址和 Key');
         return;
       }
-      try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); }
+      try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); cfg.model = rpResolveCustomApiModel(cfg); }
       catch(e) { $('#rp-api-status-v').text(e.message); return; }
     }
     if (!rpSaveCustomApiConfig(cfg)) return;
@@ -10955,6 +10958,7 @@ function bindUI() {
       $('#rp-api-mode-st').prop('checked', true);
       $('#rp-api-custom-fields').hide();
     }
+    rpUpdateCustomApiHints();
     rpSetSurfaceOpen('#rp-api-panel',true);
   });
   $(document).on("change.mochiPhone", 'input[name="rp-api-mode"]', function() {
@@ -10973,6 +10977,7 @@ function bindUI() {
     $('#rp-api-url-v').val(url);
     $('#rp-api-model-v').val(model);
     if (!url) { $('#rp-api-url-v').focus(); } else { $('#rp-api-key-v').val('').focus(); }
+    rpResetApiTest(); rpResetModelRequest(); rpUpdateCustomApiHints();
   });
   $(document).on("click.mochiPhone", '#rp-api-save', function() {
     const mode = $('input[name="rp-api-mode"]:checked').val() || 'st';
@@ -10980,9 +10985,9 @@ function bindUI() {
     if (mode === 'custom') {
       cfg.url   = $('#rp-api-url').val().trim();
       cfg.key   = $('#rp-api-key').val().trim();
-      cfg.model = $('#rp-api-model').val().trim() || 'deepseek-chat';
+      cfg.model = $('#rp-api-model').val().trim();
       if (!cfg.url || !cfg.key) { lgMsg('sys', '⚠️ 请填写 API 地址和 Key'); return; }
-      try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); }
+      try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); cfg.model = rpResolveCustomApiModel(cfg); }
       catch(e) { lgMsg('sys', e.message); return; }
     }
     if (!rpSaveCustomApiConfig(cfg)) { lgMsg('sys', 'API设置未保存，请检查浏览器存储空间后重试。'); return; }
@@ -11006,6 +11011,10 @@ function bindUI() {
     const $btn = $(this), $list = $('#rp-model-list');
     try {
       if (!url || !key) { $('#rp-api-status-v').text('请先填写 API 地址和 Key'); return; }
+      if (rpIsVolcengineApi(url)) {
+        $('#rp-api-status-v').text('请从火山方舟控制台复制已开通的 Model ID 或 ep- 开头的推理接入点 ID，直接填写模型即可，无需先获取列表。');
+        return;
+      }
       $btn.text('获取中...').prop('disabled', true);
       const data = await rpGuardAwait(rpRuntime.fetchJSON(buildCustomApiEndpoint(url, 'models'), {
         headers: { 'Authorization': 'Bearer ' + key }, signal: request.signal
@@ -11686,11 +11695,71 @@ function buildCustomApiEndpoint(rawUrl, endpoint) {
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
     throw new Error('API 地址仅支持 HTTP(S)，不能包含内嵌账号');
   }
-  url.pathname = url.pathname.replace(/\/+$/, '') + '/' + endpoint;
+  let pathname = url.pathname.replace(/\/+$/, '').replace(/\/(?:chat\/completions|models)$/, '');
+  if (rpIsVolcengineApi(url.href) && (!pathname || pathname === '/api')) pathname = '/api/v3';
+  url.pathname = pathname + '/' + endpoint;
   // Query parameters belong to the URL, not its path; fragments are never sent
   // by fetch. Keep provider query options and append the endpoint before them.
   url.hash = '';
   return url.href;
+}
+
+function rpIsVolcengineApi(rawUrl) {
+  try { return /^ark\.[a-z0-9-]+\.volces\.com$/i.test(new URL(String(rawUrl || '').trim()).hostname); }
+  catch (_) { return false; }
+}
+
+function rpResolveCustomApiModel(cfg) {
+  const model = typeof cfg.model === 'string' ? cfg.model.trim() : '';
+  if (model) return model;
+  if (rpIsVolcengineApi(cfg.url)) throw rpPhoneApiError('arkModel');
+  return 'deepseek-chat';
+}
+
+function rpUpdateCustomApiHints() {
+  for (const suffix of ['-v', '']) {
+    const ark = rpIsVolcengineApi($('#rp-api-url' + suffix).val());
+    $('#rp-api-model' + suffix).attr('placeholder', ark ? 'Model ID 或 ep- 开头的接入点 ID' : '模型名称 (如 deepseek-chat)');
+    $('#rp-api-provider-note' + suffix).text(ark
+      ? '火山方舟：填写方舟 API Key 和控制台已开通的 Model ID 或 ep- 接入点 ID，可直接手填模型。请求经当前酒馆服务器转发，不更改酒馆主 API；API Key 不会另行保存到酒馆密钥库。'
+      : '').toggle(ark);
+  }
+  $('#rp-api-fetch-models').text(rpIsVolcengineApi($('#rp-api-url-v').val()) ? '模型说明' : '获取模型');
+}
+
+async function rpFetchCustomApi(cfg, body, signal, timeout = 60000) {
+  const endpoint = new URL(buildCustomApiEndpoint(cfg.url, 'chat/completions'));
+  if (!rpIsVolcengineApi(endpoint.href)) return rpRuntime.fetchJSON(endpoint.href, {
+    method: 'POST', signal,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+    body: JSON.stringify(body),
+  }, timeout);
+  if (endpoint.search) throw Object.assign(new Error('火山方舟请使用不带查询参数的 API 地址，密钥填写在 API Key 中。'), { phoneApiCode: 'arkAddress' });
+  const ctx = getContext();
+  const headers = typeof ctx?.getRequestHeaders === 'function' ? ctx.getRequestHeaders()
+    : typeof _rp_script_mod?.getRequestHeaders === 'function' ? _rp_script_mod.getRequestHeaders() : null;
+  if (!headers || typeof headers !== 'object') throw rpPhoneApiError('hostProxy');
+  // Use the host's authenticated custom-provider route. The per-request header
+  // overrides its saved custom key without changing settings or the secret store.
+  const data = await rpRuntime.fetchJSON('/api/backends/chat-completions/generate', {
+    method: 'POST', signal, credentials: 'same-origin', headers,
+    body: JSON.stringify({ ...body, chat_completion_source: 'custom',
+      custom_url: endpoint.href.slice(0, -'/chat/completions'.length),
+      custom_include_headers: JSON.stringify({ Authorization: 'Bearer ' + cfg.key }),
+      custom_include_body: JSON.stringify(body), custom_exclude_body: '',
+    }),
+  }, timeout);
+  if (data?.error) {
+    // The host returns upstream status text in a JSON error with HTTP 200.
+    // Only recognize fixed categories; never expose arbitrary provider text.
+    const statuses = { 'Unauthorized': 401, 'Forbidden': 403, 'Not Found': 404,
+      'Bad Request': 400, 'Unprocessable Entity': 422, 'Too Many Requests': 429,
+      'Internal Server Error': 500, 'Bad Gateway': 502, 'Service Unavailable': 503,
+      'Gateway Timeout': 504 };
+    const status = data.quota_error ? 429 : statuses[data.error?.message];
+    throw status ? rpClassifyPhoneApiError(new Error('HTTP ' + status)) : rpPhoneApiError('request');
+  }
+  return data;
 }
 
 function parseCustomApiModels(data) {
@@ -11703,6 +11772,8 @@ function parseCustomApiModels(data) {
 function rpPhoneApiError(code) {
   const messages = {
     config: '请先填写并保存 API 设置',
+    arkModel: '火山方舟：请填写控制台已开通的 Model ID 或 ep- 开头的推理接入点 ID',
+    hostProxy: '当前酒馆未提供安全转发所需的请求头，请刷新酒馆后重试或更新酒馆版本',
     context: '请先选择角色并打开聊天，再生成日记',
     background: '角色背景读取失败，请重试',
     contextLimit: '内容超过可用上下文，请缩短输入或提高模型上下文',
@@ -11742,7 +11813,7 @@ const RP_WORD_HINT_MAX_TOKENS = 2048;
 
 function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
   const body = {
-    model: cfg.model || 'deepseek-chat', messages,
+    model: rpResolveCustomApiModel(cfg), messages,
     max_tokens: Math.max(1, Math.min(options.phoneTheatre ? 32768 : 8192, Number(maxTokens) || 150)),
     temperature: 0.9,
   };
@@ -11758,6 +11829,14 @@ function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
     if (options.jsonMode === 'object') body.response_format = { type: 'json_object' };
   }
   if(options.phoneTheatre && options.theatrePreset)Object.assign(body,theatrePresetSnapshot(options.theatrePreset).sampling);
+  if (rpIsVolcengineApi(cfg.url)) {
+    body.stream = false;
+    const model = body.model.toLowerCase().replace(/\./g, '-');
+    const switchableSeed = !model.includes('thinking') && /^doubao-seed-(?:1-[68](?:-(?:flash|vision))?|2-[01]-(?:pro|lite|mini|turbo)|evolving|character)(?:-|$)/.test(model);
+    if (switchableSeed && (options.structured || options.phoneTheatre || options.phoneDiary || options.phoneWordHint || options.phoneTranslation || options.phoneXhs || options.gameTask)) {
+      body.thinking = { type: 'disabled' };
+    }
+  }
   return body;
 }
 
@@ -12106,6 +12185,7 @@ function lgFillAPIView() {
     $('#rp-api-custom-fields-v').hide();
   }
   $('#rp-api-status-v').text('');
+  rpUpdateCustomApiHints();
 }
 
 function getGroupMemberEntries(thread) {
@@ -24532,12 +24612,8 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
     try {
       const msgs = options.phoneTheatre ? theatreRequestMessages(prompt,sysMsg,options.theatrePreset) : [];
       if (!options.phoneTheatre) { if (sysMsg) msgs.push({ role: 'system', content: sysMsg }); msgs.push({ role: 'user', content: prompt }); }
-      const data = await rpGuardAwait(rpRuntime.fetchJSON(buildCustomApiEndpoint(cfg.url, 'chat/completions'), {
-        method: 'POST',
-        signal: rpTask.signal,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
-        body: JSON.stringify(rpCustomApiRequestBody(cfg, msgs, maxTokens, options))
-      }, options.phoneTheatre ? 300000 : options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 60000), rpTask, timeout);
+      const data = await rpGuardAwait(rpFetchCustomApi(cfg, rpCustomApiRequestBody(cfg, msgs, maxTokens, options),
+        rpTask.signal, options.phoneTheatre ? 300000 : options.phoneDiary ? RP_DIARY_TIMEOUT_MS : rpIsVolcengineApi(cfg.url) ? 120000 : 60000), rpTask, timeout);
       if (!data || typeof data !== 'object' || data.error || !Array.isArray(data.choices)) {
         throw rpPhoneApiError('format');
       }
