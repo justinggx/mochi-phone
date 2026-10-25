@@ -8693,9 +8693,11 @@ const HTML = `
             <div id="rp-api-custom-fields-v" style="display:none;flex-direction:column;gap:8px">
               <div class="rp-api-presets" style="margin-bottom:4px">
                 <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
-                <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
-                <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">GLM</button>
-                <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">火山方舟</button>
+                <button class="rp-api-preset-btn" data-url="https://api.moonshot.cn/v1" data-model="kimi-k2.6">Kimi</button>
+                <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">豆包·火山方舟</button>
+                <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">通义千问</button>
+                <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱 GLM</button>
+                <button class="rp-api-preset-btn" data-url="https://api.minimax.cn/v1" data-model="MiniMax-M3">MiniMax</button>
                 <button class="rp-api-preset-btn" data-url="" data-model="">其他OpenAI</button>
               </div>
               <label class="rp-api-field-label" for="rp-api-url-v">API 地址</label>
@@ -8714,7 +8716,7 @@ const HTML = `
             <div id="rp-api-status-v" role="status" aria-live="polite" style="font-size:11px;color:#a855f7;min-height:18px;margin-top:8px"></div>
             <div class="rp-api-explanation" style="font-size:11px;color:#9070b0;line-height:1.7;background:rgba(168,85,247,.06);border-radius:12px;padding:10px 12px">
               信息仍用酒馆 API；其他小手机功能可使用此接口，需自备 Key。
-              <span id="rp-api-blink" style="color:#a855f7;font-weight:700">可接入 DeepSeek、火山方舟等模型。</span>
+              <span id="rp-api-blink" style="color:#a855f7;font-weight:700">支持 DeepSeek、Kimi、豆包、通义、GLM、MiniMax。</span>
             </div>
           </div>
           <div class="rp-api-footer" style="padding:10px 18px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
@@ -9181,9 +9183,11 @@ const HTML = `
                 <div style="font-size:11px;color:#9070b0;line-height:1.6;margin-bottom:8px">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
                 <div class="rp-api-presets">
                   <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
-                  <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-turbo">通义</button>
-                  <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">GLM</button>
-                  <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">火山方舟</button>
+                  <button class="rp-api-preset-btn" data-url="https://api.moonshot.cn/v1" data-model="kimi-k2.6">Kimi</button>
+                  <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">豆包·火山方舟</button>
+                  <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">通义千问</button>
+                  <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱 GLM</button>
+                  <button class="rp-api-preset-btn" data-url="https://api.minimax.cn/v1" data-model="MiniMax-M3">MiniMax</button>
                   <button class="rp-api-preset-btn" data-url="" data-model="">其他 OpenAI</button>
                 </div>
                 <input class="rp-api-input" id="rp-api-url" placeholder="API 地址 (如 https://api.deepseek.com/v1)" type="url">
@@ -10902,7 +10906,7 @@ function bindUI() {
       $btn.prop('disabled', true).addClass('testing').text('连接中...');
       const d = await rpFetchCustomApi({ url, key, model },
         rpCustomApiRequestBody({ url, model }, [{ role: 'user', content: '只回复 OK' }], 128, { structured: true }),
-        test.request.signal, rpIsVolcengineApi(url) ? 120000 : 60000);
+        test.request.signal, rpCustomApiProvider(url) ? 120000 : 60000);
       if (!current()) return;
       if (d?.error) { finish('fail', '❌ 接口返回错误'); return; }
       const choice = d?.choices?.[0], content = choice?.message?.content;
@@ -11001,7 +11005,7 @@ function bindUI() {
   });
 
   // 获取模型列表
-  $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, input[name="rp-api-mode-v"]', () => rpResetModelRequest());
+  $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, input[name="rp-api-mode-v"]', () => {rpResetModelRequest();rpUpdateCustomApiHints();});
   $(document).on("click.mochiPhone", '#rp-api-fetch-models', async function() {
     rpResetModelRequest();
     const task = rpRuntime.task(), request = new AbortController();
@@ -11016,17 +11020,20 @@ function bindUI() {
         return;
       }
       $btn.text('获取中...').prop('disabled', true);
-      const data = await rpGuardAwait(rpRuntime.fetchJSON(buildCustomApiEndpoint(url, 'models'), {
-        headers: { 'Authorization': 'Bearer ' + key }, signal: request.signal
-      }), task);
+      const provider = rpCustomApiProvider(url);
+      if (provider && !provider.models) {
+        $('#rp-api-status-v').text(provider.label + '：请从开放平台复制已开通的模型名称，直接手填后测试，无需先获取列表。');
+        return;
+      }
+      const data = await rpGuardAwait(rpFetchCustomApi({url,key}, null, request.signal, 30000, 'models'), task);
       if (!current()) return;
       const models = parseCustomApiModels(data);
       if (!models.length) $('#rp-api-status-v').text('未获取到模型,请检查 URL/Key');
       else { models.forEach(m => appendModelListItem($list, m)); rpSetPanelOpen($list,true); $('#rp-api-status-v').text('找到 ' + models.length + ' 个模型,点击选择'); }
     } catch(error) {
-      if (current()) $('#rp-api-status-v').text('请求失败:' + error.message);
+      if (current()) $('#rp-api-status-v').text('获取模型未完成，可直接手填模型后测试。' + rpClassifyPhoneApiError(error).message);
     } finally {
-      if (rpModelRequest === request) { rpModelRequest = null; $btn.text('获取模型').prop('disabled', false); }
+      if (rpModelRequest === request) { rpModelRequest = null; $btn.text('获取模型').prop('disabled', false); rpUpdateCustomApiHints(); }
     }
   });
   $(document).on("click.mochiPhone", '.rp-model-item', function() {
@@ -11696,7 +11703,8 @@ function buildCustomApiEndpoint(rawUrl, endpoint) {
     throw new Error('API 地址仅支持 HTTP(S)，不能包含内嵌账号');
   }
   let pathname = url.pathname.replace(/\/+$/, '').replace(/\/(?:chat\/completions|models)$/, '');
-  if (rpIsVolcengineApi(url.href) && (!pathname || pathname === '/api')) pathname = '/api/v3';
+  const provider = rpCustomApiProvider(url.href);
+  if (provider && (!pathname || pathname === '/api')) pathname = provider.base;
   url.pathname = pathname + '/' + endpoint;
   // Query parameters belong to the URL, not its path; fragments are never sent
   // by fetch. Keep provider query options and append the endpoint before them.
@@ -11709,44 +11717,69 @@ function rpIsVolcengineApi(rawUrl) {
   catch (_) { return false; }
 }
 
+function rpCustomApiProvider(rawUrl) {
+  let host;
+  try { host = new URL(String(rawUrl || '').trim()).hostname.toLowerCase(); } catch (_) { return null; }
+  if (rpIsVolcengineApi(rawUrl)) return {id:'ark',label:'豆包·火山方舟',base:'/api/v3',model:'',models:false};
+  if (host === 'api.deepseek.com') return {id:'deepseek',label:'DeepSeek',base:'/v1',model:'deepseek-chat',models:true};
+  if (['api.moonshot.cn','api.moonshot.ai'].includes(host)) return {id:'kimi',label:'Kimi',base:'/v1',model:'kimi-k2.6',models:true};
+  if (['dashscope.aliyuncs.com','dashscope-intl.aliyuncs.com','dashscope-us.aliyuncs.com'].includes(host)
+      || /^[a-z0-9-]+\.(?:cn-beijing|cn-shanghai|ap-southeast-1|us-east-1)\.maas\.aliyuncs\.com$/.test(host)) {
+    return {id:'qwen',label:'通义千问',base:'/compatible-mode/v1',model:'qwen-plus',models:true};
+  }
+  if (['open.bigmodel.cn','api.z.ai'].includes(host)) return {id:'glm',label:'智谱 GLM',base:'/api/paas/v4',model:'glm-4-flash',models:false};
+  if (['api.minimax.cn','api.minimaxi.com','api.minimax.io'].includes(host)) return {id:'minimax',label:'MiniMax',base:'/v1',model:'MiniMax-M3',models:false};
+  return null;
+}
+
 function rpResolveCustomApiModel(cfg) {
   const model = typeof cfg.model === 'string' ? cfg.model.trim() : '';
   if (model) return model;
   if (rpIsVolcengineApi(cfg.url)) throw rpPhoneApiError('arkModel');
-  return 'deepseek-chat';
+  return rpCustomApiProvider(cfg.url)?.model || 'deepseek-chat';
 }
 
 function rpUpdateCustomApiHints() {
   for (const suffix of ['-v', '']) {
-    const ark = rpIsVolcengineApi($('#rp-api-url' + suffix).val());
-    $('#rp-api-model' + suffix).attr('placeholder', ark ? 'Model ID 或 ep- 开头的接入点 ID' : '模型名称 (如 deepseek-chat)');
-    $('#rp-api-provider-note' + suffix).text(ark
-      ? '火山方舟：填写方舟 API Key 和控制台已开通的 Model ID 或 ep- 接入点 ID，可直接手填模型。请求经当前酒馆服务器转发，不更改酒馆主 API；API Key 不会另行保存到酒馆密钥库。'
-      : '').toggle(ark);
+    const provider = rpCustomApiProvider($('#rp-api-url' + suffix).val());
+    const ark = provider?.id === 'ark';
+    $('#rp-api-model' + suffix).attr('placeholder', ark ? 'Model ID 或 ep- 开头的接入点 ID' : provider ? '模型名称，如 ' + provider.model : '模型名称 (如 deepseek-chat)');
+    const details = {ark:'填写方舟 API Key 和已开通的 Model ID 或 ep- 接入点 ID，模型请手填。',
+      deepseek:'填写开放平台 API Key，可获取模型列表或直接修改模型名称。',
+      kimi:'填写 Kimi 开放平台 API Key，可获取模型或手填；国内与国际地址需对应账号。默认 K2.6；K3、K2.7 等强制思考型号可能等待更久。',
+      qwen:'填写百炼 API Key，地址地域需与密钥一致；可获取模型或手填，示例模型可自行修改。',
+      glm:'填写智谱开放平台 API Key，模型请从控制台手填；支持保留已有套餐地址，快捷按钮使用标准按量接口。',
+      minimax:'填写 MiniMax 开放平台 API Key，模型请手填；国内与国际地址需匹配。M2、M3.1 等型号仍可能先思考。'};
+    $('#rp-api-provider-note' + suffix).text(provider
+      ? provider.label + '：' + details[provider.id] + ' 请求经当前酒馆服务器转发，不更改酒馆主 API；API Key 不会另行保存到酒馆密钥库。'
+      : '').toggle(!!provider);
   }
-  $('#rp-api-fetch-models').text(rpIsVolcengineApi($('#rp-api-url-v').val()) ? '模型说明' : '获取模型');
+  const provider = rpCustomApiProvider($('#rp-api-url-v').val());
+  $('#rp-api-fetch-models').text(provider && !provider.models ? '模型说明' : '获取模型');
 }
 
-async function rpFetchCustomApi(cfg, body, signal, timeout = 60000) {
-  const endpoint = new URL(buildCustomApiEndpoint(cfg.url, 'chat/completions'));
-  if (!rpIsVolcengineApi(endpoint.href)) return rpRuntime.fetchJSON(endpoint.href, {
-    method: 'POST', signal,
+async function rpFetchCustomApi(cfg, body, signal, timeout = 60000, resource = 'chat/completions') {
+  if (!['chat/completions','models'].includes(resource)) throw rpPhoneApiError('config');
+  const endpoint = new URL(buildCustomApiEndpoint(cfg.url, resource));
+  const models = resource === 'models', provider = rpCustomApiProvider(endpoint.href);
+  if (!provider) return rpRuntime.fetchJSON(endpoint.href, {
+    method: models ? 'GET' : 'POST', signal,
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
-    body: JSON.stringify(body),
+    ...(models ? {} : {body:JSON.stringify(body)}),
   }, timeout);
-  if (endpoint.search) throw Object.assign(new Error('火山方舟请使用不带查询参数的 API 地址，密钥填写在 API Key 中。'), { phoneApiCode: 'arkAddress' });
+  if (endpoint.search) throw Object.assign(new Error(provider.label + '请使用不带查询参数的 API 地址，密钥填写在 API Key 中。'), { phoneApiCode: 'arkAddress' });
   const ctx = getContext();
   const headers = typeof ctx?.getRequestHeaders === 'function' ? ctx.getRequestHeaders()
     : typeof _rp_script_mod?.getRequestHeaders === 'function' ? _rp_script_mod.getRequestHeaders() : null;
   if (!headers || typeof headers !== 'object') throw rpPhoneApiError('hostProxy');
   // Use the host's authenticated custom-provider route. The per-request header
   // overrides its saved custom key without changing settings or the secret store.
-  const data = await rpRuntime.fetchJSON('/api/backends/chat-completions/generate', {
+  const data = await rpRuntime.fetchJSON('/api/backends/chat-completions/' + (models ? 'status' : 'generate'), {
     method: 'POST', signal, credentials: 'same-origin', headers,
     body: JSON.stringify({ ...body, chat_completion_source: 'custom',
-      custom_url: endpoint.href.slice(0, -'/chat/completions'.length),
+      custom_url: endpoint.href.slice(0, -('/' + resource).length),
       custom_include_headers: JSON.stringify({ Authorization: 'Bearer ' + cfg.key }),
-      custom_include_body: JSON.stringify(body), custom_exclude_body: '',
+      ...(models ? {} : {custom_include_body:JSON.stringify(body), custom_exclude_body:''}),
     }),
   }, timeout);
   if (data?.error) {
@@ -11760,6 +11793,52 @@ async function rpFetchCustomApi(cfg, body, signal, timeout = 60000) {
     throw status ? rpClassifyPhoneApiError(new Error('HTTP ' + status)) : rpPhoneApiError('request');
   }
   return data;
+}
+
+function rpDomesticApiOptions(body, cfg, options) {
+  const provider = rpCustomApiProvider(cfg.url);
+  if (!provider) return body;
+  body.stream = false;
+  const model = body.model.toLowerCase();
+  const bounded = options.structured || options.phoneTheatre || options.phoneDiary || options.phoneWordHint || options.phoneTranslation || options.phoneXhs || options.gameTask;
+  let mandatoryThinking = false;
+  if (provider.id === 'kimi') {
+    if (/^kimi-k(?:2[.-][567]|3)(?:[.-]|$)/.test(model)) {
+      for (const name of ['temperature','top_p','presence_penalty','frequency_penalty']) delete body[name];
+    }
+    if (bounded && /^kimi-k2[.-][56](?:-|$)/.test(model)) body.thinking = {type:'disabled'};
+    if (/^kimi-k3(?:[.-]|$)/.test(model)) {
+      body.max_completion_tokens = body.max_tokens; delete body.max_tokens;
+      if (bounded) body.reasoning_effort = 'low';
+      mandatoryThinking = true;
+    }
+    if (/^kimi-k2[.-]7(?:-|$)|^kimi-k2-thinking(?:-|$)/.test(model)) mandatoryThinking = true;
+  }
+  if (provider.id === 'qwen' && bounded && !/thinking|qwen3[.-]7/.test(model)
+      && /^(?:qwen-plus(?:-|$)|qwen-flash(?:-|$)|qwen3[.-][56]-plus(?:-|$)|qwen3-(?:235b-a22b|30b-a3b|32b|14b|8b|4b|1[.-]7b|0[.-]6b)$)/.test(model)) {
+    body.enable_thinking = false;
+  }
+  if (provider.id === 'glm') {
+    if (bounded && /^(?:glm-4\.(?:5(?:-(?:air|x|airx|flash))?|6v?)|glm-5(?:\.[12]|-turbo|-v-turbo)?)$/.test(model)) body.thinking = {type:'disabled'};
+    if (/^glm-4(?:-(?:plus|air|airx|flash|flashx))?$/.test(model)) body.max_tokens = Math.min(body.max_tokens,4095);
+    mandatoryThinking = /^glm-(?:4\.7|4\.5v|5\.3)(?:-|$)/.test(model);
+  }
+  if (provider.id === 'minimax') {
+    if (/^minimax-m[23](?:[.-]|$)/.test(model)) {
+      delete body.temperature; delete body.top_p; body.reasoning_split = true;
+    }
+    if (/^minimax-m3(?:[.-]|$)/.test(model)) {body.max_completion_tokens = body.max_tokens;delete body.max_tokens;}
+    if (bounded && model === 'minimax-m3') body.thinking = {type:'disabled'};
+    mandatoryThinking = /^minimax-m2(?:[.-]|$)|^minimax-m3\.1(?:-|$)/.test(model);
+    if (bounded && /^minimax-m3\.1(?:-|$)/.test(model)) body.reasoning_effort = 'low';
+  }
+  // Keep short tasks from spending their entire allowance on required reasoning.
+  // This stays within the existing 8192/32768 caps and never triggers a retry.
+  if (mandatoryThinking) {
+    const limit = 'max_completion_tokens' in body ? 'max_completion_tokens' : 'max_tokens';
+    body[limit] = Math.max(body[limit],2048);
+  }
+  return body;
 }
 
 function parseCustomApiModels(data) {
@@ -11837,7 +11916,7 @@ function rpCustomApiRequestBody(cfg, messages, maxTokens, options = {}) {
       body.thinking = { type: 'disabled' };
     }
   }
-  return body;
+  return rpDomesticApiOptions(body, cfg, options);
 }
 
 function rpParseModelJSON(raw, kind = 'object') {
@@ -24613,7 +24692,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       const msgs = options.phoneTheatre ? theatreRequestMessages(prompt,sysMsg,options.theatrePreset) : [];
       if (!options.phoneTheatre) { if (sysMsg) msgs.push({ role: 'system', content: sysMsg }); msgs.push({ role: 'user', content: prompt }); }
       const data = await rpGuardAwait(rpFetchCustomApi(cfg, rpCustomApiRequestBody(cfg, msgs, maxTokens, options),
-        rpTask.signal, options.phoneTheatre ? 300000 : options.phoneDiary ? RP_DIARY_TIMEOUT_MS : rpIsVolcengineApi(cfg.url) ? 120000 : 60000), rpTask, timeout);
+        rpTask.signal, options.phoneTheatre ? 300000 : options.phoneDiary ? RP_DIARY_TIMEOUT_MS : rpCustomApiProvider(cfg.url) ? 120000 : 60000), rpTask, timeout);
       if (!data || typeof data !== 'object' || data.error || !Array.isArray(data.choices)) {
         throw rpPhoneApiError('format');
       }
