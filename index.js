@@ -11423,50 +11423,12 @@ function bindUI() {
     toggleLike($(this).data('moment'));
   });
 
-  // Moments: 朋友圈"点击生图"按钮 —— 复用 rpTriggerPendingImg 触发智绘姬
+  // Phone-owned scenes use chatu8's prompt LLM without main-floor button lookup.
   $(document).on("click.mochiPhone", '.rp-moment-pending-img', function(e) {
-    e.stopPropagation();
-    const momentId = $(this).data('mid');
-    const prompt = $(this).data('prompt') || '';
-    const self = this;
-
-    // ── 优先：检查主楼是否已有对应图片，有则直接回填，无需重新生图 ──
-    const moment = STATE.moments && STATE.moments.find(function(m) { return m.id === momentId; });
-    if (moment) {
-      // 找包含该 prompt 的智绘姬按钮（含隐藏保留区），看它内部是否已有 img（已生成完毕）
-      let alreadySrc = null;
-      if (prompt) {
-        const allBtns = document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button');
-        for (const btn of allBtns) {
-          const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
-          if (btnPrompt && (btnPrompt.includes(prompt.slice(0, 30)) || prompt.includes(btnPrompt.slice(0, 30)))) {
-            const imgEl = btn.querySelector('img');
-            if (imgEl && imgEl.src && imgEl.src.length > 10) {
-              alreadySrc = imgEl.src;
-            }
-            break;
-          }
-        }
-      }
-      if (alreadySrc) {
-        moment.img = alreadySrc;
-        moment.pendingImg = null;
-        moment.pendingImgType = null;
-        renderMoments();
-        saveState();
-        return;
-      }
-    }
-
-    // ── 图片尚未生成：走原有触发流程 ──
-    // Observer 回填时通过 _pendingMomentImgs 路由到 moment，不依赖 msgId
-    if (!STATE._pendingMomentImgs) STATE._pendingMomentImgs = new Map();
-    if (prompt) STATE._pendingMomentImgs.set(prompt, momentId);
-    // 复用 SMS 的触发函数：找主楼对应按钮并 click
-    rpTriggerPendingImg(null, momentId, prompt, self);
-    // 更新按钮外观为"生成中…"
-    $(self).html('<span style="font-size:16px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>')
-           .css({ cursor: 'default', pointerEvents: 'none' });
+    e.preventDefault(); e.stopPropagation();
+    const id = this.getAttribute('data-mid');
+    const moment = STATE.moments.find(m => m.id === id);
+    if (moment && moment.pendingImgType !== 'comfy') void rpGeneratePhoneImage(null, id, moment.pendingImg || '', this);
   });
 
   // Pending image: 事件委托兜底（避免元素级 click 丢失）
@@ -12957,7 +12919,7 @@ function renderBubbles(threadId, options = {}) {
       const pendingBtn = $(`
         <div class="rp-img-bbl rp-pending-img" style="min-width:90px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:12px 18px;gap:7px;" title="点击触发生图">
           <span style="font-size:17px;">📷</span>
-          <span class="rp-pending-label" style="font-size:12px;opacity:0.75;">点击生图</span>
+          <span class="rp-pending-label" style="font-size:12px;opacity:0.75;">${escHtml(rpPhoneImageLabel(msg))}</span>
         </div>
       `);
       pendingBtn.data('threadid', threadId);
@@ -13354,7 +13316,7 @@ function installChatu8ImageSyncToPhone() {
 
   rpRuntime.listen(es, 'generate-image-response', function(rp) {
     try {
-      if (!rp || !rp.success) return;
+      if (!rp || !rp.success || String(rp.id || '').startsWith('mochi-phone:')) return;
       const imgData = rp.imageData || rp.imageUrl || null;
       if (!imgData) return;
       const reqId = rp.id || '';
@@ -13475,206 +13437,77 @@ function installChatu8ButtonBridge() {
 // ================================================================
 //  PENDING IMAGE TRIGGER（点击"📷 点击生图"触发智绘姬）
 // ================================================================
-function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
-  // triggerEl: 被点击的 .rp-pending-img DOM 元素（由 jQuery .on('click') 传入）
-  console.log('[Phone:diag:trigger] rpTriggerPendingImg called', { hasThread: !!threadId, hasMessage: !!msgId, promptLength: String(prompt || '').length, triggerEl: !!triggerEl, waitQueueLen: window.rpImgWaitQueue?.length || 0 });
-  const sourceMesEl = triggerEl && triggerEl.closest ? triggerEl.closest('.mes') : null;
-  const sourceMesId = sourceMesEl ? parseInt(sourceMesEl.getAttribute('mesid') || '-1', 10) : -1;
+const rpPhoneImageJobs = new WeakMap();
+function rpPhoneImageLabel(item) {
+  const phase = rpPhoneImageJobs.get(item)?.phase;
+  return phase === 'prompt' ? '整理画面…' : phase === 'image' ? '正在生图…' : phase === 'error' ? '重试生图' : '点击生图';
+}
+function rpPhoneImageInput(threadId, item) {
+  const thread = threadId ? STATE.threads[threadId] : null;
+  const user = getContext()?.name1 || '我';
+  const clean = value => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1800);
+  let body;
+  if (thread) {
+    const index = thread.messages.indexOf(item);
+    const nearby = thread.messages.slice(Math.max(0, index - 6), index + 1);
+    for (const next of thread.messages.slice(index + 1, index + 3)) { if (next.time !== item.time) break; nearby.push(next); }
+    const dialogue = nearby.filter(m => m !== item && typeof m.text === 'string').map(m => (m.from === 'user' ? user : thread.name) + '：' + clean(m.text)).join('\n');
+    body = '手机信息图片\n对话双方：' + thread.name + '、' + user + '\n图片发送者：' + (item.from === 'user' ? user : thread.name) + '\n相关手机对话：\n' + dialogue + '\n目标图片的画面意图参考：' + clean(item.prompt);
+  } else {
+    body = '手机朋友圈配图\n发布者：' + (item.from === 'user' ? user : item.name || '联系人') + '\n本条动态：' + clean(item.text) + '\n目标图片的画面意图参考：' + clean(item.pendingImg);
+  }
+  return body.slice(0, 14000);
+}
+async function rpGeneratePhoneImage(threadId, itemId, prompt, triggerEl) {
+  const thread = threadId ? STATE.threads[threadId] : null;
+  const item = thread ? thread.messages.find(m => m.id === itemId && m.type === 'pending_image') : STATE.moments.find(m => m.id === itemId && !m.img && m.pendingImgType !== 'comfy');
+  if (!item || (threadId && !thread) || (thread ? item.prompt : item.pendingImg) !== prompt) return;
+  const previous = rpPhoneImageJobs.get(item);
+  if (previous && previous.phase !== 'error') return;
+  const task = rpRuntime.task(), slot = STATE.chatId;
+  const body = rpPhoneImageInput(threadId, item);
+  const sourcePrompt = thread ? item.prompt : item.pendingImg;
+  const job = { phase: 'prompt' };
+  rpPhoneImageJobs.set(item, job);
+  const current = () => task.valid() && STATE.chatId === slot && rpPhoneImageJobs.get(item) === job
+    && (thread ? STATE.threads[threadId] === thread && thread.messages.includes(item) && item.type === 'pending_image' && item.prompt === sourcePrompt : STATE.moments.includes(item) && !item.img && item.pendingImg === sourcePrompt)
+    && rpPhoneImageInput(threadId, item) === body;
+  const paint = () => {
+    if (!task.valid() || STATE.chatId !== slot) return;
+    if (thread && STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
+    if (!thread && STATE.currentView === 'moments') renderMoments();
+  };
+  window.rpImgWaitQueue = (window.rpImgWaitQueue || []).filter(e => !(e?.source === 'mochi-phone' && e.chatSlot === slot && e.pendingMsgId === itemId && (e.threadId || null) === (threadId || null)));
+  if (!thread) for (const [p, id] of STATE._pendingMomentImgs || []) if (id === itemId) STATE._pendingMomentImgs.delete(p);
+  paint();
   try {
-  function forceTriggerImageButton(btn) {
-    if (!btn) return false;
-    try {
-      STATE._suppressClose = Date.now();
-      btn.scrollIntoView && btn.scrollIntoView({ block: 'nearest' });
-      btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-      btn.dispatchEvent(new MouseEvent('mouseup',  { bubbles: true, cancelable: true }));
-      btn.dispatchEvent(new MouseEvent('click',    { bubbles: true, cancelable: true }));
-      console.log('[Phone:diag:trigger] forceTriggerImageButton SUCCESS', { btnTag: btn.tagName, btnClass: btn.className });
-      return true;
-    } catch(e) {
-      console.warn('[Phone:pendingImg] forceTriggerImageButton failed', rpErrorInfo(e));
-      return false;
-    }
+    const bridge = await rpGuardAwait(Promise.resolve(window.__chatu8MochiPhoneBridge), task);
+    if (!current()) return;
+    if (bridge?.protocol !== 1 || typeof bridge.generateImage !== 'function') throw new Error('智绘姬提示词入口未加载，请刷新酒馆页面后重试');
+    const result = await rpGuardAwait(bridge.generateImage({
+      texts: [body], signal: task.signal, isCurrent: current,
+      demand: '仅为目标手机消息或本条朋友圈配一张图。手机对话只是画面参考，不画聊天界面、聊天气泡或文字截图。发布者或发送者不必出现在画面中，除非明确要求自拍或人物照。旧标签只是粗糙的画面意图，不可直接照搬；按启用的角色外貌、服装与生图预设重新整理，矛盾时以明确人物资料为准，不要擅自增添人物。仅返回一个符合当前生图预设格式的有效image块。',
+      onProgress: phase => { if (current()) { job.phase = phase; paint(); } },
+    }), task);
+    if (!current()) return;
+    if (!result || typeof result.src !== 'string' || !/^(?:https?:|data:image\/|blob:|\/?(?:user\/)?images\/|\/user\/images\/)/i.test(result.src)) throw new Error('智绘姬未返回有效图片');
+    if (thread) { item.type = 'image'; item.src = result.src; }
+    else { item.img = result.src; item.pendingImg = null; item.pendingImgType = null; }
+    item.phoneImageSource = 'chatu8-llm';
+    item.generatedPrompt = String(result.prompt || '').slice(0, 20000);
+    rpPhoneImageJobs.delete(item);
+    refreshBadges(); updatePreviews(); saveState(); paint();
+  } catch (error) {
+    if (!current()) return;
+    job.phase = 'error';
+    toastr.warning(error?.message === '智绘姬提示词入口未加载，请刷新酒馆页面后重试' ? error.message : '智绘姬生图未完成，原内容已保留，可点击重试；请检查智绘姬任务与接口设置。');
+    paint();
+  } finally {
+    if (rpPhoneImageJobs.get(item) === job && job.phase !== 'error') { rpPhoneImageJobs.delete(item); paint(); }
   }
-
-  // 1) 优先找 mochi 保存/管理的智绘姬按钮；找不到时，允许“手机 pending 点击”安全触发主楼原生按钮。
-  // 关键边界：只有 rpTriggerPendingImg() 会写 rpImgWaitQueue；用户手动点主楼原生按钮仍不会入 mochi 队列。
-  let triggered = false;
-  let triggerSource = '';
-  const managedBtnSelector = '.rp-phone-live-img-btns button.st-chatu8-image-button, .rp-phone-live-img-btns button.image-tag-button, .rp-phone-saved-img-btns button.st-chatu8-image-button, .rp-phone-saved-img-btns button.image-tag-button, .rp-phone-moment-live-img-btns button.st-chatu8-image-button, .rp-phone-moment-live-img-btns button.image-tag-button';
-  const isMochiManagedImageBtn = function(btn) {
-    return !!(btn && btn.closest && btn.closest('.rp-phone-live-img-btns, .rp-phone-saved-img-btns, .rp-phone-moment-live-img-btns'));
-  };
-  const isNativeMainImageBtn = function(btn) {
-    if (!btn || !btn.closest) return false;
-    if (isMochiManagedImageBtn(btn)) return false;
-    if (btn.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-panel, #rp-phone, .rp-chat-view, .rp-moment-card')) return false;
-    return !!btn.closest('.mes, #chat');
-  };
-  const collectImageButtons = function(includeNative) {
-    const out = [];
-    const seen = new Set();
-    Array.from(document.querySelectorAll(managedBtnSelector)).forEach(function(btn) {
-      if (!seen.has(btn)) { seen.add(btn); out.push(btn); }
-    });
-    if (includeNative) {
-      Array.from(document.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(function(btn) {
-        if (!seen.has(btn) && isNativeMainImageBtn(btn)) { seen.add(btn); out.push(btn); }
-      });
-    }
-    return out.reverse();
-  };
-  const btns = collectImageButtons(false);
-  console.log('[Phone:diag:trigger] mochi托管智绘姬按钮数量:', btns.length);
-  const normalizedPrompt = String(prompt || '').replace(/\s+/g, ' ').trim();
-  const findPromptScore = function(btnPromptRaw) {
-    const btnPrompt = String(btnPromptRaw || '').replace(/\s+/g, ' ').trim();
-    if (!btnPrompt || !normalizedPrompt) return 0;
-    if (btnPrompt === normalizedPrompt) return 100;
-    if (btnPrompt.includes(normalizedPrompt) || normalizedPrompt.includes(btnPrompt)) return 80;
-    const a = btnPrompt.slice(0, 60);
-    const b = normalizedPrompt.slice(0, 60);
-    if (a && b && (a.includes(b) || b.includes(a))) return 60;
-    const a30 = btnPrompt.slice(0, 30);
-    const b30 = normalizedPrompt.slice(0, 30);
-    if (a30 && b30 && (a30.includes(b30) || b30.includes(a30))) return 40;
-    return 0;
-  };
-  let bestBtn = null;
-  let bestScore = 0;
-  for (const btn of btns) {
-    const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
-    const score = findPromptScore(btnPrompt);
-    if (score > bestScore) {
-      bestScore = score;
-      bestBtn = btn;
-    }
-  }
-  if (bestBtn && bestScore > 0) {
-    triggered = forceTriggerImageButton(bestBtn);
-    if (triggered) triggerSource = 'managed';
-  }
-
-  if (!triggered) {
-    const nativeBtns = collectImageButtons(true).filter(function(btn) { return isNativeMainImageBtn(btn); });
-    let nativeBestBtn = null;
-    let nativeBestScore = 0;
-    for (const btn of nativeBtns) {
-      const btnPrompt = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').trim();
-      const score = findPromptScore(btnPrompt);
-      if (score > nativeBestScore) {
-        nativeBestScore = score;
-        nativeBestBtn = btn;
-      }
-    }
-    console.log('[Phone:diag:trigger] 主楼原生智绘姬候选:', { count: nativeBtns.length, bestScore: nativeBestScore });
-    // 优先要求 prompt 匹配；若智绘姬按钮本身没有暴露 prompt/data-link，允许唯一主楼候选作为兜底。
-    // 这里仍然只在“手机 pending 点击”入口执行，不影响用户手动点主楼按钮。
-    if (nativeBestBtn && nativeBestScore >= 40) {
-      triggered = forceTriggerImageButton(nativeBestBtn);
-      if (triggered) triggerSource = 'native-main';
-    } else if (!nativeBestBtn && nativeBtns.length === 1) {
-      triggered = forceTriggerImageButton(nativeBtns[0]);
-      if (triggered) triggerSource = 'native-main-single';
-    }
-  }
-
-  if (!triggered) {
-    // 按钮未就绪——placeholder.js 可能还未重新插入按钮。
-    // 先主动触发 MESSAGE_UPDATED 让 placeholder.js 重新工作，再等待后重试。
-    console.warn('[Phone:pendingImg] 未找到智绘姬按钮，尝试触发 placeholder 重建...', { promptLength: String(prompt || '').length });
-    if (triggerEl) triggerEl.innerHTML = '<span style="font-size:14px;">🔄</span><span style="font-size:12px;opacity:0.7;"> 等待按钮...</span>';
-
-    // 触发 MESSAGE_UPDATED （模拟铅笔退出动作）
-    try {
-      const _ctx = (typeof getContext === 'function' ? getContext() : null) || globalThis.SillyTavern?.getContext?.() || null;
-      const _es = _ctx && _ctx.eventSource;
-      const _et = (_ctx && (_ctx.eventTypes || _ctx.event_types)) || window.event_types || globalThis.SillyTavern?.eventTypes;
-      if (_es && _et && _et['MESSAGE_UPDATED'] && Number.isFinite(sourceMesId) && sourceMesId >= 0) {
-        _es.emit(_et['MESSAGE_UPDATED'], sourceMesId);
-      }
-    } catch(_e) { console.warn('[Phone:pendingImg] 触发 MESSAGE_UPDATED 失败', rpErrorInfo(_e)); }
-
-    let _retryCount = 0;
-    const _retryInterval = setInterval(function() {
-      _retryCount++;
-      const _retryBtns = collectImageButtons(true);
-      let _retryTriggered = false;
-      let _retrySource = '';
-      if (normalizedPrompt) {
-        let _retryBestBtn = null;
-        let _retryBestScore = 0;
-        for (const btn of _retryBtns) {
-          const bp = (btn.getAttribute('data-link') || btn.getAttribute('data-prompt') || btn.textContent || '').replace(/\s+/g,' ').trim();
-          const _score = findPromptScore(bp);
-          if (_score > _retryBestScore) {
-            _retryBestScore = _score;
-            _retryBestBtn = btn;
-          }
-        }
-        if (_retryBestBtn && _retryBestScore >= 40) {
-          _retryTriggered = forceTriggerImageButton(_retryBestBtn);
-          _retrySource = isNativeMainImageBtn(_retryBestBtn) ? 'native-main' : 'managed';
-        } else {
-          const _nativeOnly = _retryBtns.filter(function(btn) { return isNativeMainImageBtn(btn); });
-          if (_nativeOnly.length === 1) {
-            _retryTriggered = forceTriggerImageButton(_nativeOnly[0]);
-            _retrySource = 'native-main-single';
-          }
-        }
-      }
-      if (_retryTriggered) {
-        clearInterval(_retryInterval);
-        window.rpImgWaitQueue = window.rpImgWaitQueue || [];
-        rpAddImageWait({ source: 'mochi-phone', triggerSource: _retrySource || 'managed', sourceMesId, threadId, pendingMsgId: msgId, prompt });
-        if (triggerEl) {
-          const _origHtml2 = triggerEl.innerHTML;
-          triggerEl.innerHTML = '<span style="font-size:17px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>';
-          triggerEl.style.cursor = 'default';
-          triggerEl.style.pointerEvents = 'none';
-          setTimeout(function() {
-            if (triggerEl && triggerEl.style.pointerEvents === 'none') {
-              triggerEl.innerHTML = _origHtml2;
-              triggerEl.style.cursor = 'pointer';
-              triggerEl.style.pointerEvents = 'auto';
-            }
-          }, 30000);
-        }
-      } else if (_retryCount >= 5) {
-        clearInterval(_retryInterval);
-        console.warn('[Phone:pendingImg:retry] 重试5次仍未找到按钮，放弃');
-        if (triggerEl) {
-          triggerEl.innerHTML = '<span style="font-size:12px;opacity:0.6;">⚠️ 请在主楼手动点击生图按钮</span>';
-          triggerEl.style.cursor = 'pointer';
-          triggerEl.style.pointerEvents = 'auto';
-        }
-      }
-    }, 600);
-    return;
-  }
-
-  // 3) 触发成功：把这个请求加入等待队列，MutationObserver 收到图片后来消费
-  window.rpImgWaitQueue = window.rpImgWaitQueue || [];
-  rpAddImageWait({ source: 'mochi-phone', triggerSource: triggerSource || 'managed', sourceMesId, threadId, pendingMsgId: msgId, prompt });
-
-  // 更新气泡显示为"生成中..."
-  if (triggerEl) {
-    const _origHtml = triggerEl.innerHTML;
-    triggerEl.innerHTML = '<span style="font-size:17px;">⏳</span><span style="font-size:12px;opacity:0.7;"> 生成中…</span>';
-    triggerEl.style.cursor = 'default';
-    triggerEl.style.pointerEvents = 'none';
-    // 超时恢复：30秒内未收到图片则恢复按钮可点击状态，避免永久卡死
-    setTimeout(function() {
-      if (triggerEl && triggerEl.style.pointerEvents === 'none') {
-        triggerEl.innerHTML = _origHtml;
-        triggerEl.style.cursor = 'pointer';
-        triggerEl.style.pointerEvents = 'auto';
-      }
-    }, 30000);
-  }
-  } catch(err) {
-    console.error('[Phone:pendingImg] 触发生图时出错', rpErrorInfo(err));
-  }
+}
+function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
+  return rpGeneratePhoneImage(threadId, msgId, prompt, triggerEl);
 }
 
 // ================================================================
@@ -14054,7 +13887,7 @@ function rpConsumeGeneratedImage(img, messageIndex) {
   const target = matched.values().next().value;
   if (target.moment) {
     const moment = STATE.moments.find(m => m.id === (target.momentId || target.pendingMsgId));
-    if (!moment || moment.img) return false;
+    if (!moment || moment.img || rpPhoneImageJobs.has(moment)) return false;
     moment.img = src; moment.pendingImg = null; moment.pendingImgType = null;
     if (STATE.currentView === 'moments') renderMoments();
   } else {
@@ -14064,6 +13897,7 @@ function rpConsumeGeneratedImage(img, messageIndex) {
     const previous = index >= 0 ? thread.messages[index] : null;
     // Match the pending request first; separate requests may produce the same URL.
     // A deleted or already completed placeholder must never be resurrected.
+    if (previous && rpPhoneImageJobs.has(previous)) return false;
     if (target.pendingMsgId ? previous?.type !== 'pending_image' : thread.messages.some(m => m.type === 'image' && m.src === src)) return false;
     if (!prompt && thread.messages.some(m => m.type === 'image' && m.src === src)) return false;
     const message = { ...previous, id: previous?.id || 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), from: target.threadId, type: 'image', time: previous?.time || target.time || resolvePhoneTime(), src };
@@ -15988,7 +15822,7 @@ function rpParsePhoneAtom(block, source = {}) {
       const th = STATE.threads[threadId];
       if (!th) return;
       // 避免重复添加同一 prompt 的 pending_image
-      const alreadyPending = th.messages.some(m => m.type === 'pending_image' && m.prompt === prompt);
+      const alreadyPending = th.messages.some(m => m.prompt === prompt && (m.type === 'pending_image' || (m.type === 'image' && m.phoneImageSource === 'chatu8-llm' && m.time === msgTime)));
       if (alreadyPending) return;
       const pid = `pimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
       th.messages.push({ id: pid, from: threadId, type: 'pending_image', prompt, time: msgTime });
@@ -19608,7 +19442,7 @@ function renderMoments() {
           : moment.pendingImg
             ? moment.pendingImgType === 'comfy'
               ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;"><span style="font-size:16px;">⏳</span><span style="font-size:12px;opacity:0.7;">生成中…</span></div>`
-              : `<div class="rp-moment-img-wrap rp-moment-pending-img" data-mid="${escHtml(moment.id)}" data-prompt="${escHtml(moment.pendingImg)}" style="min-width:90px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;" title="点击触发生图"><span style="font-size:16px;">📷</span><span style="font-size:12px;opacity:0.75;">点击生图</span></div>`
+              : `<div class="rp-moment-img-wrap rp-moment-pending-img" data-mid="${escHtml(moment.id)}" data-prompt="${escHtml(moment.pendingImg)}" style="min-width:90px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;" title="点击触发生图"><span style="font-size:16px;">📷</span><span style="font-size:12px;opacity:0.75;">${escHtml(rpPhoneImageLabel(moment))}</span></div>`
             : ''
         }
         <div class="rp-moment-bar">
