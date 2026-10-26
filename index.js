@@ -675,12 +675,17 @@ const RP_MOMENT_TRANSLATE_CSS = `
 #rp-phone #rp-screen #rp-view-moments .rp-moment-translate-btn:disabled {opacity:.55;cursor:wait;}
 `;
 const RP_MESSAGE_ACTIONS_CSS = `
-#rp-phone #rp-screen #rp-view-messages>.rp-nav-bar {padding-right:6px;}
-#rp-phone #rp-screen #rp-view-messages .rp-feature-nav-actions {margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:2px;height:40px;flex:0 0 auto;}
-#rp-phone #rp-screen #rp-view-messages :is(#rp-local-search,#rp-add-btn) {display:inline-flex!important;align-items:center;justify-content:center;box-sizing:border-box;height:40px;min-height:40px;margin:0;padding:0!important;line-height:1!important;}
-#rp-phone #rp-screen #rp-view-messages #rp-local-search {width:32px;min-width:32px;font-size:11px;}
-#rp-phone #rp-screen #rp-view-messages #rp-add-btn {width:40px;min-width:40px;font-size:26px!important;}
+#rp-phone #rp-screen #rp-view-messages>.rp-nav-bar {padding-right:6px!important;padding-left:6px!important;grid-template-columns:40px minmax(0,1fr) 40px;position:relative;z-index:5;overflow:visible!important;}
+#rp-phone #rp-screen #rp-view-messages>.rp-nav-bar>.rp-nav-title {max-width:calc(100% - 104px)!important;}
+#rp-phone #rp-screen #rp-view-messages .rp-messages-nav-actions {position:relative;display:flex;align-items:center;justify-content:flex-end;margin-left:auto;height:40px;}
+#rp-phone #rp-screen #rp-messages-more {display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-width:40px;min-height:40px;padding:0!important;margin:0;border:0!important;border-radius:50%;background:transparent!important;box-shadow:none!important;color:var(--rp-nav-btn,#99677e)!important;font:20px/1 Arial,sans-serif!important;cursor:pointer;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-messages-menu {position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:120px;max-width:220px;padding:5px;border:1px solid var(--rp-v-border,rgba(90,60,80,.14));border-radius:14px;background:var(--rp-v-surface,#fff7fa);box-shadow:0 8px 24px rgba(30,20,35,.14);box-sizing:border-box;}
+#rp-phone #rp-screen #rp-messages-menu[hidden] {display:none!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-view-messages #rp-messages-menu>button {box-sizing:border-box!important;position:static!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;transform:none!important;animation:none!important;flex:0 0 auto!important;width:100%!important;height:auto!important;min-width:0!important;max-width:none!important;min-height:38px!important;max-height:none!important;padding:8px 14px!important;margin:0;border:0!important;border-radius:9px!important;background:transparent!important;box-shadow:none!important;color:var(--rp-v-text,#493e46)!important;font:inherit;font-size:13px!important;line-height:1.4!important;white-space:nowrap;cursor:pointer;touch-action:manipulation;}
+#rp-phone #rp-screen #rp-messages-menu>button:hover,#rp-phone #rp-screen #rp-messages-menu>button:focus-visible {background:var(--rp-v-card,rgba(120,90,110,.08))!important;}
+#rp-phone #rp-screen #rp-messages-menu>button:disabled {opacity:.5;cursor:wait;}
 `;
+
 const RP_PRIVATE_AVATAR_CSS = `
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-private-row {flex-direction:row;align-items:flex-start;gap:7px;}
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-private-row.rp-out {flex-direction:row-reverse;}
@@ -5686,7 +5691,7 @@ function rpClearPhoneMotion() {
   }
 }
 const rpAuxMotion = new Map();
-const RP_MOTION_SURFACES = '#rp-feature-layer,#rp-compose-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel,#rp-api-panel,#rp-model-list,#rp-moments-menu,#rp-xhs-menu,#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create,#rp-game-chat-fs,#g2048-chat-fs,#ggold-chat-fs,#gword-chat-fs';
+const RP_MOTION_SURFACES = '#rp-feature-layer,#rp-compose-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel,#rp-api-panel,#rp-model-list,#rp-messages-menu,#rp-moments-menu,#rp-xhs-menu,#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create,#rp-game-chat-fs,#g2048-chat-fs,#ggold-chat-fs,#gword-chat-fs';
 function rpCancelAuxMotion(element, finish = false) {
   const previous = rpAuxMotion.get(element);
   rpAuxMotion.delete(element);
@@ -6175,7 +6180,7 @@ function rpSetPhoneOpen(open) {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
-      rpSetXhsMenu(false); rpSetMomentsMenu(false);
+      rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false);
       rpRememberReading();
       saveState();
       rpClearPhoneMotion();
@@ -8819,7 +8824,14 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title">信息</span>
-            <div class="rp-feature-nav-actions"><button type="button" class="rp-feature-nav" id="rp-local-search">搜索</button><button class="rp-nav-add" id="rp-add-btn">+</button></div>
+            <div class="rp-messages-nav-actions">
+              <button id="rp-messages-more" type="button" aria-label="信息更多操作" aria-haspopup="menu" aria-controls="rp-messages-menu" aria-expanded="false">⋯</button>
+              <div id="rp-messages-menu" role="menu" aria-label="信息操作" hidden>
+                <button id="rp-local-search" type="button" role="menuitem">搜索</button>
+                <button id="rp-add-btn" type="button" role="menuitem">添加</button>
+                <button id="rp-messages-read-all" type="button" role="menuitem">全部已读</button>
+              </div>
+            </div>
           </div>
           <div id="rp-thread-list"></div>
         </div>
@@ -10131,7 +10143,7 @@ function rpTools() {
 function rpCloseFeatureDialog(immediate = false) { rpSetSurfaceOpen('#rp-feature-layer',false,{remove:true,immediate}); }
 function rpCloseChatOverlays() {
   for (const key of ['ludo','g2048','gm','gword']) rpCloseGameHistoryViewport(key);
-  rpSetXhsMenu(false); rpSetMomentsMenu(false);
+  rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false);
   rpCloseFeatureDialog(true);
   rpSetSurfaceOpen('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create',false,{remove:true,immediate:true});
   rpSetGameFolderOpen(false,true);
@@ -10424,7 +10436,7 @@ function rpInstallReadingListener() {
     rpReadingTimer=setTimeout(()=>{rpReadingTimer=null;rpRememberReading();saveState();},150);
   },true);
 }
-function rpOpenLocalSearch(event) { rpTools().conversation.openSearch(event?.currentTarget?.id==='rp-thread-search'?STATE.currentThread:''); }
+function rpOpenLocalSearch(event) { rpSetMessagesMenu(false,true); rpTools().conversation.openSearch(event?.currentTarget?.id==='rp-thread-search'?STATE.currentThread:''); }
 
 function rpInstallBackSwipe() {
   const screen = document.getElementById('rp-screen');
@@ -10561,6 +10573,21 @@ function bindUI() {
   rpRefreshPhoneLanguageSettings();
   $(document).on('change.mochiPhone','#rp-auto-messages-enabled,#rp-auto-moments-enabled',function(){
     if(!rpSetAutoTranslation(this.id === 'rp-auto-messages-enabled' ? 'messages' : 'moments',this.checked)) {rpRefreshAutoTranslationSettings();toastr.info('翻译设置未保存，请重试。');}
+  });
+  $(document).on('click.mochiPhone','#rp-messages-more',function(){rpSetMessagesMenu(this.getAttribute('aria-expanded') !== 'true',true);});
+  $(document).on('click.mochiPhone focusin.mochiPhone',function(event){if(!$(event.target).closest('#rp-view-messages .rp-messages-nav-actions').length)rpSetMessagesMenu(false);});
+  $(document).on('keydown.mochiPhone','#rp-view-messages .rp-messages-nav-actions',function(event){
+    const menu=document.getElementById('rp-messages-menu');
+    if(event.key === 'Escape' && !menu.hidden){event.preventDefault();event.stopPropagation();rpSetMessagesMenu(false,true);return;}
+    if(event.key === 'Tab'){rpSetMessagesMenu(false);return;}
+    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+    event.preventDefault();const wasHidden=menu.hidden;rpSetMessagesMenu(true);
+    const items=Array.from(menu.querySelectorAll('button:not(:disabled)')),i=items.indexOf(document.activeElement);
+    if(items.length)items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length-1 : wasHidden || i<0 ? (event.key === 'ArrowUp' ? items.length-1 : 0) : (i+(event.key === 'ArrowUp' ? -1 : 1)+items.length)%items.length].focus();
+  });
+  $(document).on('click.mochiPhone','#rp-messages-read-all',function() {
+    rpSetMessagesMenu(false,true);
+    rpMarkAllMessagesRead();
   });
   $(document).on('click.mochiPhone','#rp-moments-more',function(){rpSetMomentsMenu(this.getAttribute('aria-expanded') !== 'true',true);});
   $(document).on('click.mochiPhone focusin.mochiPhone',function(event){if(!$(event.target).closest('#rp-view-moments .rp-moments-nav-actions').length)rpSetMomentsMenu(false);});
@@ -10738,6 +10765,7 @@ function bindUI() {
 
   $('#rp-add-btn').on('click', (e) => {
     e.stopPropagation();
+    rpSetMessagesMenu(false,true);
     showAddChoice();
   });
 
@@ -10847,7 +10875,7 @@ function bindUI() {
 
   // 小红书 - 发帖按钮
   $(document).on("click.mochiPhone", '#rp-xhs-compose', function() {
-    rpSetXhsMenu(false); rpSetMomentsMenu(false);
+    rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false);
     if (rpXhsFavoritesOnly) rpSetFavoritesOnly(false);
     go('xhs-compose');
   });
@@ -12515,6 +12543,24 @@ async function rpPumpAutoTranslation() {
   }
   return false;
 }
+function rpSetMessagesMenu(open, focus = false) {
+  const menu = document.getElementById('rp-messages-menu'), trigger = document.getElementById('rp-messages-more');
+  if (!menu || !trigger) return;
+  open = !!open && STATE.currentView === 'messages';
+  rpSetSurfaceOpen(menu,open,{hidden:true}); trigger.setAttribute('aria-expanded',String(open));
+  if (focus) (open ? menu.querySelector('button:not(:disabled)') : trigger)?.focus();
+}
+function rpMarkAllMessagesRead() {
+  if (STATE.currentView !== 'messages') return false;
+  let changed = false;
+  for (const thread of Object.values(STATE.threads || {})) {
+    if (thread && thread.unread !== 0) { thread.unread = 0; changed = true; }
+  }
+  refreshBadges();
+  if (changed) saveState({ immediate: true });
+  return changed;
+}
+
 function rpSetMomentsMenu(open, focus = false) {
   const menu = document.getElementById('rp-moments-menu'), trigger = document.getElementById('rp-moments-more');
   if (!menu || !trigger) return;
