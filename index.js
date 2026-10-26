@@ -3040,6 +3040,8 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark .rp-moments-empty{color:rgba(160,175,255,.3)}
 
 /* ── AVATAR IMAGES ── */
+#rp-phone [data-rp-avatar-key] {cursor:pointer;touch-action:manipulation;}
+#rp-phone [data-rp-avatar-key]:focus-visible {outline:2px solid var(--rp-v-text, #64748b);outline-offset:3px;}
 .rp-av-img,.rp-moment-av.rp-av-img{overflow:hidden;padding:0}
 .rp-av-photo{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit}
 /* ── SETTINGS VIEW ── */
@@ -7286,6 +7288,55 @@ function getAvatar(key) {
   return null;
 }
 const rpAvatarEdits = new Map();
+function rpAvatarEditAttrs(key, label) {
+  return key ? ' data-rp-avatar-key="' + escHtml(key) + '" role="button" tabindex="0" title="更换头像" aria-label="更换' + escHtml(label || (key === 'user' ? '我' : key)) + '的头像"' : '';
+}
+function rpRefreshEditableAvatars(key) {
+  const image = getAvatar(key);
+  if (!image) return;
+  $('#rp-phone [data-rp-avatar-key]').each(function() {
+    if (this.getAttribute('data-rp-avatar-key') !== key) return;
+    $(this).addClass('rp-av-img').empty().append($('<img class="rp-av-photo" alt="">').attr('src', image)).css('background','transparent');
+  });
+  if ($('#rp-avatar-select').val() === key) updateAvatarPreviewSwatch(key);
+}
+function rpChooseAvatar(key) {
+  const who = String(key || '');
+  const input = document.getElementById('rp-avatar-file-input');
+  if (!who || !input) return;
+  const task = rpRuntime.task();
+  const ticket = Symbol('avatar'); rpAvatarEdits.set(who, ticket);
+  const current = () => task.valid() && rpAvatarEdits.get(who) === ticket;
+  // Capture identity before the native picker opens; never read the settings select later.
+  const picker = input.cloneNode(true);
+  input.parentNode.replaceChild(picker, input);
+  picker.value = '';
+  picker.onchange = function() {
+    const file = this.files && this.files[0]; this.value = '';
+    if (!file || !current()) return;
+    if (file.type && !file.type.startsWith('image/')) { toastr.warning('请选择图片文件。'); return; }
+    const reader = new FileReader();
+    reader.onerror = () => { if (current()) toastr.warning('头像读取失败，请重新选择图片。'); };
+    reader.onload = function(ev) {
+      if (!current()) return;
+      const data = ev.target.result;
+      if (typeof data !== 'string' || !data.startsWith('data:image/')) { toastr.warning('请选择有效的图片。'); return; }
+      // Validate decoding first: a damaged image must not replace a working avatar.
+      const preview = new Image();
+      preview.onerror = () => { if (current()) toastr.warning('图片无法读取，请重新选择。'); };
+      preview.onload = function() {
+        if (!current()) return;
+        void setAvatarCompressed(who, data, ticket).then(function(value) {
+          if (!value || !current()) return;
+          rpRefreshEditableAvatars(who);
+        }).catch(function() { if (current()) toastr.warning('头像未能保存，请重新选择图片。'); });
+      };
+      preview.src = data;
+    };
+    reader.readAsDataURL(file);
+  };
+  picker.click();
+}
 let rpWallpaperEdit = null;
 function setAvatar(key, dataUrl, editToken) {
   if (editToken && rpAvatarEdits.get(key) !== editToken) return;
@@ -7939,12 +7990,13 @@ function buildGroupSenderAvatarHtml(msg) {
   const th = getGroupSenderThread(rawName);
   const displayName = (th && th.name) || rawName || 'C';
   const img = getAvatar(displayName) || (rawName && getAvatar(rawName));
+  const edit = rpAvatarEditAttrs(displayName);
   if (img) {
-    return `<div class="rp-grp-av rp-av-img"><img class="rp-av-photo" src="${escHtml(img)}" alt=""/></div>`;
+    return `<div class="rp-grp-av rp-av-img"${edit}><img class="rp-av-photo" src="${escHtml(img)}" alt=""/></div>`;
   }
   const initials = escHtml((th && th.initials) || (msg && msg.initials) || displayName.slice(0, 2) || 'C');
   const avatarBg = escHtml((th && th.avatarBg) || (msg && msg.avatarBg) || '#7c3aed');
-  return `<div class="rp-grp-av" style="background:${avatarBg}">${initials}</div>`;
+  return `<div class="rp-grp-av"${edit} style="background:${avatarBg}">${initials}</div>`;
 }
 
 function appendGroupSenderBody(wrap, msg, contentEl, btnRow, time) {
@@ -11328,6 +11380,14 @@ function bindUI() {
 
 
 
+  // Handle avatar gestures inside the phone before contact-row/message handlers run.
+  $('#rp-phone').on('click.mochiPhone keydown.mochiPhone', '[data-rp-avatar-key]', function(e) {
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.type === 'keydown' && e.repeat) return;
+    e.preventDefault(); e.stopPropagation();
+    rpChooseAvatar(this.getAttribute('data-rp-avatar-key'));
+  });
+
   // Settings: avatar select change
   $(document).on("change.mochiPhone", '#rp-avatar-select', function() {
     updateAvatarPreviewSwatch($(this).val());
@@ -11336,7 +11396,7 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#rp-avatar-upload-btn', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    $('#rp-avatar-file-input').val('').trigger('click');
+    rpChooseAvatar($('#rp-avatar-select').val() || 'user');
   });
 
   // Settings app - go to settings view (override data-app handler)
@@ -12134,7 +12194,7 @@ function renderThreadList() {
 
     container.append(`
       <div class="rp-thread" data-thread="${escHtml(th.id)}">
-        ${(()=>{const ci=STATE.avatars&&STATE.avatars[th.name];return ci?`<div class="rp-av rp-av-img"><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-av" style="background:${escHtml(th.avatarBg)}">${escHtml(th.initials)}</div>`;})()}
+        ${(()=>{const ci=getAvatar(th.name);const edit=rpIsGroupThread(th)?'':rpAvatarEditAttrs(th.name);return ci?`<div class="rp-av rp-av-img"${edit}><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-av"${edit} style="background:${escHtml(th.avatarBg)}">${escHtml(th.initials)}</div>`;})()}
         <div class="rp-ti">
           <div class="rp-tn">${escHtml(th.name)}</div>
           <div class="rp-tp" id="rp-tp-${escHtml(th.id)}">${escHtml(preview)}</div>
@@ -12299,10 +12359,12 @@ function showGroupMembersModal(threadId) {
   if (!thread || thread.type !== 'group') return;
   const members = getGroupMemberEntries(thread);
   const rows = members.map(function(m) {
-    const img = getAvatar(m.name);
+    const key = m.id === 'user' ? 'user' : m.name;
+    const edit = rpAvatarEditAttrs(key, m.name);
+    const img = getAvatar(key);
     const av = img
-      ? `<div class="rp-gm-av"><img src="${escHtml(img)}" alt=""/></div>`
-      : `<div class="rp-gm-av" style="background:${escHtml(m.avatarBg)}">${escHtml(m.initials || String(m.name).slice(0,2))}</div>`;
+      ? `<div class="rp-gm-av"${edit}><img src="${escHtml(img)}" alt=""/></div>`
+      : `<div class="rp-gm-av"${edit} style="background:${escHtml(m.avatarBg)}">${escHtml(m.initials || String(m.name).slice(0,2))}</div>`;
     return `<div class="rp-gm-row">${av}<div class="rp-gm-name">${escHtml(m.name)}</div><div class="rp-gm-role">${escHtml(m.role || '成员')}</div></div>`;
   }).join('');
   $('#rp-group-members-modal').html(`
@@ -12329,7 +12391,7 @@ function openThread(threadId) {
   th.unread = 0;
   refreshBadges();
 
-  const hdAv = $('#rp-hd-av').removeClass('rp-group-members-trigger').removeAttr('title aria-label');
+  const hdAv = $('#rp-hd-av').removeClass('rp-group-members-trigger rp-av-img').removeAttr('title aria-label data-rp-avatar-key role tabindex');
   const _hdImg = getAvatar(th.name);
   if (_hdImg) {
     hdAv.empty().append(`<img class="rp-av-photo" src="${escHtml(_hdImg)}" alt=""/>`).css('background', 'transparent');
@@ -12338,6 +12400,9 @@ function openThread(threadId) {
   }
   if (th.type === 'group') {
     hdAv.addClass('rp-group-members-trigger').attr('title', '查看群成员').attr('aria-label', '查看群成员');
+  }
+  if (!rpIsGroupThread(th)) {
+    hdAv.attr('data-rp-avatar-key', th.name).attr('role','button').attr('tabindex','0').attr('title','更换头像').attr('aria-label','更换' + th.name + '的头像');
   }
   $('#rp-hd-name').text(th.name);
 
@@ -12669,7 +12734,7 @@ function rpAttachPrivateAvatar(wrap, thread, message) {
   const label = isUser ? '我' : String(thread.name || thread.initials || '联系人');
   const initials = isUser ? '我' : String(thread.initials || label.slice(0,2));
   const image = getAvatar(key) || (!isUser && getAvatar(thread.id));
-  const avatar = $('<div class="rp-private-avatar rp-grp-av" role="img">').attr('aria-label', label + '的头像').text(initials);
+  const avatar = $('<div class="rp-private-avatar rp-grp-av"' + rpAvatarEditAttrs(key, label) + '>').text(initials);
   if (image) {
     const photo = $('<img class="rp-av-photo" alt="">');
     photo.on('error', () => avatar.removeClass('rp-av-img').empty().text(initials));
@@ -16868,38 +16933,10 @@ async function postUserMoment() {
 //  SETTINGS / AVATAR MANAGEMENT
 // ================================================================
 function _bindAvatarUpload() {
-  const fileInput = document.getElementById('rp-avatar-file-input');
-  const uploadBtn = document.getElementById('rp-avatar-upload-btn');
-  if (!fileInput || !uploadBtn) return;
-  const newInput = fileInput.cloneNode(true);
-  fileInput.parentNode.replaceChild(newInput, fileInput);
-  uploadBtn.onclick = function(e) {
+  const button = document.getElementById('rp-avatar-upload-btn');
+  if (button) button.onclick = function(e) {
     e.preventDefault(); e.stopPropagation();
-    newInput.value = ''; newInput.click();
-  };
-  newInput.onchange = function() {
-    const file = this.files && this.files[0];
-    if (!file) return;
-    const who = document.getElementById('rp-avatar-select')?.value || 'user';
-    const ticket = Symbol('avatar'); rpAvatarEdits.set(who, ticket);
-    const reader = new FileReader();
-    reader.onerror = rpRuntime.guard(() => {
-      if (rpAvatarEdits.get(who) === ticket) toastr.warning('头像读取失败，请重新选择图片。');
-    });
-    reader.onload = rpRuntime.guard(function(ev) {
-      if (rpAvatarEdits.get(who) !== ticket) return;
-      // One selection, one reader and one compression pass to the existing 128px limit.
-      void setAvatarCompressed(who, ev.target.result, ticket).then(rpRuntime.guard(function(value) {
-        if (!value || rpAvatarEdits.get(who) !== ticket) return;
-        updateAvatarPreviewSwatch(who);
-        renderMoments(); renderThreadList(); renderDiary();
-        if (STATE.currentView === 'thread' && STATE.currentThread) openThread(STATE.currentThread);
-      })).catch(rpRuntime.guard(() => {
-        if (rpAvatarEdits.get(who) === ticket) toastr.warning('头像未能保存，请重新选择图片。');
-      }));
-    });
-    reader.readAsDataURL(file);
-    this.value = '';
+    rpChooseAvatar(document.getElementById('rp-avatar-select')?.value || 'user');
   };
 }
 
@@ -19556,7 +19593,7 @@ function renderMoments() {
     container.append(`
       <div class="rp-moment" data-mid="${escHtml(moment.id)}">
         <div class="rp-moment-hd">
-          ${(()=>{const k=moment.from==='user'?'user':moment.name;const ci=STATE.avatars&&STATE.avatars[k];return ci?`<div class="rp-moment-av rp-av-img"><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-moment-av" style="background:${escHtml(moment.avatarBg)}">${escHtml(moment.initials)}</div>`;})()}
+          ${(()=>{const k=moment.from==='user'?'user':moment.name;const ci=getAvatar(k);const edit=rpAvatarEditAttrs(k,moment.from==='user'?'我':moment.name);return ci?`<div class="rp-moment-av rp-av-img"${edit}><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-moment-av"${edit} style="background:${escHtml(moment.avatarBg)}">${escHtml(moment.initials)}</div>`;})()}
           <div class="rp-moment-meta">
             <div class="rp-moment-name">${escHtml(moment.name)}</div>
 
