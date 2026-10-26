@@ -13181,17 +13181,27 @@ function rpCountMsgHtmlImages(msgText) {
   }
 }
 
+function rpChatu8MessageRoots(mesId) {
+  if (!Number.isFinite(mesId) || mesId < 0) return [];
+  const mesEl = document.querySelector(`.mes[mesid="${mesId}"]`);
+  const root = mesEl && mesEl.querySelector('.mes_text');
+  if (!root) return [];
+  const roots = [root], seen = new Set([root]);
+  for (let i = 0; i < roots.length; i++) {
+    for (const frame of roots[i].querySelectorAll('iframe')) {
+      try {
+        const doc = frame.contentDocument;
+        if (doc && !seen.has(doc)) { seen.add(doc); roots.push(doc); }
+      } catch (_) { /* Cross-origin frames are outside the phone's scope. */ }
+    }
+  }
+  return roots;
+}
+
 function rpCountMesTextImages(mesId) {
   try {
-    mesId = Number(mesId);
-    if (!Number.isFinite(mesId) || mesId < 0) return 0;
-    const mesEl = document.querySelector(`.mes[mesid="${mesId}"]`);
-    const textEl = mesEl && mesEl.querySelector ? mesEl.querySelector('.mes_text') : null;
-    if (!textEl) return 0;
-    return textEl.querySelectorAll('img').length;
-  } catch(e) {
-    return 0;
-  }
+    return rpChatu8MessageRoots(Number(mesId)).reduce((count, root) => count + root.querySelectorAll('img').length, 0);
+  } catch (_) { return 0; }
 }
 
 function rpShouldSkipMainChatu8Mes(mesId) {
@@ -13301,55 +13311,59 @@ function rpFindChatu8ResponseMesId(rp, btn) {
   }
 }
 
-function rpRefreshMainChatu8MesAfterResponse(mesId) {
+const rpChatu8ResponseRefreshJobs = new WeakMap();
+function rpHasChatu8ResponseMedia(mesId, response) {
+  const requestId = String(response.id || '');
+  if (!requestId) return false;
+  const src = response.imageData || response.imageUrl || '';
+  for (const root of rpChatu8MessageRoots(mesId)) {
+    for (const span of root.querySelectorAll('span[data-request-id]')) {
+      if (span.dataset.requestId !== requestId) continue;
+      for (const media of span.querySelectorAll('.st-chatu8-image-container img, .st-chatu8-image-container video')) {
+        if (media.tagName === 'VIDEO' && response.isVideo && media.getAttribute('src')) return true;
+        if (media.tagName === 'IMG' && src && (media.getAttribute('src') === src || media.src === src || media.dataset.fullSrc === src)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function rpRefreshMainChatu8MesAfterResponse(mesId, response) {
   try {
-    if (!Number.isFinite(mesId) || mesId < 0) return;
-    const delays = [120, 350, 800, 1600, 3000];
-    const keepLockUntil = Date.now() + 4500;
-    const oldLock = window.__rpMainChatu8Lock || {};
-    const baselineImageCount = (Number(oldLock.mesId) === Number(mesId) && Number.isFinite(Number(oldLock.imageCount)))
-      ? Number(oldLock.imageCount)
-      : rpCountMesTextImages(mesId);
-    window.__rpMainChatu8Lock = {
-      mesId: mesId,
-      requestId: oldLock.requestId || '',
-      prompt: oldLock.prompt || '',
-      imageCount: baselineImageCount,
-      expiresAt: keepLockUntil,
-      phase: 'response-refresh'
+    if (!Number.isFinite(mesId) || mesId < 0 || !response || !response.success) return;
+    const ctx = getContext(), chat = ctx?.chat, message = chat?.[mesId];
+    if (!message || typeof message !== 'object') return;
+    const task = rpRuntime.task(), raw = message.mes, swipe = message.swipe_id;
+    const requestId = String(response.id || ''), src = response.imageData || response.imageUrl || '';
+    if (!requestId) return;
+    const previous = rpChatu8ResponseRefreshJobs.get(message);
+    if (previous && previous.requestId === requestId && previous.src === src && previous.raw === raw && previous.swipe === swipe && previous.task.valid()) return;
+    const job = { requestId, src, raw, swipe, task, done: false };
+    rpChatu8ResponseRefreshJobs.set(message, job);
+    const lock = window.__rpMainChatu8Lock;
+    const ownsLock = () => lock && window.__rpMainChatu8Lock === lock && Number(lock.mesId) === mesId
+      && (!lock.requestId || String(lock.requestId) === String(response.id || ''));
+    if (ownsLock()) lock.expiresAt = Date.now() + 4500;
+    const current = () => task.valid() && rpChatu8ResponseRefreshJobs.get(message) === job
+      && getContext()?.chat === chat && chat[mesId] === message && message.mes === raw && message.swipe_id === swipe;
+    const finish = (mounted) => {
+      job.done = true;
+      if (ownsLock()) rpClearMainChatu8LockIfMes(mesId, mounted ? 'response_media_mounted' : 'response_watch_finished');
+      // Only repair a missing phone summary after the exact native result is mounted.
+      if (mounted && current() && rpMessageNeedsPhoneEchoRepair(mesId)) scheduleRepairPhoneByMesId(mesId, 'chatu8-image-complete');
     };
-    delays.forEach(function(delay, idx) {
-      setTimeout(function() {
-        try {
-          const mesEl = document.querySelector(`.mes[mesid="${mesId}"]`);
-          const currentImageCount = rpCountMesTextImages(mesId);
-          if (mesEl && currentImageCount > baselineImageCount) {
-            rpClearMainChatu8LockIfMes(mesId, 'refresh_seen_new_img');
-            try { scheduleRepairPhoneByMesId(mesId, 'chatu8-image-complete'); } catch(_) {}
-            return;
-          }
-          const liveCtx = (typeof getContext === 'function') ? getContext() : null;
-          const liveES = liveCtx && liveCtx.eventSource;
-          const liveET = liveCtx && (liveCtx.eventTypes || liveCtx.event_types);
-          if (liveES && liveET && liveET.MESSAGE_UPDATED) liveES.emit(liveET.MESSAGE_UPDATED, mesId);
-          if (idx === delays.length - 1) {
-            setTimeout(function() {
-              try {
-                const finalMesEl = document.querySelector(`.mes[mesid="${mesId}"]`);
-                if (finalMesEl && rpCountMesTextImages(mesId) > baselineImageCount) {
-                  rpClearMainChatu8LockIfMes(mesId, 'refresh_seen_new_img_final');
-                  try { scheduleRepairPhoneByMesId(mesId, 'chatu8-image-complete-final'); } catch(_) {}
-                }
-              } catch(_) {}
-            }, 250);
-          }
-        } catch(e) {
-          console.warn('[Phone:chatu8:main] refresh after image response failed', rpErrorInfo(e));
-        }
-      }, delay);
-    });
-  } catch(e) {
-    console.warn('[Phone:chatu8:main] schedule refresh failed', rpErrorInfo(e));
+    const delays = [120, 350, 800, 1600, 3000, 4200];
+    const check = (index) => {
+      if (job.done || rpChatu8ResponseRefreshJobs.get(message) !== job) return;
+      if (!current()) { finish(false); return; }
+      if (rpHasChatu8ResponseMedia(mesId, response)) { finish(true); return; }
+      if (index === delays.length - 1) { finish(false); return; }
+      setTimeout(() => check(index + 1), delays[index + 1] - delays[index]);
+    };
+    // Observe native mounting; never emit MESSAGE_UPDATED or rebuild the host floor.
+    setTimeout(() => check(0), delays[0]);
+  } catch (e) {
+    console.warn('[Phone:chatu8:main] response watch failed', rpErrorInfo(e));
   }
 }
 
@@ -13379,12 +13393,12 @@ function installChatu8ImageSyncToPhone() {
       const isNativeMain = rpIsNativeMainChatu8Button(btn);
       const responseMesId = rpFindChatu8ResponseMesId(rp, btn);
 
-      // 主楼原生按钮：mochi-phone 绝不代理插图/代理 img，只释放锁并主动让 ST 重渲染一次。
-      // 这等价于用户点铅笔再取消，但不改消息内容；避免 mochi 的隐藏 proxy img 被 st-chatu8/placeholder 抢链路。
+      // Native main-floor rendering stays with Chatu8; the phone observes its result.
+      // Chatu8 mounts the image and collapse wrapper; no host rerender is requested here.
       if (isNativeMain) {
         const mesEl = btn.closest('.mes');
         const mesId = Number.isFinite(responseMesId) && responseMesId >= 0 ? responseMesId : (mesEl ? parseInt(mesEl.getAttribute('mesid') || '-1', 10) : -1);
-        rpRefreshMainChatu8MesAfterResponse(mesId);
+        rpRefreshMainChatu8MesAfterResponse(mesId, rp);
         return;
       }
 
@@ -13397,15 +13411,13 @@ function installChatu8ImageSyncToPhone() {
         const managedMesEl = btn.closest('.mes');
         const managedMesId = Number.isFinite(responseMesId) && responseMesId >= 0 ? responseMesId : (managedMesEl ? parseInt(managedMesEl.getAttribute('mesid') || '-1', 10) : -1);
         if (Number.isFinite(managedMesId) && managedMesId >= 0) {
-          rpRefreshMainChatu8MesAfterResponse(managedMesId);
-          try { rpSchedulePhoneEchoRepairAfterChatu8Update(managedMesId, 'managed_generate_image_response'); } catch(_) {}
+          rpRefreshMainChatu8MesAfterResponse(managedMesId, rp);
         }
       }
 
-      // 如果按钮已经被重渲染挪掉，但队列证明这是 mochi 触发的图片，也要补刷对应楼层。
+      // A queued legacy phone request can still observe its own result after its button moves.
       if (!isMochiManaged && hasMochiWait && Number.isFinite(responseMesId) && responseMesId >= 0) {
-        rpRefreshMainChatu8MesAfterResponse(responseMesId);
-        try { rpSchedulePhoneEchoRepairAfterChatu8Update(responseMesId, 'queued_generate_image_response'); } catch(_) {}
+        rpRefreshMainChatu8MesAfterResponse(responseMesId, rp);
       }
 
       // 只有 mochi 自己触发/管理的生图，才走手机内回填/桥接。
