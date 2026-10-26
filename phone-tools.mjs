@@ -93,7 +93,7 @@ export const PHONE_TOOLS_CSS = [
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const forbidden = new Set(['__proto__','prototype','constructor']);
 const secret = /^(?:api[_-]?key|access[_-]?token|authorization|cookie|password|rp_ludo_api)$/i;
-const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
+const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','avatarLocalOnly','avatarOwners','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
 const clone = value => JSON.parse(JSON.stringify(value));
 const uid = () => 'pt_' + Date.now() + '_' + Math.random().toString(36).slice(2,11);
 function clean(value, depth = 0) {
@@ -401,7 +401,7 @@ export function createPhoneTools(api) {
   function makeBackup(payload=api.snapshot()) {
     const account=api.account(),slot=state().chatId;
     if(!account||!slot)throw new Error('账号或聊天尚未就绪。');
-    return {format:'mochi-phone-backup',version:1,exportedAt:new Date().toISOString(),origin:{account,slot},data:portable(payload)};
+    return {format:'mochi-phone-backup',version:1,exportedAt:new Date().toISOString(),origin:{account,slot},data:portable(api.backupSnapshot ? api.backupSnapshot(payload) : payload)};
   }
   function parseBackup(text) {
     if(typeof text!=='string'||text.length>64*1024*1024)throw new Error('请选择64MB以内的JSON备份。');
@@ -413,6 +413,8 @@ export function createPhoneTools(api) {
     if(value.data.bankData!=null&&!object(value.data.bankData))throw new Error('备份银行卡记录格式不完整。');
     for(const field of ['diary','themeStudioMessages'])if((value.data[field]||[]).some(item=>!object(item)))throw new Error('备份记录格式不完整。');
     for(const field of ['avatars','nameAliases'])if(value.data[field]!==undefined&&(!object(value.data[field])||Object.values(value.data[field]).some(item=>typeof item!=='string')))throw new Error('备份联系人设置格式不完整。');
+    if(value.data.avatarLocalOnly!==undefined&&(!object(value.data.avatarLocalOnly)||Object.values(value.data.avatarLocalOnly).some(v=>typeof v!=='boolean')))throw new Error('备份头像范围格式不完整。');
+    if(value.data.avatarOwners!==undefined&&(!object(value.data.avatarOwners)||Object.values(value.data.avatarOwners).some(v=>typeof v!=='string')))throw new Error('备份头像身份格式不完整。');
     if(value.data.phoneTools!==undefined&&(!object(value.data.phoneTools)||(value.data.phoneTools.bookmarks!==undefined&&!Array.isArray(value.data.phoneTools.bookmarks))))throw new Error('备份收藏格式不完整。');
     for(const field of ['moments','xhsFeed'])for(const post of value.data[field]||[])if(!object(post)||(post.comments!==undefined&&(!Array.isArray(post.comments)||post.comments.some(c=>!object(c)))))throw new Error('备份评论格式不完整。');
     for(const[id,thread]of Object.entries(value.data.threads))if(!object(thread)||thread.id!==id||typeof thread.name!=='string'||!Array.isArray(thread.messages)||thread.messages.some(m=>!object(m)))throw new Error('备份联系人或消息格式不完整。');
@@ -458,7 +460,19 @@ export function createPhoneTools(api) {
     for(const entry of bookmarks)if(object(entry)&&typeof entry.threadId==='string'&&typeof entry.messageId==='string'&&typeof entry.text==='string'){const key=JSON.stringify([entry.threadId,entry.messageId]);if(!known.has(key)){result.phoneTools.bookmarks.push(clone(entry));known.add(key);stats.bookmarks++;}}
     // Importing history must never start automatic translation requests.
     for(const t of Object.values(result.threads))if(t.phoneAutoTranslate){if(!current.threads?.[t.id])t.phoneAutoTranslate.enabled=false;else t.phoneAutoTranslate.known=[...new Set([...(t.phoneAutoTranslate.known||[]),...t.messages.map(m=>{if(m.id==null)m.id=uid();return String(m.id);})])];}
-    for(const field of ['avatars','nameAliases']){result[field] ||= {};for(const[key,value]of Object.entries(source[field]||{}))if(!Object.hasOwn(result[field],key))result[field][key]=clone(value);}
+    for(const field of ['avatars','nameAliases']){
+      result[field] ||= {};
+      for(const[key,value]of Object.entries(source[field]||{}))if(!Object.hasOwn(result[field],key)){
+        // Existing effective shared avatars have the same priority as explicit current images.
+        if(field==='avatars'&&api.avatar?.(key))continue;
+        result[field][key]=clone(value);
+        if(field==='avatars')for(const meta of ['avatarLocalOnly','avatarOwners']){
+          result[meta] ||= {};
+          if(Object.hasOwn(source[meta]||{},key))result[meta][key]=clone(source[meta][key]);
+          else delete result[meta][key];
+        }
+      }
+    }
     for(const field of ['composeDraft','diaryDraft','themeStudioDraft'])if(!result[field]&&typeof source[field]==='string')result[field]=source[field];
     result.themeStudioMessages ||= [];mergeList(result.themeStudioMessages,source.themeStudioMessages||[],stats,'themeMessages');
     result.commentDrafts ||= {};
@@ -497,7 +511,7 @@ export function createPhoneTools(api) {
     if(local?.key&&archived?.key)return Number(archived.at||0)>Number(local.at||0)?archived:local;
     return local||archived;
   }
-  const signature=()=>JSON.stringify(portable(api.snapshot()));
+  const signature=()=>{const current=api.snapshot();return JSON.stringify(portable(api.backupSnapshot?api.backupSnapshot(current):current));};
   async function restoreBackup(backup,expectedSignature,token) {
     if(!token.valid())return false;
     if(!api.canRestore()){info('请等当前发送、生成或生图完成后再恢复。');return false;}

@@ -6,7 +6,7 @@ import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-reader-132';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261026-self-audit-142';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-reader-132';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -7320,14 +7320,22 @@ function rpReadSharedAvatars() {
   rpSharedAvatarCache = {account:rpArchiveAccountHandle, raw, server, bank:result};
   return result;
 }
-function rpValidAvatarImage(value) {
-  return typeof value === 'string' && value.length <= 1000000 && /^(?:data:image\/|https?:\/\/|\/)/i.test(value);
+function rpValidAvatarImage(value, limit = 1000000) {
+  return typeof value === 'string' && value.length <= limit && /^(?:data:image\/|https?:\/\/|\/)/i.test(value);
 }
 function rpWriteSharedAvatars(bank) {
   let saved = false;
   try { localStorage.setItem(RP_SHARED_AVATARS_KEY, JSON.stringify(bank)); saved = true; } catch {}
   const es = _extSettings();
-  if (es) { es[RP_SHARED_AVATARS_KEY] = bank; saved = _saveSettings() || saved; }
+  if (es) {
+    const had = Object.hasOwn(es, RP_SHARED_AVATARS_KEY), previous = es[RP_SHARED_AVATARS_KEY];
+    es[RP_SHARED_AVATARS_KEY] = bank;
+    saved = _saveSettings() || saved;
+    if (!saved) {
+      if (had) es[RP_SHARED_AVATARS_KEY] = previous;
+      else delete es[RP_SHARED_AVATARS_KEY];
+    }
+  }
   if (!saved) throw new Error('Shared avatar storage unavailable');
 }
 function rpSeedSharedAvatars() {
@@ -7353,9 +7361,34 @@ function rpAvatarUploadScope() {
 function getAvatar(key) {
   const identity = rpAvatarIdentity(key);
   const local = STATE.avatars?.[key];
-  if (Object.hasOwn(STATE.avatars || {}, key) && rpValidAvatarImage(local) && (!Object.hasOwn(STATE.avatarOwners || {}, key) || STATE.avatarOwners[key] === identity)) return local;
+  if (Object.hasOwn(STATE.avatars || {}, key) && rpValidAvatarImage(local, Infinity) && (!Object.hasOwn(STATE.avatarOwners || {}, key) || STATE.avatarOwners[key] === identity)) return local;
   return identity ? rpReadSharedAvatars()[identity]?.src || null : null;
 }
+// Export only images used by this chat, without turning live shared images into overrides.
+function rpAvatarBackupPayload(payload) {
+  const copy = JSON.parse(JSON.stringify(payload));
+  copy.avatars ||= {}; copy.avatarLocalOnly ||= {}; copy.avatarOwners ||= {};
+  const names = new Set(['user',getCurrentCharName(getContext()),...Object.keys(copy.avatars)]);
+  for (const thread of Object.values(copy.threads || {})) {
+    if (!rpIsGroupThread(thread)) names.add(thread.name);
+    for (const message of thread.messages || []) if (message.from !== 'user' && message.name) names.add(message.name);
+  }
+  for (const post of copy.moments || []) {
+    if (post.from !== 'user') names.add(post.name);
+    for (const comment of post.comments || []) if (comment.from !== 'user') names.add(comment.name);
+  }
+  for (const name of names) {
+    if (!name || Object.hasOwn(copy.avatars,name)) continue;
+    const image = getAvatar(name);
+    if (!image) continue;
+    Object.defineProperty(copy.avatars,name,{value:image,enumerable:true,writable:true,configurable:true});
+    Object.defineProperty(copy.avatarLocalOnly,name,{value:true,enumerable:true,writable:true,configurable:true});
+    const identity = rpAvatarIdentity(name);
+    if (identity) Object.defineProperty(copy.avatarOwners,name,{value:identity,enumerable:true,writable:true,configurable:true});
+  }
+  return copy;
+}
+
 const rpAvatarEdits = new Map();
 function rpAvatarEditAttrs(key, label) {
   return key ? ' data-rp-avatar-key="' + escHtml(key) + '" role="button" tabindex="0" title="更换头像" aria-label="更换' + escHtml(label || (key === 'user' ? '我' : key)) + '的头像"' : '';
@@ -7411,6 +7444,7 @@ function rpChooseAvatar(key) {
 }
 let rpWallpaperEdit = null;
 function setAvatar(key, dataUrl, editToken, scope = 'local') {
+  if (!rpValidAvatarImage(dataUrl)) throw new Error('头像压缩未成功或图片过大，请重新选择图片');
   if (editToken && rpAvatarEdits.get(key) !== editToken) return;
   const identity = rpAvatarIdentity(key);
   if (scope === 'shared' && identity) {
@@ -10207,7 +10241,7 @@ function rpTools() {
     translate:(target,valid)=>rpTogglePhoneTranslation(target,{valid}),
     autoTranslation:{prefs:rpAutoTranslationPrefs,set:rpSetAutoTranslation,open:rpOpenAutoTranslation,pump:rpPumpAutoTranslation},
     translationBusy:()=>Object.values(STATE.threads).some(t=>(t.messages||[]).some(m=>{const j=rpPhoneTranslationJobs.get(m);return j?.pending&&j.task.valid();})),
-    openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload,
+    openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload, backupSnapshot: rpAvatarBackupPayload,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
     compatibleSlot: slot => {
       if (slot === STATE.chatId) return true;
