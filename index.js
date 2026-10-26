@@ -3,7 +3,7 @@ import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-reader-132';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
-import { createStickers } from './stickers.mjs?v=20261026-resize-138';
+import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
 import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261024-theatre-reader-132';
