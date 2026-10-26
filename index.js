@@ -6679,6 +6679,8 @@ function makeLightweightPayload(payload) {
     darkMode: !!p.darkMode,
     themeSettings: p.themeSettings || null,
     avatars: p.avatars || {},
+    avatarLocalOnly: p.avatarLocalOnly || {},
+    avatarOwners: p.avatarOwners || {},
     currentView: p.currentView || 'home',
     currentThread: p.currentThread || null,
     bankMeta: p.bankData ? {
@@ -6745,6 +6747,8 @@ function buildStatePayload() {
     themeSettings: getThemeSettingsSnapshot(),
     nameAliases: Object.assign({}, STATE.nameAliases || {}),
     avatars: Object.assign({}, STATE.avatars || {}),
+    avatarLocalOnly: Object.assign({}, STATE.avatarLocalOnly || {}),
+    avatarOwners: Object.assign({}, STATE.avatarOwners || {}),
     wallpaper: STATE.wallpaper || null,
     currentView: STATE.currentView || 'home',
     currentThread: STATE.currentThread || null,
@@ -6980,6 +6984,8 @@ const STATE = {
   readingPositions: {},
   nameAliases: {},
   avatars: {},
+  avatarLocalOnly: {},
+  avatarOwners: {},
   _lastAiFingerprint: null,
   _imageCompressing: false,
   _imageCompressTimer: null,
@@ -7279,18 +7285,76 @@ function enrichPayloadMeta(payload, ctx) {
   return payload;
 }
 
-// 头像模块级缓存--独立于 STATE.avatars,不受 chatId 切换影响
+// Local compatibility mirrors are reset with the chat; shared images use card/persona identities.
 // 所有读头像的地方统一调 getAvatar(key),写头像调 setAvatar(key, dataUrl)
 const _AV = {};
-function getAvatar(key) {
-  // window._rpAV 最高优先级,不受任何闭包/STATE切换影响
-  if (window._rpAV && window._rpAV[key]) return window._rpAV[key];
-  if (_AV[key]) return _AV[key];
-  if (STATE.avatars && STATE.avatars[key]) {
-    setAvatar(key, STATE.avatars[key]);
-    return STATE.avatars[key];
+// Shared images belong to an account and a card/persona, never to a display name alone.
+const RP_SHARED_AVATARS_KEY = 'mochi_phone_shared_avatars_v1';
+let rpSharedAvatarCache = null;
+function rpAvatarIdentity(key, ctx = getContext()) {
+  if (!rpArchiveAccountHandle || !ctx) return null;
+  if (key === 'user') {
+    const persona = ctx.user_avatar;
+    return typeof persona === 'string' && persona ? JSON.stringify(['persona', persona]) : null;
   }
-  return null;
+  if (ctx.groupId != null) return null; // Group membership cannot establish an NPC's owning card.
+  const avatar = ctx.characters?.[ctx.characterId]?.avatar;
+  if (!avatar) return null;
+  const card = rpPhoneCanonicalCardAvatar(avatar);
+  return normalizePhonePersonName(key) === normalizePhonePersonName(getCurrentCharName(ctx))
+    ? JSON.stringify(['card', card, 'char'])
+    : JSON.stringify(['card', card, 'npc', normalizePhonePersonName(key)]);
+}
+function rpReadSharedAvatars() {
+  // Server settings are authoritative; the account-local copy also serves other tabs.
+  const server = _extSettings()?.[RP_SHARED_AVATARS_KEY];
+  let raw = null; try { raw = localStorage.getItem(RP_SHARED_AVATARS_KEY); } catch {}
+  if (rpSharedAvatarCache?.account === rpArchiveAccountHandle && rpSharedAvatarCache.raw === raw && rpSharedAvatarCache.server === server) return rpSharedAvatarCache.bank;
+  let local; try { local = JSON.parse(raw || '{}'); } catch {}
+  const result = Object.create(null);
+  for (const source of [local, server]) if (source && typeof source === 'object' && !Array.isArray(source)) {
+    for (const [key, value] of Object.entries(source)) if (rpValidAvatarImage(value?.src) && Number.isFinite(value.updated)) {
+      if (!result[key] || result[key].updated < value.updated) result[key] = {src:value.src, updated:value.updated};
+    }
+  }
+  rpSharedAvatarCache = {account:rpArchiveAccountHandle, raw, server, bank:result};
+  return result;
+}
+function rpValidAvatarImage(value) {
+  return typeof value === 'string' && value.length <= 1000000 && /^(?:data:image\/|https?:\/\/|\/)/i.test(value);
+}
+function rpWriteSharedAvatars(bank) {
+  let saved = false;
+  try { localStorage.setItem(RP_SHARED_AVATARS_KEY, JSON.stringify(bank)); saved = true; } catch {}
+  const es = _extSettings();
+  if (es) { es[RP_SHARED_AVATARS_KEY] = bank; saved = _saveSettings() || saved; }
+  if (!saved) throw new Error('Shared avatar storage unavailable');
+}
+function rpSeedSharedAvatars() {
+  const ctx = getContext();
+  if (!ctx || STATE.chatId !== getPhoneChatSlotKey(ctx) || ctx.groupId != null || !ctx.characters?.[ctx.characterId]?.avatar) return;
+  const card = rpPhoneCanonicalCardAvatar(ctx.characters[ctx.characterId].avatar);
+  const bank = {...rpReadSharedAvatars()}; let changed = false;
+  // Only visit records carrying proof of ownership; ambiguous legacy/global caches stay untouched.
+  const sources = [{avatars:STATE.avatars, avatarLocalOnly:STATE.avatarLocalOnly, _slotMeta:{characterAvatar:card, charName:getCurrentCharName(ctx)}}];
+  sources.push(...Object.values(_extSettings()?.[EXT_KEY] || {}).filter(v => v?._slotMeta?.groupId == null && v?._slotMeta?.characterAvatar && rpPhoneCanonicalCardAvatar(v._slotMeta.characterAvatar) === card));
+  for (const source of sources) for (const [name, src] of Object.entries(source.avatars || {})) {
+    if (name === 'user' || source.avatarLocalOnly?.[name] || !rpValidAvatarImage(src)) continue;
+    const identity = normalizePhonePersonName(name) === normalizePhonePersonName(source._slotMeta.charName)
+      ? JSON.stringify(['card',card,'char']) : JSON.stringify(['card',card,'npc',normalizePhonePersonName(name)]);
+    if (!bank[identity]) { bank[identity] = {src,updated:0}; changed = true; }
+  }
+  if (changed) { try { rpWriteSharedAvatars(bank); } catch { warnPhoneStorageFailure(); } }
+}
+function rpAvatarUploadScope() {
+  return document.getElementById('rp-avatar-scope')?.value === 'local' ? 'local' : 'shared';
+}
+
+function getAvatar(key) {
+  const identity = rpAvatarIdentity(key);
+  const local = STATE.avatars?.[key];
+  if (Object.hasOwn(STATE.avatars || {}, key) && rpValidAvatarImage(local) && (!Object.hasOwn(STATE.avatarOwners || {}, key) || STATE.avatarOwners[key] === identity)) return local;
+  return identity ? rpReadSharedAvatars()[identity]?.src || null : null;
 }
 const rpAvatarEdits = new Map();
 function rpAvatarEditAttrs(key, label) {
@@ -7310,8 +7374,10 @@ function rpChooseAvatar(key) {
   const input = document.getElementById('rp-avatar-file-input');
   if (!who || !input) return;
   const task = rpRuntime.task();
+  const slot = STATE.chatId, account = rpArchiveAccountHandle, identity = rpAvatarIdentity(who);
+  const scope = rpAvatarUploadScope();
   const ticket = Symbol('avatar'); rpAvatarEdits.set(who, ticket);
-  const current = () => task.valid() && rpAvatarEdits.get(who) === ticket;
+  const current = () => task.valid() && rpAvatarEdits.get(who) === ticket && STATE.chatId === slot && account === rpArchiveAccountHandle && getPhoneChatSlotKey(getContext()) === slot && rpAvatarIdentity(who) === identity;
   // Capture identity before the native picker opens; never read the settings select later.
   const picker = input.cloneNode(true);
   input.parentNode.replaceChild(picker, input);
@@ -7331,9 +7397,10 @@ function rpChooseAvatar(key) {
       preview.onerror = () => { if (current()) toastr.warning('图片无法读取，请重新选择。'); };
       preview.onload = function() {
         if (!current()) return;
-        void setAvatarCompressed(who, data, ticket).then(function(value) {
+        void setAvatarCompressed(who, data, ticket, scope).then(function(value) {
           if (!value || !current()) return;
           rpRefreshEditableAvatars(who);
+          if (scope === 'shared' && !identity) toastr.info('无法确认所属角色卡或用户身份，头像已仅用于当前聊天');
         }).catch(function() { if (current()) toastr.warning('头像未能保存，请重新选择图片。'); });
       };
       preview.src = data;
@@ -7343,27 +7410,41 @@ function rpChooseAvatar(key) {
   picker.click();
 }
 let rpWallpaperEdit = null;
-function setAvatar(key, dataUrl, editToken) {
+function setAvatar(key, dataUrl, editToken, scope = 'local') {
   if (editToken && rpAvatarEdits.get(key) !== editToken) return;
+  const identity = rpAvatarIdentity(key);
+  if (scope === 'shared' && identity) {
+    const bank = {...rpReadSharedAvatars()};
+    bank[identity] = {src:dataUrl, updated:Math.max(Date.now(), (bank[identity]?.updated || 0) + 1)};
+    rpWriteSharedAvatars(bank);
+    // This chat now follows the common image; other chats' explicit images remain intact.
+    if (STATE.avatars) delete STATE.avatars[key];
+    delete STATE.avatarLocalOnly?.[key]; delete STATE.avatarOwners?.[key];
+    delete _AV[key]; if (window._rpAV) delete window._rpAV[key];
+  } else {
+    STATE.avatars ||= {}; Object.defineProperty(STATE.avatars, key, {value:dataUrl,writable:true,configurable:true,enumerable:true});
+    STATE.avatarLocalOnly ||= {}; Object.defineProperty(STATE.avatarLocalOnly, key, {value:true,writable:true,configurable:true,enumerable:true});
+    STATE.avatarOwners ||= {};
+    if (identity) Object.defineProperty(STATE.avatarOwners, key, {value:identity,writable:true,configurable:true,enumerable:true});
+    else delete STATE.avatarOwners[key];
+    _AV[key] = dataUrl;
+    window._rpAV ||= {}; window._rpAV[key] = dataUrl;
+  }
   if (!editToken) rpAvatarEdits.set(key, Symbol('avatar'));
-  window._rpAV = window._rpAV || {};
-  window._rpAV[key] = dataUrl;
-  _AV[key] = dataUrl;
-  STATE.avatars = STATE.avatars || {};
-  STATE.avatars[key] = dataUrl;
-  saveGlobalAvatars();
 }
 
-async function setAvatarCompressed(key, dataUrl, editToken) {
+async function setAvatarCompressed(key, dataUrl, editToken, scope = 'local') {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
+  const identity = rpAvatarIdentity(key), slot = STATE.chatId, account = rpArchiveAccountHandle;
   const ticket = editToken || Symbol('avatar');
   if (!editToken) rpAvatarEdits.set(key, ticket);
   if (rpAvatarEdits.get(key) !== ticket) return;
   const compressed = await rpGuardAwait(compressAvatar(dataUrl), rpTask);
   if (rpAvatarEdits.get(key) !== ticket) return;
-  setAvatar(key, compressed, ticket);
+  if (slot !== STATE.chatId || account !== rpArchiveAccountHandle || identity !== rpAvatarIdentity(key) || getPhoneChatSlotKey(getContext()) !== slot) return;
+  setAvatar(key, compressed, ticket, scope);
   saveGlobalAvatars();
   saveState();
   return compressed;
@@ -7510,6 +7591,11 @@ function restorePhoneChatState(saved) {
   for (const post of STATE.xhsFeed) if (post.commentStatus === 'loading' && !rpAppJobs.has('xhs-comments:' + post.id)) post.commentStatus = 'idle';
   for (const entry of STATE.diary) if (entry.replyStatus === 'loading') entry.replyStatus = 'idle';
   STATE.avatars = Object.assign({}, s.avatars || {});
+  STATE.avatarLocalOnly = Object.assign({}, s.avatarLocalOnly || {});
+  STATE.avatarOwners = Object.assign({}, s.avatarOwners || {});
+  for (const key of Object.keys(_AV)) delete _AV[key];
+  Object.assign(_AV, STATE.avatars);
+  window._rpAV = Object.assign({}, STATE.avatars);
   STATE.wallpaper = s.wallpaper || null;
   STATE.darkMode = !!s.darkMode;
   STATE.themeSettings = s.themeSettings || null;
@@ -7543,7 +7629,6 @@ function switchPhoneChatSlot(newChatId) {
   if (newChatId === STATE.chatId) return false;
   rpRememberReading();
   resetMomentsCtxCache();
-  Object.assign(_AV, STATE.avatars || {});
   if (STATE.chatId) {
     CHAT_STORE[STATE.chatId] = JSON.parse(JSON.stringify(buildStatePayload()));
     saveState({ immediate: true });
@@ -7612,6 +7697,7 @@ async function fetchServerSettings() {
     // 更新本地内存里的 extension_settings
     const es = _extSettings();
     if (es) {
+      if (serverEs[RP_SHARED_AVATARS_KEY]) es[RP_SHARED_AVATARS_KEY] = serverEs[RP_SHARED_AVATARS_KEY];
       if (!es[EXT_KEY]) es[EXT_KEY] = {};
       // 合并:服务端数据优先
       Object.keys(serverEs[EXT_KEY]).forEach(function(k) {
@@ -8207,20 +8293,13 @@ async function compressPhoneImagesForPersistence() {
 // ================================================================
 //  PERSISTENCE (localStorage)
 // ================================================================
-// 从全局 key 合并头像（仅作为可丢缓存，权威数据源是 payload.avatars）
+// Seed common images only from current-account saves with matching card ownership.
 function mergeGlobalAvatars() {
-  try {
-    const raw = localStorage.getItem('rp-phone-avatars-global');
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    // payload.avatars 是权威数据源；全局缓存只补缺，不反压主数据
-    STATE.avatars = Object.assign({}, parsed || {}, STATE.avatars || {});
-  } catch(e) {}
+  // Legacy global-by-name storage is retained for rollback, not used across unrelated cards.
+  rpSeedSharedAvatars();
 }
-
-// 持久化头像到 localStorage 全局缓存（非权威，可丢）
 function saveGlobalAvatars() {
-  try { localStorage.setItem('rp-phone-avatars-global', JSON.stringify(STATE.avatars || {})); } catch(e) {}
+  // Per-chat images persist with the normal phone payload; shared images have their own bank.
 }
 
 function saveState(opts) {
@@ -9000,6 +9079,14 @@ const HTML = `
                 </select>
               </div>
               <div class="rp-set-row">
+                <label class="rp-set-key" for="rp-avatar-scope">应用范围</label>
+                <select id="rp-avatar-scope" class="rp-set-select">
+                  <option value="shared">共用头像</option>
+                  <option value="local">仅当前聊天</option>
+                </select>
+              </div>
+              <p class="rp-set-hint">Char / NPC 在同卡内共用，User 跟随酒馆身份。已有独立头像保留；点击头像换图也使用此范围。</p>
+              <div class="rp-set-row">
                 <div id="rp-avatar-preview-swatch" class="rp-set-avatar-preview" style="background:linear-gradient(145deg,#64748b,#475569)">我</div>
                 <span class="rp-set-hint">点击右侧上传图片</span>
                 <button class="rp-avatar-upload-btn" id="rp-avatar-upload-btn">📷 选择</button>
@@ -9520,8 +9607,9 @@ async function rpInitBody() {
   mergeGlobalAvatars();
   try { migrateCompressAvatars(); } catch(e) {}
   // 同步到 _AV 和 window._rpAV
+  for (const key of Object.keys(_AV)) delete _AV[key];
   Object.assign(_AV, STATE.avatars || {});
-  window._rpAV = Object.assign(window._rpAV || {}, STATE.avatars || {});
+  window._rpAV = Object.assign({}, STATE.avatars || {});
   try { applyWallpaper(); } catch(e) {}
   // 立即同步清理无效联系人(不等延迟,防止用户看到 SillyTavern)
   cleanInvalidContacts();
@@ -11417,6 +11505,18 @@ function bindUI() {
   });
 
   // Settings: avatar select change
+  let avatarScope = 'shared';
+  try { if (localStorage.getItem('rp-avatar-upload-scope-v1') === 'local') avatarScope = 'local'; } catch {}
+  $('#rp-avatar-scope').val(avatarScope);
+  rpRuntime.listenDOM(window, 'storage', function(event) {
+    if (event.key !== rpAccountStoragePrefix() + RP_SHARED_AVATARS_KEY) return;
+    const keys = new Set(Array.from(document.querySelectorAll('#rp-phone [data-rp-avatar-key]'), node => node.getAttribute('data-rp-avatar-key')));
+    for (const key of keys) rpRefreshEditableAvatars(key);
+    updateAvatarPreviewSwatch($('#rp-avatar-select').val() || 'user');
+  });
+  $(document).on("change.mochiPhone", '#rp-avatar-scope', function() {
+    try { localStorage.setItem('rp-avatar-upload-scope-v1', rpAvatarUploadScope()); } catch {}
+  });
   $(document).on("change.mochiPhone", '#rp-avatar-select', function() {
     updateAvatarPreviewSwatch($(this).val());
   });
@@ -16857,7 +16957,7 @@ function populateAvatarSelect() {
 
 function updateAvatarPreviewSwatch(who) {
   const swatch = $('#rp-avatar-preview-swatch');
-  const ci = STATE.avatars && STATE.avatars[who];
+  const ci = getAvatar(who);
   if (ci) {
     swatch.html(`<img class="rp-av-photo" src="${escHtml(ci)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:19px"/>`);
     swatch.css('background', 'transparent');
