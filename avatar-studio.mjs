@@ -64,8 +64,8 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:12px 0 6px;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-options button{min-width:0!important;width:100%!important;min-height:42px!important;padding:10px 6px!important;white-space:nowrap!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-view-large{grid-column:1/-1;min-height:36px!important;padding:7px 10px!important;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-large-frame{position:relative;flex:1 1 auto;min-height:0;margin:10px 0;border:1px solid var(--rp-v-border,#ded5d7);border-radius:12px;background:var(--rp-v-card,#fff);overflow:hidden;}
-#rp-phone #rp-screen #rp-avatar-studio #rp-as-large-image{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;border-radius:0!important;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-large-frame{position:relative;flex:1 1 auto;min-height:0;margin:10px 0;overflow:hidden;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-large-image{position:absolute!important;inset:auto!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;border:1px solid var(--rp-v-border,#ded5d7)!important;border-radius:12px!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-large-status{flex:0 0 auto;font-size:11px;margin:0 0 8px;overflow-wrap:anywhere;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-large-back{flex:0 0 auto;width:100%!important;min-height:40px!important;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-options button:hover{border-color:var(--rp-r-accent,#9a647b)!important;color:var(--rp-r-accent,#9a647b)!important;}
@@ -160,6 +160,15 @@ export function openAvatarStudio(deps) {
   host.appendChild(root);
   const valid = () => !closed && !signal?.aborted && deps.isCurrent() !== false;
   const check = () => { if (!valid()) throw cancelled(); };
+  function fitLargeImage() {
+    const image = $('large-image'), frame = image.parentElement;
+    if (!valid() || !viewingLarge || image.hidden || !(image.naturalWidth > 0 && image.naturalHeight > 0)) return;
+    const scale = Math.min((frame.clientWidth - 2) / image.naturalWidth, (frame.clientHeight - 2) / image.naturalHeight);
+    if (!(scale > 0)) return;
+    // Size the image box itself, so its border follows the full image without letterboxing.
+    image.style.setProperty('width', image.naturalWidth * scale + 2 + 'px', 'important');
+    image.style.setProperty('height', image.naturalHeight * scale + 2 + 'px', 'important');
+  }
   function clearLargeImage() {
     largeTicket++; doc.defaultView.clearTimeout(largeTimer); largeTimer = null;
     const image = $('large-image'); image.onload = image.onerror = null; image.hidden = true; image.removeAttribute('src');
@@ -183,7 +192,7 @@ export function openAvatarStudio(deps) {
     image.onload = () => {
       if (!current()) return; doc.defaultView.clearTimeout(largeTimer);
       if (!(image.naturalWidth > 0 && image.naturalHeight > 0)) { failed(); return; }
-      image.hidden = false; $('large-status').textContent = '当前头像';
+      image.hidden = false; $('large-status').textContent = '当前头像'; fitLargeImage();
     };
     image.onerror = failed; largeTimer = doc.defaultView.setTimeout(failed, 15000); image.src = src;
   };
@@ -215,9 +224,10 @@ export function openAvatarStudio(deps) {
     $('tag-area').focus({ preventScroll: true }); updateTagHint();
   }
   $('more').onclick = revealTag;
-  const tagObserver = typeof doc.defaultView.ResizeObserver === 'function' ? new doc.defaultView.ResizeObserver(updateTagHint) : null;
-  for (const el of [body, $('editor'), $('tag')]) tagObserver?.observe(el);
-  doc.defaultView.addEventListener('resize', updateTagHint);
+  const updateLayout = () => { updateTagHint(); fitLargeImage(); };
+  const tagObserver = typeof doc.defaultView.ResizeObserver === 'function' ? new doc.defaultView.ResizeObserver(updateLayout) : null;
+  for (const el of [body, $('editor'), $('tag'), $('large-image').parentElement]) tagObserver?.observe(el);
+  doc.defaultView.addEventListener('resize', updateLayout);
   function expandField(id) {
     const source = $(id);
     if (!valid() || busy || expandedField || source.disabled || source.closest('[hidden]')) return;
@@ -267,7 +277,7 @@ export function openAvatarStudio(deps) {
     updateTagHint();
   };
   function close() {
-    if (closed) return; closed = true; clearLargeImage(); endDrag(); observer?.disconnect(); tagObserver?.disconnect(); doc.defaultView.removeEventListener('resize', updateTagHint); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); copyJob?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
+    if (closed) return; closed = true; clearLargeImage(); endDrag(); observer?.disconnect(); tagObserver?.disconnect(); doc.defaultView.removeEventListener('resize', updateLayout); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); copyJob?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
     if (previousFocus?.isConnected) previousFocus.focus?.();
   }
   signal?.addEventListener('abort', close, { once: true });
