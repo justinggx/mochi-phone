@@ -1,6 +1,19 @@
 const cancelled = () => Object.assign(new Error('头像操作已取消'), { name: 'AbortError' });
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+export const AVATAR_EXTENSION_LINK = 'https://discord.com/channels/1134557553011998840/1215675312721887272';
+function waitForEntry(promise, signal, timeout = 6000) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const finish = (fn, value) => { if (done) return; done = true; clearTimeout(timer); signal?.removeEventListener('abort', abort); fn(value); };
+    const abort = () => finish(reject, cancelled());
+    const timer = setTimeout(() => finish(reject, new Error('扩展检查超时，请重试')), timeout);
+    signal?.addEventListener('abort', abort, { once: true });
+    Promise.resolve(promise).then(value => finish(resolve, value), error => finish(reject, error));
+    if (signal?.aborted) abort();
+  });
+}
+const avatarBridgeReady = value => value?.capabilities?.avatar === 1 && typeof value.prepareAvatar === 'function' && typeof value.generateAvatar === 'function';
 export function avatarCropRect(width, height, crop = {}) {
   if (!(width > 0 && height > 0) || !Number.isFinite(width + height)) throw new Error('图片尺寸无效');
   const zoom = clamp(finite(crop?.zoom, 1), 1, 4), size = Math.min(width, height) / zoom;
@@ -53,6 +66,12 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-options button:hover{border-color:var(--rp-r-accent,#9a647b)!important;color:var(--rp-r-accent,#9a647b)!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-dismiss{display:block!important;width:auto!important;min-width:64px!important;min-height:34px!important;margin:0 auto!important;padding:5px 12px!important;border-color:transparent!important;background:transparent!important;color:var(--rp-v-muted,#756772)!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-dismiss:hover{color:var(--rp-v-text,#45383d)!important;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-install{padding:12px;margin:10px 0;border:1px solid var(--rp-v-border,#ded5d7);border-radius:12px;background:var(--rp-v-card,#fff);}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-install a{color:var(--rp-r-accent,#9a647b);text-decoration:underline;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-install-url{min-height:76px!important;max-height:96px!important;resize:none!important;cursor:text!important;font-size:11px!important;background:var(--rp-v-surface,#fff)!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-copy-link{width:100%!important;margin-top:8px!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-copy-status{font-size:11px;margin:6px 0 0;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-copy-status:empty{display:none;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-status:empty{display:none;}
 #rp-phone #rp-screen #rp-avatar-studio label{display:block;margin:10px 0 4px;font-size:12px;font-weight:600;}
 #rp-phone #rp-screen #rp-avatar-studio textarea{display:block!important;width:100%!important;min-height:64px!important;max-height:180px!important;resize:vertical!important;padding:8px!important;border:1px solid var(--rp-v-border,#ded5d7)!important;border-radius:10px!important;background:var(--rp-v-card,#fff)!important;color:inherit!important;font-family:inherit!important;font-size:12px!important;line-height:1.5!important;box-shadow:none!important;}
@@ -95,11 +114,11 @@ export const AVATAR_STUDIO_CSS = `
 export function openAvatarStudio(deps) {
   const { host, target, scope, signal } = deps, doc = host.ownerDocument;
   const previousFocus = doc.activeElement;
-  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0;
+  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0, copying = false, copyJob = null;
   const candidates = [];
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
   root.innerHTML = `<div class="rp-as-panel"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><div class="rp-as-body">
-    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><button id="rp-as-dismiss">取消</button></div>
+    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
     <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><label for="rp-as-profile">人物资料（可直接修改）</label><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于首次生成 tag，之后可直接修改 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
       <div class="rp-as-preview" id="rp-as-crop" data-no-swipe-back tabindex="-1" role="group" aria-label="头像取景框，拖动图片或用方向键调整位置"><span id="rp-as-placeholder">头像预览</span><img id="rp-as-image" alt="头像候选预览" draggable="false" hidden></div>
@@ -113,12 +132,14 @@ export function openAvatarStudio(deps) {
   root.querySelectorAll('button').forEach(button => { button.type = 'button'; });
   $('title').textContent = '更换' + target.name + '的头像';
   $('scope').textContent = scope === 'local' ? '应用范围：仅当前聊天' : '应用范围：共用头像';
+  $('install-link').href = AVATAR_EXTENSION_LINK; $('install-url').value = AVATAR_EXTENSION_LINK;
   host.appendChild(root);
   const valid = () => !closed && !signal?.aborted && deps.isCurrent() !== false;
   const check = () => { if (!valid()) throw cancelled(); };
   const status = text => { if (!closed) $('status').textContent = text; };
   const updateExtraHint = () => { $('extra-hint').textContent = $('profile').value.trim() ? '选填 · 点击输入' : '必填 · 请补充外貌'; };
   const paint = () => {
+    $('ai').disabled = busy;
     for (const id of ['generate', 'reload']) $(id).disabled = busy || !profile;
     $('reload').disabled = busy;
     $('confirm').disabled = busy || !selected;
@@ -133,7 +154,7 @@ export function openAvatarStudio(deps) {
     for (const button of $('history').children) button.disabled = busy;
   };
   function close() {
-    if (closed) return; closed = true; endDrag(); observer?.disconnect(); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
+    if (closed) return; closed = true; endDrag(); observer?.disconnect(); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); copyJob?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
     if (previousFocus?.isConnected) previousFocus.focus?.();
   }
   signal?.addEventListener('abort', close, { once: true });
@@ -219,7 +240,7 @@ export function openAvatarStudio(deps) {
   }
   async function bridge() {
     const value = await deps.bridge(); check();
-    if (value?.capabilities?.avatar !== 1 || typeof value.prepareAvatar !== 'function' || typeof value.generateAvatar !== 'function') throw new Error('智绘姬头像入口未加载，请刷新酒馆后重试');
+    if (!avatarBridgeReady(value)) throw new Error('智绘姬头像入口未加载，请刷新酒馆后重试');
     return value;
   }
   async function operation(fn) {
@@ -271,7 +292,42 @@ export function openAvatarStudio(deps) {
   $('profile').oninput = $('extra').oninput = () => referenceChanged();
   $('restore').onclick = () => { if (busy || !profile) return; $('profile').value = profile.body || ''; referenceChanged('已恢复读取原文。'); };
   $('tag').oninput = () => { status('将直接使用你填写的 tag 生图。'); paint(); };
-  $('ai').onclick = () => { $('choice').hidden = true; $('editor').hidden = false; $('footer').hidden = false; void read(); };
+  $('ai').onclick = async () => {
+    if (busy || !valid()) return;
+    let ready = false;
+    await operation(async requestSignal => {
+      status('正在检查智绘姬扩展…');
+      let client = null;
+      try { client = await waitForEntry(Promise.resolve().then(() => deps.bridge()), requestSignal); } catch (error) { if (error?.name === 'AbortError') throw error; }
+      check();
+      if (avatarBridgeReady(client)) { ready = true; return; }
+      let info = { installed: null };
+      try { info = await waitForEntry(Promise.resolve().then(() => deps.inspectExtension?.()), requestSignal) || info; } catch (error) { if (error?.name === 'AbortError') throw error; }
+      check();
+      $('install-message').textContent = info.installed === false ? '暂未安装智绘姬扩展。安装后即可使用头像生图。'
+        : info.enabled === false ? '智绘姬扩展已安装但未启用。请在扩展管理中启用，再刷新酒馆。'
+        : info.installed === true || client ? '智绘姬扩展已安装，但头像生图入口未加载。请刷新酒馆，仍不可用时更新配套扩展。'
+        : '暂时无法确认智绘姬是否就绪，请刷新酒馆后重试。';
+      $('install').hidden = false; status('');
+    });
+    if (ready && valid()) { copyJob?.abort(); $('install').hidden = true; $('choice').hidden = true; $('editor').hidden = false; $('footer').hidden = false; void read(); }
+  };
+  $('copy-link').onclick = async () => {
+    if (copying || !valid()) return;
+    copying = true; copyJob = new doc.defaultView.AbortController(); $('copy-link').disabled = true; $('copy-link').textContent = '复制中…'; $('copy-status').textContent = '';
+    const previous = doc.activeElement; let copied = false;
+    try {
+      try {
+        const clipboard = doc.defaultView.navigator.clipboard;
+        if (typeof clipboard?.writeText === 'function') { await waitForEntry(clipboard.writeText(AVATAR_EXTENSION_LINK), copyJob.signal, 3000); copied = true; }
+      } catch (error) { if (error?.name === 'AbortError') return; }
+      if (!valid()) return;
+      if (!copied) { $('install-url').focus(); $('install-url').select(); $('install-url').setSelectionRange(0, AVATAR_EXTENSION_LINK.length); try { copied = doc.execCommand?.('copy') === true; } catch {} }
+      if (!valid()) return;
+      if (copied) { $('copy-link').textContent = '已复制'; $('copy-status').textContent = '链接已复制'; if (previous?.isConnected) previous.focus?.(); }
+      else { $('copy-link').textContent = '复制链接'; $('copy-status').textContent = '自动复制未成功，地址已选中，可长按复制或按 Ctrl+C。'; }
+    } finally { copying = false; if (valid()) $('copy-link').disabled = false; }
+  };
   $('reload').onclick = () => { void read(); };
   $('upload').onclick = () => { if (!valid()) return; close(); deps.upload(); };
   $('dismiss').onclick = $('back').onclick = close;

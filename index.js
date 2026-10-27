@@ -1,4 +1,4 @@
-import { openAvatarStudio, AVATAR_STUDIO_CSS } from './avatar-studio.mjs?v=20261027-actions-layout-150';
+import { openAvatarStudio, AVATAR_STUDIO_CSS } from './avatar-studio.mjs?v=20261027-install-hint-151';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
@@ -7405,6 +7405,16 @@ function rpRefreshEditableAvatars(key) {
   if ($('#rp-avatar-select').val() === key) updateAvatarPreviewSwatch(key);
 }
 let rpAvatarStudio = null;
+function rpAvatarExtensionInfo(ext) {
+  const direct = typeof ext?.findExtension === 'function' ? ext.findExtension('st-chatu8') : null;
+  if (direct) return { installed: true, enabled: direct.enabled !== false };
+  if (!Array.isArray(ext?.extensionNames) || !ext.extensionNames.length) return { installed: null };
+  const name = ext.extensionNames.find(name => {
+    const display = String(ext.getExtensionManifest?.(name)?.display_name || '').toLowerCase();
+    return String(name).split('/').pop().toLowerCase() === 'st-chatu8' || ['st-chatu8', '智绘姬'].includes(display);
+  });
+  return name ? { installed: true, enabled: !(ext.extension_settings?.disabledExtensions || []).includes(name) } : { installed: false };
+}
 rpRuntime.own(() => { rpAvatarStudio?.close(); document.getElementById('rp-avatar-studio-css')?.remove(); });
 function rpChooseAvatar(key) {
   rpAvatarStudio?.close();
@@ -7423,6 +7433,7 @@ function rpChooseAvatar(key) {
   instance = openAvatarStudio({ host, target, scope: scope === 'shared' && identity ? 'shared' : 'local', signal: task.signal, isCurrent: current,
     readProfile: check => readAvatarProfile(target, ctx, { check }),
     bridge: () => Promise.resolve(window.__chatu8MochiPhoneBridge),
+    inspectExtension: async () => rpAvatarExtensionInfo(await import('../../../extensions.js')),
     upload: () => { if (task.valid() && STATE.chatId === slot && account === rpArchiveAccountHandle && rpAvatarIdentity(who) === identity) rpChooseAvatarFile(who, scope); },
     commit: data => {
       if (!current()) return false;
