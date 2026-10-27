@@ -73,6 +73,8 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-copy-status{font-size:11px;margin:6px 0 0;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-copy-status:empty{display:none;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-status:empty{display:none;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-generation-status{flex:0 0 auto;margin:6px 0 8px;padding:8px 10px;border:1px solid var(--rp-v-border,#ded5d7);border-radius:10px;background:var(--rp-v-card,#fff);font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-height:100px;overflow:auto;overscroll-behavior:contain;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-generation-status[data-state="error"]{border-color:var(--rp-r-accent,#9a647b);}
 #rp-phone #rp-screen #rp-avatar-studio label{display:block;margin:10px 0 4px;font-size:12px;font-weight:600;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-field-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 4px;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-field-heading label{margin:0;min-width:0;}
@@ -130,11 +132,11 @@ export function openAvatarStudio(deps) {
   let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0, copying = false, copyJob = null, expandedField = null;
   const candidates = [];
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
-  root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><div class="rp-as-body">
+  root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><p id="rp-as-generation-status" role="status" aria-live="polite" hidden></p><div class="rp-as-body">
     <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
     <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><div class="rp-as-field-heading"><label for="rp-as-profile">人物资料（可直接修改）</label><button id="rp-as-profile-expand" aria-label="放大编辑人物资料" aria-controls="rp-as-expanded" disabled>放大编辑</button></div><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于生成 tag。修改后可点击“重新生成 tag”，也可直接编辑 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
-      <div id="rp-as-tag-tools" class="rp-as-tag-tools" hidden><button id="rp-as-regenerate-tag" aria-describedby="rp-as-regenerate-note" disabled>重新生成 tag</button><p id="rp-as-regenerate-note">仅更新 tag，确认后再生图</p></div>
+      <div id="rp-as-tag-tools" class="rp-as-tag-tools" hidden><button id="rp-as-regenerate-tag" aria-describedby="rp-as-regenerate-note" disabled>重新生成 tag 并生图</button><p id="rp-as-regenerate-note">按当前人物资料和补充要求，更新 tag 后自动生图</p></div>
       <div class="rp-as-preview" id="rp-as-crop" data-no-swipe-back tabindex="-1" role="group" aria-label="头像取景框，拖动图片或用方向键调整位置"><span id="rp-as-placeholder">头像预览</span><img id="rp-as-image" alt="头像候选预览" draggable="false" hidden></div>
       <div id="rp-as-crop-controls" hidden><div class="rp-as-crop-caption"><span>拖动取景 · 滑杆缩放</span><output id="rp-as-zoom-value" for="rp-as-zoom">100%</output></div><div class="rp-as-crop-row"><button id="rp-as-zoom-out" aria-label="缩小头像">−</button><input id="rp-as-zoom" type="range" min="100" max="400" step="1" value="100" aria-label="头像缩放比例"><button id="rp-as-zoom-in" aria-label="放大头像">+</button></div><button id="rp-as-crop-reset">重置构图</button></div>
       <div class="rp-as-history" id="rp-as-history" aria-label="本轮头像候选"></div>
@@ -153,6 +155,10 @@ export function openAvatarStudio(deps) {
   const valid = () => !closed && !signal?.aborted && deps.isCurrent() !== false;
   const check = () => { if (!valid()) throw cancelled(); };
   const status = text => { if (!closed) $('status').textContent = text; };
+  function generationStatus(text, state = 'pending') {
+    if (!valid()) return;
+    const message = $('generation-status'); message.textContent = text; message.dataset.state = state; message.hidden = false;
+  }
   const updateExtraHint = () => { $('extra-hint').textContent = $('profile').value.trim() ? '选填 · 点击输入' : '必填 · 请补充外貌'; };
   const body = root.querySelector('.rp-as-body');
   function updateTagHint() {
@@ -236,10 +242,10 @@ export function openAvatarStudio(deps) {
     image.onload = () => {
       if (!valid() || selected !== candidate || ticket !== previewSequence) return;
       const width = image.naturalWidth, height = image.naturalHeight;
-      if (!(width > 0 && height > 0) || width * height > 32000000) { status('图片尺寸无效或过大，请重新生成'); return; }
+      if (!(width > 0 && height > 0) || width * height > 32000000) { status('图片尺寸无效或过大，请重新生成'); generationStatus('图片已返回，但尺寸无效或过大。已有头像未更改，请重试生图。', 'error'); return; }
       candidate.dimensions = { width, height }; renderCrop(); paint();
     };
-    image.onerror = () => { if (valid() && ticket === previewSequence) status('预览图片无法读取，请重试或选择其他候选'); };
+    image.onerror = () => { if (valid() && ticket === previewSequence) { status('预览图片无法读取，请重试或选择其他候选'); generationStatus('图片已返回，但预览无法读取。已有头像未更改，可重试生图或选择其他候选。', 'error'); } };
     image.src = candidate.src; image.hidden = false; $('placeholder').hidden = true; $('crop-controls').hidden = false;
     $('tag').value = candidate.prompt; renderCrop();
     for (const button of $('history').children) button.setAttribute('aria-pressed', String(Number(button.dataset.candidate) === candidate.id)); paint();
@@ -342,25 +348,38 @@ export function openAvatarStudio(deps) {
     check(); if (typeof result?.prompt !== 'string' || !result.prompt.trim()) throw new Error('没有得到有效的绘图 tag');
     $('tag').value = result.prompt; promptPrepared = true; $('tag-area').hidden = false;
   }
-  $('regenerate-tag').onclick = () => {
-    if (!promptPrepared || expandedField) return;
-    void operation(async requestSignal => {
-      status('智绘姬正在按当前人物资料和补充要求重新生成 tag…');
-      const client = await bridge(); await prepare(client, requestSignal);
-      status(selected ? 'tag 已更新，当前预览仍是原图。查看或修改 tag 后，可点击“按 tag 重新生图”。' : 'tag 已更新。查看或修改后，可点击“按 tag 重新生图”。');
-      revealTag();
+  function generateAvatar(rewrite = false) {
+    if (expandedField) return;
+    return operation(async requestSignal => {
+      let stage = rewrite || !promptPrepared ? 'tag' : 'image', tagGenerated = false;
+      try {
+        generationStatus(stage === 'tag' ? (rewrite ? '正在重新生成 tag…（1/2）' : '正在生成头像 tag…（1/2）') : '正在按当前 tag 生成头像…');
+        const client = await bridge();
+        if (stage === 'tag') {
+          status(rewrite ? '智绘姬正在按当前人物资料和补充要求重新生成 tag…' : '智绘姬正在整理头像 tag…');
+          await prepare(client, requestSignal); check(); tagGenerated = true;
+        }
+        if (!$('tag').value.trim()) { stage = 'input'; throw new Error('请先填写绘图 tag，再重新生图'); }
+        stage = 'image'; generationStatus(tagGenerated ? '新 tag 已生成，正在按新 tag 生图…（2/2）' : '正在按当前 tag 生成头像…'); status('正在生成头像…');
+        const prompt = $('tag').value.trim(), result = await client.generateAvatar({ prompt, signal: requestSignal, isCurrent: valid }); check();
+        if (typeof result?.src !== 'string' || !result.src.trim()) throw new Error('智绘姬未返回有效图片');
+        const candidate = { id: ++sequence, src: result.src, prompt };
+        candidates.push(candidate); if (candidates.length > 4) candidates.shift(); history(); show(candidate);
+        generationStatus('头像已生成，可调整裁切后点击“用作头像”。', 'success'); status('可以使用这张头像，也可以改 tag 再生一张。');
+      } catch (error) {
+        if (valid() && !requestSignal.aborted) {
+          const message = stage === 'tag' ? 'tag 生成失败，未开始生图。已有 tag 和头像已保留。'
+            : stage === 'input' ? '未开始生图，请先填写绘图 tag。'
+            : tagGenerated ? '新 tag 已生成，但头像生成失败。新 tag 已保留，可点“按 tag 重新生图”重试。'
+            : '头像生成失败。当前 tag 和已有头像已保留，可点“按 tag 重新生图”重试。';
+          generationStatus(message + '\n原因：' + (error?.message || '请求未完成'), 'error');
+        }
+        throw error;
+      }
     });
-  };
-  $('generate').onclick = () => operation(async requestSignal => {
-    const client = await bridge();
-    if (!promptPrepared) { status('智绘姬正在整理头像 tag…'); await prepare(client, requestSignal); }
-    if (!$('tag').value.trim()) throw new Error('请先填写绘图 tag，再重新生图');
-    check(); status('正在生成头像…');
-    const prompt = $('tag').value.trim(); const result = await client.generateAvatar({ prompt, signal: requestSignal, isCurrent: valid }); check();
-    if (typeof result?.src !== 'string') throw new Error('智绘姬未返回有效图片');
-    const candidate = { id: ++sequence, src: result.src, prompt };
-    candidates.push(candidate); if (candidates.length > 4) candidates.shift(); history(); show(candidate); status('可以使用这张头像，也可以改 tag 再生一张。');
-  });
+  }
+  $('regenerate-tag').onclick = () => { if (promptPrepared) void generateAvatar(true); };
+  $('generate').onclick = () => { void generateAvatar(); };
   $('confirm').onclick = () => operation(async requestSignal => {
     if (!selected) return; const candidate = selected; status('正在保存头像…');
     const data = await (deps.prepareImage || squareAvatar)(candidate.src, { document: doc, signal: requestSignal, crop: { ...candidate.crop } }); check();
