@@ -51,6 +51,11 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-extra::placeholder{color:var(--rp-v-muted,#756772)!important;opacity:1!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-extra:focus{border-color:var(--rp-r-accent,#9a647b)!important;outline:2px solid var(--rp-r-accent,#9a647b)!important;outline-offset:2px;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-extra:disabled{cursor:wait!important;opacity:.65;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-profile{min-height:160px!important;max-height:260px!important;padding:10px!important;border-color:var(--rp-r-accent,#9a647b)!important;background:var(--rp-v-surface,#fff)!important;cursor:text!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-profile:focus{outline:2px solid var(--rp-r-accent,#9a647b)!important;outline-offset:2px;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-profile-note,#rp-phone #rp-screen #rp-avatar-studio #rp-as-sources{font-size:11px;color:var(--rp-v-muted,#756772);margin:5px 0;overflow-wrap:anywhere;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-sources{max-height:70px;overflow:auto;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-restore{display:block;width:auto;margin:6px 0 2px;padding:5px 9px!important;font-size:11px!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-tag{min-height:80px!important;}
 #rp-phone #rp-screen #rp-avatar-studio details{margin:8px 0;border-bottom:1px solid var(--rp-v-border,#ded5d7);padding-bottom:6px;}
 #rp-phone #rp-screen #rp-avatar-studio summary{cursor:pointer;font-size:11px;}
@@ -71,12 +76,12 @@ export const AVATAR_STUDIO_CSS = `
 export function openAvatarStudio(deps) {
   const { host, target, scope, signal } = deps, doc = host.ownerDocument;
   const previousFocus = doc.activeElement;
-  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0;
+  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, tagReference = null;
   const candidates = [];
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
   root.innerHTML = `<div class="rp-as-panel"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p>
     <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><button id="rp-as-dismiss">取消</button></div>
-    <div id="rp-as-editor" hidden><details><summary>查看已读取的人物资料</summary><pre id="rp-as-profile"></pre></details>
+    <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><label for="rp-as-profile">人物资料（可直接修改）</label><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">可删改读取有误的内容。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
       <div class="rp-as-preview"><span id="rp-as-placeholder">头像预览</span><img id="rp-as-image" alt="头像候选预览" hidden></div><div class="rp-as-history" id="rp-as-history" aria-label="本轮头像候选"></div>
       <div id="rp-as-tag-area" hidden><label for="rp-as-tag">绘图 tag（可以修改）</label><textarea id="rp-as-tag" maxlength="20000"></textarea><p>修改 tag 后，点击重新生图才会生效。</p></div>
@@ -91,12 +96,17 @@ export function openAvatarStudio(deps) {
   const valid = () => !closed && !signal?.aborted && deps.isCurrent() !== false;
   const check = () => { if (!valid()) throw cancelled(); };
   const status = text => { if (!closed) $('status').textContent = text; };
+  const referenceKey = () => JSON.stringify([$('profile').value.trim(), $('extra').value.trim()]);
+  const tagNeedsUpdate = () => !!$('tag').value.trim() && tagReference !== referenceKey();
+  const updateExtraHint = () => { $('extra-hint').textContent = $('profile').value.trim() ? '选填 · 点击输入' : '必填 · 请补充外貌'; };
   const paint = () => {
     for (const id of ['generate', 'rewrite', 'reload']) $(id).disabled = busy || !profile;
     $('reload').disabled = busy;
     $('confirm').disabled = busy || !selected;
     $('extra').disabled = $('tag').disabled = busy;
-    $('generate').textContent = $('tag').value.trim() ? '按 tag 重新生图' : '生成头像';
+    $('profile').disabled = busy || !profile;
+    $('restore').disabled = busy || !profile || $('profile').value === profile.body;
+    $('generate').textContent = tagNeedsUpdate() ? '按新资料生成' : $('tag').value.trim() ? '按 tag 重新生图' : '生成头像';
     for (const button of $('history').children) button.disabled = busy;
   };
   function close() {
@@ -105,7 +115,7 @@ export function openAvatarStudio(deps) {
   }
   signal?.addEventListener('abort', close, { once: true });
   function show(candidate) {
-    selected = candidate; $('image').src = candidate.src; $('image').hidden = false; $('placeholder').hidden = true; $('tag').value = candidate.prompt;
+    selected = candidate; $('image').src = candidate.src; $('image').hidden = false; $('placeholder').hidden = true; $('tag').value = candidate.prompt; tagReference = candidate.reference;
     for (const button of $('history').children) button.setAttribute('aria-pressed', String(Number(button.dataset.candidate) === candidate.id)); paint();
   }
   function history() {
@@ -130,28 +140,30 @@ export function openAvatarStudio(deps) {
     if (busy || !valid()) return;
     profile = null; await operation(async () => {
       status('正在读取人物资料…'); profile = await deps.readProfile(check); check();
-      $('profile').textContent = (profile.sources.length ? '来源：' + profile.sources.join('；') + '\n\n' : '') + (profile.body || '暂无明确资料');
-      $('extra-hint').textContent = profile.requiresSupplement ? '必填 · 请补充外貌' : '选填 · 点击输入';
+      $('profile').value = profile.body || '';
+      $('sources').textContent = profile.sources.length ? '来源：' + profile.sources.join('；') : '';
+      $('sources').hidden = !profile.sources.length;
+      updateExtraHint();
       $('reload').hidden = true; status(profile.warnings.join(' ') || '资料已读取，可补充外貌和画风后生成。');
     });
     if (valid() && !profile) $('reload').hidden = false;
   }
-  const profileInput = () => ['头像目标：' + target.name + '（' + ({ char: 'Char', user: 'User', npc: 'NPC' }[target.kind]) + '）', profile?.body || '', '用户补充：' + $('extra').value.trim()].join('\n\n');
+  const profileInput = () => ['头像目标：' + target.name + '（' + ({ char: 'Char', user: 'User', npc: 'NPC' }[target.kind]) + '）', $('profile').value.trim(), '用户补充：' + $('extra').value.trim()].join('\n\n');
   async function prepare(client, requestSignal) {
-    if (profile?.requiresSupplement && !$('extra').value.trim()) throw new Error('请先补充这个人物的外貌，再生成头像');
-    const body = profileInput();
+    if (!$('profile').value.trim() && !$('extra').value.trim()) throw new Error('请先填写人物资料或补充外貌，再生成头像');
+    const body = profileInput(), reference = referenceKey();
     const result = await client.prepareAvatar({ texts: [body], avatarProfile: body, signal: requestSignal, isCurrent: valid,
       demand: '为上述唯一指定人物设计一张头像。仅使用目标人物资料及用户补充确定长相、性别、年龄和服装，不移植其他人物或当前聊天主角的特征。方形1:1，单人头肩近景，脸部清晰，头顶和头发留出裁切空间，背景简洁，不画文字、聊天界面或拼图。直接写出完整外貌与服装 tag，不依赖人物名或人物变量代替外貌。未明确的外貌用用户补充为准；只输出一个符合当前绘图预设格式的有效image块。' });
     check(); if (typeof result?.prompt !== 'string' || !result.prompt.trim()) throw new Error('没有得到有效的绘图 tag');
-    $('tag').value = result.prompt; $('tag-area').hidden = false; $('rewrite').hidden = false;
+    $('tag').value = result.prompt; tagReference = reference; $('tag-area').hidden = false; $('rewrite').hidden = false;
   }
   $('generate').onclick = () => operation(async requestSignal => {
     const client = await bridge();
-    if (!$('tag').value.trim()) { status('智绘姬正在整理头像 tag…'); await prepare(client, requestSignal); }
+    if (!$('tag').value.trim() || tagNeedsUpdate()) { status(tagNeedsUpdate() ? '智绘姬正在按修改后的资料更新 tag…' : '智绘姬正在整理头像 tag…'); await prepare(client, requestSignal); }
     check(); status('正在生成头像…');
     const prompt = $('tag').value.trim(); const result = await client.generateAvatar({ prompt, signal: requestSignal, isCurrent: valid }); check();
     if (typeof result?.src !== 'string') throw new Error('智绘姬未返回有效图片');
-    const candidate = { id: ++sequence, src: result.src, prompt };
+    const candidate = { id: ++sequence, src: result.src, prompt, reference: tagReference };
     candidates.push(candidate); if (candidates.length > 4) candidates.shift(); history(); show(candidate); status('可以使用这张头像，也可以改 tag 再生一张。');
   });
   $('rewrite').onclick = () => operation(async requestSignal => { status('智绘姬正在重新整理 tag…'); await prepare(await bridge(), requestSignal); status('tag 已更新，点击重新生图后查看新效果。'); });
@@ -160,7 +172,13 @@ export function openAvatarStudio(deps) {
     const data = await (deps.prepareImage || squareAvatar)(candidate.src, { document: doc, signal: requestSignal }); check();
     const saved = await deps.commit(data); check(); if (!saved) throw new Error('头像未能保存，原头像已保留'); close();
   });
-  $('tag').oninput = paint;
+  const referenceChanged = (message = '人物资料或补充要求已修改。') => {
+    updateExtraHint(); paint();
+    status(tagNeedsUpdate() ? '资料已修改，下次生成会先更新 tag。也可手改 tag 后直接生图。' : message + '仅用于本次头像生成。');
+  };
+  $('profile').oninput = $('extra').oninput = () => referenceChanged();
+  $('restore').onclick = () => { if (busy || !profile) return; $('profile').value = profile.body || ''; referenceChanged('已恢复读取原文。'); };
+  $('tag').oninput = () => { tagReference = referenceKey(); status('将直接使用你填写的 tag 生图，不再自动重写。'); paint(); };
   $('ai').onclick = () => { $('choice').hidden = true; $('editor').hidden = false; void read(); };
   $('reload').onclick = () => { void read(); };
   $('upload').onclick = () => { if (!valid()) return; close(); deps.upload(); };

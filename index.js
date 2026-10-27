@@ -1,4 +1,4 @@
-import { openAvatarStudio, AVATAR_STUDIO_CSS } from './avatar-studio.mjs?v=20261027-input-hint-146';
+import { openAvatarStudio, AVATAR_STUDIO_CSS } from './avatar-studio.mjs?v=20261027-profile-editor-147';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
