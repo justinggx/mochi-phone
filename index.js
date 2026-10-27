@@ -13999,7 +13999,7 @@ function cleanupPhoneResidualNoise(textEl) {
       .trim();
   };
   Array.from(textEl.querySelectorAll('pre, code')).forEach(function(el) {
-    if (el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns, .mes_buttons')) return;
+    if (isPhoneCleanupProtectedNode(el) || hasPhoneCleanupMedia(el)) return;
     const n = normalizeNoise(el.textContent || '');
     const isOnlyEllipsis = /^(?:\.{3,}|…+|⋯+|。{3,}|·{3,}|•{3,})$/.test(n);
     const isOnlyPhoneShell = /^(?:<\/?(?:phone|sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)[^>]*>)*$/i.test(n);
@@ -14010,7 +14010,7 @@ function cleanupPhoneResidualNoise(textEl) {
       if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
       const p = node.parentElement;
       if (!p) return NodeFilter.FILTER_REJECT;
-      if (p.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns, .mes_buttons')) return NodeFilter.FILTER_REJECT;
+      if (isPhoneCleanupProtectedNode(p)) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });
@@ -14781,13 +14781,22 @@ function cleanupRenderedPhoneEchoResiduals(textEl) {
   return before !== after;
 }
 
+// Empty native image spans are asynchronous mount targets, not phone residue.
+// Preserve their ancestors too so cleanup cannot detach a pending image indirectly.
+function isPhoneCleanupChatu8Node(node, includeDescendants = false) {
+  const el = node && (node.nodeType === 1 ? node : node.parentElement);
+  if (!el) return false;
+  const selector = '.image-tag-button, .st-chatu8-image-button, .st-chatu8-image-span, .st-chatu8-image-container, .st-chatu8-collapse-wrapper, span[data-request-id]';
+  return !!(el.closest?.(selector) || (includeDescendants && el.querySelector?.(selector)));
+}
+
 function isPhoneCleanupProtectedNode(node) {
   const el = node && (node.nodeType === 1 ? node : node.parentElement);
-  return !!(el && el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons, script, style'));
+  return isPhoneCleanupChatu8Node(el) || !!(el && el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons, script, style'));
 }
 
 function hasPhoneCleanupMedia(el) {
-  return !!(el && el.querySelector && el.querySelector('img, video, audio, button, iframe, canvas, svg'));
+  return isPhoneCleanupChatu8Node(el, true) || !!(el && (el.matches?.('img, video, audio, button, iframe, canvas, svg') || el.querySelector?.('img, video, audio, button, iframe, canvas, svg')));
 }
 
 function isPhoneCleanupBlockEl(el, root) {
@@ -14944,8 +14953,8 @@ function removePhoneAuthorStubs(textEl, cleanupItems) {
     removeScannedPhoneLine(line);
   });
   Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
-    if (el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons')) return;
-    const hasMedia = !!el.querySelector('img, video, audio, button, iframe, canvas, svg');
+    if (isPhoneCleanupProtectedNode(el)) return;
+    const hasMedia = hasPhoneCleanupMedia(el);
     if (hasMedia) return;
     const normalized = normalizePhoneCleanupText(el.textContent || '');
     const line = { text: normalized, normalizedText: normalized, compactText: compactPhoneCleanupText(normalized), element: el, hasMedia: false };
@@ -15001,7 +15010,7 @@ function removePhoneEchoFragments(textEl, fragments) {
       if (!node || !node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
       const p = node.parentElement;
       if (!p) return NodeFilter.FILTER_REJECT;
-      if (p.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons')) return NodeFilter.FILTER_REJECT;
+      if (isPhoneCleanupProtectedNode(p)) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });
@@ -15032,9 +15041,9 @@ function removePhoneEchoFragments(textEl, fragments) {
   });
 
   Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
-    if (el.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns, .mes_buttons')) return;
+    if (isPhoneCleanupProtectedNode(el)) return;
     const txt = normalizePhoneCompareText(el.textContent || '');
-    const hasMedia = !!el.querySelector('img, video, audio, button');
+    const hasMedia = hasPhoneCleanupMedia(el);
     if (cleaned.includes(txt) && !hasMedia) {
       el.remove();
       return;
@@ -15050,7 +15059,7 @@ function stripPhoneLiteralNodes(textEl) {
       if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
       const p = node.parentElement;
       if (!p) return NodeFilter.FILTER_REJECT;
-      if (p.closest('.rp-phone-echo-container, .rp-phone-live-img-btns, .mes_buttons, pre, code')) return NodeFilter.FILTER_REJECT;
+      if (isPhoneCleanupProtectedNode(p) || p.closest('pre, code')) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });
