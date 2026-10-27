@@ -37,7 +37,12 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio button:disabled{opacity:.5!important;cursor:default!important;}
 #rp-phone #rp-screen #rp-avatar-studio button:focus-visible,#rp-phone #rp-screen #rp-avatar-studio textarea:focus-visible{outline:2px solid var(--rp-r-accent,#9a647b)!important;outline-offset:2px;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-primary{background:var(--rp-r-accent,#9a647b)!important;color:var(--rp-r-on-accent,#fff)!important;border-color:transparent!important;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-options{display:grid;gap:9px;margin:14px 0;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 8px;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-options button{min-width:0!important;width:100%!important;min-height:42px!important;padding:10px 6px!important;white-space:nowrap!important;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-options button:hover{border-color:var(--rp-r-accent,#9a647b)!important;color:var(--rp-r-accent,#9a647b)!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-dismiss{display:block!important;width:auto!important;min-width:64px!important;min-height:34px!important;margin:0 auto!important;padding:5px 12px!important;border-color:transparent!important;background:transparent!important;color:var(--rp-v-muted,#756772)!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-dismiss:hover{color:var(--rp-v-text,#45383d)!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-status:empty{display:none;}
 #rp-phone #rp-screen #rp-avatar-studio label{display:block;margin:10px 0 4px;font-size:12px;font-weight:600;}
 #rp-phone #rp-screen #rp-avatar-studio textarea{display:block!important;width:100%!important;min-height:64px!important;max-height:180px!important;resize:vertical!important;padding:8px!important;border:1px solid var(--rp-v-border,#ded5d7)!important;border-radius:10px!important;background:var(--rp-v-card,#fff)!important;color:inherit!important;font-family:inherit!important;font-size:12px!important;line-height:1.5!important;box-shadow:none!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-tag{min-height:80px!important;}
@@ -64,7 +69,7 @@ export function openAvatarStudio(deps) {
   const candidates = [];
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
   root.innerHTML = `<div class="rp-as-panel"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p>
-    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传自己的图片</button><button id="rp-as-ai" class="rp-as-primary">智绘姬生图</button></div><button id="rp-as-dismiss">取消</button></div>
+    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><button id="rp-as-dismiss">取消</button></div>
     <div id="rp-as-editor" hidden><details><summary>查看已读取的人物资料</summary><pre id="rp-as-profile"></pre></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求</label><textarea id="rp-as-extra" maxlength="4000" placeholder="例如：银色短发、绿色眼睛、微笑、白衬衫。未写明的外貌也可以在这里补充。"></textarea>
       <div class="rp-as-preview"><span id="rp-as-placeholder">头像预览</span><img id="rp-as-image" alt="头像候选预览" hidden></div><div class="rp-as-history" id="rp-as-history" aria-label="本轮头像候选"></div>
