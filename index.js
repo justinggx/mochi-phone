@@ -1,4 +1,4 @@
-import { openAvatarStudio, AVATAR_STUDIO_CSS } from './avatar-studio.mjs?v=20261027-button-label-156';
+import { openAvatarStudio, AVATAR_STUDIO_CSS } from './avatar-studio.mjs?v=20261027-large-view-157';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
@@ -7431,6 +7431,7 @@ function rpChooseAvatar(key) {
   const target = avatarTarget(who, ctx);
   let instance;
   instance = openAvatarStudio({ host, target, scope: scope === 'shared' && identity ? 'shared' : 'local', signal: task.signal, isCurrent: current,
+    currentAvatar: () => current() ? getAvatar(who) : null,
     readProfile: check => readAvatarProfile(target, ctx, { check }),
     bridge: () => Promise.resolve(window.__chatu8MochiPhoneBridge),
     inspectExtension: async () => rpAvatarExtensionInfo(await import('../../../extensions.js')),

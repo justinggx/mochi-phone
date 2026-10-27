@@ -61,8 +61,13 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio button:disabled{opacity:.5!important;cursor:default!important;}
 #rp-phone #rp-screen #rp-avatar-studio button:focus-visible,#rp-phone #rp-screen #rp-avatar-studio textarea:focus-visible{outline:2px solid var(--rp-r-accent,#9a647b)!important;outline-offset:2px;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-primary{background:var(--rp-r-accent,#9a647b)!important;color:var(--rp-r-on-accent,#fff)!important;border-color:transparent!important;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 8px;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:12px 0 6px;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-options button{min-width:0!important;width:100%!important;min-height:42px!important;padding:10px 6px!important;white-space:nowrap!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-view-large{grid-column:1/-1;min-height:36px!important;padding:7px 10px!important;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-large-frame{position:relative;flex:1 1 auto;min-height:0;margin:10px 0;border:1px solid var(--rp-v-border,#ded5d7);border-radius:12px;background:var(--rp-v-card,#fff);overflow:hidden;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-large-image{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;border-radius:0!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-large-status{flex:0 0 auto;font-size:11px;margin:0 0 8px;overflow-wrap:anywhere;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-large-back{flex:0 0 auto;width:100%!important;min-height:40px!important;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-options button:hover{border-color:var(--rp-r-accent,#9a647b)!important;color:var(--rp-r-accent,#9a647b)!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-dismiss{display:block!important;width:auto!important;min-width:64px!important;min-height:34px!important;margin:0 auto!important;padding:5px 12px!important;border-color:transparent!important;background:transparent!important;color:var(--rp-v-muted,#756772)!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-dismiss:hover{color:var(--rp-v-text,#45383d)!important;}
@@ -129,11 +134,11 @@ export const AVATAR_STUDIO_CSS = `
 export function openAvatarStudio(deps) {
   const { host, target, scope, signal } = deps, doc = host.ownerDocument;
   const previousFocus = doc.activeElement;
-  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0, copying = false, copyJob = null, expandedField = null;
+  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0, copying = false, copyJob = null, expandedField = null, viewingLarge = false, largeTicket = 0, largeTimer = null;
   const candidates = [];
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
   root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><p id="rp-as-generation-status" role="status" aria-live="polite" hidden></p><div class="rp-as-body">
-    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
+    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button><button id="rp-as-view-large" aria-controls="rp-as-large">查看大图</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
     <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><div class="rp-as-field-heading"><label for="rp-as-profile">人物资料（可直接修改）</label><button id="rp-as-profile-expand" aria-label="放大编辑人物资料" aria-controls="rp-as-expanded" disabled>放大编辑</button></div><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于生成 tag。修改后可点击“重新生成 tag”，也可直接编辑 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
       <div id="rp-as-tag-tools" class="rp-as-tag-tools" hidden><button id="rp-as-regenerate-tag" aria-describedby="rp-as-regenerate-note" disabled>重新生成tag并重新生图</button><p id="rp-as-regenerate-note">按当前人物资料和补充要求，更新 tag 后自动生图</p></div>
@@ -145,7 +150,8 @@ export function openAvatarStudio(deps) {
     </div><p id="rp-as-status" role="status" aria-live="polite"></p></div>
     <button id="rp-as-more" aria-controls="rp-as-tag-area" hidden>下方还有绘图 tag，可修改<span aria-hidden="true">↓</span></button>
     <div class="rp-as-footer" id="rp-as-footer" hidden><button id="rp-as-back">取消</button><button id="rp-as-confirm" class="rp-as-primary" disabled>用作头像</button></div></div>
-    <section id="rp-as-expanded" class="rp-as-expanded" data-no-swipe-back hidden><h3 id="rp-as-expanded-title" tabindex="-1"></h3><p id="rp-as-expanded-note"></p><textarea id="rp-as-expanded-text" aria-labelledby="rp-as-expanded-title" aria-describedby="rp-as-expanded-note rp-as-expanded-error"></textarea><p id="rp-as-expanded-error" role="status" aria-live="polite"></p><div class="rp-as-footer"><button id="rp-as-expanded-cancel">取消</button><button id="rp-as-expanded-done" class="rp-as-primary">完成</button></div></section>`;
+    <section id="rp-as-expanded" class="rp-as-expanded" data-no-swipe-back hidden><h3 id="rp-as-expanded-title" tabindex="-1"></h3><p id="rp-as-expanded-note"></p><textarea id="rp-as-expanded-text" aria-labelledby="rp-as-expanded-title" aria-describedby="rp-as-expanded-note rp-as-expanded-error"></textarea><p id="rp-as-expanded-error" role="status" aria-live="polite"></p><div class="rp-as-footer"><button id="rp-as-expanded-cancel">取消</button><button id="rp-as-expanded-done" class="rp-as-primary">完成</button></div></section>
+    <section id="rp-as-large" class="rp-as-expanded" data-no-swipe-back hidden><h3 id="rp-as-large-title"></h3><div class="rp-as-large-frame"><img id="rp-as-large-image" alt="" hidden></div><p id="rp-as-large-status" role="status" aria-live="polite"></p><button id="rp-as-large-back">返回</button></section>`;
   const $ = id => root.querySelector('#rp-as-' + id);
   root.querySelectorAll('button').forEach(button => { button.type = 'button'; });
   $('title').textContent = '更换' + target.name + '的头像';
@@ -154,6 +160,34 @@ export function openAvatarStudio(deps) {
   host.appendChild(root);
   const valid = () => !closed && !signal?.aborted && deps.isCurrent() !== false;
   const check = () => { if (!valid()) throw cancelled(); };
+  function clearLargeImage() {
+    largeTicket++; doc.defaultView.clearTimeout(largeTimer); largeTimer = null;
+    const image = $('large-image'); image.onload = image.onerror = null; image.hidden = true; image.removeAttribute('src');
+  }
+  function returnFromLarge() {
+    if (!valid() || !viewingLarge) return;
+    viewingLarge = false; clearLargeImage(); $('large').hidden = true; $('main').hidden = false;
+    root.setAttribute('aria-labelledby', 'rp-as-title'); $('view-large').focus({ preventScroll: true }); updateTagHint();
+  }
+  $('view-large').onclick = () => {
+    if (!valid() || busy || copying || viewingLarge || expandedField || $('choice').hidden) return;
+    viewingLarge = true; clearLargeImage(); const ticket = largeTicket;
+    $('large-title').textContent = target.name + '的头像'; $('large-image').alt = target.name + '的当前头像';
+    $('main').hidden = true; $('large').hidden = false; root.setAttribute('aria-labelledby', 'rp-as-large-title'); $('large-back').focus({ preventScroll: true });
+    let src;
+    try { src = deps.currentAvatar?.(); } catch { $('large-status').textContent = '头像暂时无法读取，请返回后重试。'; return; }
+    if (typeof src !== 'string' || !/^(?:data:image\/|https?:\/\/|\/(?!\/))/i.test(src)) { $('large-status').textContent = '还没有设置图片头像，可返回后上传图片或使用智绘姬生图。'; return; }
+    $('large-status').textContent = '正在加载头像…';
+    const image = $('large-image'), current = () => valid() && viewingLarge && ticket === largeTicket;
+    const failed = () => { if (current()) { doc.defaultView.clearTimeout(largeTimer); image.hidden = true; $('large-status').textContent = '头像图片加载失败，请返回后重试。'; } };
+    image.onload = () => {
+      if (!current()) return; doc.defaultView.clearTimeout(largeTimer);
+      if (!(image.naturalWidth > 0 && image.naturalHeight > 0)) { failed(); return; }
+      image.hidden = false; $('large-status').textContent = '当前头像';
+    };
+    image.onerror = failed; largeTimer = doc.defaultView.setTimeout(failed, 15000); image.src = src;
+  };
+  $('large-back').onclick = returnFromLarge;
   const status = text => { if (!closed) $('status').textContent = text; };
   function generationStatus(text, state = 'pending') {
     if (!valid()) return;
@@ -213,6 +247,7 @@ export function openAvatarStudio(deps) {
   $('expanded-done').onclick = () => finishExpanded(true);
   const paint = () => {
     $('ai').disabled = busy;
+    $('view-large').disabled = busy || copying;
     for (const id of ['generate', 'reload']) $(id).disabled = busy || !profile;
     $('reload').disabled = busy;
     $('confirm').disabled = busy || !selected;
@@ -232,7 +267,7 @@ export function openAvatarStudio(deps) {
     updateTagHint();
   };
   function close() {
-    if (closed) return; closed = true; endDrag(); observer?.disconnect(); tagObserver?.disconnect(); doc.defaultView.removeEventListener('resize', updateTagHint); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); copyJob?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
+    if (closed) return; closed = true; clearLargeImage(); endDrag(); observer?.disconnect(); tagObserver?.disconnect(); doc.defaultView.removeEventListener('resize', updateTagHint); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); copyJob?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
     if (previousFocus?.isConnected) previousFocus.focus?.();
   }
   signal?.addEventListener('abort', close, { once: true });
@@ -432,7 +467,7 @@ export function openAvatarStudio(deps) {
   $('upload').onclick = () => { if (!valid()) return; close(); deps.upload(); };
   $('dismiss').onclick = $('back').onclick = close;
   root.onkeydown = event => {
-    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (expandedField) finishExpanded(false); else close(); return; }
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (viewingLarge) returnFromLarge(); else if (expandedField) finishExpanded(false); else close(); return; }
     if (event.key !== 'Tab') return;
     const controls = [...root.querySelectorAll('button, textarea, summary, input, [tabindex="0"]')].filter(el => !el.disabled && !el.closest('[hidden]'));
     const first = controls[0], last = controls.at(-1);
