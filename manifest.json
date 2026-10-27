@@ -1,8 +1,8 @@
 {
     "display_name": "mochiphone",
     "author": "justinggx",
-    "version": "4.6.1-audit.20261027.148",
+    "version": "4.6.1-audit.20261027.149",
     "loading_order": 1,
     "requires": [],
-    "js": "index.js?v=20261027-avatar-crop-148"
+    "js": "index.js?v=20261027-avatar-manual-tags-149"
 }
