@@ -1,3 +1,5 @@
+import { openAvatarStudio, AVATAR_STUDIO_CSS } from './avatar-studio.mjs?v=20261027-avatar-144';
+import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-reader-132';
@@ -7402,13 +7404,43 @@ function rpRefreshEditableAvatars(key) {
   });
   if ($('#rp-avatar-select').val() === key) updateAvatarPreviewSwatch(key);
 }
+let rpAvatarStudio = null;
+rpRuntime.own(() => { rpAvatarStudio?.close(); document.getElementById('rp-avatar-studio-css')?.remove(); });
 function rpChooseAvatar(key) {
+  rpAvatarStudio?.close();
+  const who = String(key || ''), host = document.getElementById('rp-screen');
+  if (!who || !host) return;
+  const task = rpRuntime.task(), ctx = getContext();
+  const slot = STATE.chatId, account = rpArchiveAccountHandle, identity = rpAvatarIdentity(who), scope = rpAvatarUploadScope();
+  const ticket = Symbol('avatar-studio'); rpAvatarEdits.set(who, ticket);
+  const current = () => task.valid() && rpAvatarEdits.get(who) === ticket && STATE.chatId === slot && account === rpArchiveAccountHandle && getPhoneChatSlotKey(getContext()) === slot && rpAvatarIdentity(who) === identity;
+  if (!current()) return;
+  if (!document.getElementById('rp-avatar-studio-css')) {
+    const style = document.createElement('style'); style.id = 'rp-avatar-studio-css'; style.textContent = AVATAR_STUDIO_CSS; document.head.appendChild(style);
+  }
+  const target = avatarTarget(who, ctx);
+  let instance;
+  instance = openAvatarStudio({ host, target, scope: scope === 'shared' && identity ? 'shared' : 'local', signal: task.signal, isCurrent: current,
+    readProfile: check => readAvatarProfile(target, ctx, { check }),
+    bridge: () => Promise.resolve(window.__chatu8MochiPhoneBridge),
+    upload: () => { if (task.valid() && STATE.chatId === slot && account === rpArchiveAccountHandle && rpAvatarIdentity(who) === identity) rpChooseAvatarFile(who, scope); },
+    commit: data => {
+      if (!current()) return false;
+      setAvatar(who, data, ticket, scope); saveGlobalAvatars(); saveState(); rpRefreshEditableAvatars(who);
+      if (scope === 'shared' && !identity) toastr.info('无法确认所属角色卡或用户身份，头像已仅用于当前聊天');
+      return true;
+    },
+    onClose: () => { if (rpAvatarEdits.get(who) === ticket) rpAvatarEdits.set(who, Symbol('avatar-closed')); if (rpAvatarStudio === instance) rpAvatarStudio = null; },
+  });
+  rpAvatarStudio = instance;
+}
+function rpChooseAvatarFile(key, capturedScope) {
   const who = String(key || '');
   const input = document.getElementById('rp-avatar-file-input');
   if (!who || !input) return;
   const task = rpRuntime.task();
   const slot = STATE.chatId, account = rpArchiveAccountHandle, identity = rpAvatarIdentity(who);
-  const scope = rpAvatarUploadScope();
+  const scope = capturedScope || rpAvatarUploadScope();
   const ticket = Symbol('avatar'); rpAvatarEdits.set(who, ticket);
   const current = () => task.valid() && rpAvatarEdits.get(who) === ticket && STATE.chatId === slot && account === rpArchiveAccountHandle && getPhoneChatSlotKey(getContext()) === slot && rpAvatarIdentity(who) === identity;
   // Capture identity before the native picker opens; never read the settings select later.
