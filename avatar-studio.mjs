@@ -74,6 +74,15 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-copy-status:empty{display:none;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-status:empty{display:none;}
 #rp-phone #rp-screen #rp-avatar-studio label{display:block;margin:10px 0 4px;font-size:12px;font-weight:600;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-field-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 4px;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-field-heading label{margin:0;min-width:0;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-field-heading button{flex:0 0 auto;min-height:28px!important;padding:4px 7px!important;font-size:11px!important;color:var(--rp-r-accent,#9a647b)!important;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-expanded{display:flex;flex-direction:column;width:100%;height:100%;min-height:0;max-height:100%;padding:14px;border:1px solid var(--rp-v-border,#ded5d7);border-radius:18px;background:var(--rp-v-surface,#faf7f3);overflow:hidden;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-expanded h3,#rp-phone #rp-screen #rp-avatar-studio .rp-as-expanded p{flex:0 0 auto;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-expanded-note{font-size:11px;color:var(--rp-v-muted,#756772);margin:4px 0 10px;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-expanded-text{flex:1 1 auto!important;min-height:0!important;height:0!important;max-height:none!important;padding:10px 12px!important;resize:none!important;font-size:13px!important;line-height:1.7!important;background:var(--rp-v-surface,#fff)!important;border-color:var(--rp-r-accent,#9a647b)!important;overflow:auto!important;overscroll-behavior:contain;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-expanded-error:empty{display:none;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-expanded-error{font-size:11px;margin:6px 0 0;}
 #rp-phone #rp-screen #rp-avatar-studio textarea{display:block!important;width:100%!important;min-height:64px!important;max-height:180px!important;resize:vertical!important;padding:8px!important;border:1px solid var(--rp-v-border,#ded5d7)!important;border-radius:10px!important;background:var(--rp-v-card,#fff)!important;color:inherit!important;font-family:inherit!important;font-size:12px!important;line-height:1.5!important;box-shadow:none!important;}
 #rp-phone #rp-screen #rp-avatar-studio label[for="rp-as-extra"]{display:flex;align-items:baseline;justify-content:space-between;gap:4px 6px;flex-wrap:wrap;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-extra-hint{font-size:11px;font-weight:400;color:var(--rp-r-accent,#9a647b);}
@@ -115,21 +124,22 @@ export const AVATAR_STUDIO_CSS = `
 export function openAvatarStudio(deps) {
   const { host, target, scope, signal } = deps, doc = host.ownerDocument;
   const previousFocus = doc.activeElement;
-  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0, copying = false, copyJob = null;
+  let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0, copying = false, copyJob = null, expandedField = null;
   const candidates = [];
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
-  root.innerHTML = `<div class="rp-as-panel"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><div class="rp-as-body">
+  root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><div class="rp-as-body">
     <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
-    <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><label for="rp-as-profile">人物资料（可直接修改）</label><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于首次生成 tag，之后可直接修改 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
+    <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><div class="rp-as-field-heading"><label for="rp-as-profile">人物资料（可直接修改）</label><button id="rp-as-profile-expand" aria-label="放大编辑人物资料" aria-controls="rp-as-expanded" disabled>放大编辑</button></div><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于首次生成 tag，之后可直接修改 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
       <div class="rp-as-preview" id="rp-as-crop" data-no-swipe-back tabindex="-1" role="group" aria-label="头像取景框，拖动图片或用方向键调整位置"><span id="rp-as-placeholder">头像预览</span><img id="rp-as-image" alt="头像候选预览" draggable="false" hidden></div>
       <div id="rp-as-crop-controls" hidden><div class="rp-as-crop-caption"><span>拖动取景 · 滑杆缩放</span><output id="rp-as-zoom-value" for="rp-as-zoom">100%</output></div><div class="rp-as-crop-row"><button id="rp-as-zoom-out" aria-label="缩小头像">−</button><input id="rp-as-zoom" type="range" min="100" max="400" step="1" value="100" aria-label="头像缩放比例"><button id="rp-as-zoom-in" aria-label="放大头像">+</button></div><button id="rp-as-crop-reset">重置构图</button></div>
       <div class="rp-as-history" id="rp-as-history" aria-label="本轮头像候选"></div>
-      <div id="rp-as-tag-area" hidden tabindex="-1" role="group" aria-label="绘图 tag（可以修改）"><label for="rp-as-tag">绘图 tag（可以修改）</label><textarea id="rp-as-tag" maxlength="20000"></textarea><p>不满意可直接修改 tag，再点击“按 tag 重新生图”。</p></div>
+      <div id="rp-as-tag-area" hidden tabindex="-1" role="group" aria-label="绘图 tag（可以修改）"><div class="rp-as-field-heading"><label for="rp-as-tag">绘图 tag（可以修改）</label><button id="rp-as-tag-expand" aria-label="放大编辑绘图 tag" aria-controls="rp-as-expanded" disabled>放大编辑</button></div><textarea id="rp-as-tag" maxlength="20000"></textarea><p>不满意可直接修改 tag，再点击“按 tag 重新生图”。</p></div>
       <div class="rp-as-actions"><button id="rp-as-generate" class="rp-as-primary">生成头像</button></div>
     </div><p id="rp-as-status" role="status" aria-live="polite"></p></div>
     <button id="rp-as-more" aria-controls="rp-as-tag-area" hidden>下方还有绘图 tag，可修改<span aria-hidden="true">↓</span></button>
-    <div class="rp-as-footer" id="rp-as-footer" hidden><button id="rp-as-back">取消</button><button id="rp-as-confirm" class="rp-as-primary" disabled>用作头像</button></div></div>`;
+    <div class="rp-as-footer" id="rp-as-footer" hidden><button id="rp-as-back">取消</button><button id="rp-as-confirm" class="rp-as-primary" disabled>用作头像</button></div></div>
+    <section id="rp-as-expanded" class="rp-as-expanded" data-no-swipe-back hidden><h3 id="rp-as-expanded-title" tabindex="-1"></h3><p id="rp-as-expanded-note"></p><textarea id="rp-as-expanded-text" aria-labelledby="rp-as-expanded-title" aria-describedby="rp-as-expanded-note rp-as-expanded-error"></textarea><p id="rp-as-expanded-error" role="status" aria-live="polite"></p><div class="rp-as-footer"><button id="rp-as-expanded-cancel">取消</button><button id="rp-as-expanded-done" class="rp-as-primary">完成</button></div></section>`;
   const $ = id => root.querySelector('#rp-as-' + id);
   root.querySelectorAll('button').forEach(button => { button.type = 'button'; });
   $('title').textContent = '更换' + target.name + '的头像';
@@ -144,7 +154,7 @@ export function openAvatarStudio(deps) {
   function updateTagHint() {
     if (!valid()) return;
     const hint = $('more');
-    if ($('editor').hidden || $('tag-area').hidden) { hint.hidden = true; return; }
+    if ($('main').hidden || $('editor').hidden || $('tag-area').hidden) { hint.hidden = true; return; }
     const view = body.getBoundingClientRect(), tag = $('tag').getBoundingClientRect();
     if (!(view.height > 0 && tag.height > 0 && body.clientHeight > 0)) { hint.hidden = false; return; }
     const scale = view.height / body.clientHeight;
@@ -163,6 +173,33 @@ export function openAvatarStudio(deps) {
   const tagObserver = typeof doc.defaultView.ResizeObserver === 'function' ? new doc.defaultView.ResizeObserver(updateTagHint) : null;
   for (const el of [body, $('editor'), $('tag')]) tagObserver?.observe(el);
   doc.defaultView.addEventListener('resize', updateTagHint);
+  function expandField(id) {
+    const source = $(id);
+    if (!valid() || busy || expandedField || source.disabled || source.closest('[hidden]')) return;
+    expandedField = { id, scrollTop: body.scrollTop };
+    $('expanded-title').textContent = id === 'profile' ? '编辑人物资料' : '编辑绘图 tag';
+    $('expanded-note').textContent = id === 'profile' ? '仅用于本次头像生成，不会修改角色卡或世界书。' : '完成后返回，可按修改后的 tag 重新生图。';
+    const text = $('expanded-text'); text.value = source.value; text.maxLength = source.maxLength; text.placeholder = source.placeholder;
+    text.setSelectionRange(source.selectionStart, source.selectionEnd, source.selectionDirection); text.scrollTop = 0;
+    $('expanded-error').textContent = ''; $('main').hidden = true; $('expanded').hidden = false;
+    root.setAttribute('aria-labelledby', 'rp-as-expanded-title'); $('expanded-title').focus({ preventScroll: true }); updateTagHint();
+  }
+  function finishExpanded(apply) {
+    if (!valid() || !expandedField) return;
+    const { id, scrollTop } = expandedField, source = $(id), text = $('expanded-text');
+    if (apply) {
+      if (busy || source.disabled) return;
+      if (text.value !== source.value && text.value.length > source.maxLength) { $('expanded-error').textContent = '内容过长，请控制在 ' + source.maxLength + ' 个字符以内。'; return; }
+      if (source.value !== text.value) { source.value = text.value; source.dispatchEvent(new doc.defaultView.Event('input', { bubbles: true })); }
+      source.setSelectionRange(text.selectionStart, text.selectionEnd, text.selectionDirection);
+    }
+    expandedField = null; $('expanded').hidden = true; $('expanded-text').value = ''; $('main').hidden = false;
+    root.setAttribute('aria-labelledby', 'rp-as-title'); body.scrollTop = scrollTop; $(id + '-expand').focus({ preventScroll: true }); updateTagHint();
+  }
+  $('profile-expand').onclick = () => expandField('profile');
+  $('tag-expand').onclick = () => expandField('tag');
+  $('expanded-cancel').onclick = () => finishExpanded(false);
+  $('expanded-done').onclick = () => finishExpanded(true);
   const paint = () => {
     $('ai').disabled = busy;
     for (const id of ['generate', 'reload']) $(id).disabled = busy || !profile;
@@ -170,6 +207,8 @@ export function openAvatarStudio(deps) {
     $('confirm').disabled = busy || !selected;
     $('extra').disabled = $('tag').disabled = busy;
     $('profile').disabled = busy || !profile;
+    $('profile-expand').disabled = busy || !profile;
+    $('tag-expand').disabled = busy || !promptPrepared;
     $('restore').disabled = busy || !profile || $('profile').value === profile.body;
     $('generate').textContent = promptPrepared ? '按 tag 重新生图' : '生成头像';
     $('generate').classList.toggle('rp-as-primary', !promptPrepared);
@@ -358,11 +397,12 @@ export function openAvatarStudio(deps) {
   $('upload').onclick = () => { if (!valid()) return; close(); deps.upload(); };
   $('dismiss').onclick = $('back').onclick = close;
   root.onkeydown = event => {
-    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (expandedField) finishExpanded(false); else close(); return; }
     if (event.key !== 'Tab') return;
     const controls = [...root.querySelectorAll('button, textarea, summary, input, [tabindex="0"]')].filter(el => !el.disabled && !el.closest('[hidden]'));
     const first = controls[0], last = controls.at(-1);
-    if (event.shiftKey && doc.activeElement === first) { event.preventDefault(); last?.focus(); }
+    if (expandedField && doc.activeElement === $('expanded-title')) { event.preventDefault(); (event.shiftKey ? last : first)?.focus(); }
+    else if (event.shiftKey && doc.activeElement === first) { event.preventDefault(); last?.focus(); }
     else if (!event.shiftKey && doc.activeElement === last) { event.preventDefault(); first?.focus(); }
   };
   $('upload').focus(); if (signal?.aborted) close();
