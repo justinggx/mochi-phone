@@ -39,7 +39,9 @@ export function squareAvatar(src, { document: doc, signal, crop } = {}) {
 export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio{position:absolute!important;inset:0!important;z-index:300!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:10px!important;background:rgba(30,25,30,.32)!important;color:var(--rp-v-text,#45383d)!important;font-family:inherit;font-size:12px;line-height:1.55;box-sizing:border-box!important;}
 #rp-phone #rp-screen #rp-avatar-studio *{box-sizing:border-box;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-panel{background:var(--rp-v-surface,#faf7f3);border:1px solid var(--rp-v-border,#ded5d7);border-radius:18px;padding:14px;width:100%;max-height:100%;overflow:auto;box-shadow:0 12px 36px #0002;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-panel{display:flex;flex-direction:column;background:var(--rp-v-surface,#faf7f3);border:1px solid var(--rp-v-border,#ded5d7);border-radius:18px;padding:14px;width:100%;max-height:100%;overflow:hidden;box-shadow:0 12px 36px #0002;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-heading{flex:0 0 auto;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding:4px;margin:0 -4px;}
 #rp-phone #rp-screen #rp-avatar-studio h3{font-size:16px;font-weight:700;margin:0 0 4px;color:inherit;}
 #rp-phone #rp-screen #rp-avatar-studio p{margin:4px 0 10px;font-size:12px;line-height:1.6;color:inherit;}
 #rp-phone #rp-screen #rp-avatar-studio button{font:inherit!important;line-height:1.4!important;cursor:pointer!important;min-height:34px!important;padding:8px 10px!important;border-radius:10px!important;border:1px solid var(--rp-v-border,#ded5d7)!important;background:var(--rp-v-card,#fff)!important;color:inherit!important;box-shadow:none!important;text-shadow:none!important;white-space:normal!important;}
@@ -83,10 +85,10 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-history button{padding:3px!important;flex:0 0 44px;min-height:44px!important;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-history button[aria-pressed="true"]{border-color:var(--rp-r-accent,#9a647b)!important;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-history img{width:36px!important;height:36px!important;object-fit:cover!important;display:block;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-actions{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-actions button{flex:1;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-footer{display:flex;gap:7px;position:sticky;bottom:-14px;padding:10px 0 2px;background:var(--rp-v-surface,#faf7f3);margin-top:8px;}
-#rp-phone #rp-screen #rp-avatar-studio .rp-as-footer button{flex:1;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-actions{display:flex;margin:12px 0 4px;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-actions button{flex:1;min-height:38px!important;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-footer{display:grid;grid-template-columns:minmax(64px,.7fr) minmax(0,1.3fr);gap:10px;flex:0 0 auto;padding:10px 0 0;background:var(--rp-v-surface,#faf7f3);margin-top:10px;border-top:1px solid var(--rp-v-border,#ded5d7);}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-footer button{width:100%!important;min-height:40px!important;margin:0!important;padding:10px 8px!important;}
 #rp-phone #rp-screen #rp-avatar-studio [hidden][hidden]{display:none!important;}
 `;
 
@@ -96,7 +98,7 @@ export function openAvatarStudio(deps) {
   let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0;
   const candidates = [];
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
-  root.innerHTML = `<div class="rp-as-panel"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p>
+  root.innerHTML = `<div class="rp-as-panel"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><div class="rp-as-body">
     <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><button id="rp-as-dismiss">取消</button></div>
     <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><label for="rp-as-profile">人物资料（可直接修改）</label><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于首次生成 tag，之后可直接修改 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
@@ -105,8 +107,8 @@ export function openAvatarStudio(deps) {
       <div class="rp-as-history" id="rp-as-history" aria-label="本轮头像候选"></div>
       <div id="rp-as-tag-area" hidden><label for="rp-as-tag">绘图 tag（可以修改）</label><textarea id="rp-as-tag" maxlength="20000"></textarea><p>不满意可直接修改 tag，再点击“按 tag 重新生图”。</p></div>
       <div class="rp-as-actions"><button id="rp-as-generate" class="rp-as-primary">生成头像</button></div>
-      <div class="rp-as-footer"><button id="rp-as-back">取消返回</button><button id="rp-as-confirm" class="rp-as-primary" disabled>用作头像</button></div>
-    </div><p id="rp-as-status" role="status" aria-live="polite"></p></div>`;
+    </div><p id="rp-as-status" role="status" aria-live="polite"></p></div>
+    <div class="rp-as-footer" id="rp-as-footer" hidden><button id="rp-as-back">取消</button><button id="rp-as-confirm" class="rp-as-primary" disabled>用作头像</button></div></div>`;
   const $ = id => root.querySelector('#rp-as-' + id);
   root.querySelectorAll('button').forEach(button => { button.type = 'button'; });
   $('title').textContent = '更换' + target.name + '的头像';
@@ -124,6 +126,7 @@ export function openAvatarStudio(deps) {
     $('profile').disabled = busy || !profile;
     $('restore').disabled = busy || !profile || $('profile').value === profile.body;
     $('generate').textContent = promptPrepared ? '按 tag 重新生图' : '生成头像';
+    $('generate').classList.toggle('rp-as-primary', !promptPrepared);
     for (const id of ['zoom', 'zoom-in', 'zoom-out', 'crop-reset']) $(id).disabled = busy || !selected?.dimensions;
     $('crop').tabIndex = !busy && selected?.dimensions ? 0 : -1;
     if (busy) endDrag();
@@ -268,7 +271,7 @@ export function openAvatarStudio(deps) {
   $('profile').oninput = $('extra').oninput = () => referenceChanged();
   $('restore').onclick = () => { if (busy || !profile) return; $('profile').value = profile.body || ''; referenceChanged('已恢复读取原文。'); };
   $('tag').oninput = () => { status('将直接使用你填写的 tag 生图。'); paint(); };
-  $('ai').onclick = () => { $('choice').hidden = true; $('editor').hidden = false; void read(); };
+  $('ai').onclick = () => { $('choice').hidden = true; $('editor').hidden = false; $('footer').hidden = false; void read(); };
   $('reload').onclick = () => { void read(); };
   $('upload').onclick = () => { if (!valid()) return; close(); deps.upload(); };
   $('dismiss').onclick = $('back').onclick = close;
