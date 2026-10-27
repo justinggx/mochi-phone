@@ -106,6 +106,7 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-history img{width:36px!important;height:36px!important;object-fit:cover!important;display:block;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-actions{display:flex;margin:12px 0 4px;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-actions button{flex:1;min-height:38px!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-more{display:flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;width:100%!important;min-height:32px!important;margin:0!important;padding:5px 8px!important;border:0!important;border-radius:6px!important;background:var(--rp-v-card,#fff)!important;color:var(--rp-r-accent,#9a647b)!important;font-size:11px!important;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-footer{display:grid;grid-template-columns:minmax(64px,.7fr) minmax(0,1.3fr);gap:10px;flex:0 0 auto;padding:10px 0 0;background:var(--rp-v-surface,#faf7f3);margin-top:10px;border-top:1px solid var(--rp-v-border,#ded5d7);}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-footer button{width:100%!important;min-height:40px!important;margin:0!important;padding:10px 8px!important;}
 #rp-phone #rp-screen #rp-avatar-studio [hidden][hidden]{display:none!important;}
@@ -124,9 +125,10 @@ export function openAvatarStudio(deps) {
       <div class="rp-as-preview" id="rp-as-crop" data-no-swipe-back tabindex="-1" role="group" aria-label="头像取景框，拖动图片或用方向键调整位置"><span id="rp-as-placeholder">头像预览</span><img id="rp-as-image" alt="头像候选预览" draggable="false" hidden></div>
       <div id="rp-as-crop-controls" hidden><div class="rp-as-crop-caption"><span>拖动取景 · 滑杆缩放</span><output id="rp-as-zoom-value" for="rp-as-zoom">100%</output></div><div class="rp-as-crop-row"><button id="rp-as-zoom-out" aria-label="缩小头像">−</button><input id="rp-as-zoom" type="range" min="100" max="400" step="1" value="100" aria-label="头像缩放比例"><button id="rp-as-zoom-in" aria-label="放大头像">+</button></div><button id="rp-as-crop-reset">重置构图</button></div>
       <div class="rp-as-history" id="rp-as-history" aria-label="本轮头像候选"></div>
-      <div id="rp-as-tag-area" hidden><label for="rp-as-tag">绘图 tag（可以修改）</label><textarea id="rp-as-tag" maxlength="20000"></textarea><p>不满意可直接修改 tag，再点击“按 tag 重新生图”。</p></div>
+      <div id="rp-as-tag-area" hidden tabindex="-1" role="group" aria-label="绘图 tag（可以修改）"><label for="rp-as-tag">绘图 tag（可以修改）</label><textarea id="rp-as-tag" maxlength="20000"></textarea><p>不满意可直接修改 tag，再点击“按 tag 重新生图”。</p></div>
       <div class="rp-as-actions"><button id="rp-as-generate" class="rp-as-primary">生成头像</button></div>
     </div><p id="rp-as-status" role="status" aria-live="polite"></p></div>
+    <button id="rp-as-more" aria-controls="rp-as-tag-area" hidden>下方还有绘图 tag，可修改<span aria-hidden="true">↓</span></button>
     <div class="rp-as-footer" id="rp-as-footer" hidden><button id="rp-as-back">取消</button><button id="rp-as-confirm" class="rp-as-primary" disabled>用作头像</button></div></div>`;
   const $ = id => root.querySelector('#rp-as-' + id);
   root.querySelectorAll('button').forEach(button => { button.type = 'button'; });
@@ -138,6 +140,29 @@ export function openAvatarStudio(deps) {
   const check = () => { if (!valid()) throw cancelled(); };
   const status = text => { if (!closed) $('status').textContent = text; };
   const updateExtraHint = () => { $('extra-hint').textContent = $('profile').value.trim() ? '选填 · 点击输入' : '必填 · 请补充外貌'; };
+  const body = root.querySelector('.rp-as-body');
+  function updateTagHint() {
+    if (!valid()) return;
+    const hint = $('more');
+    if ($('editor').hidden || $('tag-area').hidden) { hint.hidden = true; return; }
+    const view = body.getBoundingClientRect(), tag = $('tag').getBoundingClientRect();
+    if (!(view.height > 0 && tag.height > 0 && body.clientHeight > 0)) { hint.hidden = false; return; }
+    const scale = view.height / body.clientHeight;
+    // Measure the viewport with the hint removed, so toggling it cannot cause a resize loop.
+    const bottom = view.bottom + (hint.hidden ? 0 : hint.getBoundingClientRect().height);
+    hint.hidden = tag.top + Math.min(tag.height, 48 * scale) <= bottom + scale;
+  }
+  body.onscroll = updateTagHint;
+  $('editor').querySelector('details').ontoggle = updateTagHint;
+  $('more').onclick = () => {
+    if (!valid() || $('tag-area').hidden) return;
+    const view = body.getBoundingClientRect(), scale = body.clientHeight > 0 && view.height > 0 ? view.height / body.clientHeight : 1;
+    body.scrollTop = Math.max(0, body.scrollTop + ($('tag-area').getBoundingClientRect().top - view.top) / scale - 6);
+    $('tag-area').focus({ preventScroll: true }); updateTagHint();
+  };
+  const tagObserver = typeof doc.defaultView.ResizeObserver === 'function' ? new doc.defaultView.ResizeObserver(updateTagHint) : null;
+  for (const el of [body, $('editor'), $('tag')]) tagObserver?.observe(el);
+  doc.defaultView.addEventListener('resize', updateTagHint);
   const paint = () => {
     $('ai').disabled = busy;
     for (const id of ['generate', 'reload']) $(id).disabled = busy || !profile;
@@ -152,9 +177,10 @@ export function openAvatarStudio(deps) {
     $('crop').tabIndex = !busy && selected?.dimensions ? 0 : -1;
     if (busy) endDrag();
     for (const button of $('history').children) button.disabled = busy;
+    updateTagHint();
   };
   function close() {
-    if (closed) return; closed = true; endDrag(); observer?.disconnect(); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); copyJob?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
+    if (closed) return; closed = true; endDrag(); observer?.disconnect(); tagObserver?.disconnect(); doc.defaultView.removeEventListener('resize', updateTagHint); previewSequence++; $('image').onload = $('image').onerror = null; job?.abort(); copyJob?.abort(); signal?.removeEventListener('abort', close); root.remove(); deps.onClose?.();
     if (previousFocus?.isConnected) previousFocus.focus?.();
   }
   signal?.addEventListener('abort', close, { once: true });
