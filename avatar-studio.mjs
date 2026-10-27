@@ -90,6 +90,9 @@ export const AVATAR_STUDIO_CSS = `
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-extra::placeholder{color:var(--rp-v-muted,#756772)!important;opacity:1!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-extra:focus{border-color:var(--rp-r-accent,#9a647b)!important;outline:2px solid var(--rp-r-accent,#9a647b)!important;outline-offset:2px;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-extra:disabled{cursor:wait!important;opacity:.65;}
+#rp-phone #rp-screen #rp-avatar-studio .rp-as-tag-tools{margin:8px 0;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-regenerate-tag{width:100%!important;min-height:34px!important;color:var(--rp-r-accent,#9a647b)!important;}
+#rp-phone #rp-screen #rp-avatar-studio #rp-as-regenerate-note{font-size:11px;color:var(--rp-v-muted,#756772);margin:4px 0 0;text-align:center;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-profile{min-height:160px!important;max-height:260px!important;padding:10px!important;border-color:var(--rp-r-accent,#9a647b)!important;background:var(--rp-v-surface,#fff)!important;cursor:text!important;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-profile:focus{outline:2px solid var(--rp-r-accent,#9a647b)!important;outline-offset:2px;}
 #rp-phone #rp-screen #rp-avatar-studio #rp-as-profile-note,#rp-phone #rp-screen #rp-avatar-studio #rp-as-sources{font-size:11px;color:var(--rp-v-muted,#756772);margin:5px 0;overflow-wrap:anywhere;}
@@ -129,8 +132,9 @@ export function openAvatarStudio(deps) {
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
   root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><div class="rp-as-body">
     <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
-    <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><div class="rp-as-field-heading"><label for="rp-as-profile">人物资料（可直接修改）</label><button id="rp-as-profile-expand" aria-label="放大编辑人物资料" aria-controls="rp-as-expanded" disabled>放大编辑</button></div><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于首次生成 tag，之后可直接修改 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
+    <div id="rp-as-editor" hidden><details><summary>查看／修改人物资料</summary><p id="rp-as-sources" hidden></p><div class="rp-as-field-heading"><label for="rp-as-profile">人物资料（可直接修改）</label><button id="rp-as-profile-expand" aria-label="放大编辑人物资料" aria-controls="rp-as-expanded" disabled>放大编辑</button></div><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">资料用于生成 tag。修改后可点击“重新生成 tag”，也可直接编辑 tag。仅用于本次头像生成，不会修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></details>
       <button id="rp-as-reload" hidden>重读人物资料</button><label for="rp-as-extra">补充人设／头像要求<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
+      <div id="rp-as-tag-tools" class="rp-as-tag-tools" hidden><button id="rp-as-regenerate-tag" aria-describedby="rp-as-regenerate-note" disabled>重新生成 tag</button><p id="rp-as-regenerate-note">仅更新 tag，确认后再生图</p></div>
       <div class="rp-as-preview" id="rp-as-crop" data-no-swipe-back tabindex="-1" role="group" aria-label="头像取景框，拖动图片或用方向键调整位置"><span id="rp-as-placeholder">头像预览</span><img id="rp-as-image" alt="头像候选预览" draggable="false" hidden></div>
       <div id="rp-as-crop-controls" hidden><div class="rp-as-crop-caption"><span>拖动取景 · 滑杆缩放</span><output id="rp-as-zoom-value" for="rp-as-zoom">100%</output></div><div class="rp-as-crop-row"><button id="rp-as-zoom-out" aria-label="缩小头像">−</button><input id="rp-as-zoom" type="range" min="100" max="400" step="1" value="100" aria-label="头像缩放比例"><button id="rp-as-zoom-in" aria-label="放大头像">+</button></div><button id="rp-as-crop-reset">重置构图</button></div>
       <div class="rp-as-history" id="rp-as-history" aria-label="本轮头像候选"></div>
@@ -164,12 +168,13 @@ export function openAvatarStudio(deps) {
   }
   body.onscroll = updateTagHint;
   $('editor').querySelector('details').ontoggle = updateTagHint;
-  $('more').onclick = () => {
+  function revealTag() {
     if (!valid() || $('tag-area').hidden) return;
     const view = body.getBoundingClientRect(), scale = body.clientHeight > 0 && view.height > 0 ? view.height / body.clientHeight : 1;
     body.scrollTop = Math.max(0, body.scrollTop + ($('tag-area').getBoundingClientRect().top - view.top) / scale - 6);
     $('tag-area').focus({ preventScroll: true }); updateTagHint();
-  };
+  }
+  $('more').onclick = revealTag;
   const tagObserver = typeof doc.defaultView.ResizeObserver === 'function' ? new doc.defaultView.ResizeObserver(updateTagHint) : null;
   for (const el of [body, $('editor'), $('tag')]) tagObserver?.observe(el);
   doc.defaultView.addEventListener('resize', updateTagHint);
@@ -212,6 +217,8 @@ export function openAvatarStudio(deps) {
     $('restore').disabled = busy || !profile || $('profile').value === profile.body;
     $('generate').textContent = promptPrepared ? '按 tag 重新生图' : '生成头像';
     $('generate').classList.toggle('rp-as-primary', !promptPrepared);
+    $('tag-tools').hidden = !promptPrepared;
+    $('regenerate-tag').disabled = busy || !profile || !promptPrepared;
     for (const id of ['zoom', 'zoom-in', 'zoom-out', 'crop-reset']) $(id).disabled = busy || !selected?.dimensions;
     $('crop').tabIndex = !busy && selected?.dimensions ? 0 : -1;
     if (busy) endDrag();
@@ -331,10 +338,19 @@ export function openAvatarStudio(deps) {
     if (!$('profile').value.trim() && !$('extra').value.trim()) throw new Error('请先填写人物资料或补充外貌，再生成头像');
     const body = profileInput();
     const result = await client.prepareAvatar({ texts: [body], avatarProfile: body, signal: requestSignal, isCurrent: valid,
-      demand: '为上述唯一指定人物设计一张头像。仅使用目标人物资料及用户补充确定长相、性别、年龄和服装，不移植其他人物或当前聊天主角的特征。方形1:1，单人头肩近景，脸部清晰，头顶和头发留出裁切空间，背景简洁，不画文字、聊天界面或拼图。直接写出完整外貌与服装 tag，不依赖人物名或人物变量代替外貌。未明确的外貌用用户补充为准；只输出一个符合当前绘图预设格式的有效image块。' });
+      demand: '为上述唯一指定人物设计一张头像。仅使用目标人物资料及用户补充确定长相、性别、年龄和服装，不移植其他人物或当前聊天主角的特征。方形1:1，单人头肩近景，脸部清晰，头顶和头发留出裁切空间，背景简洁，不画文字、聊天界面或拼图。直接写出完整外貌与服装 tag，不依赖人物名或人物变量代替外貌。外貌、服装、表情、画风等以用户补充要求为最高优先级；与人物资料冲突时采用用户补充后的版本，没有补充的细节才参考人物资料。只输出一个符合当前绘图预设格式的有效image块。' });
     check(); if (typeof result?.prompt !== 'string' || !result.prompt.trim()) throw new Error('没有得到有效的绘图 tag');
     $('tag').value = result.prompt; promptPrepared = true; $('tag-area').hidden = false;
   }
+  $('regenerate-tag').onclick = () => {
+    if (!promptPrepared || expandedField) return;
+    void operation(async requestSignal => {
+      status('智绘姬正在按当前人物资料和补充要求重新生成 tag…');
+      const client = await bridge(); await prepare(client, requestSignal);
+      status(selected ? 'tag 已更新，当前预览仍是原图。查看或修改 tag 后，可点击“按 tag 重新生图”。' : 'tag 已更新。查看或修改后，可点击“按 tag 重新生图”。');
+      revealTag();
+    });
+  };
   $('generate').onclick = () => operation(async requestSignal => {
     const client = await bridge();
     if (!promptPrepared) { status('智绘姬正在整理头像 tag…'); await prepare(client, requestSignal); }
@@ -352,7 +368,7 @@ export function openAvatarStudio(deps) {
   });
   const referenceChanged = (message = '人物资料或补充要求已修改。') => {
     updateExtraHint(); paint();
-    status(promptPrepared ? '资料已修改，已有 tag 保留。请直接修改下方 tag 后再生图。' : message + '仅用于本次头像生成。');
+    status(promptPrepared ? '资料已修改，已有 tag 保留。可点“重新生成 tag”应用新要求，也可直接修改下方 tag。' : message + '仅用于本次头像生成。');
   };
   $('profile').oninput = $('extra').oninput = () => referenceChanged();
   $('restore').onclick = () => { if (busy || !profile) return; $('profile').value = profile.body || ''; referenceChanged('已恢复读取原文。'); };
