@@ -1,4 +1,4 @@
-import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-stats-161';
+import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-reset-162';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
@@ -10209,7 +10209,7 @@ function rpShopApp() {
 }
 
 const RP_GAME_STATS_KEY = 'mochi_phone_game_statistics_v1';
-let rpGameStatsMemory = {account:null,bank:null}, rpGameStatsWarning = false;
+let rpGameStatsMemory = {account:null,bank:null}, rpGameStatsWarning = false, rpGameStatsDialogCleanup = null;
 function rpGameStatsRead() {
   if(!rpArchiveAccountHandle)return mergeGameStats();
   if (rpGameStatsMemory.account !== rpArchiveAccountHandle) rpGameStatsMemory = {account:rpArchiveAccountHandle,bank:null};
@@ -10240,11 +10240,16 @@ function rpGameStatsFinish(key,outcome,round=getPhoneGameRecordSource(key)) {
   if(!before.records[id]||before.records[id].outcome!==null)return;
   rpGameStatsWrite(finishGameStat(before,id,outcome));
 }
-function rpShowGameStats(key) {
+function rpShowGameStats(key,confirmReset=false) {
   if(!Object.hasOwn(GAME_STAT_NAMES,key))return;
-  const body=gameStatsPanel(document,rpGameStatsRead(),key),panel=rpFeatureDialog(GAME_STAT_NAMES[key]+' · 游戏统计',body,[{label:'知道了'}]);
-  const task=rpRuntime.task(),observer=new MutationObserver(()=>{if(!panel[0].isConnected){cleanup();if(task.valid()){rpResumeGameAnimations();rpResumeDeferredGameTimers();}}});
-  function cleanup(){observer.disconnect();task.signal.removeEventListener('abort',cleanup);}
+  rpGameStatsDialogCleanup?.();
+  const body=confirmReset?document.createElement('div'):gameStatsPanel(document,rpGameStatsRead(),key);
+  if(confirmReset){body.id='rp-game-stats-dialog-marker';body.className='rp-stat-body';for(const text of ['将把'+GAME_STAT_NAMES[key]+'的全部场次、分角色场次'+(key==='gword'?'':'、胜场和胜率')+'重置，从0开始。','只影响本游戏统计，不影响其他游戏、当前棋盘、游戏存档和聊天。清空前已开的局不再计入，新开一局后重新累计。','清空后无法撤销，确定继续？']){const p=document.createElement('p');p.textContent=text;body.append(p);}}
+  const reopen=()=>{rpShowGameStats(key);return false;};
+  rpFeatureDialog(confirmReset?'清空'+GAME_STAT_NAMES[key]+'统计？':GAME_STAT_NAMES[key]+' · 游戏统计',body,confirmReset?[{label:'取消',run:reopen},{label:'清空统计',danger:true,run:()=>{rpGameStatsWrite(resetGameStats(rpGameStatsRead(),key));return reopen();}}]:[{label:'清空统计',danger:true,run:()=>{rpShowGameStats(key,true);return false;}},{label:'知道了',primary:true}]);
+  const task=rpRuntime.task(),observer=new MutationObserver(()=>{if(!document.getElementById('rp-game-stats-dialog-marker')){cleanup();if(task.valid()){rpResumeGameAnimations();rpResumeDeferredGameTimers();}}});
+  function cleanup(){observer.disconnect();task.signal.removeEventListener('abort',cleanup);if(rpGameStatsDialogCleanup===cleanup)rpGameStatsDialogCleanup=null;}
+  rpGameStatsDialogCleanup=cleanup;
   observer.observe(document.getElementById('rp-screen'),{childList:true,subtree:true});task.signal.addEventListener('abort',cleanup,{once:true});
 }
 function rpInstallGameStats() {
@@ -10260,7 +10265,7 @@ rpRuntime.listenDOM(window,'storage',event=>{
   const current=rpGameStatsRead(),merged=mergeGameStats(current,old,next);
   if(JSON.stringify(merged)!==JSON.stringify(mergeGameStats(next)))rpGameStatsWrite(merged);
 });
-rpRuntime.own(()=>{rpGameStatsMemory={account:null,bank:null};document.getElementById('rp-game-stats-css')?.remove();});
+rpRuntime.own(()=>{rpGameStatsDialogCleanup?.();rpGameStatsMemory={account:null,bank:null};document.getElementById('rp-game-stats-css')?.remove();});
 
 let rpGomoku = null;
 function rpGomokuIconUrl(theme,local=false) {

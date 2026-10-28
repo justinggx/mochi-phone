@@ -1,25 +1,34 @@
 export const GAME_STAT_NAMES = Object.freeze({ludo:'飞行棋',g2048:'2048',gm:'黄金矿工',gword:'你说我猜',gomoku:'五子棋',sudoku:'数独'});
 const own=(o,k)=>Object.hasOwn(o||{},k),terminal=new Set(['win','loss','draw','abandoned','done']);
+const period=(bank,game)=>bank.resets[game]?JSON.stringify([bank.resets[game].sequence,bank.resets[game].id]):'';
 export function normalizeGameStats(raw){
-  const records=Object.create(null);if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.version!==1||!raw.records||typeof raw.records!=='object'||Array.isArray(raw.records))return{version:1,records};
+  const records=Object.create(null),resets=Object.create(null);if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.version!==1||!raw.records||typeof raw.records!=='object'||Array.isArray(raw.records))return{version:1,records,resets};
+  for(const [game,r]of Object.entries(raw.resets&&typeof raw.resets==='object'&&!Array.isArray(raw.resets)?raw.resets:{}))if(own(GAME_STAT_NAMES,game)&&Number.isSafeInteger(r?.sequence)&&r.sequence>0&&typeof r.id==='string'&&r.id.length>0&&r.id.length<=100)resets[game]={sequence:r.sequence,id:r.id};
   for(const [id,r]of Object.entries(raw.records)){
     if(!id||id.length>1000||!r||!own(GAME_STAT_NAMES,r.game)||typeof r.partner!=='string'||!r.partner.trim()||r.partner.length>100||!Number.isSafeInteger(r.started)||r.started<0||!(r.outcome===null||terminal.has(r.outcome)))continue;
     if(r.game==='gm'&&!['vs','coop'].includes(r.mode))continue;
+    if(r.epoch!==undefined&&(typeof r.epoch!=='string'||r.epoch.length>250))continue;
     const ended=r.outcome===null?null:Number.isSafeInteger(r.ended)&&r.ended>=r.started?r.ended:null;if(r.outcome!==null&&ended===null)continue;
-    Object.defineProperty(records,id,{value:{game:r.game,partner:r.partner,mode:r.game==='gm'?r.mode:'',started:r.started,outcome:r.outcome,ended},enumerable:true,writable:true,configurable:true});
-  }return{version:1,records};
+    Object.defineProperty(records,id,{value:{game:r.game,partner:r.partner,mode:r.game==='gm'?r.mode:'',started:r.started,outcome:r.outcome,ended,epoch:r.epoch||''},enumerable:true,writable:true,configurable:true});
+  }return{version:1,records,resets};
 }
 export function mergeGameStats(...sources){
   const out=normalizeGameStats(null);
-  for(const source of sources)for(const[id,r]of Object.entries(normalizeGameStats(source).records)){
+  for(const source of sources){const bank=normalizeGameStats(source);for(const[game,r]of Object.entries(bank.resets)){const old=out.resets[game];if(!old||r.sequence>old.sequence||(r.sequence===old.sequence&&r.id>old.id))out.resets[game]=r;}for(const[id,r]of Object.entries(bank.records)){
     const old=out.records[id];
     // A completed receipt cannot be downgraded by a stale tab or a restored running board.
     if(!old||(old.outcome===null&&r.outcome!==null)||(old.outcome===null&&r.outcome===null&&JSON.stringify(r)<JSON.stringify(old))||(old.outcome!==null&&r.outcome!==null&&(r.ended<old.ended||(r.ended===old.ended&&JSON.stringify(r)<JSON.stringify(old)))))Object.defineProperty(out.records,id,{value:r,enumerable:true,writable:true,configurable:true});
-  }return out;
+  }}return out;
 }
 export function startGameStat(raw,{id,game,partner,mode='',time=Date.now()}){
   const bank=normalizeGameStats(raw);if(own(bank.records,id))return bank;
-  return mergeGameStats(bank,{version:1,records:{[id]:{game,partner,mode,started:time,outcome:null,ended:null}}});
+  return mergeGameStats(bank,{version:1,records:{[id]:{game,partner,mode,started:time,outcome:null,ended:null,epoch:period(bank,game)}}});
+}
+// Retain prior receipts for deduplication, while counting only the current reset period.
+export function resetGameStats(raw,game,id=globalThis.crypto?.randomUUID?.()||'reset_'+Date.now()+'_'+Math.random().toString(36).slice(2)){
+  const bank=normalizeGameStats(raw);if(!own(GAME_STAT_NAMES,game)||typeof id!=='string'||!id||id.length>100)return bank;
+  const sequence=(bank.resets[game]?.sequence||0)+1;if(!Number.isSafeInteger(sequence))return bank;
+  bank.resets[game]={sequence,id};return bank;
 }
 export function finishGameStat(raw,id,outcome,time=Date.now()){
   const bank=normalizeGameStats(raw),old=bank.records[id];if(!old||old.outcome!==null||!terminal.has(outcome))return bank;
@@ -27,9 +36,9 @@ export function finishGameStat(raw,id,outcome,time=Date.now()){
 }
 export const gameStatRated=r=>r.game!=='gword'&&(r.game!=='gm'||r.mode==='vs');
 export function summarizeGameStats(raw,game){
-  const result={played:0,finished:0,pending:0,wins:0,rated:0,partners:[]},byName=new Map();
-  for(const r of Object.values(normalizeGameStats(raw).records)){
-    if(r.game!==game)continue;let row=byName.get(r.partner);if(!row){row={name:r.partner,played:0,finished:0,pending:0,wins:0,rated:0};byName.set(r.partner,row);}
+  const result={played:0,finished:0,pending:0,wins:0,rated:0,partners:[]},byName=new Map(),bank=normalizeGameStats(raw),epoch=period(bank,game);
+  for(const r of Object.values(bank.records)){
+    if(r.game!==game||r.epoch!==epoch)continue;let row=byName.get(r.partner);if(!row){row={name:r.partner,played:0,finished:0,pending:0,wins:0,rated:0};byName.set(r.partner,row);}
     for(const target of[result,row]){target.played++;if(r.outcome===null)target.pending++;else{target.finished++;if(gameStatRated(r)){target.rated++;if(r.outcome==='win')target.wins++;}}}
   }result.partners=[...byName.values()].sort((a,b)=>b.played-a.played||a.name.localeCompare(b.name,'zh-CN'));return result;
 }
@@ -41,6 +50,7 @@ export function gameStatsPanel(doc,bank,game){
   if(!summary.partners.length)body.append(node('p','','还没有游戏记录，开始一局试试。'));
   else{const table=node('table','rp-stat-table'),head=node('tr','','');for(const title of['搭子','游戏局数',...(game!=='gword'?['胜场 / 胜率']:[])])head.append(node('th','',title));const thead=doc.createElement('thead');thead.append(head);table.append(thead);const tbody=doc.createElement('tbody');for(const row of summary.partners){const tr=doc.createElement('tr');tr.append(node('th','','与 '+row.name),node('td','',String(row.played)));if(game!=='gword')tr.append(node('td','',row.wins+' / '+gameStatRate(row.wins,row.rated)));tbody.append(tr);}table.append(tbody);body.append(table);}
   body.append(node('p','rp-stat-muted','场次按实际开局累计；进行中不计入胜率，主动重开计为放弃。同一局只结算一次，悔棋或复盘不重复计数。'+(game==='gm'?'合作爬塔计入场次，不计对战胜率。':'')+'同名搭子合并显示。统计从本次更新开始，旧历史不猜测补算。'));
+  body.append(node('p','rp-stat-muted','清空统计只重置本游戏的计数，不影响存档或其他游戏；清空前已开的局不再计入，新开一局后重新累计。'));
   return body;
 }
 export const GAME_STATS_CSS=`
