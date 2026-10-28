@@ -1,3 +1,4 @@
+import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-stats-161';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
@@ -6,8 +7,8 @@ import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS,
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
-import { createSudoku } from './sudoku.mjs?v=20261020-sudoku-icons-82';
-import { createGomoku } from './gomoku.mjs?v=20261018-gomoku-speech-59';
+import { createSudoku } from './sudoku.mjs?v=20261028-game-stats-161';
+import { createGomoku } from './gomoku.mjs?v=20261028-game-stats-161';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261026-self-audit-142';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-reader-132';
@@ -5983,6 +5984,7 @@ function rpPauseGameAnimations() {
 }
 function rpGameVisible(view) {
   const phone = document.getElementById('rp-phone');
+  if(document.getElementById('rp-game-stats-dialog-marker'))return false;
   if (view === 'ggold' && rpSurfaceIsOpen('#ggold-chat-fs')) return false;
   return isMochiPhoneEnabled() && !document.hidden && STATE.currentView === view && rpPhoneIsOpen();
 }
@@ -6845,7 +6847,7 @@ function getPhoneGameStateSnapshot() {
   for (const key of ['ludo', 'g2048', 'gm', 'gword']) {
     const game = getPhoneGameRecordSource(key);
     const round = { active: !!(game.active || game._paused), charName: game.charName };
-    for (const field of ['roundId',...RP_GAME_FIELDS[key]]) round[field] = game[field];
+    for (const field of ['roundId','statsRoundId',...RP_GAME_FIELDS[key]]) round[field] = game[field];
     if (key === 'gword' && game.processing) {
       if(game.mode === 'char-describe')round.retryHint=true;
       else if(game.mode === 'user-describe')round.retryGuess=true;
@@ -6887,7 +6889,7 @@ function restorePhoneGameState(saved) {
     const game = getPhoneGameRecordSource(key);
     const round = gameState.version === 2 ? rpValidateGameRound(key, gameState[key]?.round) : null;
     if (!round) continue; // A damaged round must not erase its independent chat archive.
-    for (const field of ['roundId',...RP_GAME_FIELDS[key]]) if (round[field] !== undefined) game[field] = round[field];
+    for (const field of ['roundId','statsRoundId',...RP_GAME_FIELDS[key]]) if (round[field] !== undefined) game[field] = round[field];
     game.charName = gameCleanPartnerName(round.charName) || '对方';
     game.active = false;
     game._paused = !!round.active;
@@ -10206,6 +10208,60 @@ function rpShopApp() {
   return rpShop;
 }
 
+const RP_GAME_STATS_KEY = 'mochi_phone_game_statistics_v1';
+let rpGameStatsMemory = {account:null,bank:null}, rpGameStatsWarning = false;
+function rpGameStatsRead() {
+  if(!rpArchiveAccountHandle)return mergeGameStats();
+  if (rpGameStatsMemory.account !== rpArchiveAccountHandle) rpGameStatsMemory = {account:rpArchiveAccountHandle,bank:null};
+  let local;try { local=JSON.parse(localStorage.getItem(RP_GAME_STATS_KEY)||'null'); } catch {}
+  const stored=_extSettings()?.[RP_GAME_STATS_KEY];
+  const bank=mergeGameStats(local,stored?.account===rpArchiveAccountHandle?stored:null,rpGameStatsMemory.bank);
+  rpGameStatsMemory.bank=bank;return bank;
+}
+function rpGameStatsWrite(value) {
+  if(!rpArchiveAccountHandle)return;
+  const bank=mergeGameStats(rpGameStatsRead(),value);rpGameStatsMemory={account:rpArchiveAccountHandle,bank};let saved=false;
+  try{localStorage.setItem(RP_GAME_STATS_KEY,JSON.stringify(bank));saved=true;}catch{}
+  const settings=_extSettings();if(settings){settings[RP_GAME_STATS_KEY]={...bank,account:rpArchiveAccountHandle};saved=_saveSettings()||saved;}
+  if(!saved&&!rpGameStatsWarning){rpGameStatsWarning=true;toastr.warning('游戏统计暂未保存，请检查存储空间。游戏进度仍保留。');}
+}
+function rpGameStatsId(key,round) { const id=round?.id||round?.statsRoundId||round?.roundId;return typeof id==='string'&&id?JSON.stringify([key,id]):null; }
+function rpGameStatsStart(key,round=getPhoneGameRecordSource(key)) {
+  if(!round||!rpArchiveAccountHandle)return;
+  if(!round.id&&!round.roundId)round.roundId='stat_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  if(!round.id&&!round.statsRoundId)round.statsRoundId=round.roundId;
+  const id=rpGameStatsId(key,round);if(!id)return;
+  const before=rpGameStatsRead();if(Object.hasOwn(before.records,id))return;
+  const partner=String(round.partner||round.charName||gameGetCurrentPartner().name||'对方').trim().slice(0,100);
+  rpGameStatsWrite(startGameStat(before,{id,game:key,partner,mode:round.mode||''}));
+}
+function rpGameStatsFinish(key,outcome,round=getPhoneGameRecordSource(key)) {
+  const id=rpGameStatsId(key,round);if(!id)return;const before=rpGameStatsRead();
+  if(!before.records[id]||before.records[id].outcome!==null)return;
+  rpGameStatsWrite(finishGameStat(before,id,outcome));
+}
+function rpShowGameStats(key) {
+  if(!Object.hasOwn(GAME_STAT_NAMES,key))return;
+  const body=gameStatsPanel(document,rpGameStatsRead(),key),panel=rpFeatureDialog(GAME_STAT_NAMES[key]+' · 游戏统计',body,[{label:'知道了'}]);
+  const task=rpRuntime.task(),observer=new MutationObserver(()=>{if(!panel[0].isConnected){cleanup();if(task.valid()){rpResumeGameAnimations();rpResumeDeferredGameTimers();}}});
+  function cleanup(){observer.disconnect();task.signal.removeEventListener('abort',cleanup);}
+  observer.observe(document.getElementById('rp-screen'),{childList:true,subtree:true});task.signal.addEventListener('abort',cleanup,{once:true});
+}
+function rpInstallGameStats() {
+  if(!document.getElementById('rp-game-stats-css')){const style=document.createElement('style');style.id='rp-game-stats-css';style.textContent=GAME_STATS_CSS;document.head.append(style);}
+  for(const [key,view]of Object.entries({ludo:'game',g2048:'g2048',gm:'ggold',gword:'gword'})){
+    const bar=document.querySelector('#rp-view-'+view+' .rp-game-partner-bar');if(!bar||bar.querySelector('[data-game-stats]'))continue;
+    const button=document.createElement('button');button.type='button';button.className='rp-stat-button';button.dataset.gameStats=key;button.textContent='统计';button.setAttribute('aria-label',GAME_STAT_NAMES[key]+'游戏统计');button.onclick=()=>rpShowGameStats(key);bar.append(button);
+  }
+}
+rpRuntime.listenDOM(window,'storage',event=>{
+  if(event.key!==rpAccountStoragePrefix()+RP_GAME_STATS_KEY||!rpArchiveAccountHandle)return;
+  let old,next;try{old=JSON.parse(event.oldValue||'null');next=JSON.parse(event.newValue||'null');}catch{return;}
+  const current=rpGameStatsRead(),merged=mergeGameStats(current,old,next);
+  if(JSON.stringify(merged)!==JSON.stringify(mergeGameStats(next)))rpGameStatsWrite(merged);
+});
+rpRuntime.own(()=>{rpGameStatsMemory={account:null,bank:null};document.getElementById('rp-game-stats-css')?.remove();});
+
 let rpGomoku = null;
 function rpGomokuIconUrl(theme,local=false) {
   const file=['candy','star','misty'].includes(theme) ? 'mochi-phone-gomoku-'+theme+'-icon-20261018.png' : 'mochi-phone-gomoku-icon-20261018.png';
@@ -10215,6 +10271,7 @@ function rpGomokuApp() {
   if (rpGomoku) return rpGomoku;
   rpGomoku = createGomoku({
     document, state: () => STATE, runtime: () => rpRuntime, save: rpGameScreenSave('gomoku'),
+    statistics: () => rpShowGameStats('gomoku'), startStats: round => rpGameStatsStart('gomoku',round), endStats: (outcome,round) => rpGameStatsFinish('gomoku',outcome,round),
     navigate: go, visible: () => rpGameVisible('gomoku'), partner: gameGetCurrentPartner,
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog, notify: text => toastr.info(text),
     call: (prompt,max,sys,token) => rpGuardAwait(lgCallAPI(prompt,max,sys,{gameTask:token,reportErrors:true,phoneGomoku:true}),token),
@@ -10236,6 +10293,7 @@ function rpSudokuIconUrl(theme,local=false) {
 function rpSudokuApp() {
   if (!rpSudoku) rpSudoku = createSudoku({
     document, state: () => STATE, runtime: () => rpRuntime, save: rpGameScreenSave('sudoku'),
+    statistics: () => rpShowGameStats('sudoku'), startStats: round => rpGameStatsStart('sudoku',round), endStats: (outcome,round) => rpGameStatsFinish('sudoku',outcome,round),
     navigate: go, visible: () => rpGameVisible('sudoku'), partner: gameGetCurrentPartner,
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog,
     iconTheme: () => document.getElementById('rp-phone')?.dataset.rpArtTheme || null,
@@ -11481,6 +11539,7 @@ function bindUI() {
     $('#rp-dice-btn').prop('disabled', false);
     lgRender();
     lgStatus('你先出手 - 按🎲掷骰子!');
+    rpGameStatsStart('ludo');
     lgMsg('sys', `🔄 新棋盘! ${LUDO_THEME.name} · ${LUDO_PATH_LEN}格`);
   });
 
@@ -12457,6 +12516,7 @@ function go(view) {
   rpPauseGameAnimations();
   if (view === 'darkmode') { toggleDarkMode(); return; }
   if (view === 'ludo') view = 'game';
+  rpInstallGameStats();
   if (view === 'game' && !rpShowGameResume('ludo')) { if (!LG.active) lgInit(); else if (rpGameVisible('game')) lgRender(); }
   if (view === 'g2048' && !rpShowGameResume('g2048')) { if (!LG2048.active) g2048Init(); else g2048Render(); }
   if (view === 'ggold' && !rpShowGameResume('gm')) { if (!GM.active) ggoldOpen(); }
@@ -21640,6 +21700,7 @@ function gameSavePartnerFromModal() {
   if (!name) return;
   const previous = gameGetCurrentPartner(ctx);
   if (name !== previous.name || note !== previous.note) {
+    rpGameStatsFinish('gm','abandoned');
     // Keep all histories, stop the old companion's pending work and retain the board.
     for (const key of ['ludo','g2048','gm','gword']) { rpGameRuntime(key).advance(); rpGameAdvanceDialogue(key); }
     rpPauseGameAnimations();
@@ -22331,6 +22392,7 @@ async function gmEndGame() {
   /* rp-cancel-boundary */ try {
 
   if (!GM.active) return; // Settling twice must not award the same tower floor twice.
+  rpGameStatsFinish('gm',GM.mode==='vs'?(GM.userScore>GM.charScore?'win':GM.userScore<GM.charScore?'loss':'draw'):'done');
   GM.active = false; GM._paused = false;
   if (GM.timerInterval) { clearInterval(GM.timerInterval); GM.timerInterval = null; }
   if (GM.rafId) { cancelAnimationFrame(GM.rafId); GM.rafId = null; }
@@ -22455,7 +22517,7 @@ function ggoldStartGame(mode) {
   GM.charScore = 0;
   if (!Array.isArray(GM.chatLog)) GM.chatLog = [];
   GM.hookedItem = null;
-  GM.active = true;
+  GM.active = true; rpGameStatsStart('gm');
   const overEl = document.getElementById('ggold-over');
   const chatEl = document.getElementById('ggold-chat');
   const coopBar = document.getElementById('ggold-coop-bar');
@@ -22642,7 +22704,7 @@ async function gwordStartGame(mode) {
   GWORD.answer = answer;
   GWORD.usedWords.push(answer);
   if (GWORD.usedWords.length > 30) GWORD.usedWords.shift();
-  GWORD.active = true;
+  GWORD.active = true; rpGameStatsStart('gword');
   GWORD.processing = false;
   $('#gword-category-badge').text('分类：' + category);
   $('#gword-round-info').text('第0轮');
@@ -22915,6 +22977,7 @@ function gwordGiveUp() {
 }
 
 function gwordEndRound(won) {
+  rpGameStatsFinish('gword','done');
 
   GWORD.active = false;
   GWORD.processing = false;
@@ -23031,6 +23094,8 @@ function rpGameRuntime(key) {
   return rpGameRuntimes.get(key);
 }
 function rpBeginGame(key) {
+  rpGameStatsFinish(key,'abandoned');
+  delete getPhoneGameRecordSource(key).statsRoundId;
   rpCloseGameHistoryViewport(key);
   rpGameRuntime(key).advance();
   rpDeferredGameTimers.delete(key);
@@ -23104,12 +23169,13 @@ function rpSaveTower() {
 function rpValidateGameRound(key, raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const r = {};
-  for (const field of ['active','charName','roundId', ...RP_GAME_FIELDS[key]]) if (Object.hasOwn(raw, field)) r[field] = raw[field];
+  for (const field of ['active','charName','roundId','statsRoundId', ...RP_GAME_FIELDS[key]]) if (Object.hasOwn(raw, field)) r[field] = raw[field];
   const integer = (v, max) => Number.isSafeInteger(v) && v >= 0 && v <= max;
   const finite = (v, min, max) => Number.isFinite(v) && v >= min && v <= max;
   const list = (v, max) => Array.isArray(v) && v.length <= max && v.every(s => typeof s === 'string' && s.length <= 10000);
   if (typeof r.active !== 'boolean' || typeof r.charName !== 'string' || r.charName.length > 100) return null;
   if (typeof r.roundId!=='string' || r.roundId.length>100)delete r.roundId;
+  if (typeof r.statsRoundId!=='string' || r.statsRoundId.length>100)delete r.statsRoundId;
   if (key !== 'gword' && !['user','char'].includes(r.turn)) return null;
   if (key === 'g2048') {
     if (!Array.isArray(r.board) || r.board.length !== 4 || !r.board.every(row => Array.isArray(row) && row.length === 4 && row.every(v => v === 0 || (integer(v, 2 ** 30) && v >= 2 && Number.isInteger(Math.log2(v)))))) return null;
@@ -23191,6 +23257,7 @@ async function rpResumeSavedGame(key) {
   const game = getPhoneGameRecordSource(key);
   if (!game._paused) return;
   game._paused = false; game.active = true;
+  rpGameStatsStart(key,game);
   gameApplyPartnerToGames({name:game.charName});
   if (key === 'g2048') {
     renderPhoneGameHistory(key); g2048Render();
@@ -23504,6 +23571,7 @@ function g2048Init() {
   LG2048.active = true;
   LG2048.processing = false;
   LG2048.won = false;
+  rpGameStatsStart('g2048');
   if (!Array.isArray(LG2048.chatLog)) LG2048.chatLog = [];
   g2048AddTile(); g2048AddTile();
   rpSetSurfaceOpen('#g2048-over',false);
@@ -23531,7 +23599,7 @@ function g2048UserMove(dir) {
   // Check 2048 win after user move
   var flat = LG2048.board.reduce(function(a, r) { return a.concat(r); }, []);
   if (!LG2048.won && flat.indexOf(2048) >= 0) {
-    LG2048.won = true;
+    LG2048.won = true; rpGameStatsFinish('g2048','win');
     LG2048.active = false;
     g2048Msg('sys', '\ud83c\udf89 \u8fbe\u62102048\uff01\u4f60\u4eec\u8d62\u4e86\uff01');
     $('#g2048-over-emoji').text('\ud83c\udf89');
@@ -23574,7 +23642,7 @@ function g2048CharTurn() {
   // Check 2048 after char move
   var flat2 = LG2048.board.reduce(function(a, r) { return a.concat(r); }, []);
   if (!LG2048.won && flat2.indexOf(2048) >= 0) {
-    LG2048.won = true;
+    LG2048.won = true; rpGameStatsFinish('g2048','win');
     g2048Msg('sys', '\ud83c\udf89 ' + LG2048.charName + '\u4e00\u6b65\u8fbe\u62102048\uff01\u5927\u5bb6\u8d62\u4e86\uff01');
     $('#g2048-over-emoji').text('\ud83c\udf89');
     $('#g2048-over-title').text('\u8fbe\u62102048\uff01');
@@ -23582,6 +23650,7 @@ function g2048CharTurn() {
     rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
     LG2048.active = false;
     LG2048.processing = false;
+    saveState();
     return;
   }
   if (!g2048HasMoves()) { LG2048.processing = false; g2048GameOver(); return; }
@@ -23597,6 +23666,7 @@ function g2048CharTurn() {
 
 // ── Game over ─────────────────────────────────────────────────
 function g2048GameOver() {
+  if(LG2048.active)rpGameStatsFinish('g2048','loss');
   LG2048.active = false;
   LG2048.processing = false;
   g2048Msg('sys', '\u6ca1\u6709\u53ef\u79fb\u52a8\u7684\u683c\u5b50\u4e86\uff01\u6700\u7ec8\u5f97\u5206\uff1a' + LG2048.score);
@@ -24187,6 +24257,7 @@ function lgStartGame(spicyLevel) {
   const ctx = getContext();
   LG.charName = gameGetCurrentPartner(ctx).name || '对方';
   gameApplyPartnerToGames({ name: LG.charName });
+  rpGameStatsStart('ludo');
   $('#rp-game-char-name').text(LG.charName);
   rpSetSurfaceOpen('#rp-game-win',false);
   renderPhoneGameHistory('ludo');
@@ -24531,6 +24602,7 @@ function lgMsg(type, text) { rpAppendGameMessage('ludo',type,text); }
 
 function lgWin(winner) {
   if (!LG.active) return;
+  rpGameStatsFinish('ludo',winner==='user'?'win':'loss');
   LG.active = false; LG.rolling = false; LG.pendingReroll = null;
   $('#rp-dice-btn').prop('disabled', true).removeClass('ludo-rolling');
   if (LG._animFrame) { cancelAnimationFrame(LG._animFrame); LG._animFrame = null; }

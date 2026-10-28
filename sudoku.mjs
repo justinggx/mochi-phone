@@ -143,13 +143,13 @@ export function createSudoku(api){
   img.onerror=()=>{if(!img.isConnected||icon.dataset.sdkIconUrl!==src)return;if(!usingLocal){usingLocal=true;img.src=local;}else{icon.textContent='▦';delete icon.dataset.sdkIconUrl;}};
   icon.replaceChildren(img);img.src=src;
  }
- function save(){api.save();}
+ function save(){const r=data().round;if(r&&sudokuProgress(r).complete)api.endStats?.('win',r);api.save();}
  function rules(){const body=node('div');for(const t of ['所有格子都由你填写。每行、每列、每个3×3宫都应包含1至9，不能重复。题目有且只有一个解。','点格子，再用下方数字键填写；电脑可按1至9，方向键移动，退格/Delete擦除。原有题目数字不能改。笔记模式可记录候选数字；撤销保留最近100步。','求助会由本地解题程序填对一格，不消耗API。若已有填错格，优先修正所选错误格或第一处错误；否则优先所选空格。搭子不会轮流落笔，求助不会替你填完整盘。','三个档位按题面保留的数字数量区分，不是严格的解题技巧评级。点击检查会标出与唯一解不符的已填数字。','局面随当前聊天的小手机存档保存。换聊天各自保留，刷新后可继续；备份恢复只补充缺失的数独局面，不覆盖当前题目。'])body.append(node('p','',t));api.dialog('数独玩法',body,[{label:'知道了'}]);}
- function newGame(){if(data().round)api.dialog('换一道题？',node('p','','当前这道题会被新题替换。'),[{label:'取消'},{label:'换题',run:()=>{pause();data().round=null;data().screen='home';selected=null;checked=false;status='选好档位和搭子，再开始新题。';save();render();}}]);else void start(true);}
+ function newGame(){if(data().round)api.dialog('换一道题？',node('p','','当前这道题会被新题替换。'),[{label:'取消'},{label:'换题',run:()=>{api.endStats?.('abandoned',data().round);pause();data().round=null;data().screen='home';selected=null;checked=false;status='选好档位和搭子，再开始新题。';save();render();}}]);else void start(true);}
  async function start(fresh=false){
-  if(pending)return;if(data().round&&!fresh){data().screen='play';status='';save();render();return;}
+  if(pending)return;if(data().round&&!fresh){if(!sudokuProgress(data().round).complete)api.startStats?.(data().round);data().screen='play';status='';save();render();return;}
   const serial=++epoch,origin=data(),token=api.runtime().task(),owner={};pending=owner;status='正在准备唯一解题目…';
-  try{render();const round=await createSudokuRound(origin.level,{partner:api.partner(),valid:()=>serial===epoch&&data()===origin&&token.valid()&&visible(),yieldControl:()=>new Promise(r=>win.setTimeout(r,0))});if(serial!==epoch||data()!==origin||!token.valid()||!visible())return;origin.round=round;origin.screen='play';selected=null;checked=false;noteMode=false;status='选一格，慢慢填。';save();}
+  try{render();const round=await createSudokuRound(origin.level,{partner:api.partner(),valid:()=>serial===epoch&&data()===origin&&token.valid()&&visible(),yieldControl:()=>new Promise(r=>win.setTimeout(r,0))});if(serial!==epoch||data()!==origin||!token.valid()||!visible())return;origin.round=round;api.startStats?.(round);origin.screen='play';selected=null;checked=false;noteMode=false;status='选一格，慢慢填。';save();}
   catch(e){if(serial===epoch&&e.name!=='AbortError')status='题目准备未完成，请重试。';}
   finally{if(pending===owner){pending=null;render();}}
  }
@@ -162,7 +162,8 @@ export function createSudoku(api){
   if(e.target.closest('button')&&!e.target.matches('.sdk-cell')&&['Enter',' '].includes(e.key))return;
   let handled=true;if(/^[1-9]$/.test(e.key))enter(Number(e.key));else if(['Backspace','Delete','0'].includes(e.key))enter(0);else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){const i=selected??0,r=Math.floor(i/9),c=i%9;select(e.key==='ArrowLeft'?r*9+Math.max(0,c-1):e.key==='ArrowRight'?r*9+Math.min(8,c+1):e.key==='ArrowUp'?Math.max(0,r-1)*9+c:Math.min(8,r+1)*9+c);root.querySelector('[data-sdk-cell="'+selected+'"]')?.focus({preventScroll:true});}else handled=false;if(handled)e.preventDefault();
  }
- function nav(){const n=node('header','sdk-nav'),b=button('‹','sdk-back',()=>{pause();if(data().screen==='play'){data().screen='home';save();render();}else api.navigate('home');});b.setAttribute('aria-label','返回');n.append(b,node('div','sdk-nav-title','数独'),button('玩法','sdk-rules',rules));return n;}
+ function statisticsButton(){const b=button('统计','rp-stat-button',()=>api.statistics?.());b.disabled=!!pending;return b;}
+ function nav(){const n=node('header','sdk-nav'),b=button('‹','sdk-back',()=>{pause();if(data().screen==='play'){data().screen='home';save();render();}else api.navigate('home');});b.setAttribute('aria-label','返回');n.append(b,node('div','sdk-nav-title','数独'),statisticsButton(),button('玩法','sdk-rules',rules));return n;}
  function home(body){
   const home=node('div','sdk-home'),decor=node('div','sdk-home-grid');decor.setAttribute('aria-hidden','true');for(const v of ['1','','3','','5','','7','','9'])decor.append(node('span','',v));
   const r=data().round,p=r?{name:r.partner}:api.partner(),line=node('div','sdk-partner');line.append(node('span','',p.name+' 陪你解题'),button('更换','sdk-link',()=>{if(r){status='本题搭子已固定，换题后可以更换。';render();return;}api.changePartner();}));
