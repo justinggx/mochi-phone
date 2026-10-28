@@ -7382,25 +7382,59 @@ async function rpUploadAvatarLarge(data, signal, current) {
   if (!current()) throw Object.assign(new Error('头像操作已取消'),{name:'AbortError'});
   const match = typeof data === 'string' && data.match(/^data:image\/(png|jpeg|webp);base64,([a-zA-Z0-9+/=]+)$/);
   if (!match || data.length > 8000000) throw new Error('高清头像处理失败');
-  const ctx = getContext(), headers = ctx?.getRequestHeaders?.() || _rp_script_mod?.getRequestHeaders?.();
+  const ctx = getContext(), headers = _rp_script_mod?.getRequestHeaders?.() || ctx?.getRequestHeaders?.();
   if (!headers) throw new Error('图片上传入口未就绪');
   const controller = new AbortController(), cancel = () => controller.abort(); signal?.addEventListener('abort',cancel,{once:true});
-  const timer = setTimeout(cancel,30000);
+  const timer = window.setTimeout(cancel,30000);
   try {
     if (signal?.aborted || !current()) throw Object.assign(new Error('头像操作已取消'),{name:'AbortError'});
     const filename = 'avatar-' + (window.crypto?.randomUUID?.() || Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
     const response = await fetch('/api/images/upload',{method:'POST',headers:{...headers,'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({image:match[2],format:match[1],ch_name:'MochiPhone-Avatars',filename})});
-    if (!response.ok) throw new Error('高清头像上传失败');
-    const result = await response.json(), src = '/' + String(result?.path || '').replace(/^\/+/,'');
+    if (!response.ok) {
+      const code=Number(response.status)||0;
+      throw new Error(code===401?'酒馆登录已失效（HTTP 401），请重新登录后重试':code===403?'酒馆拒绝了图片上传（HTTP 403），请刷新酒馆后重试':code===413?'图片超过服务器的上传大小限制（HTTP 413）':'酒馆图片上传失败'+(code?'（HTTP '+code+'）':''));
+    }
+    let result;try{result=await response.json();}catch{throw new Error('酒馆返回的上传结果无法解析，请稍后重试');}
+    const src = '/' + String(result?.path || '').replace(/^\/+/,'');
     if (!rpValidAvatarLarge(src)) throw new Error('高清头像地址无效');
     if (!current()) throw Object.assign(new Error('头像操作已取消'),{name:'AbortError'});
     return src;
-  } finally { clearTimeout(timer); signal?.removeEventListener('abort',cancel); }
+  } catch(error) { if(controller.signal.aborted&&!signal?.aborted&&current())throw new Error('高清头像上传超时，请稍后重试');if(error?.name==='TypeError'&&current())throw new Error('连接酒馆图片接口失败，请检查网络后重试');throw error; }
+  finally { window.clearTimeout(timer); signal?.removeEventListener('abort',cancel); }
 }
 async function rpPrepareAvatarLarge(src, crop, signal, current) {
-  const data = crop ? await squareAvatar(src,{document,signal,crop,outputSize:1024}) : await compressImage(src,1024,1024,.95);
+  const data = crop ? await squareAvatar(src,{document,signal,crop,outputSize:1024}) : await new Promise((resolve,reject)=>{
+    const img=new Image();let done=false;
+    const finish=(fn,value)=>{if(done)return;done=true;window.clearTimeout(timer);signal?.removeEventListener('abort',abort);img.onload=img.onerror=null;img.removeAttribute?.('src');fn(value);};
+    const abort=()=>finish(reject,Object.assign(new Error('头像操作已取消'),{name:'AbortError'}));
+    const timer=window.setTimeout(()=>finish(reject,new Error('高清头像图片读取超时，请重试')),45000);signal?.addEventListener('abort',abort,{once:true});
+    if(signal?.aborted){abort();return;}
+    img.crossOrigin='anonymous';img.onerror=()=>finish(reject,new Error('高清头像图片无法读取，请重新上传'));
+    img.onload=()=>{try{let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;if(!(w>0&&h>0)||w*h>32000000)throw new Error('图片尺寸无效或超过3200万像素');const ratio=Math.min(1,1024/w,1024/h),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(w*ratio));canvas.height=Math.max(1,Math.round(h*ratio));const context=canvas.getContext('2d');if(!context)throw new Error('浏览器无法处理高清图片');context.drawImage(img,0,0,canvas.width,canvas.height);const value=canvas.toDataURL(/^data:image\/png[;,]/i.test(src)?'image/png':'image/jpeg',.95);if(typeof value!=='string'||!value.startsWith('data:image/')||value.length>8000000)throw new Error('高清图片处理失败或文件过大');finish(resolve,value);}catch(error){finish(reject,error);}};img.src=src;
+  });
   if (!current()) throw Object.assign(new Error('头像操作已取消'),{name:'AbortError'});
   return rpUploadAvatarLarge(data,signal,current);
+}
+function rpCancelAvatarLarge(key,identity=rpAvatarIdentity(key),scope='local') {
+  for(const job of rpAvatarLargeJobs.values())if(job.account===rpArchiveAccountHandle&&((job.slot===STATE.chatId&&job.key===key)||(scope==='shared'&&identity&&job.scope==='shared'&&job.identity===identity)))job.controller.abort();
+}
+async function rpSaveAvatarLargeInBackground(key,preview,source,crop,scope='local') {
+  const account=rpArchiveAccountHandle,slot=STATE.chatId,identity=rpAvatarIdentity(key),shared=scope==='shared'&&!!identity,task=rpRuntime.task(),controller=new AbortController();
+  if(!account||!source)return false;
+  const jobKey=JSON.stringify(shared?[account,'shared',identity]:[account,'local',slot,key]),previous=rpAvatarLargeJobs.get(jobKey);previous?.controller.abort();
+  const updated=shared?rpReadSharedAvatars()[identity]?.updated:null,job={key,account,slot,identity,scope:shared?'shared':'local',controller};rpAvatarLargeJobs.set(jobKey,job);
+  const cancel=()=>controller.abort();if(!shared)task.signal.addEventListener('abort',cancel,{once:true});
+  const current=()=>{if(controller.signal.aborted||rpRuntime.stats().destroyed||rpAvatarLargeJobs.get(jobKey)!==job||account!==rpArchiveAccountHandle)return false;if(shared){const entry=rpReadSharedAvatars()[identity];return entry?.src===preview&&entry.updated===updated;}return task.valid()&&slot===STATE.chatId&&getPhoneChatSlotKey(getContext())===slot&&identity===rpAvatarIdentity(key)&&STATE.avatars?.[key]===preview&&(!Object.hasOwn(STATE.avatarOwners||{},key)||STATE.avatarOwners[key]===identity);};
+  try{
+    toastr.info('头像已保存，高清版本正在后台保存…完成前请勿刷新或关闭酒馆。');
+    await new Promise(resolve=>{const finish=()=>{window.clearTimeout(timer);controller.signal.removeEventListener('abort',finish);resolve();},timer=window.setTimeout(finish,0);controller.signal.addEventListener('abort',finish,{once:true});if(controller.signal.aborted)finish();});
+    if(!current())return false;
+    const largeSrc=await rpPrepareAvatarLarge(source,crop?{...crop}:null,controller.signal,current);if(!current())return false;
+    if(shared){const bank={...rpReadSharedAvatars()},entry=bank[identity];bank[identity]={...entry,largeSrc,updated:Math.max(Date.now(),entry.updated+1)};rpWriteSharedAvatars(bank);}
+    else{STATE.avatarLarge||={};Object.defineProperty(STATE.avatarLarge,key,{value:{preview,src:largeSrc},enumerable:true,writable:true,configurable:true});saveState({immediate:true,activity:false});}
+    toastr.success('高清头像已保存');return true;
+  }catch(error){if(current()&&error?.name!=='AbortError'){const reason=String(error?.message||'保存失败').replace(/[<>]/g,'').slice(0,180);toastr.warning('普通头像已保存，高清版本未保存：'+reason+'。可重新上传或生成后重试。');}return false;}
+  finally{task.signal.removeEventListener('abort',cancel);if(rpAvatarLargeJobs.get(jobKey)===job)rpAvatarLargeJobs.delete(jobKey);}
 }
 async function rpTranslateAvatarTag(text, {signal,isCurrent} = {}) {
   const cfg = readCustomApiConfig();
@@ -7446,6 +7480,8 @@ function rpAvatarBackupPayload(payload) {
 }
 
 const rpAvatarEdits = new Map();
+const rpAvatarLargeJobs = new Map();
+rpRuntime.own(()=>{for(const job of rpAvatarLargeJobs.values())job.controller.abort();rpAvatarLargeJobs.clear();});
 function rpAvatarEditAttrs(key, label) {
   return key ? ' data-rp-avatar-key="' + escHtml(key) + '" role="button" tabindex="0" title="更换头像" aria-label="更换' + escHtml(label || (key === 'user' ? '我' : key)) + '的头像"' : '';
 }
@@ -7493,11 +7529,8 @@ function rpChooseAvatar(key) {
     upload: () => { if (task.valid() && STATE.chatId === slot && account === rpArchiveAccountHandle && rpAvatarIdentity(who) === identity) rpChooseAvatarFile(who, scope); },
     commit: async (data, image) => {
       if (!current()) return false;
-      let largeSrc = null;
-      try { if (image?.src) largeSrc = await rpPrepareAvatarLarge(image.src,image.crop,image.signal,current); }
-      catch (error) { if (!current() || image?.signal?.aborted) return false; toastr.warning('头像可正常保存，但高清版本暂未保存；可重新生成或上传后重试。'); }
-      if (!current()) return false;
-      setAvatar(who, data, ticket, scope, largeSrc); saveGlobalAvatars(); saveState(); rpRefreshEditableAvatars(who);
+      setAvatar(who, data, ticket, scope); saveGlobalAvatars(); saveState({immediate:true,activity:false}); rpRefreshEditableAvatars(who);
+      if(image?.src)void rpSaveAvatarLargeInBackground(who,data,image.src,image.crop,scope);
       if (scope === 'shared' && !identity) toastr.info('无法确认所属角色卡或用户身份，头像已仅用于当前聊天');
       return true;
     },
@@ -7550,6 +7583,7 @@ function setAvatar(key, dataUrl, editToken, scope = 'local', largeSrc = null) {
   if (!rpValidAvatarImage(dataUrl)) throw new Error('头像压缩未成功或图片过大，请重新选择图片');
   if (editToken && rpAvatarEdits.get(key) !== editToken) return;
   const identity = rpAvatarIdentity(key);
+  rpCancelAvatarLarge(key,identity,scope);
   if (scope === 'shared' && identity) {
     const bank = {...rpReadSharedAvatars()};
     bank[identity] = {src:dataUrl, updated:Math.max(Date.now(), (bank[identity]?.updated || 0) + 1), ...(rpValidAvatarLarge(largeSrc) ? {largeSrc} : {})};
@@ -7585,13 +7619,11 @@ async function setAvatarCompressed(key, dataUrl, editToken, scope = 'local') {
   if (rpAvatarEdits.get(key) !== ticket) return;
   if (slot !== STATE.chatId || account !== rpArchiveAccountHandle || identity !== rpAvatarIdentity(key) || getPhoneChatSlotKey(getContext()) !== slot) return;
   const current = () => rpTask.valid() && rpAvatarEdits.get(key) === ticket && slot === STATE.chatId && account === rpArchiveAccountHandle && identity === rpAvatarIdentity(key) && getPhoneChatSlotKey(getContext()) === slot;
-  let largeSrc = null;
-  try { largeSrc = await rpPrepareAvatarLarge(dataUrl,null,rpTask.signal,current); }
-  catch (error) { if (!current()) return; toastr.warning('头像可正常保存，但高清版本暂未保存；可重新上传后重试。'); }
   if (!current()) return;
-  setAvatar(key, compressed, ticket, scope, largeSrc);
+  setAvatar(key, compressed, ticket, scope);
   saveGlobalAvatars();
-  saveState();
+  saveState({immediate:true,activity:false});
+  void rpSaveAvatarLargeInBackground(key,compressed,dataUrl,null,scope);
   return compressed;
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
