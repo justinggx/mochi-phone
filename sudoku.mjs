@@ -162,8 +162,8 @@ export function createSudoku(api){
   if(e.target.closest('button')&&!e.target.matches('.sdk-cell')&&['Enter',' '].includes(e.key))return;
   let handled=true;if(/^[1-9]$/.test(e.key))enter(Number(e.key));else if(['Backspace','Delete','0'].includes(e.key))enter(0);else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){const i=selected??0,r=Math.floor(i/9),c=i%9;select(e.key==='ArrowLeft'?r*9+Math.max(0,c-1):e.key==='ArrowRight'?r*9+Math.min(8,c+1):e.key==='ArrowUp'?Math.max(0,r-1)*9+c:Math.min(8,r+1)*9+c);root.querySelector('[data-sdk-cell="'+selected+'"]')?.focus({preventScroll:true});}else handled=false;if(handled)e.preventDefault();
  }
- function statisticsButton(){const b=button('统计','rp-stat-button',()=>api.statistics?.());b.disabled=!!pending;return b;}
- function nav(){const n=node('header','sdk-nav'),b=button('‹','sdk-back',()=>{pause();if(data().screen==='play'){data().screen='home';save();render();}else api.navigate('home');});b.setAttribute('aria-label','返回');n.append(b,node('div','sdk-nav-title','数独'),statisticsButton(),button('玩法','sdk-rules',rules));return n;}
+ function statisticsButton(){const b=button('统计','rp-stat-button',()=>api.statistics?.());b.setAttribute('aria-label','数独游戏统计');b.disabled=!!pending;return b;}
+ function nav(){const n=node('header','sdk-nav'),b=button('‹','sdk-back',()=>{pause();if(data().screen==='play'){data().screen='home';save();render();}else api.navigate('home');});b.setAttribute('aria-label','返回');n.classList.add('rp-game-nav');const actions=node('div','rp-game-nav-actions');actions.append(button('玩法','sdk-rules',rules),statisticsButton());n.append(b,node('div','sdk-nav-title','数独'),actions);return n;}
  function home(body){
   const home=node('div','sdk-home'),decor=node('div','sdk-home-grid');decor.setAttribute('aria-hidden','true');for(const v of ['1','','3','','5','','7','','9'])decor.append(node('span','',v));
   const r=data().round,p=r?{name:r.partner}:api.partner(),line=node('div','sdk-partner');line.append(node('span','',p.name+' 陪你解题'),button('更换','sdk-link',()=>{if(r){status='本题搭子已固定，换题后可以更换。';render();return;}api.changePartner();}));

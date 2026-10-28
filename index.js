@@ -1,4 +1,4 @@
-import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-reset-162';
+import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-style-164';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
@@ -7,8 +7,8 @@ import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS,
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
-import { createSudoku } from './sudoku.mjs?v=20261028-game-stats-161';
-import { createGomoku } from './gomoku.mjs?v=20261028-game-stats-161';
+import { createSudoku } from './sudoku.mjs?v=20261028-stat-style-164';
+import { createGomoku } from './gomoku.mjs?v=20261028-stat-style-164';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261026-self-audit-142';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-reader-132';
@@ -10287,8 +10287,10 @@ function rpShowGameStats(key,confirmReset=false) {
 function rpInstallGameStats() {
   if(!document.getElementById('rp-game-stats-css')){const style=document.createElement('style');style.id='rp-game-stats-css';style.textContent=GAME_STATS_CSS;document.head.append(style);}
   for(const [key,view]of Object.entries({ludo:'game',g2048:'g2048',gm:'ggold',gword:'gword'})){
-    const bar=document.querySelector('#rp-view-'+view+' .rp-game-partner-bar');if(!bar||bar.querySelector('[data-game-stats]'))continue;
-    const button=document.createElement('button');button.type='button';button.className='rp-stat-button';button.dataset.gameStats=key;button.textContent='统计';button.setAttribute('aria-label',GAME_STAT_NAMES[key]+'游戏统计');button.onclick=()=>rpShowGameStats(key);bar.append(button);
+    const nav=document.querySelector('#rp-view-'+view+' > .rp-nav-bar');if(!nav||nav.querySelector('[data-game-stats]'))continue;
+    nav.classList.add('rp-game-nav');const actions=document.createElement('div');actions.className='rp-game-nav-actions';
+    const previous=nav.lastElementChild;if(previous?.tagName==='BUTTON')actions.append(previous);else if(previous&&!previous.textContent.trim())previous.remove();
+    const button=document.createElement('button');button.type='button';button.className='rp-stat-button';button.dataset.gameStats=key;button.textContent='统计';button.setAttribute('aria-label',GAME_STAT_NAMES[key]+'游戏统计');button.onclick=()=>rpShowGameStats(key);actions.append(button);nav.append(actions);
   }
 }
 rpRuntime.listenDOM(window,'storage',event=>{
