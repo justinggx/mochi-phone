@@ -75,8 +75,8 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   const name=label(ref?.name||ctx.name2||char.name||'对方')||'对方',user=label(ctx.name1||'用户')||'用户',manual=norm(name)!==norm(char.name||ctx.name2),names=manual?[name]:namesOf(char,name);
   const isPublic=!!options.phoneXhs,isFeed=isPublic&&options.phoneXhsFeed===true,automatic=/GameEventComment|GomokuEventComment/.test(p.text);
   const presetCost=options.phoneTheatre&&typeof options.theatrePresetText==='string'?options.theatrePresetText:'';
-  let cap=options.phoneTheatre?(presetCost?64000:18000):isFeed?9000:isPublic?4000:automatic?2500:6000;
-  const windowLimit=options.phoneTheatre?roleContextWindow(ctx,cfg):cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
+  let cap=options.phoneTheatre?(presetCost?64000:18000):isFeed?9000:isPublic?4000:automatic?(options.phoneGomoku?6000:2500):6000;
+  const windowLimit=options.phoneTheatre||options.phoneGomoku?roleContextWindow(ctx,cfg):cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
   if(windowLimit)cap=Math.min(cap,windowLimit-maxTokens-(options.phoneTheatre?512:384));
   if(cap<512)throw failure('contextLimit');
   const count=async text=>{text=String(text);const k=hash(text),old=counts.get(k);if(old?.text===text)return old.n;check();const n=new TextEncoder().encode(text).length;
@@ -107,7 +107,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    // The latest exchange may borrow background space. A single long reply must
    // never cause the entire local conversation to become an empty array.
    const newest=items.length?await count(JSON.stringify(items[0])):0;
-   const limit=Math.max(historyBudget,Math.min(newest,Math.floor(cap*.45/history.length)));
+   const limit=Math.max(historyBudget,Math.min(newest,Math.floor(cap*(options.phoneGomoku ? .2 : .45)/history.length)));
    for(const m of items){let item=m,n=await count(JSON.stringify(item));
     if(cost+n>limit){
      if(!m||typeof m.text!=='string')continue;

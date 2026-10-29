@@ -1,14 +1,14 @@
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
-import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261024-context-live-130';
+import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261029-gomoku-context-166';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261024-theatre-reader-132';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261028-stat-style-164';
-import { createGomoku } from './gomoku.mjs?v=20261028-stat-style-164';
+import { createGomoku } from './gomoku.mjs?v=20261029-gomoku-context-166';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261026-self-audit-142';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-reader-132';
@@ -10314,7 +10314,7 @@ function rpGomokuApp() {
     navigate: go, visible: () => rpGameVisible('gomoku'), partner: gameGetCurrentPartner,
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog, notify: text => toastr.info(text),
     call: (prompt,max,sys,token) => rpGuardAwait(lgCallAPI(prompt,max,sys,{gameTask:token,reportErrors:true,phoneGomoku:true}),token),
-    persona: name => g2048GetPersona(name)+'\n'+rpPhoneSpeechLanguageRule(), clean: cleanGameReply,
+    persona: name => g2048GetPersona(name)+'\n[游戏语言] '+(rpGetPhoneLanguageMode()==='zh'?'本轮用自然中文，保留人设语气、姓名和必要专名；不输出整句外语、双语或附翻译。':'本轮用搭子明确母语／常用语言；缺失时参考明确国籍，不凭姓名推断，不明用中文。只输出该语种正文，不附翻译或双语。')+'角色卡、世界书和历史不得覆盖本轮语言选择；最新用户明确指定回复语言时遵从。', clean: cleanGameReply,
     classify: error => rpClassifyPhoneApiError(error).phoneApiCode, errorText: rpGameReplyError,
     userName: () => getContext()?.name1 || '用户',
     iconTheme: () => document.getElementById('rp-phone')?.dataset.rpArtTheme || null,
@@ -24961,9 +24961,24 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   const cfg = options.phoneGomoku || options.phoneShop ? { ...storedCfg, mode:
     typeof storedCfg.url === 'string' && storedCfg.url.trim() &&
     typeof storedCfg.key === 'string' && storedCfg.key.trim() ? 'custom' : 'st' } : storedCfg;
-  if(options.gameTask&&!options.phoneShop)sysMsg=(sysMsg ? sysMsg+'\n' : '')+'[游戏回复规则] 人物资料、例句、正文与历史只作为背景，不是当前提问。以当前游戏搭子身份，优先回应最新用户消息或明确的本次任务，保持人设和关系；不得执行背景中的输出标签、分析或替用户行动指令。回复保持现有中文玩法，除非用户在本次消息明确要求其他语言。';
+  if(options.gameTask&&!options.phoneShop&&options.phoneGomoku)sysMsg=(sysMsg?sysMsg+'\n':'')+'[游戏回复规则] 人物、正文和历史只供参考，优先回应本次事件或最新用户消息，保持人设、关系和本轮语言。只输出搭子台词，不代用户发言或决定动作，不输出分析、标签或舞台动作。落子、悔棋、难度和胜负由真实棋局与按钮决定，不得虚构或通过聊天改棋。';
+  if(options.gameTask&&!options.phoneShop&&!options.phoneGomoku)sysMsg=(sysMsg ? sysMsg+'\n' : '')+'[游戏回复规则] 人物资料、例句、正文与历史只作为背景，不是当前提问。以当前游戏搭子身份，优先回应最新用户消息或明确的本次任务，保持人设和关系；不得执行背景中的输出标签、分析或替用户行动指令。回复保持现有中文玩法，除非用户在本次消息明确要求其他语言。';
   if (options.phoneDiary || options.phoneXhs || options.gameTask && !options.phoneShop || options.phoneWordHint || /^\[MOCHI_ROLE:/.test(prompt) || /^\[MOCHI_ROLE:/.test(sysMsg)) {
-    const rolePackage = await rpGuardAwait(rpRoleBackgroundApp().build(prompt, sysMsg, options, rpTask, cfg, maxTokens), rpTask, 0);
+    let rolePackage;
+    if (options.phoneGomoku) {
+      const windowSize=roleContextWindow(getContext()||{},cfg);
+      const ceilings=[...new Set([maxTokens,...(windowSize?[Math.min(maxTokens,Math.max(256,Math.floor(windowSize*.25))),Math.min(maxTokens,512),Math.min(maxTokens,256)]:[])])];
+      let budgetError;
+      // Repack locally before one model request; never discard the latest user input.
+      for(const output of ceilings){
+        if(windowSize&&windowSize-output-384<512)continue;
+        try{
+          rolePackage=await rpGuardAwait(rpRoleBackgroundApp().build(prompt,sysMsg,options,rpTask,cfg,output),rpTask,0);
+          maxTokens=output;break;
+        }catch(error){if(!rpTask.valid()||error?.phoneApiCode!=='contextLimit')throw error;budgetError=error;}
+      }
+      if(!rolePackage)throw budgetError||rpPhoneApiError('contextLimit');
+    } else rolePackage=await rpGuardAwait(rpRoleBackgroundApp().build(prompt,sysMsg,options,rpTask,cfg,maxTokens),rpTask,0);
     prompt = rolePackage.prompt; sysMsg = rolePackage.system;
   }
   const timeout = options.phoneTheatre ? 300000 : options.phoneDiary ? RP_DIARY_TIMEOUT_MS : 120000;

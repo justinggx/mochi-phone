@@ -221,7 +221,7 @@ export function createGomoku(api) {
     stopSpeech(true);dialogueSerial++;lastManualAt=Date.now();const token=task(),owner={};chatJob=owner;const prior=m.replyError;m.replyState='pending';delete m.replyError;save();render();
     try{
       const bounded=recentDialogue(m.id);
-      const prompt='[GomokuDialogue/v1]\n棋局事实（不能改写）：'+JSON.stringify(boardFacts())+'\n本局近期完整对话：'+JSON.stringify(bounded)+'\n最新用户消息：'+JSON.stringify({name:api.userName(),text:m.text})+'\n先理解并回应最新消息，允许自然闲聊。只输出当前搭子的完整回复；不代替用户发言，不擅自声明已经落下未出现的棋子。聊天不执行落子、改难度或悔棋；这些操作由界面按钮完成。不要报坐标代替回答，也不要突然转移话题。';
+      const prompt='[GomokuDialogue/v1]\n棋局事实（不能改写）：'+JSON.stringify(promptFacts())+'\n本局近期完整对话：'+JSON.stringify(bounded)+'\n最新用户消息：'+JSON.stringify({name:api.userName(),text:m.text})+'\n自然完整回应最新消息，可以闲聊；不要只报坐标或突然转移话题。';
       const raw=await api.call(prompt,retryId&&prior==='truncated'?8192:4096,api.persona(r.partner)+(r.note?'\n本局搭子补充资料：'+r.note:''),token);if(!token.valid()||data().round!==r)return false;const reply=api.clean(raw,r.partner);if(!reply)throw Object.assign(new Error('Empty game reply'),{phoneApiCode:'empty'});message('char',reply,{replyTo:m.id});m.replyState='done';
     }catch(error){if(!token.valid())return false;m.replyState='failed';m.replyError=api.classify(error);}
     finally{if(token.valid()&&chatJob===owner){chatJob=null;lastManualAt=Date.now();save();render();resume();}}
@@ -239,6 +239,12 @@ export function createGomoku(api) {
     const r=data().round,p=gomokuPosition(r.moves),longest={user:0,char:0};
     for(let i=0;i<TOTAL;i++)if(p.board[i])for(const[dx,dy]of DIRS){let count=1,x=i%15+dx,y=Math.floor(i/15)+dy;while(inside(x,y)&&p.board[y*15+x]===p.board[i]){count++;x+=dx;y+=dy;}const who=p.board[i]===1?'user':'char';longest[who]=Math.max(longest[who],count);}
     return {game:'五子棋',partner:r.partner,userStone:'黑棋',partnerStone:'白棋',level:r.level,moves:r.moves.map(x=>({at:label(x.index),side:x.side===1?'user':'char'})),lastMove:r.moves.length?{at:label(r.moves.at(-1).index),side:r.moves.at(-1).side===1?'user':'char'}:null,status:p.status,winner:p.winner===1?'user':p.winner===2?'char':null,next:p.status==='playing'?(p.turn===1?'user':'char'):null,longest,userWinningPoints:p.status==='playing'?winningPoints(p.board,1).map(label):[],partnerWinningPoints:p.status==='playing'?winningPoints(p.board,2).map(label):[]};
+  }
+  // Exact occupied cells plus the latest moves keep commentary size independent of game length.
+  // The complete move list remains in the saved round for replay, undo and statistics.
+  function promptFacts(){
+    const {moves,...facts}=boardFacts(),board=gomokuPosition(data().round.moves).board;
+    return {...facts,moveCount:moves.length,boardRows:Array.from({length:15},(_,row)=>board.slice(row*15,row*15+15).join('')),boardLegend:'行1至15，列A至O；0空位，1用户黑棋，2搭子白棋',recentMoves:moves.slice(-6)};
   }
   function recentDialogue(exclude=''){
     const history=data().log.filter(x=>x.roundId===data().round.id&&x.id!==exclude&&x.role!=='system'&&(x.role!=='user'||!x.replyState||x.replyState==='done')).slice(-20),bounded=[];let size=0;
@@ -265,7 +271,7 @@ export function createGomoku(api) {
     const prior=meta.failed?.error;autoJob=owner;meta.failed=null;meta.pending={key:event.key,revision:event.revision,kind:event.kind};meta.seen=[...new Set([...meta.seen,event.key])].slice(-256);meta.lastAt=Date.now();save();render();
     try{
       const names={opening:'开始新局，你执白，用户执黑先手',resume:'用户主动继续这局棋',move:'你刚完成了一次真实落子',threat:'刚才的落子涉及连子、攻防或拦截',end:'本局已经分出胜负或和棋'};
-      const prompt='[GomokuEventComment/v1]\n本次事件：'+names[event.kind]+'\n当前棋局事实（唯一依据，不能改写）：'+JSON.stringify(boardFacts())+'\n本局近期完整对话：'+JSON.stringify(recentDialogue())+'\n请以当前搭子的身份主动对用户说一两句简短、自然、完整的话。结合你的人设、关系、最新落子与胜负状态，延续最近的话题，不机械报棋谱，不强行亲昵，不每次提问，不重复上一句。不替用户发言、描写用户动作或感受，不编造落子、胜负或线下行为，不输出分析、舞台动作、规则说明或标签。落子由本地规则执行，聊天不能改变棋盘；这是你主动开口，不是用户发来了一条新消息。';
+      const prompt='[GomokuEventComment/v1]\n本次事件：'+names[event.kind]+'\n当前棋局事实（唯一依据，不能改写）：'+JSON.stringify(promptFacts())+'\n本局近期完整对话：'+JSON.stringify(recentDialogue())+'\n以搭子身份主动说一两句自然完整的话，结合人设、关系、最新落子和胜负，延续最近话题；勿机械报谱、强行亲昵、重复上句、每次提问或编造线下行为。这是搭子主动开口，没有用户新消息。';
       const raw=await api.call(prompt,retry&&prior==='truncated'?8192:2048,api.persona(r.partner)+(r.note?'\n本局搭子补充资料：'+r.note:''),token);
       if(!token.valid())return false;const reply=api.clean(raw,r.partner);if(!reply)throw Object.assign(new Error('Empty game comment'),{phoneApiCode:'empty'});
       if(!data().log.filter(m=>m.roundId===r.id&&m.role==='char').slice(-6).some(m=>m.text===reply))message('char',reply,{kind:'event-comment',eventKey:event.key});
