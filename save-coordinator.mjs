@@ -58,6 +58,8 @@ function rpPhoneCommitPayload(slot,input,expected=rpPhoneSaveBases.get(slot),com
   const commit=()=>{
     if(account!==phoneHost.rpArchiveAccountHandle){finish(false);return false;}
     const current=rpPhoneReadPersisted(slot),clock=rpPhoneSaveClock(current);
+    // A delayed journal or lock callback must never roll back this page's newer commit.
+    if ((clock[RP_PHONE_SAVE_WRITER]||0) >= sequence) { finish(true); return true; }
     const onlyOwnAdvance=typeof current?.__revision==='string'&&current.__revision.startsWith(RP_PHONE_SAVE_WRITER+':')&&Object.entries(clock).every(([writer,n])=>writer===RP_PHONE_SAVE_WRITER||n<=(base.clock[writer]||0));
     if(rpPhoneStateRevision(current)!==base.revision&&!onlyOwnAdvance){delete phoneHost.CHAT_STORE[slot];rpPhoneWarnSaveConflict(slot);finish(false);return false;}
     payload.__savedAt=Math.max(Date.now(),Number(current?.__savedAt||0)+1);
@@ -74,7 +76,7 @@ function rpPhoneCommitPayload(slot,input,expected=rpPhoneSaveBases.get(slot),com
     if(!locks?.request){try{return commit();}catch{finish(false);(0,phoneHost.warnPhoneStorageFailure)();return false;}}
     const job=Promise.resolve().then(()=>locks.request('mochi-phone-save:'+encodeURIComponent(account)+':'+slot,{mode:'exclusive'},commit));
     rpPhonePendingCommits.add(job);
-    job.catch(()=>{if(account===phoneHost.rpArchiveAccountHandle){rpPhoneWarnSaveConflict(slot);finish(false);}}).finally(()=>rpPhonePendingCommits.delete(job));
+    job.catch(()=>{if(account===phoneHost.rpArchiveAccountHandle)rpPhoneWarnSaveConflict(slot);finish(false);}).finally(()=>rpPhonePendingCommits.delete(job));
     return true;
   };
   if(staged){void archiveStage;return schedule();}

@@ -1,8 +1,9 @@
+import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 import { createPhoneTemplate } from './phone-template.mjs?v=20261029-optimization-173';
-import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-optimization-173';
+import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261029-optimization-173';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261029-optimization-173';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261029-slim-174';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -10,10 +11,9 @@ import { createRoleContext, roleContextRef, roleContextWindow } from './role-con
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261029-optimization-173';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
-import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
-import { createSudoku } from './sudoku.mjs?v=20261028-stat-style-164';
-import { createGomoku } from './gomoku.mjs?v=20261029-gomoku-context-166';
+import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
+import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261029-optimization-173';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
@@ -422,16 +422,7 @@ function rpPruneImageWaitQueue(now = Date.now()) {
     return entry.chatSlot === STATE.chatId && now - entry.addedAt >= -2000 && now - entry.addedAt < RP_IMAGE_WAIT_TTL;
   });
 }
-function rpAddImageWait(entry) {
-  rpPruneImageWaitQueue();
-  if (window.rpImgWaitQueue.some(item => item?.source === 'mochi-phone' && item.pendingMsgId === entry.pendingMsgId)) return;
-  const item = { ...entry, chatSlot: STATE.chatId, addedAt: Date.now() };
-  window.rpImgWaitQueue.push(item);
-  setTimeout(() => {
-    window.rpImgWaitQueue = (window.rpImgWaitQueue || []).filter(value => value !== item);
-    scheduleFinalPhoneParseSweep('image_wait_expired');
-  }, RP_IMAGE_WAIT_TTL);
-}
+
 function rpResetChatTasks() {
   rpTheatre?.reset();
   rpClearPhoneMotion();
@@ -1152,51 +1143,7 @@ function applyThemeSettingsSnapshot(themeSettings) {
   } catch(e) { console.warn('[Phone] applyThemeSettingsSnapshot failed:', rpErrorInfo(e)); }
 }
 
-function makeLightweightPayload(payload) {
-  const p = payload || {};
-  const threads = {};
-  Object.entries(p.threads || {}).forEach(function([id, th]) {
-    const msgs = Array.isArray(th?.messages) ? th.messages : [];
-    const last = msgs.length ? msgs[msgs.length - 1] : null;
-    threads[id] = {
-      id: th?.id || id,
-      name: th?.name || '',
-      initials: th?.initials || '',
-      avatarBg: th?.avatarBg || '',
-      type: th?.type || 'contact',
-      unread: th?.unread || 0,
-      messagesCount: msgs.length,
-      lastMessage: last ? {
-        from: last.from,
-        type: last.type || 'text',
-        text: last.text || last.voiceText || last.place || '',
-        time: last.time || '',
-      } : null,
-    };
-  });
-  return {
-    __light: true,
-    __savedAt: Date.now(),
-    __version: 2,
-    meta: p.meta || null,
-    threads,
-    notifications: Array.isArray(p.notifications) ? p.notifications.slice(-5) : [],
-    sync: p.sync || { stage: 1, progress: 0, status: '乖巧' },
-    momentsCount: Array.isArray(p.moments) ? p.moments.length : 0,
-    diaryCount: Array.isArray(p.diary) ? p.diary.length : 0,
-    darkMode: !!p.darkMode,
-    themeSettings: p.themeSettings || null,
-    avatars: p.avatars || {},
-    avatarLocalOnly: p.avatarLocalOnly || {},
-    avatarOwners: p.avatarOwners || {},
-    currentView: p.currentView || 'home',
-    currentThread: p.currentThread || null,
-    bankMeta: p.bankData ? {
-      hasData: true,
-      cardCount: Array.isArray(p.bankData?.cards) ? p.bankData.cards.length : undefined,
-    } : null,
-  };
-}
+
 
 function buildStatePayload() {
   const ctx = getContext();
@@ -1435,8 +1382,13 @@ const { rpPhoneSaveBases, rpPhoneSaveWarnings, rpPhonePendingCommits, rpPhonePen
   get warnPhoneStorageFailure() { return warnPhoneStorageFailure; },
 });
 
-function flushStateNow() {
+let rpPhoneCollectingState = false;
+function flushStateNow(onlyDirty = false) {
+  if (rpPhoneCollectingState) return;
+  rpPhoneCollectingState = true;
+  try {
   rpTheatre?.flushReading();
+  if (onlyDirty && !STATE._pendingSaveDirty) return;
   rpRememberReading();
   if(!STATE.chatId||STATE.chatId==='default')return;
   if(PHONE_STATE_BLOCKED_SLOTS.has(STATE.chatId)){warnPhoneStateRecovery();return;}
@@ -1448,6 +1400,7 @@ function flushStateNow() {
       if(ok&&STATE.chatId===slot&&(STATE._saveRevision||0)===revision)STATE._pendingSaveDirty=false;
     });
   }catch(error){warnPhoneStorageFailure();console.warn('[Phone] state save failed',rpErrorInfo(error));}
+  } finally { rpPhoneCollectingState = false; }
 }
 
 // ================================================================
@@ -2141,30 +2094,7 @@ async function setAvatarCompressed(key, dataUrl, editToken, scope = 'local') {
 
 
 // 自动将当前对话的 char 加入联系人(每个对话框独立,无需开场白 <PHONE> 标签)
-function autoAddCharContact() {
-  try {
-    const ctx = getContext();
-    if (!rpPhoneContextReady(ctx)) return;
-    // 必须有真实 chat slot(排除 ST 初始页面 / 无对话状态)
-    if (!getPhoneChatSlotKey(ctx) || getPhoneRawChatId(ctx) === 'default') return;
-    const charName = ctx?.name2 || (ctx?.characters && ctx?.characterId !== undefined
-      ? ctx.characters[ctx.characterId]?.name : null);
-    if (!charName) return;
-    // 过滤无效名字:SillyTavern 本身、空白、纯数字
-    const invalid = /^(sillytavern|tavern|system|assistant|ai)$/i;
-    if (invalid.test(charName.trim())) return;
-    if (isPhoneBlocked(charName)) return;
-    // 已存在则跳过
-    const exists = Object.values(STATE.threads).some(t =>
-      normalizePhonePersonName(t.name || '') === normalizePhonePersonName(charName)
-    );
-    if (exists) return;
-    const created = findOrCreateThread(charName);
-    if (!created) return;
-    renderThreadList();
-    saveState();
-  } catch(e) { /* ignore */ }
-}
+
 
 
 // 清理无效联系人(SillyTavern 本身、旧硬编码遗留等)
@@ -2353,59 +2283,7 @@ function syncToCurrentChat() {
 
 
 // 从 ST 服务端拉取最新 extension_settings(解决手机端缓存问题)
-async function fetchServerSettings() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
 
-  try {
-    // ST 1.12+ API endpoint(多版本兼容)
-    const endpoints = ['/api/settings/get', '/getsettings'];
-    let data = null;
-    const ctx = (typeof getContext === 'function' ? getContext() : null) || {};
-    const headers = typeof ctx.getRequestHeaders === 'function'
-      ? ctx.getRequestHeaders()
-      : { 'Content-Type': 'application/json' };
-    for (const ep of endpoints) {
-      try {
-        const res = await rpGuardAwait(fetch(ep, { method: 'POST', headers, body: '{}' }), rpTask);
-        if (res.ok) { data = await rpGuardAwait(res.json(), rpTask); break; }
-      } catch(e2) {
-    if (!rpTask.valid()) return;
-}
-    }
-    if (!data) return false;
-    // Current ST returns the persisted settings document as a JSON string in
-    // data.settings; older builds exposed extension_settings directly.
-    let settingsDoc = data;
-    if (typeof data.settings === 'string') {
-      try { settingsDoc = JSON.parse(data.settings); } catch(e2) { return false; }
-    } else if (data.settings && typeof data.settings === 'object') {
-      settingsDoc = data.settings;
-    }
-    const serverEs = settingsDoc.extension_settings || data.extension_settings;
-    if (!serverEs || !serverEs[EXT_KEY]) return false;
-    // 更新本地内存里的 extension_settings
-    const es = _extSettings();
-    if (es) {
-      if (serverEs[RP_SHARED_AVATARS_KEY]) es[RP_SHARED_AVATARS_KEY] = serverEs[RP_SHARED_AVATARS_KEY];
-      if (!es[EXT_KEY]) es[EXT_KEY] = {};
-      // 合并:服务端数据优先
-      Object.keys(serverEs[EXT_KEY]).forEach(function(k) {
-        es[EXT_KEY][k] = serverEs[EXT_KEY][k];
-        // 同步回 localStorage 作为本地缓存
-        try { localStorage.setItem('rp-phone-v1-' + k, JSON.stringify(serverEs[EXT_KEY][k])); } catch(e3) {}
-      });
-    }
-    return true;
-  } catch(e) {
-    if (!rpTask.valid()) return;
-
-    console.warn('[Phone] fetchServerSettings 失败:', rpErrorInfo(e));
-    return false;
-  }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
-}
 
 
 // 从聊天历史重建联系人(聊天记录保存在服务端,所有设备加载同一对话时自动同步)
@@ -2894,39 +2772,11 @@ function isCompressiblePhoneImageSrc(src) {
   return typeof src === 'string' && src.startsWith('data:image/') && src.length > 350000 && src !== '__img_expired__';
 }
 
-function hasUsableThreadMessages(threads) {
-  try {
-    return Object.values(threads || {}).some(function(th) {
-      return th && Array.isArray(th.messages) && th.messages.length > 0;
-    });
-  } catch(e) { return false; }
-}
 
-function countThreadMessages(threads) {
-  try {
-    return Object.values(threads || {}).reduce(function(sum, th) {
-      return sum + (Array.isArray(th && th.messages) ? th.messages.length : 0);
-    }, 0);
-  } catch(e) { return 0; }
-}
 
-function mergeThreadsPreserveMessages(baseThreads, candidateThreads) {
-  const merged = JSON.parse(JSON.stringify(baseThreads || {}));
-  Object.entries(candidateThreads || {}).forEach(function(pair) {
-    const id = pair[0];
-    const th = pair[1] || {};
-    const candMsgs = Array.isArray(th.messages) ? th.messages : [];
-    if (!merged[id]) {
-      merged[id] = JSON.parse(JSON.stringify(th));
-      return;
-    }
-    const keepMsgs = Array.isArray(merged[id].messages) ? merged[id].messages : [];
-    merged[id] = Object.assign({}, merged[id], th);
-    merged[id].messages = candMsgs.length >= keepMsgs.length ? JSON.parse(JSON.stringify(candMsgs)) : keepMsgs;
-    merged[id].unread = Math.max(merged[id].unread || 0, th.unread || 0);
-  });
-  return merged;
-}
+
+
+
 
 function schedulePhoneImageCompression() {
   try {
@@ -3011,9 +2861,7 @@ function saveState(opts) {
 }
 
 function flushPendingPhoneState() {
-  rpTheatre?.flushReading();
-  if (!STATE.chatId || !STATE._pendingSaveDirty) return;
-  flushStateNow();
+  flushStateNow(true);
 }
 
 function installPhoneStateFlushHooks() {
@@ -3531,7 +3379,12 @@ async function rpInitBody() {
   rpGomokuApp().mount();
   rpSudokuApp().mount();
   rpStickerApp().mount();
-  rpShopApp()?.mount();
+  if (RP_SHOP_AVAILABLE) {
+    const task = rpRuntime.task();
+    await rpPrepareShop();
+    if (!task.valid()) return;
+    rpShopApp()?.mount();
+  }
   makeDraggable();
   renderThreadList();
   refreshLockNotifs();
@@ -3914,11 +3767,18 @@ function rpBatchPhoneUi(action) {
   }
 }
 
-let rpShop = null;
+let rpShop = null, rpShopFactory = null, rpShopImport = null;
+async function rpPrepareShop() {
+  if (!RP_SHOP_AVAILABLE) return false;
+  if (!rpShopImport) rpShopImport = import('./shop.mjs?v=20261029-slim-174').then(module => {
+    rpShopFactory = module.createShop; return true;
+  }).catch(error => { rpShopImport = null; console.warn('[Phone] shop module unavailable', rpErrorInfo(error)); return false; });
+  return rpShopImport;
+}
 function rpShopApp() {
-  if (!RP_SHOP_AVAILABLE) return null;
+  if (!RP_SHOP_AVAILABLE || !rpShopFactory) return null;
   if (rpShop) return rpShop;
-  rpShop = createShop({
+  rpShop = rpShopFactory({
     document, runtime: () => rpRuntime, storage: window.sessionStorage, fetch: (...args) => fetch(...args),
     account: () => rpArchiveAccountHandle,
     headers: () => getContext()?.getRequestHeaders?.() || _rp_script_mod?.getRequestHeaders?.() || {'Content-Type':'application/json'},
@@ -4007,7 +3867,7 @@ rpRuntime.own(()=>{rpGameStatsDialogCleanup?.();rpGameStatsMemory={account:null,
 let rpGomoku = null;
 function rpGomokuIconUrl(theme,local=false) {
   const file=['candy','star','misty'].includes(theme) ? 'mochi-phone-gomoku-'+theme+'-icon-20261018.png' : 'mochi-phone-gomoku-icon-20261018.png';
-  return local ? new URL('scripts/extensions/third-party/mochi-phone/gomoku-art-20261018/'+file,document.baseURI).href : 'https://preview.taliatang1.xyz/assets/'+file;
+  return productArtworkSources('gomoku-art-20261018/'+file,document.baseURI)[local?2:0];
 }
 function rpGomokuApp() {
   if (rpGomoku) return rpGomoku;
@@ -4022,6 +3882,7 @@ function rpGomokuApp() {
     userName: () => getContext()?.name1 || '用户',
     iconTheme: () => document.getElementById('rp-phone')?.dataset.rpArtTheme || null,
     iconSource: (theme,local) => rpGomokuIconUrl(theme,local),
+    iconSources: theme => { const local=rpGomokuIconUrl(theme,true); return productArtworkSources('gomoku-art-20261018/'+local.split('/').pop(),document.baseURI); },
   });
   return rpGomoku;
 }
@@ -4030,7 +3891,7 @@ let rpSudoku = null;
 function rpSudokuIconUrl(theme,local=false) {
   const selected=['candy','star','misty'].includes(theme)?theme:'candy';
   const file='mochi-phone-sudoku-'+selected+'-icon-20261020.png';
-  return local?new URL('scripts/extensions/third-party/mochi-phone/sudoku-art-20261020/'+file,document.baseURI).href:'https://preview.taliatang1.xyz/assets/'+file;
+  return productArtworkSources('sudoku-art-20261020/'+file,document.baseURI)[local?2:0];
 }
 function rpSudokuApp() {
   if (!rpSudoku) rpSudoku = createSudoku({
@@ -4040,6 +3901,7 @@ function rpSudokuApp() {
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog,
     iconTheme: () => document.getElementById('rp-phone')?.dataset.rpArtTheme || null,
     iconSource: (theme,local) => rpSudokuIconUrl(theme,local),
+    iconSources: theme => { const local=rpSudokuIconUrl(theme,true); return productArtworkSources('sudoku-art-20261020/'+local.split('/').pop(),document.baseURI); },
   });
   return rpSudoku;
 }
@@ -6279,7 +6141,7 @@ function renderThreadList() {
 function go(view) {
   rpBackSwipeCancel?.();
   const previousView = STATE.currentView;
-  if (view === 'shop' && !RP_SHOP_AVAILABLE) view = 'home';
+  if (view === 'shop' && (!RP_SHOP_AVAILABLE || !rpShopFactory)) view = 'home';
   if (view === 'folder-games') view = 'home'; // Recover a legacy saved folder route.
   if (view === 'thread' && !STATE.threads[STATE.currentThread]) view = 'messages';
   if(view==='xhs-detail' && !STATE.xhsFeed.some(post=>post.id===STATE.xhsCurrentPost))view='xhs';
@@ -7162,34 +7024,7 @@ function renderBubbles(threadId, options = {}) {
   if (followBottom) setTimeout(settleScroll, 80);
 }
 
-function dispatchSyntheticPrimaryClick(btn, opts) {
-  if (!btn) return false;
-  try {
-    const mode = opts && opts.mode ? String(opts.mode) : 'mouse';
-    btn.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-    try { btn.focus?.({ preventScroll: true }); } catch(_) {}
-    const evOpts = { bubbles: true, cancelable: true, composed: true, view: window };
-    const pointerOpts = { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: mode === 'touch' ? 'touch' : 'mouse', isPrimary: true };
-    if (mode === 'touch') {
-      try { btn.dispatchEvent(new Event('touchstart', evOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new PointerEvent('pointerdown', pointerOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new MouseEvent('mousedown', evOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new Event('touchend', evOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new PointerEvent('pointerup', pointerOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new MouseEvent('mouseup', evOpts)); } catch(_) {}
-    } else {
-      try { btn.dispatchEvent(new PointerEvent('pointerdown', pointerOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new MouseEvent('mousedown', evOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new PointerEvent('pointerup', pointerOpts)); } catch(_) {}
-      try { btn.dispatchEvent(new MouseEvent('mouseup', evOpts)); } catch(_) {}
-    }
-    try { btn.dispatchEvent(new MouseEvent('click', evOpts)); } catch(_) {}
-    return true;
-  } catch(e) {
-    console.warn('[Phone:chatu8] dispatchSyntheticPrimaryClick failed', rpErrorInfo(e));
-    return false;
-  }
-}
+
 
 
 
@@ -7894,10 +7729,7 @@ function getPhoneParseParts(raw) {
   return { normalized, blocks, outside };
 }
 
-function countPhoneTag(raw, re) {
-  const m = String(raw || '').match(re);
-  return m ? m.length : 0;
-}
+
 
 function hasBarePhoneTagsIn(raw) {
   return /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|mochiLOCATION|mochiLOC)\b/i.test(String(raw || ''));
@@ -8112,33 +7944,7 @@ function onAIMessage(_retryCount) {
   }
 }
 
-function cleanPhoneFallbackReply(raw, fromName) {
-  if (!raw) return '';
-  let text = String(raw);
-  // 去掉 PHONE 标签块与思维链
-  text = text.replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, ' ');
-  text = text.replace(/<think>[\s\S]*?<\/think>/gi, ' ');
-  // 去掉结构化标签
-  text = text.replace(/<[^>]{1,80}>/g, ' ');
-  // 常见"奇怪总结段"关键词行
-  const badLine = /(剧情摘要|故事走向|联系测试|未解决|规则|状态|Stage|DAILY_NOTE|FLASH_MEMORY|BROKEN_RULES|INBOX|关系进度|条目|清单)/i;
-  const lines = text
-    .split(/\n+/)
-    .map(s => s.trim())
-    .filter(Boolean)
-    .filter(s => !badLine.test(s))
-    .filter(s => !/^[\-•*\d\s.::]+$/.test(s));
 
-  // 优先取引号里的短句
-  const joined = lines.join(' ');
-  const q = joined.match(/["\"「]([^"\"」\n]{2,80})["\"」]/);
-  if (q && q[1]) return q[1].trim().slice(0, 80);
-
-  // 否则取第一条像对话的句子
-  const first = lines.find(s => s.length >= 2 && s.length <= 80);
-  if (!first) return '';
-  return first.replace(/^\s*[^\u4e00-\u9fa5A-Za-z0-9]+/, '').slice(0, 80).trim();
-}
 
 function sanitizeSmsText(text) {
   let t = String(text || '').trim();
@@ -8790,79 +8596,7 @@ function scheduleRepairPhoneByMesId(targetMesId, reason) {
   }
 }
 
-function installPhoneRenderObserver() {
-  try {
-    if (window.__rpPhoneRenderObserverInstalled) return;
-    const chatRoot = document.querySelector('#chat');
-    if (!chatRoot || typeof MutationObserver !== 'function') return;
-    window.__rpPhoneRenderObserverInstalled = true;
-    window.__rpPhoneRenderObserverTimers = window.__rpPhoneRenderObserverTimers || new Map();
 
-    const queueMesRepair = function(mesId, reason) {
-      try {
-        if (!Number.isFinite(mesId) || mesId < 0) return;
-        if (rpMesHasChatu8Activity(mesId)) return;
-        const timers = window.__rpPhoneRenderObserverTimers;
-        const oldTimer = timers.get(mesId);
-        if (oldTimer) clearTimeout(oldTimer);
-        const t = setTimeout(function() {
-          timers.delete(mesId);
-          try { scheduleRepairPhoneByMesId(mesId, reason || 'dom-observer'); } catch(e) {}
-        }, 90);
-        timers.set(mesId, t);
-      } catch(e) {
-        console.warn('[Raymond Phone] queueMesRepair failed', rpErrorInfo(e));
-      }
-    };
-
-    const scanNode = function(node, reason) {
-      try {
-        if (!node || node.nodeType !== 1) return;
-        const mesNodes = [];
-        if (node.matches && node.matches('.mes:not([is_user="true"])')) mesNodes.push(node);
-        if (node.querySelectorAll) node.querySelectorAll('.mes:not([is_user="true"])').forEach(function(el) { mesNodes.push(el); });
-        mesNodes.forEach(function(mesEl) {
-          const mesId = parseInt(mesEl.getAttribute('mesid') || '-1', 10);
-          if (!Number.isFinite(mesId) || mesId < 0) return;
-          queueMesRepair(mesId, reason || 'dom-observer');
-        });
-      } catch(e) {
-        console.warn('[Raymond Phone] scanNode failed', rpErrorInfo(e));
-      }
-    };
-
-    const observer = new MutationObserver(function(mutations) {
-      try {
-        mutations.forEach(function(mutation) {
-          if (mutation.type === 'childList') {
-            mutation.addedNodes.forEach(function(node) { scanNode(node, 'dom-added'); });
-            if (mutation.target && mutation.target.nodeType === 1) {
-              const mesEl = mutation.target.closest ? mutation.target.closest('.mes:not([is_user="true"])') : null;
-              if (mesEl) {
-                const mesId = parseInt(mesEl.getAttribute('mesid') || '-1', 10);
-                if (Number.isFinite(mesId) && mesId >= 0) queueMesRepair(mesId, 'dom-childList');
-              }
-            }
-          } else if (mutation.type === 'characterData') {
-            const parent = mutation.target && mutation.target.parentElement;
-            const mesEl = parent && parent.closest ? parent.closest('.mes:not([is_user="true"])') : null;
-            if (mesEl) {
-              const mesId = parseInt(mesEl.getAttribute('mesid') || '-1', 10);
-              if (Number.isFinite(mesId) && mesId >= 0) queueMesRepair(mesId, 'dom-charData');
-            }
-          }
-        });
-      } catch(e) {
-        console.warn('[Raymond Phone] phone render observer tick failed', rpErrorInfo(e));
-      }
-    });
-
-    observer.observe(chatRoot, { childList: true, subtree: true, characterData: true });
-    window.__rpPhoneRenderObserver = observer;
-  } catch(e) {
-    console.warn('[Raymond Phone] installPhoneRenderObserver failed', rpErrorInfo(e));
-  }
-}
 
 function repairPhoneMessageByMesId(targetMesId) {
   if (!isMochiPhoneEnabled()) return false;
@@ -10600,7 +10334,7 @@ function showAddChoice() {
   rpSetSurfaceOpen('#rp-add-choice',true);
 }
 
-function hideAddChoice() { rpSetSurfaceOpen('#rp-add-choice',false,{remove:true}); }
+
 
 function showGroupPicker() {
   rpSetSurfaceOpen('#rp-grp-create',false,{remove:true,immediate:true});
@@ -11242,29 +10976,22 @@ const rpArtImageCache = new Map();
 const rpArtFolderFallbacks = new Map();
 let rpArtPaintEpoch = 0;
 
-function rpArtAtlasUrl(theme, kind, local = false) {
-  if (!['candy','star','misty'].includes(theme) || !['home','games','theatre'].includes(kind)) return '';
-  if (kind === 'theatre') { const name=`mochi-phone-theatre-${theme}-icon-20261023-v121.png`;return local ? new URL(`scripts/extensions/third-party/mochi-phone/theatre-art-20261023/${name}`,document.baseURI).href : `https://preview.taliatang1.xyz/assets/${name}`; }
-  const name = `mochi-phone-${theme}-${kind}-20261013.png`;
-  return local ? new URL(`scripts/extensions/third-party/mochi-phone/icons-20261013/${name}`, document.baseURI).href
-    : `https://preview.taliatang1.xyz/assets/${name}`;
+function rpArtAtlasSources(theme, kind) {
+  if (!['candy','star','misty'].includes(theme) || !['home','games','theatre'].includes(kind)) return [];
+  const path = kind === 'theatre' ? 'theatre-art-20261023/mochi-phone-theatre-'+theme+'-icon-20261023-v121.png' : 'icons-20261013/mochi-phone-'+theme+'-'+kind+'-20261013.png';
+  return productArtworkSources(path,document.baseURI);
 }
+function rpArtAtlasUrl(theme, kind, local = false) { return rpArtAtlasSources(theme,kind)[local?2:0] || ''; }
 
 // One bounded cache entry per theme/group. Loading never blocks navigation.
 function rpLoadArtAtlas(theme, kind) {
-  const key = `${theme}:${kind}`;
+  const sources = rpArtAtlasSources(theme,kind);
+  if (!sources.length) return Promise.resolve(null);
+  const key = theme+':'+kind;
   if (rpArtImageCache.has(key)) return rpArtImageCache.get(key);
   const promise = new Promise(resolve => {
-    const image = new Image();
-    let usingLocal = false;
-    image.referrerPolicy = 'no-referrer';
-    const finish = value => { image.onload = null; image.onerror = null; resolve(value); };
-    image.onload = () => finish({src:image.src,width:image.naturalWidth,height:image.naturalHeight});
-    image.onerror = () => {
-      if (!usingLocal) { usingLocal = true; image.src = rpArtAtlasUrl(theme,kind,true); }
-      else finish(null);
-    };
-    image.src = rpArtAtlasUrl(theme,kind);
+    const image = new Image(); image.referrerPolicy = 'no-referrer';
+    loadArtwork(image,sources,{loaded:()=>resolve({src:image.src,width:image.naturalWidth,height:image.naturalHeight}),failed:()=>resolve(null)});
   });
   rpArtImageCache.set(key,promise);
   promise.then(value => { if (!value && rpArtImageCache.get(key) === promise) rpArtImageCache.delete(key); });
@@ -12529,74 +12256,7 @@ async function charRespondToUserMoment(momentId) {
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
 
-async function momentAISocial(targetMomentId) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
 
-  const moments = STATE.moments || [];
-  if (moments.length === 0) return;
-  const { charName, npcs, charPersona, npcPersonaMap, recentChat } = await rpGuardAwait(getMomentsCtx(), rpTask);
-  const allChars = [charName, ...npcs];
-  if (allChars.length === 0) return;
-  const targets = targetMomentId
-    ? moments.filter(m => m.id === targetMomentId)
-    : moments.slice(-6);
-  if (targets.length === 0) return;
-  const sourceKeys = new Map(targets.map(m => [m, rpSocialSourceKey(m)]));
-  const momentsSummary = targets.map(m =>
-    'ID="' + m.id + '" 作者="' + m.name + '" 内容="' + m.text.slice(0, 150) + '"'
-  ).join('\n');
-  const charList2 = allChars.join('、');
-  const npcPersonaText2 = npcs
-    .map(n => {
-      const p = npcPersonaMap?.[normNameKey(n)] || '';
-      return p ? ('- ' + n + ':' + p.replace(/\n/g, ';')) : '';
-    })
-    .filter(Boolean)
-    .join('\n');
-  const recentChatSnippet = recentChat ? recentChat.slice(-400) : '';
-  const sysMsg2 = '你是角色扮演社交媒体互动模拟器。\n'
-    + '主角 ' + charName + ' 人设(含英文名/别名):' + (charPersona ? charPersona.slice(0, 500) : '(根据动态推断)') + '\n'
-    + '其他角色:' + (npcs.join('、') || '无') + (npcPersonaText2 ? ('\nNPC人设卡(优先):\n' + npcPersonaText2) : '') + '\n'
-    + (recentChatSnippet ? ('近期剧情背景(帮助理解动态语境):\n' + recentChatSnippet + '\n') : '')
-    + '规则:\n'
-    + '1. 互动语气必须符合各角色性格;角色不能与自己的动态互动。\n'
-    + '2. 【自我认知规则】只有以下情况才以第一人称当事人身份回应:'
-    + '1动态里直接出现我的名字(' + charName + ')、英文名、或对我的称谓(爸爸/父亲/先生/Theodore);'
-    + '2动态明确描述发生在我身上的事("我爸""我父亲""沈先生做了")。'
-    + '其他情况一律以旁观者/朋友角色评论,不要把别人之间的事当成在说我。'
-    + '例:user说"julian叔叔告密了"→ char以父亲视角评论julian行为,不要当成在说自己。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
-  const prompt2 = '朋友圈动态列表:\n' + momentsSummary + '\n\n只为以下角色生成2-4条社交互动(like/comment),禁止使用列表外的名字:' + charList2 + '\n格式:只返回JSON数组 [{"type":"like","from":"角色名","momentId":"完整ID"},{...}],from字段必须严格使用上方列表中的名字,momentId必须与上方完全一致。';
-  const resp = await rpGuardAwait(rpCallSocialAPI(prompt2, 400, sysMsg2, rpTask), rpTask);
-  if (!resp) return;
-  const allowedFromSet = new Set(allChars.map(n => normNameKey(n)));
-  try {
-    const jsonStr2 = resp.match(/\[[\s\S]*\]/)?.[0];
-    if (!jsonStr2) return;
-    const actions = JSON.parse(jsonStr2);
-    const ts = resolvePhoneTime();
-    actions.slice(0, 6).forEach(a => {
-      if (!a.from || !a.momentId) return;
-      const fromKey = normNameKey(a.from);
-      const isAllowed = allowedFromSet.has(fromKey)
-        || [...allowedFromSet].some(k => k.startsWith(fromKey) || fromKey.startsWith(k));
-      if (!isAllowed) return;
-      const m = targets.find(mo => mo.id === a.momentId);
-      if (!m || !(STATE.moments || []).includes(m) || rpSocialSourceKey(m) !== sourceKeys.get(m) || m.name === a.from) return;
-      if (a.type === 'like') {
-        if (!m.likes.includes(a.from)) m.likes.push(a.from);
-      } else if (a.type === 'comment' && a.text) {
-        incomingComment(m.id, a.from.trim(), ts, a.text.trim(), null);
-      }
-    });
-    if (STATE.currentView === 'moments') renderMoments();
-    saveState();
-  } catch(e) {
-    if (!rpTask.valid()) return;
- console.warn('[Moments] momentAISocial error:', rpErrorInfo(e)); }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
-}
 
 
 async function generateAIReply(momentId, userCommentText, fromName, opts) {
@@ -14768,20 +14428,7 @@ function gameSavePartnerFromModal() {
   rpResumeGameAnimations(); saveState();
 }
 
-function gameExtractPartnerText(src, names, limit) {
-  src = String(src || '').trim();
-  if (!src) return '';
-  names = (names || []).map(function(n){ return String(n || '').trim().toLowerCase(); }).filter(Boolean);
-  if (!names.length) return src.slice(0, limit || 600);
-  var chunks = src.split(/\n{2,}|(?<=。)|(?<=！)|(?<=？)|(?<=\.)/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 6; });
-  var picked = chunks.filter(function(seg) {
-    var sl = seg.toLowerCase();
-    return names.some(function(n){ return sl.includes(n); });
-  }).join('\n').trim();
-  if (!picked) return '';
-  limit = limit || 900;
-  return picked.length > limit ? picked.slice(0, limit) : picked;
-}
+
 
 // ── Clean persona for 2048 (strip system directives) ──────────────
 function g2048GetPersona(partnerName) {
@@ -16081,10 +15728,7 @@ function gwordBindEvents() {
   $(document).on("click.mochiPhone", '#gword-chat-fs-close', function() { rpSetSurfaceOpen('#gword-chat-fs',false); });
 }
 
-function ggoldInit() {
-  if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = true; }
-  ggoldOpen();
-}
+
 
 function gmCanReachItem(item, angle) {
   const dx=item.x-GM_ANCHOR_X,dy=item.y-GM_ANCHOR_Y;
@@ -17693,98 +17337,7 @@ function cleanGameReply(raw, charName, allowActions = false) {
 }
 
 // ── Extract compact persona snippet from current ST character ─────────────────
-function lgGetPersona() {
-  try {
-    // Try multiple ways to get context
-    const ctx = getContext?.() || window.SillyTavern?.getContext?.() || {};
 
-    // Try to get character from multiple sources
-    let char = null;
-    if (ctx.characters && ctx.characterId !== undefined) {
-      char = ctx.characters[ctx.characterId];
-    }
-    // Fallback: try global this_chid
-    if (!char && window.this_chid != null && window.characters) {
-      char = window.characters[window.this_chid];
-    }
-
-    if (!char) {
-      console.warn('[Ludo] No character data found');
-      return '';
-    }
-
-    const parts = [];
-    // 提取所有名字变体(支持 YAML 多语言、description 里的别名)
-    const nameInfo = _extractCharNames(ctx, char);
-    const charName = nameInfo.primary;
-    if (nameInfo.allNames.length > 1) {
-      parts.push('角色名:' + nameInfo.primary + '(别名:' + nameInfo.aliases.join('/') + ',用户可能用任意名字称呼你)');
-    } else if (charName) {
-      parts.push('角色名:' + charName);
-    }
-    const personality = (char.personality || '').replace(/\s+/g, ' ').trim();
-    if (personality) parts.push('性格:' + personality);
-    const description = (char.description || '').replace(/\s+/g, ' ').trim();
-    if (description) {
-      // description 可能前半段全是外貌，后半段才是性格/关系
-      // 策略：取完整 description 前1200字，让模型自己识别性格部分
-      parts.push('人设:' + description.substring(0, 1200));
-    }
-    const scenario = (char.scenario || '').replace(/\s+/g, ' ').trim();
-    if (scenario) parts.push('场景背景:' + scenario.substring(0, 300));
-    const example = (char.mes_example || char.first_mes || '').replace(/\s+/g, ' ').trim();
-    // 过滤纯触发词/标签内容(如「ABOUTME」「introduce」),只在有实质对话内容时才加入
-    const exampleClean = example.replace(/「[A-Z_a-z]+」/g, '').replace(/\s+/g, ' ').trim();
-    if (exampleClean.length > 20) parts.push('说话语气示例:' + exampleClean.substring(0, 150));
-    // World Info(已激活词条 + 全量扫描,取与角色相关部分)
-    const wiText = _collectWorldInfoText(charName);
-    if (wiText) parts.push('世界设定补充:\n' + wiText);
-
-    // 追加正文近期对话(帮助 char 感知与 user 的关系/语境)
-    const _extractMes = function(m, fallbackName) {
-      const mes = (m.mes || '').trim();
-      if (!mes) return null;
-      const speaker = m.is_user ? (ctx.name1 || '用户') : (charName || ctx.name2 || fallbackName || 'char');
-      if (mes.startsWith(':::') || /<(PHONE|SMS|NEWSPAPER|STATUS)[^>]*>/i.test(mes)) {
-        if (m.is_user) return null;
-        return `${speaker}: [以叙事方式回应]`;
-      }
-      if (/^\[.*\]$/.test(mes)) return null;
-      const quoteMatch = mes.match(/[\u300c\u201c"](.*?)[\u300d\u201d"]/);
-      if (quoteMatch) return `${speaker}: ${quoteMatch[1].slice(0, 60)}`;
-      const cleaned = mes.replace(/\*[^*]+\*/g, '').replace(/\s+/g, ' ').trim();
-      if (cleaned.length < 2) return null;
-      return `${speaker}: ${cleaned.slice(0, 80)}`;
-    };
-    const chatArr = ctx.chat || ctx.messages || [];
-    const recentLines = chatArr.slice(-20)
-      .map(m => _extractMes(m, charName))
-      .filter(Boolean)
-      .slice(-6);
-    if (recentLines.length > 0) {
-      parts.push('近期正文对话(用于判断与用户的关系/语境,勿直接复述):\n' + recentLines.join('\n'));
-    }
-
-    const src = parts.filter(Boolean).join('\n').trim();
-    if (!src) return '';
-
-    // 过滤系统指令行(避免字符类误匹配正常人设内容)
-    const filtered = src.split('\n').filter(l => {
-      const s = l.trim();
-      if (!s) return false;
-      if (s.includes('权限::') || s.includes('指令::') || s.includes('系统::')) return false;
-      if (/互动权限|互动指令/.test(s)) return false;
-      if (/开启共演|开启扮演|开启示例/.test(s)) return false;
-      return true;
-    }).join('\n');
-
-    const header = '【严格扮演以下角色本人,只体现该角色自身的性格特征,不得受描述中其他人物性格影响,不得OOC。无论用户用哪个名字称呼你都要回应】';
-    return filtered.trim() ? `${header}\n${filtered.trim()}` : '';
-  } catch(e) {
-    console.error('[Ludo] lgGetPersona error:', rpErrorInfo(e));
-    return '';
-  }
-}
 // Style pools for different character personalities
 // Fallback pools removed - API failure surfaces as empty message so issues are visible.
 
@@ -18322,10 +17875,7 @@ async function lgTriggerSquareEvent(player, pos, _depth) {
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; } finally { if (rpTask.valid()) { if (!LG.taskBusy) { LG.taskActive=null; LG.taskStage=null; } saveState(); } }
 }
 
-function lgCharComment(event) {
-  if ((!LG.active && !String(event).endsWith('_win')) || LG.taskBusy || LG.justDidTask || (LG.lastTaskTime && Date.now()-LG.lastTaskTime<2000)) return;
-  void rpGameComment('ludo', event === 'game_start' ? '本局刚开始' : `${String(event).endsWith('_char') ? LG.charName : '用户'}掷出${LG.lastDice}点`);
-}
+
 
 async function lgGameChat(text) { await rpSendGameChat('ludo',text); }
 

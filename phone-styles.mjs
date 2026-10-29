@@ -1886,8 +1886,6 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-star .rp-blocklist-tag { background: rgba(239,68,68,.18) !important; color: #fca5a5 !important; }
 #rp-phone.rp-theme-star .rp-blocklist-tag .rp-block-x { color: #fca5a5 !important; }
 #rp-phone.rp-theme-star #rp-block-input { background: rgba(60,30,120,.5) !important; color: #d4c8ff !important; border-color: rgba(130,90,255,.35) !important; }
-  font-size: 13.5px !important;
-}
 #rp-phone.rp-theme-misty .rp-avatar-upload-btn,
 #rp-phone.rp-theme-misty #rp-wall-upload,
 #rp-phone.rp-theme-misty #rp-wall-reset {

@@ -1,3 +1,4 @@
+import { loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 // Sudoku answers are calculated locally; roleplay never supplies puzzle answers.
 export const SUDOKU_LEVELS=['easy','standard','challenge'];
 const N=81,FULL=511,uid=()=>globalThis.crypto?.randomUUID?.()||'sdk_'+Date.now()+'_'+Math.random().toString(36).slice(2,10);
@@ -138,10 +139,10 @@ export function createSudoku(api){
  function refreshIcon(theme=api.iconTheme?.()){
   const icon=doc.querySelector('#rp-folder-modal [data-folder-app="sudoku"] .rp-folder-item-ico');if(!icon||!api.iconSource)return;
   const src=api.iconSource(theme,false),local=api.iconSource(theme,true);if(icon.dataset.sdkIconUrl===src&&icon.querySelector('img'))return;
-  const img=node('img','sdk-folder-image');img.alt='';img.setAttribute('aria-hidden','true');img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.style.cssText='width:100%;height:100%;object-fit:contain';let usingLocal=false;
+  const img=node('img','sdk-folder-image');img.alt='';img.setAttribute('aria-hidden','true');img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.style.cssText='width:100%;height:100%;object-fit:contain';
   icon.dataset.sdkIconUrl=src;icon.dataset.sdkIconTheme=['candy','star','misty'].includes(theme)?theme:'custom';
-  img.onerror=()=>{if(!img.isConnected||icon.dataset.sdkIconUrl!==src)return;if(!usingLocal){usingLocal=true;img.src=local;}else{icon.textContent='▦';delete icon.dataset.sdkIconUrl;}};
-  icon.replaceChildren(img);img.src=src;
+  icon.replaceChildren(img);
+loadArtwork(img,api.iconSources?.(theme)||[src,local],{valid:()=>img.isConnected&&icon.dataset.sdkIconUrl===src,failed:()=>{icon.textContent='▦';delete icon.dataset.sdkIconUrl;}});
  }
  function save(){const r=data().round;if(r&&sudokuProgress(r).complete)api.endStats?.('win',r);api.save();}
  function rules(){const body=node('div');for(const t of ['所有格子都由你填写。每行、每列、每个3×3宫都应包含1至9，不能重复。题目有且只有一个解。','点格子，再用下方数字键填写；电脑可按1至9，方向键移动，退格/Delete擦除。原有题目数字不能改。笔记模式可记录候选数字；撤销保留最近100步。','求助会由本地解题程序填对一格，不消耗API。若已有填错格，优先修正所选错误格或第一处错误；否则优先所选空格。搭子不会轮流落笔，求助不会替你填完整盘。','三个档位按题面保留的数字数量区分，不是严格的解题技巧评级。点击检查会标出与唯一解不符的已填数字。','局面随当前聊天的小手机存档保存。换聊天各自保留，刷新后可继续；备份恢复只补充缺失的数独局面，不覆盖当前题目。'])body.append(node('p','',t));api.dialog('数独玩法',body,[{label:'知道了'}]);}

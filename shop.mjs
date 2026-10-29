@@ -1,3 +1,4 @@
+import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 import {INGREDIENTS,RECIPES,EQUIPMENT,DECOR,REGULARS,capacity,stockLimit,money,profit,priceRange} from './shop-engine.mjs?v=20261019-shop-multicard-68';
 import {createShopClient} from './shop-client.mjs?v=20261019-shop-multicard-68';
 import {shopPrompt} from './shop-dialogue.mjs?v=20261019-shop-multicard-68';
@@ -125,12 +126,12 @@ export function createShop(api){
   const disabled=()=>loading||client.busy||!client.writable||client.uncertain;
   function setNotice(text){notice=text;status&&(status.textContent=text);const inline=root?.querySelector('.shop-read-status');if(inline&&!selection)inline.textContent=text;}
   function cancel(){generation++;controller?.abort();controller=null;aiBusy=false;}
-  function asset(theme,hero=false,local=false){const file='mochi-phone-shop-'+(hero?'hero':['candy','star','misty'].includes(theme)?theme:'misty')+'-20261018.png';return local?new URL('scripts/extensions/third-party/mochi-phone/shop-art-20261018/'+file,doc.baseURI).href:'https://preview.taliatang1.xyz/assets/'+file;}
+  function asset(theme,hero=false){const file='mochi-phone-shop-'+(hero?'hero':['candy','star','misty'].includes(theme)?theme:'misty')+'-20261018.png';return productArtworkSources('shop-art-20261018/'+file,doc.baseURI);}
   function image(hero=false){
     const theme=api.iconTheme(),img=node('img',hero?'shop-art':'rp-shop-folder-icon');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';
     if(!hero){img.width=58;img.height=58;img.loading='lazy';img.style.cssText='display:block;position:static;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;flex:0 0 auto';}
-    let local=false;img.onerror=()=>{if(!img.isConnected)return;if(!local){local=true;img.src=asset(theme,hero,true);}else{img.onerror=null;if(hero)img.hidden=true;else img.replaceWith(node('span','rp-shop-folder-fallback','☕'));}};
-    img.src=asset(theme,hero);return img;
+    loadArtwork(img,asset(theme,hero),{valid:()=>img.isConnected,failed:()=>{if(hero)img.hidden=true;else img.replaceWith(node('span','rp-shop-folder-fallback','☕'));}});
+    return img;
   }
   function refreshIcon(){const target=doc.querySelector('#rp-folder-modal [data-folder-app="shop"] .rp-folder-item-ico');if(!target)return;target.replaceChildren(image());}
   function mount(){

@@ -1,3 +1,4 @@
+import { loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 // Moonlit Gomoku: deterministic rules/strategy are independent of roleplay generation.
 export const GOMOKU_SIZE = 15;
 const TOTAL = GOMOKU_SIZE * GOMOKU_SIZE;
@@ -188,10 +189,10 @@ export function createGomoku(api) {
     const icon=doc.querySelector('#rp-folder-modal [data-folder-app="gomoku"] .rp-folder-item-ico');if(!icon)return;
     const src=api.iconSource?.(theme,false)||api.iconURL,local=api.iconSource?.(theme,true)||api.iconLocalURL;
     if(icon.dataset.gmkIconUrl===src&&icon.querySelector('img'))return;
-    const img=node('img');img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.style.cssText='width:100%;height:100%;object-fit:contain';let usingLocal=false;
+    const img=node('img');img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.style.cssText='width:100%;height:100%;object-fit:contain';
     icon.dataset.gmkIconUrl=src;icon.dataset.gmkIconTheme=['candy','star','misty'].includes(theme)?theme:'custom';
-    img.onerror=()=>{if(!img.isConnected||icon.dataset.gmkIconUrl!==src)return;if(!usingLocal){usingLocal=true;img.src=local;}else{icon.textContent='●○';delete icon.dataset.gmkIconUrl;}};
-    icon.replaceChildren(img);img.src=src;
+    icon.replaceChildren(img);
+loadArtwork(img,api.iconSources?.(theme)||[src,local],{valid:()=>img.isConnected&&icon.dataset.gmkIconUrl===src,failed:()=>{icon.textContent='●○';delete icon.dataset.gmkIconUrl;}});
   }
   function nav(){const n=node('div','gmk-nav'),back=button('‹','gmk-back',()=>{if(data().screen==='chat'){data().screen='play';render();resume();}else if(data().screen==='play'){pause();data().screen='home';save();render();}else api.navigate('home');});back.setAttribute('aria-label','返回');back.id='gmk-back';n.classList.add('rp-game-nav');const actions=node('div','rp-game-nav-actions'),stats=button('统计','rp-stat-button',()=>api.statistics?.());stats.setAttribute('aria-label','五子棋游戏统计');actions.append(button('规则','gmk-rules',rules),stats);n.append(back,node('span','gmk-nav-title',data().screen==='chat'?'对弈闲聊':'五子棋'),actions);return n;}
   function home(){const h=node('div','gmk-home'),inner=node('div','gmk-home-inner'),decor=node('div','gmk-decor');decor.setAttribute('aria-hidden','true');decor.append(node('div','gmk-moon'),node('div','gmk-decor-grid'),node('div','gmk-arc'));for(const[x,y,white]of [[95,105,0],[165,140,1],[130,175,0],[60,210,1],[25,245,1],[165,245,0]]){const s=node('i','gmk-decor-stone'+(white?' white':''));s.style.left=x+'px';s.style.top=y+'px';decor.append(s);}
