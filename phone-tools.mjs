@@ -1,4 +1,4 @@
-import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261024-theatre-reader-132';
+import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261029-optimization-173';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
 '#rp-phone #rp-screen #rp-lock-notifs{box-sizing:border-box;min-width:0;min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:70px}',
@@ -511,7 +511,7 @@ export function createPhoneTools(api) {
   async function readVerified(key) {
     let local=null,archived=null;
     try{const raw=api.storage.getItem(key);if(raw)local=JSON.parse(raw);}catch(_){}
-    try{archived=await api.archive().get(key);}catch(_){}
+    try{const archive=api.archive();if(!local||local.key)archived=await(archive.read?archive.read(key):archive.get(key));}catch(_){}
     if(local?.key&&archived?.key)return Number(archived.at||0)>Number(local.at||0)?archived:local;
     return local||archived;
   }
@@ -543,7 +543,10 @@ export function createPhoneTools(api) {
     let running=false;
     api.dialog('恢复预览',content,[{label:'取消'},{label:'合并恢复',primary:true,run:()=>{if(running)return false;running=true;status.text('正在备份并校验…');void restoreBackup(backup,origin,token).then(ok=>{if(ok)api.closeDialog();else if(token.valid()){running=false;status.text('未合并，请检查提示或重新选择备份。');}}).catch(()=>{if(token.valid()){running=false;status.text('恢复未完成，原存档与自动备份仍保留。');}});return false;}}]);
   }
-  function openBackup() {
+  async function openBackup() {
+    const opening=api.runtime().task(),account=api.account(),slot=state().chatId;
+    await api.prepareSaveConflicts?.();
+    if(!opening.valid()||account!==api.account()||slot!==state().chatId)return;
     const task=api.runtime().task(),content=node('div'),status=node('p','rp-feature-note','仅当前账号、当前聊天的小手机记录；不包含API密钥，不修改酒馆主楼。导入上限64MB。');
     const token={valid:()=>task.valid()&&!!content[0]?.isConnected};
     const file=node('input').attr({type:'file',accept:'.json,application/json',id:'rp-phone-backup-file'}).hide();

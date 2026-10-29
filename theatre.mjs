@@ -343,6 +343,22 @@ export function createTheatre(h){
  const doc=h.document,by=id=>doc.getElementById(id),family=v=>String(v).startsWith('theatre');
  let job=null,filter=false,status='',bound=false,sequence=0,drag=null,readController=null,readPending=false,readSequence=0;
  const projections=new Map();
+ let readingSave=null,readingTimer=null;
+ const readingOwner=()=>h.readingOwner?.()||h.owner();
+ function flushReading(){
+  if(readingTimer!==null){doc.defaultView.clearTimeout(readingTimer);readingTimer=null;}
+  const pending=readingSave;readingSave=null;if(!pending||pending.owner!==readingOwner())return;
+  const entry=h.shelf?.read?.(pending.ref)||entries().find(e=>e.slot===pending.ref.slot&&e.id===pending.ref.id);
+  if(!entry||entry.story.readingTop===pending.top)return;
+  change(entry,slot=>{const story=slot.stories.find(s=>s?.id===pending.ref.id);if(story)story.readingTop=pending.top;});
+ }
+ function queueReading(){
+  const entry=selection();if(readPending||!entry)return;
+  const top=Math.max(0,Number(by('rp-theatre-reader').scrollTop)||0);
+  readingSave={owner:readingOwner(),ref:{slot:entry.slot,id:entry.id},top};
+  if(readingTimer===null)readingTimer=doc.defaultView.setTimeout(()=>{readingTimer=null;flushReading();},300);
+ }
+
  const data=()=>h.state().theatre;
  const stories=()=>Array.isArray(data()?.stories)?data().stories.filter(x=>x&&typeof x.id==='string'&&typeof x.body==='string'):[];
  const localEntry=s=>({slot:h.shelf?.slot?.()||'',id:s.id,story:s,charName:s.charName||h.shelf?.charName?.()||'未记录角色',key:JSON.stringify([h.shelf?.slot?.()||'',s.id])});
@@ -388,7 +404,7 @@ export function createTheatre(h){
   doc.querySelectorAll('[data-theatre-mode]').forEach(b=>b.disabled=!!job);
   doc.querySelectorAll('#rp-view-theatre-write input,#rp-view-theatre-write textarea,#rp-view-theatre-write select').forEach(x=>x.disabled=!!job);
  }
- function stopReading(){readSequence++;readController?.abort();readController=null;readPending=false;}
+ function stopReading(){flushReading();readSequence++;readController?.abort();readController=null;readPending=false;}
  function outputProfile(snapshot={},charName=''){try{return h.outputProfile?.(snapshot,charName)||{scripts:[]};}catch{return{scripts:[]};}}
  function cleanText(text,profile,signal){
   if(!h.cleanOutput)return{text};
@@ -625,7 +641,9 @@ export function createTheatre(h){
    });
   }
   for(const type of['input','change'])h.listen(by('rp-view-theatre-write'),type,e=>{if(e.target.matches('input,textarea,select'))draft();});
-  h.listen(by('rp-theatre-reader'),'scroll',()=>{if(!readPending&&selected())editSelected({readingTop:by('rp-theatre-reader').scrollTop});},{passive:true});
+  h.listen(by('rp-theatre-reader'),'scroll',queueReading,{passive:true});
+  h.listen(doc.defaultView,'pagehide',flushReading,true);
+  h.listen(doc,'visibilitychange',()=>{if(doc.visibilityState==='hidden')flushReading();},true);
   h.listen(by('rp-theatre-sort'),'change',e=>{finishDrag(false);const prefs=preferences(),next=e.target.value;if(next==='custom'&&!prefs.order.length)prefs.order=ordered(entries(),prefs).map(e=>e.key);if(savePreferences({...prefs,sort:next}))library();else e.target.value=prefs.sort;});
   const books=by('rp-theatre-books');h.listen(books,'pointerdown',startDrag);
   h.listen(doc,'pointermove',moveDrag,{passive:false});
@@ -642,7 +660,7 @@ export function createTheatre(h){
   if(!family(view)){cancel('');status='';return;}
   mount();if(view==='theatre')library();if(view==='theatre-write')fields();if(view==='theatre-read')reader();say(status);busyUI();
  }
- return{mount,onNavigate,cancel,reset:()=>{stopReading();projections.clear();finishDrag(false);cancel('');closeMenu();status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
+ return{mount,onNavigate,cancel,flushReading,reset:()=>{stopReading();projections.clear();finishDrag(false);cancel('');closeMenu();status='';filter=false;},busy:()=>!!job,generate,reader,library,draw};
 }
 
 export function validateTheatreArchive(value){
