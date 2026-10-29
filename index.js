@@ -9663,6 +9663,7 @@ const HTML = `
 //  INIT
 // ================================================================
 async function init() {
+  installPhoneCleanupSourceMarkers();
   if (rpInitialized && document.getElementById('rp-wrapper')) return;
   if (rpInitPromise) return rpInitPromise;
   if (rpInitialized) { rpRuntime.destroy(); rpInitialized = false; }
@@ -14909,6 +14910,71 @@ function cleanupRenderedPhoneEchoResiduals(textEl, rawSource) {
 
 // Empty native image spans and their wrappers remain asynchronous mount targets.
 
+// Annotate PHONE while the native HTML still has its protocol tags. DOMPurify keeps
+// only this inert data attribute; the raw chat and other formatters are untouched.
+function installPhoneCleanupSourceMarkers() {
+  try {
+    const formatter=getContext()?.messageFormatter;
+    if(!formatter?.addHook||!formatter.stage?.AFTER_MARKDOWN)return false;
+    const installed=installPhoneCleanupSourceMarkers.formatters ||= new WeakSet();
+    if(installed.has(formatter))return true;
+    formatter.addHook(markPhoneCleanupSourceHtml,{stage:formatter.stage.AFTER_MARKDOWN,order:formatter.order?.LATEST??100});
+    installed.add(formatter);return true;
+  } catch { return false; }
+}
+
+function markPhoneCleanupSourceHtml(html, meta = {}) {
+  try {
+    if(typeof html!=='string'||meta.isUser||meta.isSystem||meta.isReasoning||!/^\d+$/.test(String(meta.messageId??''))||!isMochiPhoneEnabled())return html;
+    if(typeof rpRuntime!=='undefined'&&(rpRuntime.stats().destroyed||window.__mochiPhoneRuntime&&window.__mochiPhoneRuntime!==rpRuntime))return html;
+    const message=getContext()?.chat?.[Number(meta.messageId)],raw=message?.mes;
+    if(!message||message.is_user||typeof raw!=='string'||raw.length>200000)return html;
+    const normalized=normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi,''));
+    if(hasUnclosedPhonePairedTag(normalized)||!hasBarePhoneTagsIn(normalized))return html;
+    const records=installPhoneCleanupSourceMarkers.records ||= new WeakMap();
+    let record=records.get(message);
+    if(!record||record.raw!==raw){record={raw,token:'mp-'+(window.crypto?.randomUUID?.()||Math.random().toString(36).slice(2))};records.set(message,record);}
+    const codeRanges=Array.from(html.matchAll(/<(pre|code|script|style|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>/gi),m=>[m.index,m.index+m[0].length]);
+    const available=new Map();
+    const sourceParts=phoneCleanupSourceParts(normalized).filter(p=>p.phone);
+    for(const p of sourceParts){const tag=p.text.match(/^<([a-z]+)\b/i)?.[1]?.toUpperCase();if(tag)available.set(tag,(available.get(tag)||0)+1);}
+    const tags=/<PHONE\b[^>]*>[\s\S]*?<\/PHONE\s*>|<(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?>|&lt;PHONE\b[\s\S]*?&lt;\/PHONE\s*&gt;|&lt;(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[\s\S]*?&lt;\/\2\s*&gt;|&lt;(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b(?:(?!&gt;)[\s\S])*?&gt;/gi;
+    return html.replace(tags,(match,_a,_b,offset)=>{
+      if(codeRanges.some(([a,b])=>offset>=a&&offset<b))return match;
+      const tag=normalizePhoneMarkup(match).match(/^<([a-z]+)\b/i)?.[1]?.toUpperCase(),left=available.get(tag)||0;
+      if(!left)return match;
+      available.set(tag,left-1);
+      return '<div data-rp-phone-source="'+record.token+'">'+match+'</div>';
+    });
+  } catch { return html; }
+}
+
+function isPhoneCleanupSourceMarker(el, root, raw) {
+  if(!el?.matches?.('[data-rp-phone-source]')||!root?.contains(el))return false;
+  const mes=root.closest?.('.mes'),id=mes?.getAttribute('mesid');
+  if(!/^\d+$/.test(id||'')||!phoneCleanupSourceMatches(root,raw))return false;
+  const message=getContext()?.chat?.[Number(id)],record=message&&installPhoneCleanupSourceMarkers.records?.get(message);
+  return !!record&&record.raw===message.mes&&el.dataset.rpPhoneSource===record.token;
+}
+
+function removePhoneSourceMarkedResidue(el) {
+  // Clear only text proven to originate inside PHONE. Keep image/mount/control nodes,
+  // their original ancestors and listeners, including still-empty async mount spans.
+  const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),textNodes=[];
+  while(walker.nextNode())textNodes.push(walker.currentNode);
+  for(const node of textNodes){
+    if(isPhoneCleanupProtectedNode(node)||node.parentElement?.closest('img,video,audio,button,iframe,canvas,svg,input,select,textarea'))continue;
+    node.nodeValue='';
+  }
+  for(const node of Array.from(el.querySelectorAll('*')).reverse()){
+    if(isPhoneCleanupProtectedNode(node)||hasPhoneCleanupMedia(node)||node.matches('input,select,textarea,form'))continue;
+    if(/^(PHONE|SMS|SYNC|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|CALL|VOICE|HONGBAO|MOMENTS|COMMENT|MOCHILOCATION|MOCHILOC)$/.test(node.tagName))node.replaceWith(...Array.from(node.childNodes));
+    else if(/^(P|DIV|SPAN|BR|HR|EM|STRONG|B|I|U|S|DEL|SMALL|MARK|Q|BLOCKQUOTE|UL|OL|LI|A)$/.test(node.tagName)&&!node.textContent.trim()&&!node.querySelector('input,select,textarea,form'))node.remove();
+  }
+  el.replaceWith(...Array.from(el.childNodes));
+}
+
+
 function phoneCleanupSourceMatches(root, raw) {
   const mes=root?.closest?.('.mes');if(!mes)return true;
   const id=mes.getAttribute('mesid');if(!/^\d+$/.test(id||''))return false;
@@ -14924,6 +14990,10 @@ function isPhoneCleanupForeignNode(node, root) {
   const plain = /^(P|DIV|SPAN|BR|HR|EM|STRONG|B|I|U|S|DEL|SMALL|MARK|Q|BLOCKQUOTE|UL|OL|LI|A|PHONE|SMS|SYNC|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|CALL|VOICE|HONGBAO|MOMENTS|COMMENT|MOCHILOCATION|MOCHILOC)$/;
   const protocol = /^(PHONE|SMS|SYNC|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|CALL|VOICE|HONGBAO|MOMENTS|COMMENT|MOCHILOCATION|MOCHILOC)$/;
   for (; el && el !== root; el = el.parentElement) {
+    if(el.hasAttribute('data-rp-phone-source')){
+      const id=root?.closest?.('.mes')?.getAttribute('mesid'),raw=/^\d+$/.test(id||'')?getContext()?.chat?.[Number(id)]?.mes:null;
+      if(typeof raw!=='string'||!isPhoneCleanupSourceMarker(el,root,raw))return true;
+    }
     if (isPhoneCleanupProtectedNode(el) || !plain.test(el.tagName || '')) return true;
     if (!protocol.test(el.tagName || '') && Array.from(el.attributes || []).some(a => /^(?:id|class|style|role|on\w+|data-.+)$/.test(a.name)&&!/^data-rp-/.test(a.name))) return true;
   }
@@ -15067,14 +15137,18 @@ function createPhoneCleanupScope(root, raw) {
       }
     }
   }
-  function protocolNodes(){if(!phoneCleanupSourceMatches(root,raw))return [];return Array.from(root.querySelectorAll('phone,sms,sync,gmsg,gvoice,ghongbao,simg,notify,call,voice,hongbao,moments,comment,mochilocation,mochiloc')).filter(el=>protocolTags.has(el.tagName)&&!isPhoneCleanupForeignNode(el,root));}
+  function protocolNodes(){
+    if(!phoneCleanupSourceMatches(root,raw))return [];
+    const marked=Array.from(root.querySelectorAll('[data-rp-phone-source]')).filter(el=>isPhoneCleanupSourceMarker(el,root,raw));
+    return marked.concat(Array.from(root.querySelectorAll('phone,sms,sync,gmsg,gvoice,ghongbao,simg,notify,call,voice,hongbao,moments,comment,mochilocation,mochiloc')).filter(el=>!marked.some(m=>m.contains(el))&&protocolTags.has(el.tagName)&&!isPhoneCleanupForeignNode(el,root)));
+  }
   function prune(node){
     let el=node.parentElement;
     while(el&&el!==root&&!isPhoneCleanupForeignNode(el,root)&&!hasPhoneCleanupMedia(el)&&!Array.from(el.querySelectorAll('*')).some(child=>isPhoneCleanupForeignNode(child,root))&&!String(el.textContent||'').trim()){
       const parent=el.parentElement;el.remove();el=parent;
     }
   }
-  const scope={root,sourceParts:records.length,aligned,ambiguous:!aligned,valid:el=>el===root&&phoneCleanupSourceMatches(root,raw),
+  const scope={root,raw,sourceParts:records.length,aligned,ambiguous:!aligned,valid:el=>el===root&&phoneCleanupSourceMatches(root,raw),
     protocolNodes,
     has:kind=>phoneCleanupSourceMatches(root,raw)&&segments.some(s=>root.contains(s.node)&&s.ranges.some(r=>(!kind||r.kind===kind)&&s.value.slice(r.start,r.end).trim())),
     remove(kinds,filter){
@@ -15103,6 +15177,7 @@ function removePhoneProtocolNodes(textEl, scope, savedImageBtns) {
   if(!scope?.valid(textEl))return;
   for(const el of scope.protocolNodes()){
     if(!textEl.contains(el))continue;
+    if(isPhoneCleanupSourceMarker(el,textEl,scope.raw)){removePhoneSourceMarkedResidue(el);continue;}
     const kept=[];
     for(const child of Array.from(el.querySelectorAll('*'))){
       if(kept.some(parent=>parent.contains(child)))continue;
@@ -25039,6 +25114,7 @@ Object.assign(window, {
 // ================================================================
 //  ENTRY
 // ================================================================
+installPhoneCleanupSourceMarkers();
 jQuery(async () => {
   try {
     await init();
