@@ -93,7 +93,7 @@ export const PHONE_TOOLS_CSS = [
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const forbidden = new Set(['__proto__','prototype','constructor']);
 const secret = /^(?:api[_-]?key|access[_-]?token|authorization|cookie|password|rp_ludo_api)$/i;
-const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','avatarLocalOnly','avatarOwners','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
+const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','avatarLocalOnly','avatarOwners','avatarLarge','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
 const clone = value => JSON.parse(JSON.stringify(value));
 const uid = () => 'pt_' + Date.now() + '_' + Math.random().toString(36).slice(2,11);
 function clean(value, depth = 0) {
@@ -415,6 +415,7 @@ export function createPhoneTools(api) {
     for(const field of ['avatars','nameAliases'])if(value.data[field]!==undefined&&(!object(value.data[field])||Object.values(value.data[field]).some(item=>typeof item!=='string')))throw new Error('备份联系人设置格式不完整。');
     if(value.data.avatarLocalOnly!==undefined&&(!object(value.data.avatarLocalOnly)||Object.values(value.data.avatarLocalOnly).some(v=>typeof v!=='boolean')))throw new Error('备份头像范围格式不完整。');
     if(value.data.avatarOwners!==undefined&&(!object(value.data.avatarOwners)||Object.values(value.data.avatarOwners).some(v=>typeof v!=='string')))throw new Error('备份头像身份格式不完整。');
+    if(value.data.avatarLarge!==undefined&&(!object(value.data.avatarLarge)||Object.entries(value.data.avatarLarge).some(([key,v])=>!object(v)||typeof v.preview!=='string'||v.preview!==value.data.avatars?.[key]||typeof v.src!=='string'||!/^\/user\/images\/MochiPhone-Avatars\/avatar-[a-zA-Z0-9_-]+\.(?:png|jpeg|webp)$/.test(v.src))))throw new Error('备份高清头像关联格式不完整。');
     if(value.data.phoneTools!==undefined&&(!object(value.data.phoneTools)||(value.data.phoneTools.bookmarks!==undefined&&!Array.isArray(value.data.phoneTools.bookmarks))))throw new Error('备份收藏格式不完整。');
     for(const field of ['moments','xhsFeed'])for(const post of value.data[field]||[])if(!object(post)||(post.comments!==undefined&&(!Array.isArray(post.comments)||post.comments.some(c=>!object(c)))))throw new Error('备份评论格式不完整。');
     for(const[id,thread]of Object.entries(value.data.threads))if(!object(thread)||thread.id!==id||typeof thread.name!=='string'||!Array.isArray(thread.messages)||thread.messages.some(m=>!object(m)))throw new Error('备份联系人或消息格式不完整。');
@@ -466,12 +467,15 @@ export function createPhoneTools(api) {
         // Existing effective shared avatars have the same priority as explicit current images.
         if(field==='avatars'&&api.avatar?.(key))continue;
         result[field][key]=clone(value);
-        if(field==='avatars')for(const meta of ['avatarLocalOnly','avatarOwners']){
+        if(field==='avatars')for(const meta of ['avatarLocalOnly','avatarOwners','avatarLarge']){
           result[meta] ||= {};
           if(Object.hasOwn(source[meta]||{},key))result[meta][key]=clone(source[meta][key]);
           else delete result[meta][key];
         }
       }
+    }
+    for(const [key,large]of Object.entries(source.avatarLarge||{}))if(!result.avatarLarge?.[key]&&source.avatars?.[key]===result.avatars?.[key]&&large.preview===result.avatars[key]){
+      result.avatarLarge ||= {};Object.defineProperty(result.avatarLarge,key,{value:clone(large),enumerable:true,writable:true,configurable:true});
     }
     for(const field of ['composeDraft','diaryDraft','themeStudioDraft'])if(!result[field]&&typeof source[field]==='string')result[field]=source[field];
     result.themeStudioMessages ||= [];mergeList(result.themeStudioMessages,source.themeStudioMessages||[],stats,'themeMessages');
@@ -546,6 +550,15 @@ export function createPhoneTools(api) {
     file.on('change',async()=>{const selected=file[0].files?.[0];if(!selected)return;try{if(selected.size>64*1024*1024)throw new Error('请选择64MB以内的JSON备份。');const text=await selected.text();if(!token.valid())return;previewBackup(parseBackup(text));}catch(error){if(token.valid())status.text(error.message||'备份读取失败，当前数据未改变。');}finally{file.val('');}});
     const previous=button('下载上次恢复前备份',async()=>{try{const pointer=await readVerified('mochi-phone-last-import-backup-v1:'+state().chatId);if(!token.valid())return;const key=pointer?.key;if(!key){status.text('当前聊天尚无恢复前备份。');return;}const value=await readVerified(key);if(!token.valid())return;if(!value){status.text('备份暂不可读取，请重试。');return;}download(value,'MochiPhone-before-restore.json');}catch(_){if(token.valid())status.text('备份暂不可读取，请重试。');}});
     content.append(status,node('div','rp-tools-buttons').append(button('导出当前聊天',exportBackup),button('选择备份并预览',()=>file.trigger('click')),previous),file);
+    const conflicts=api.listSaveConflicts?.()||[];
+    if(conflicts.length){
+      content.append(node('p','rp-feature-note','发现 '+conflicts.length+' 份其他页面尚未合并的副本。先导出保留；导入只补充缺失记录，同一记录保留当前版本。'));
+      for(const record of conflicts)content.append(button('导出恢复副本 · '+new Date(record.at).toLocaleString(),()=>{
+        if(!token.valid())return;const payload=api.readSaveConflict?.(record.key);
+        if(!payload){status.text('副本已有变化，请重新打开此页面。');return;}
+        download(makeBackup(payload),'MochiPhone-recovery-'+record.at+'.json');
+      }));
+    }
     api.dialog('备份与恢复',content,[{label:'关闭'}]);
   }
   function mount() {

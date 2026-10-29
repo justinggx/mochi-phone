@@ -9,7 +9,7 @@ import { createShop } from './shop.mjs?v=20261019-shop-manual-69';
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261028-stat-style-164';
 import { createGomoku } from './gomoku.mjs?v=20261029-gomoku-context-166';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261026-self-audit-142';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261029-review-fixes-172';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261024-theatre-reader-132';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -5924,7 +5924,7 @@ const runtime = createPhoneRuntime(window,
   () => `${STATE.chatId || ''}|${getPhoneChatSlotKey(getContext())}`,
   () => isMochiPhoneEnabled());
 MutationObserver = runtime.Observer;
-runtime.own(() => { if (rpInitialized) flushStateNow(); });
+runtime.own(() => { if (rpInitialized) flushPendingPhoneState(); });
 runtime.own(rpResetGameRuntimes);
 runtime.own(rpClearPhoneMotion);
 runtime.own(() => { void rpPhoneArchive.close(); });
@@ -6781,6 +6781,7 @@ function buildStatePayload() {
     avatars: Object.assign({}, STATE.avatars || {}),
     avatarLocalOnly: Object.assign({}, STATE.avatarLocalOnly || {}),
     avatarOwners: Object.assign({}, STATE.avatarOwners || {}),
+    avatarLarge: rpNormalizeAvatarLarge(STATE.avatarLarge, STATE.avatars),
     wallpaper: STATE.wallpaper || null,
     currentView: STATE.currentView || 'home',
     currentThread: STATE.currentThread || null,
@@ -6936,44 +6937,93 @@ function restorePhoneGameState(saved) {
   }
 }
 
+// Version fences and recoverable per-page copies protect same-browser chat saves.
+const rpPhoneSaveBases = new Map(), rpPhoneSaveWarnings = new Set(), rpPhonePendingCommits = new Set(), rpPhonePendingPayloads = new Map();
+const RP_PHONE_SAVE_WRITER = window.__rpPhoneSaveWriter ||= 'page-'+(window.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+function rpPhoneSaveClock(payload) {
+  const result=Object.create(null),raw=payload?.__saveClock;
+  if(raw&&typeof raw==='object'&&!Array.isArray(raw))for(const[key,value]of Object.entries(raw))if(Number.isSafeInteger(value)&&value>0)Object.defineProperty(result,key,{value,enumerable:true,writable:true,configurable:true});
+  return result;
+}
+function rpPhoneStateRevision(payload) {
+  return !payload?'empty':typeof payload.__revision==='string'&&payload.__revision?payload.__revision:'legacy:'+JSON.stringify(payload);
+}
+function rpPhoneRememberSaveBase(slot,payload) {
+  rpPhoneSaveBases.set(slot,{revision:rpPhoneStateRevision(payload),clock:rpPhoneSaveClock(payload)});
+}
+function rpPhoneReadPersisted(slot, owner=null) {
+  const es=_extSettings()?.[EXT_KEY]?.[slot],local=readLocalPhoneState('rp-phone-v1-'+slot,'save verification'),archived=rpPhoneArchive.get(slot);
+  return [es,local,archived].filter(p=>isPhoneStatePayload(p)&&(!owner||rpPhoneStateOwnedBy(p,owner))).reduce((a,b)=>choosePhoneStateCopy(a,b),null);
+}
+function rpPhoneSaveCopyPrefix(slot) { return 'rp-phone-save-copy-v1:'+encodeURIComponent(slot)+':'; }
+function rpPhoneSaveConflictCopies(slot=STATE.chatId) {
+  if(!rpArchiveAccountHandle||!slot)return [];
+  const prefix=rpPhoneSaveCopyPrefix(slot),records=new Map(),add=(key,value)=>{
+    if(key.startsWith(prefix)&&value?.version===1&&value.account===rpArchiveAccountHandle&&value.slot===slot&&isPhoneStatePayload(value.payload))records.set(key,value);
+  };
+  for(const[key,value]of rpPhoneArchive.entries())add(key,value);
+  try{const accountPrefix=rpAccountStoragePrefix();for(let i=0;i<window.localStorage.length;i++){
+    const key=window.localStorage.key(i);if(key?.startsWith(accountPrefix+prefix))try{add(key.slice(accountPrefix.length),JSON.parse(window.localStorage.getItem(key)));}catch{}
+  }}catch{}
+  const current=rpPhoneSaveClock(rpPhoneReadPersisted(slot));
+  return [...records].filter(([,r])=>(rpPhoneSaveClock(r.payload)[r.writer]||0)>(current[r.writer]||0))
+    .sort((a,b)=>Number(b[1].at)-Number(a[1].at)).map(([key,value])=>({key,...value}));
+}
+function rpPhoneWarnSaveConflict(slot) {
+  if(rpPhoneSaveWarnings.has(slot))return;
+  rpPhoneSaveWarnings.add(slot);
+  toastr.warning('另一页面已更新此聊天，本页修改已保留为恢复副本，已暂停覆盖保存。请到设置「备份与恢复」导出副本，再重新打开聊天。','存档更新冲突',{timeOut:0,extendedTimeOut:0});
+}
+function rpPhoneCommitPayload(slot,input,expected=rpPhoneSaveBases.get(slot),completed=()=>{}) {
+  if(!rpArchiveAccountHandle||PHONE_STATE_BLOCKED_SLOTS.has(slot)||PHONE_STATE_PROTECTED_KEYS.has('rp-phone-v1-'+slot))return false;
+  const account=rpArchiveAccountHandle,base=expected||{revision:'empty',clock:Object.create(null)},payload=JSON.parse(JSON.stringify(input));
+  const sequence=(Number(window.__rpPhoneSaveSequence)||0)+1;window.__rpPhoneSaveSequence=sequence;
+  payload.__revision=RP_PHONE_SAVE_WRITER+':'+sequence;payload.__saveClock={...base.clock,[RP_PHONE_SAVE_WRITER]:sequence};
+  const key=rpPhoneSaveCopyPrefix(slot)+RP_PHONE_SAVE_WRITER,record={version:1,account,slot,writer:RP_PHONE_SAVE_WRITER,at:Date.now(),payload};
+  const pendingCopy={account,payload};rpPhonePendingPayloads.set(slot,pendingCopy);let settled=false;
+  const finish=ok=>{if(settled)return;settled=true;if(rpPhonePendingPayloads.get(slot)===pendingCopy)rpPhonePendingPayloads.delete(slot);completed(ok);};
+  let staged=false;try{localStorage.setItem(key,JSON.stringify(record));staged=true;}catch{}
+  const archiveStage=rpPhoneArchive.put(key,record);
+  const commit=()=>{
+    if(account!==rpArchiveAccountHandle){finish(false);return false;}
+    const current=rpPhoneReadPersisted(slot),clock=rpPhoneSaveClock(current);
+    const onlyOwnAdvance=typeof current?.__revision==='string'&&current.__revision.startsWith(RP_PHONE_SAVE_WRITER+':')&&Object.entries(clock).every(([writer,n])=>writer===RP_PHONE_SAVE_WRITER||n<=(base.clock[writer]||0));
+    if(rpPhoneStateRevision(current)!==base.revision&&!onlyOwnAdvance){delete CHAT_STORE[slot];rpPhoneWarnSaveConflict(slot);finish(false);return false;}
+    payload.__savedAt=Math.max(Date.now(),Number(current?.__savedAt||0)+1);
+    const es=_extSettings();let localSaved=false;
+    if(es){es[EXT_KEY] ||= {};es[EXT_KEY][slot]=payload;_saveSettings();}
+    try{localStorage.setItem('rp-phone-v1-'+slot,JSON.stringify(payload));localSaved=true;}catch{}
+    rpPhoneRememberSaveBase(slot,payload);delete CHAT_STORE[slot];rpPhoneSaveWarnings.delete(slot);
+    rpPhoneArchive.put(slot,payload).then(ok=>{if(!localSaved&&!ok)warnPhoneStorageFailure();if(!localSaved)finish(ok&&account===rpArchiveAccountHandle);});
+    if(localSaved)finish(true);return true;
+  };
+  const schedule=()=>{
+    if(account!==rpArchiveAccountHandle){finish(false);return false;}
+    const locks=window.navigator?.locks;
+    if(!locks?.request){try{return commit();}catch{finish(false);warnPhoneStorageFailure();return false;}}
+    const job=Promise.resolve().then(()=>locks.request('mochi-phone-save:'+encodeURIComponent(account)+':'+slot,{mode:'exclusive'},commit));
+    rpPhonePendingCommits.add(job);
+    job.catch(()=>{if(account===rpArchiveAccountHandle){rpPhoneWarnSaveConflict(slot);finish(false);}}).finally(()=>rpPhonePendingCommits.delete(job));
+    return true;
+  };
+  if(staged){void archiveStage;return schedule();}
+  const pending=Promise.resolve(archiveStage).then(ok=>{if(!ok){warnPhoneStorageFailure();finish(false);return false;}return schedule();});
+  rpPhonePendingCommits.add(pending);pending.catch(()=>{warnPhoneStorageFailure();finish(false);}).finally(()=>rpPhonePendingCommits.delete(pending));
+  return true;
+}
+
 function flushStateNow() {
   rpRememberReading();
-  if (!STATE.chatId || STATE.chatId === 'default') return;
-  if (PHONE_STATE_BLOCKED_SLOTS.has(STATE.chatId)) {
-    warnPhoneStateRecovery();
-    return;
-  }
-  if (STATE._pendingSaveTimer) clearTimeout(STATE._pendingSaveTimer);
-  STATE._pendingSaveTimer = null;
-  try {
-    const payload = buildStatePayload();
-    const jsonStr = JSON.stringify(payload);
-    const slot = STATE.chatId;
-    const revision = STATE._saveRevision || 0;
-    const es = _extSettings();
-    if (es) {
-      if (!es[EXT_KEY]) es[EXT_KEY] = {};
-      es[EXT_KEY][STATE.chatId] = payload;
-      _saveSettings();
-    }
-    let localSaved = false;
-    try {
-      const storageKey = `rp-phone-v1-${STATE.chatId}`;
-      if (!PHONE_STATE_PROTECTED_KEYS.has(storageKey)) {
-        localStorage.setItem(storageKey, jsonStr);
-        localSaved = true;
-      }
-    } catch(q) {
-      console.warn('[Phone] localStorage cache write failed (non-critical):', rpErrorInfo(q));
-      // 不删除其他聊天的缓存来为当前聊天腾空间。setItem 失败时浏览器会保留
-      // 此 key 的旧值，extension_settings 中的权威副本也仍可用于恢复。
-    }
-    rpPhoneArchive.put(slot, payload).then(function(ok) {
-      if (!localSaved && !ok) warnPhoneStorageFailure();
-      if (ok && STATE.chatId === slot && (STATE._saveRevision || 0) === revision) STATE._pendingSaveDirty = false;
+  if(!STATE.chatId||STATE.chatId==='default')return;
+  if(PHONE_STATE_BLOCKED_SLOTS.has(STATE.chatId)){warnPhoneStateRecovery();return;}
+  if(STATE._pendingSaveTimer)clearTimeout(STATE._pendingSaveTimer);
+  STATE._pendingSaveTimer=null;
+  try{
+    const slot=STATE.chatId,revision=STATE._saveRevision||0,payload=buildStatePayload();
+    rpPhoneCommitPayload(slot,payload,rpPhoneSaveBases.get(slot),ok=>{
+      if(ok&&STATE.chatId===slot&&(STATE._saveRevision||0)===revision)STATE._pendingSaveDirty=false;
     });
-    STATE._pendingSaveDirty = !localSaved;
-  } catch(e) { warnPhoneStorageFailure(); console.warn('[Raymond Phone] flushStateNow failed', rpErrorInfo(e)); }
+  }catch(error){warnPhoneStorageFailure();console.warn('[Phone] state save failed',rpErrorInfo(error));}
 }
 
 // ================================================================
@@ -7399,6 +7449,14 @@ function getAvatar(key) {
 function rpValidAvatarLarge(src) {
   return typeof src === 'string' && /^\/user\/images\/MochiPhone-Avatars\/avatar-[a-zA-Z0-9_-]+\.(?:png|jpeg|webp)$/.test(src);
 }
+function rpNormalizeAvatarLarge(value, avatars) {
+  const result=Object.create(null);
+  if(!value||typeof value!=='object'||Array.isArray(value))return result;
+  for(const [key,record]of Object.entries(value))if(record&&typeof record==='object'&&typeof record.preview==='string'&&record.preview===avatars?.[key]&&rpValidAvatarLarge(record.src))
+    Object.defineProperty(result,key,{value:{preview:record.preview,src:record.src},enumerable:true,writable:true,configurable:true});
+  return result;
+}
+
 function rpAvatarViewSource(key) {
   const preview = getAvatar(key), identity = rpAvatarIdentity(key), local = STATE.avatars?.[key];
   const localOwns = Object.hasOwn(STATE.avatars || {},key) && rpValidAvatarImage(local,Infinity) && (!Object.hasOwn(STATE.avatarOwners || {},key) || STATE.avatarOwners[key] === identity);
@@ -7465,7 +7523,7 @@ async function rpSaveAvatarLargeInBackground(key,preview,source,crop,scope='loca
   finally{task.signal.removeEventListener('abort',cancel);if(rpAvatarLargeJobs.get(jobKey)===job)rpAvatarLargeJobs.delete(jobKey);}
 }
 async function rpTranslateAvatarTag(text, {signal,isCurrent} = {}) {
-  const cfg = readCustomApiConfig();
+  const cfg = rpReadSavedCustomApiConnection();
   if (typeof cfg.url !== 'string' || !cfg.url.trim() || typeof cfg.key !== 'string' || !cfg.key.trim()) throw new Error('请先在手机设置中配置自定义 API 地址、Key 和模型。');
   if (typeof text !== 'string' || !text.trim() || text.length > 20000) throw new Error('tag 为空或超过20000字符。');
   const current = () => !signal?.aborted && isCurrent?.() !== false;
@@ -7781,12 +7839,12 @@ function mergeDuplicateThreads() {
 // 防御性同步:打开手机时确保 STATE 与当前 ST 对话一致
 // 不依赖 CHAT_CHANGED 是否触发
 function restorePhoneChatState(saved) {
-  const s = rpNormalizePhoneState(saved || {});
+  const s = rpNormalizePhoneState(JSON.parse(JSON.stringify(saved || {})));
   rpIsolateForeignPhoneThreads(s, getContext());
   STATE._slotMeta = s._slotMeta || null;
-  STATE.recovery = s.recovery || [];
+  STATE.recovery = JSON.parse(JSON.stringify(s.recovery || []));
   STATE.deletedContacts = Object.assign({}, s.deletedContacts || {});
-  STATE.threads = s.threads || DEFAULT_THREADS();
+  STATE.threads = JSON.parse(JSON.stringify(s.threads || DEFAULT_THREADS()));
   for (const thread of Object.values(STATE.threads)) for (const message of thread.messages || []) rpKnownMessages.add(message);
   STATE.notifications = Array.isArray(s.notifications) ? s.notifications.slice() : [];
   STATE.sync = Object.assign({ stage: 1, progress: 0, status: '乖巧' }, s.sync || {});
@@ -7798,6 +7856,7 @@ function restorePhoneChatState(saved) {
   STATE.avatars = Object.assign({}, s.avatars || {});
   STATE.avatarLocalOnly = Object.assign({}, s.avatarLocalOnly || {});
   STATE.avatarOwners = Object.assign({}, s.avatarOwners || {});
+  STATE.avatarLarge = rpNormalizeAvatarLarge(s.avatarLarge, STATE.avatars);
   for (const key of Object.keys(_AV)) delete _AV[key];
   Object.assign(_AV, STATE.avatars);
   window._rpAV = Object.assign({}, STATE.avatars);
@@ -7842,7 +7901,8 @@ function switchPhoneChatSlot(newChatId) {
   STATE.chatId = newChatId;
   STATE.pendingMessages = [];
   const cached = CHAT_STORE[newChatId];
-  restorePhoneChatState(cached || loadState(newChatId));
+  const loaded = loadState(newChatId);
+  restorePhoneChatState(choosePhoneStateCopy(loaded, cached));
   if (!cached) STATE.currentThread = null;
   return true;
 }
@@ -8544,7 +8604,7 @@ function installPhoneStateFlushHooks() {
   rpRuntime.listenDOM(window, 'pagehide', flushLatest, true);
   rpRuntime.listenDOM(window, 'beforeunload', flushLatest, true);
   rpRuntime.listenDOM(document, 'visibilitychange', function() {
-    if (document.visibilityState === 'hidden') { rpPauseGameAnimations(); saveState({immediate:true}); flushLatest(); }
+    if (document.visibilityState === 'hidden') { rpPauseGameAnimations(); flushLatest(); }
     else rpResumeGameAnimations();
   }, true);
   rpRuntime.own(() => {
@@ -8738,7 +8798,8 @@ function rpNormalizePhoneState(state) {
   return state;
 }
 
-function loadState(chatId) {
+function loadState(chatId, attempt=0) {
+  rpPhoneRememberSaveBase(chatId,null);
   resetMomentsCtxCache(); // 切换聊天/加载新槽位时清缓存，避免跨角色卡串台
   try {
     const ctx = getContext();
@@ -8748,6 +8809,7 @@ function loadState(chatId) {
 
     const _normalizeLoaded = function(parsed, sourceKey, isLegacyMigration) {
       if (!parsed) return null;
+      const sourceRevision=rpPhoneStateRevision(parsed);
       // Preserve malformed collections before substituting safe renderable values.
       rpNormalizePhoneState(parsed);
       // slotVersion 3 的 key 已同时包含角色与聊天标识，正常加载时必须完整保留
@@ -8775,6 +8837,10 @@ function loadState(chatId) {
       parsed = enrichPayloadMeta(parsed, ctx);
       if (savedAt == null) delete parsed.__savedAt;
       else parsed.__savedAt = savedAt;
+      if(!isLegacyMigration&&rpPhoneStateRevision(rpPhoneReadPersisted(chatId,ctx))!==sourceRevision){
+        if(attempt<3)return loadState(chatId,attempt+1);
+        PHONE_STATE_BLOCKED_SLOTS.add(chatId);warnPhoneStateRecovery();return null;
+      }
       const ownerPreserved = rpPreservePhoneOwnerConflict(chatId, ctx);
       try {
         if (!PHONE_STATE_PROTECTED_KEYS.has(`rp-phone-v1-${chatId}`)) localStorage.setItem(`rp-phone-v1-${chatId}`, JSON.stringify(parsed));
@@ -8787,6 +8853,7 @@ function loadState(chatId) {
         // 旧 raw chatId 副本留作回滚，迁移只写新的角色组合槽位。
         _saveSettings();
       }
+      rpPhoneRememberSaveBase(chatId,parsed);
       return parsed;
     };
 
@@ -9555,6 +9622,7 @@ const HTML = `
                 <div style="font-size:11px;color:#9070b0;line-height:1.6;margin-bottom:8px">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
                 <div id="rp-api-provider-note" class="rp-set-hint" style="display:none;line-height:1.6"></div>
               </div>
+              <div id="rp-api-status" role="status" aria-live="polite" style="font-size:11px;line-height:1.5;max-height:52px;overflow-y:auto;overflow-wrap:anywhere"></div>
               <div class="rp-api-save-row">
                 <button class="rp-api-save-btn" id="rp-api-save">保存并使用</button>
                 <button class="rp-api-cancel-btn" id="rp-api-cancel">取消</button>
@@ -10325,6 +10393,10 @@ function rpInstallGameStats() {
   }
 }
 rpRuntime.listenDOM(window,'storage',event=>{
+  const ownPrefix=rpAccountStoragePrefix();
+  if(ownPrefix&&event.key===ownPrefix+'rp-phone-v1-'+STATE.chatId&&rpPhoneSaveConflictCopies().length)rpPhoneWarnSaveConflict(STATE.chatId);
+});
+rpRuntime.listenDOM(window,'storage',event=>{
   if(event.key!==rpAccountStoragePrefix()+RP_GAME_STATS_KEY||!rpArchiveAccountHandle)return;
   let old,next;try{old=JSON.parse(event.oldValue||'null');next=JSON.parse(event.newValue||'null');}catch{return;}
   const current=rpGameStatsRead(),merged=mergeGameStats(current,old,next);
@@ -10479,6 +10551,8 @@ function rpTools() {
     autoTranslation:{prefs:rpAutoTranslationPrefs,set:rpSetAutoTranslation,open:rpOpenAutoTranslation,pump:rpPumpAutoTranslation},
     translationBusy:()=>Object.values(STATE.threads).some(t=>(t.messages||[]).some(m=>{const j=rpPhoneTranslationJobs.get(m);return j?.pending&&j.task.valid();})),
     openThread, scrollScale: rpScrollScale, snapshot: buildStatePayload, backupSnapshot: rpAvatarBackupPayload,
+    listSaveConflicts:()=>rpPhoneSaveConflictCopies().map(record=>({key:record.key,at:record.at})),
+    readSaveConflict:key=>rpPhoneSaveConflictCopies().find(record=>record.key===key)?.payload||null,
     account: () => rpArchiveAccountHandle, archive: () => rpPhoneArchive, blocked,
     compatibleSlot: slot => {
       if (slot === STATE.chatId) return true;
@@ -12069,12 +12143,19 @@ function rpReadApiProfiles() {
   return {store,profiles,activeId:active?.id||''};
 }
 
+function rpReadSavedCustomApiConnection() {
+  // Explicit consumers reuse one selected saved connection while general apps use ST.
+  const {store,profiles,activeId}=rpReadApiProfiles();
+  const selected=profiles.find(p=>p.id===activeId)||store;
+  return {mode:store.mode==='custom'?'custom':'st',url:typeof selected.url==='string'?selected.url:'',key:typeof selected.key==='string'?selected.key:'',model:typeof selected.model==='string'?selected.model:''};
+}
+
 function rpNextApiProfileName(profiles) {
   let n=1;while(profiles.some(p=>p.name==='配置'+n))n++;return '配置'+n;
 }
 
 function rpApiProfileNotice(message, suffix) {
-  $('#rp-api-status-v').text(message);
+  $(suffix===undefined?'#rp-api-status,#rp-api-status-v':'#rp-api-status'+suffix).text(message);
   if(suffix===undefined)$('#rp-api-profile-status,#rp-api-profile-status-v').text(message);
   else $('#rp-api-profile-status'+suffix).text(message);
 }
@@ -24680,6 +24761,7 @@ function rpTheatreShelfSources() {
     }
   }catch{}
   for(const [slot,payload] of rpPhoneArchive.entries()) add(slot,payload);
+  for(const[slot,pending]of rpPhonePendingPayloads)if(pending.account===rpArchiveAccountHandle)copies.set(slot,{slot,payload:pending.payload});
   // Active unsaved edits/deletions take priority over every persisted replica.
   if(STATE.chatId && STATE.chatId!=='default') copies.set(STATE.chatId,{slot:STATE.chatId,payload:{theatre:STATE.theatre,_slotMeta:STATE._slotMeta || {charName:getCurrentCharName(getContext())}}});
   return copies;
@@ -24703,16 +24785,14 @@ function rpTheatreShelfRead(ref) {
   return story ? rpTheatreShelfEntry(ref.slot,story,payload) : null;
 }
 function rpTheatreShelfChange(ref,change) {
-  if(!rpArchiveAccountHandle || !ref || PHONE_STATE_BLOCKED_SLOTS.has(ref.slot) || PHONE_STATE_PROTECTED_KEYS.has('rp-phone-v1-'+ref.slot)) return false;
+  if(!rpArchiveAccountHandle||!ref||PHONE_STATE_BLOCKED_SLOTS.has(ref.slot)||PHONE_STATE_PROTECTED_KEYS.has('rp-phone-v1-'+ref.slot))return false;
   if(ref.slot===STATE.chatId){change(STATE.theatre);saveState({activity:false,immediate:true});return true;}
-  const source=rpTheatreShelfSources().get(ref.slot)?.payload;
-  if(!source)return false;
-  const payload=JSON.parse(JSON.stringify(source));change(payload.theatre);payload.__savedAt=Math.max(Date.now(),(Number(source.__savedAt)||0)+1);
-  const settings=_extSettings();let saved=false;
-  if(settings){settings[EXT_KEY] ||= {};settings[EXT_KEY][ref.slot]=payload;saved=_saveSettings();}
-  try{localStorage.setItem('rp-phone-v1-'+ref.slot,JSON.stringify(payload));saved=true;}catch{}
-  if(!saved)return false;
-  void rpPhoneArchive.put(ref.slot,payload);return true;
+  const source=rpTheatreShelfSources().get(ref.slot)?.payload;if(!source)return false;
+  const payload=JSON.parse(JSON.stringify(source));change(payload.theatre);
+  const expected={revision:rpPhoneStateRevision(source),clock:rpPhoneSaveClock(source)};
+  delete CHAT_STORE[ref.slot];
+  const account=rpArchiveAccountHandle;
+  return rpPhoneCommitPayload(ref.slot,payload,expected,()=>{if(account===rpArchiveAccountHandle&&STATE.currentView==='theatre')rpTheatre?.library();});
 }
 function rpTheatreShelfPrefs() {
   let local;try{local=JSON.parse(localStorage.getItem(RP_THEATRE_SHELF_KEY));}catch{}
@@ -24823,7 +24903,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   /* rp-task-scope */ const rpTask = options.theatreTask || options.gameTask || rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
-  const storedCfg = readCustomApiConfig();
+  const storedCfg = options.phoneGomoku || options.phoneShop ? rpReadSavedCustomApiConnection() : readCustomApiConfig();
   // Gomoku follows saved credentials automatically, without changing other apps' mode.
   const cfg = options.phoneGomoku || options.phoneShop ? { ...storedCfg, mode:
     typeof storedCfg.url === 'string' && storedCfg.url.trim() &&
