@@ -6382,7 +6382,7 @@ function rpPhoneContactRule() {
     '地点粒度看实际可交流空间，不能只比较大地点名称。同在家但明确楼上/楼下或不同房间，同在公司但一人在办公室、另一人在其他区域，或图书馆不同区域且已经分开时，可以在确有联系理由时发消息；不要虚构隔间、离开或分离来绕过判断。',
     '对位置不明或未交代是否分开的角色，不凭空安排手机联系；对明确不在身边、确有事情要告知的角色，可以主动联系，但不必每楼发。面对面的A不发，不影响远处B按其自己的位置和事由联系。',
     '例外：{{user}}明确通过手机发送的消息可以正常回复；剧情明确要发送地址、链接或照片等资料时，允许当面实际发送。仅有口头对话不等于收到手机消息。群聊仅在确有群内沟通需要时发送，不用群聊绕过当面交流规则，不把现实同场对话转成群消息。',
-    '本判断先于主动消息、回复条数、数量要求和频繁使用表情等要求；只有满足手机联系条件后才应用这些数量/频率规则。不满足时该发送者本轮可以没有任何私聊消息；不为凑数或发表情创造联系。保留原有PHONE容器、朋友圈和SYNC等其他协议，不替{{user}}发言。'
+    '本判断先于主动消息、回复条数、数量要求和频繁使用表情等要求；只有满足手机联系条件后才应用这些数量/频率规则。不满足时该发送者本轮可以没有任何私聊消息；不为凑数或发表情创造联系。保留原有PHONE容器、朋友圈等现行协议，不替{{user}}发言。旧关系阶段、进度、状态已下线，禁止输出SYNC标签及其STAGE、PROGRESS、STATUS属性。'
   ].join('\n') + '\n';
 }
 
@@ -7831,7 +7831,6 @@ function syncToCurrentChat() {
   go('lock');
   renderThreadList();
   refreshBadges();
-  refreshWidget();
   refreshLockNotifs();
   // 延迟重建:等 ctx.chat 加载完成
   var _rebuildId = STATE.chatId;
@@ -9833,7 +9832,6 @@ async function rpInitBody() {
   rpShopApp()?.mount();
   makeDraggable();
   renderThreadList();
-  refreshWidget();
   refreshLockNotifs();
 
   // 监听 AI 消息:不同 ST 版本事件名可能不同,做多事件兜底
@@ -10155,7 +10153,6 @@ function onChatChanged() {
   go('lock');
   renderThreadList();
   refreshBadges();
-  refreshWidget();
   refreshLockNotifs();
   renderPendingQueue();
 
@@ -10458,7 +10455,7 @@ function rpTools() {
     canRestore: () => !rpTheatre?.busy() && !rpStickers?.busy() && !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
       && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
       && !(window.rpImgWaitQueue || []).some(item => item?.source === 'mochi-phone') && !STATE._pendingCall,
-    applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshWidget(); refreshLockNotifs(); saveState({immediate:true}); },
+    applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshLockNotifs(); saveState({immediate:true}); },
     download: (text,name) => {
       const url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'})),link=document.createElement('a');
       link.href=url;link.download=name;link.style.display='none';link.addEventListener('click',event=>event.stopPropagation());document.body.append(link);
@@ -14195,55 +14192,10 @@ function hasUnclosedPhonePairedTag(raw) {
   return false;
 }
 
-function cleanupPhoneResidualNoise(textEl) {
-  if (!textEl) return;
-  const normalizeNoise = function(s) {
-    return String(s || '')
-      .replace(/&hellip;/gi, '…')
-      .replace(/&#8230;/gi, '…')
-      .replace(/```/g, '')
-      .replace(/`/g, '')
-      .replace(/[\s\u00a0\u3000]/g, '')
-      .trim();
-  };
-  Array.from(textEl.querySelectorAll('pre, code')).forEach(function(el) {
-    if (isPhoneCleanupProtectedNode(el) || hasPhoneCleanupMedia(el)) return;
-    const n = normalizeNoise(el.textContent || '');
-    const isOnlyEllipsis = /^(?:\.{3,}|…+|⋯+|。{3,}|·{3,}|•{3,})$/.test(n);
-    const isOnlyPhoneShell = /^(?:<\/?(?:phone|sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)[^>]*>)*$/i.test(n);
-    if (!n || isOnlyEllipsis || isOnlyPhoneShell) el.remove();
-  });
-  const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
-      const p = node.parentElement;
-      if (!p) return NodeFilter.FILTER_REJECT;
-      if (isPhoneCleanupProtectedNode(p)) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    }
-  });
-  const nodes = [];
-  let n;
-  while ((n = walker.nextNode())) nodes.push(n);
-  nodes.forEach(function(node) {
-    let v = String(node.nodeValue || '');
-    const before = v;
-    v = v
-      .replace(/```\s*(?:&hellip;|&#8230;|…|⋯|\.\.\.|。{3,}|·{3,}|•{3,})+\s*```/gi, '')
-      .replace(/`\s*(?:&hellip;|&#8230;|…|⋯|\.\.\.|。{3,}|·{3,}|•{3,})+\s*`/gi, '')
-      .replace(/(?:&hellip;|&#8230;)/gi, '…')
-      .replace(/^[\s\u00a0\u3000]*(?:…+|⋯+|\.\.\.|。{3,}|·{3,}|•{3,})[\s\u00a0\u3000]*$/g, '')
-      .replace(/[ \t]{2,}/g, ' ')
-      .replace(/\n{3,}/g, '\n\n');
-    if (v !== before) node.nodeValue = v;
-  });
+function cleanupPhoneResidualNoise(textEl, scope) {
+  if (scope?.valid(textEl)) scope.remove(['noise']);
 }
 
-// ================================================================
-//  MESSAGE_UPDATED 生图插件专用监听
-//  智绘姬等插件异步完成后，把 <img src="..."> 写入 message.mes
-//  并触发 MESSAGE_UPDATED，这里专门捕捞这些图片路由到手机
-// ================================================================
 function rpResolveMessageUpdatedIndex(payload, ctx) {
   try {
     if (typeof payload === 'number' && Number.isFinite(payload)) return payload;
@@ -14374,7 +14326,8 @@ function onAIMessage(_retryCount) {
     const normalizedPreview = normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi, ''));
     const mightContainPhone = /<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalizedPreview);
     if (fp === STATE._lastAiFingerprint && (!mightContainPhone || hasRenderedPhoneUi)) {
-      return;
+      const scope=mightContainPhone&&targetTextEl?createPhoneCleanupScope(targetTextEl,normalizedPreview):null;
+      if(!scope||!scope.protocolNodes().length&&!scope.has())return;
     }
     if (fp === STATE._lastAiFingerprint && mightContainPhone && !hasRenderedPhoneUi) {
     }
@@ -14947,50 +14900,223 @@ function collectPhoneCleanupItems(block) {
 }
 
 
-function collectPhoneCleanupItemsFromRenderedEcho(textEl) {
-  const items = [];
-  if (!textEl || !textEl.querySelectorAll) return items;
-  textEl.querySelectorAll('.rp-phone-echo-block').forEach(function(blockEl) {
-    if (!blockEl) return;
-    const full = normalizePhoneCleanupText(blockEl.textContent || '');
-    if (!full) return;
-    const tagEl = blockEl.querySelector('.rp-phone-echo-moment-tag');
-    const nameEl = blockEl.querySelector('.rp-phone-echo-name');
-    const tag = normalizePhoneCleanupText(tagEl ? tagEl.textContent || '' : '');
-    const from = normalizePhoneCleanupText(nameEl ? (nameEl.textContent || '').replace(/[：:]+\s*$/g, '') : '');
-    let text = full;
-    if (tag) text = normalizePhoneCleanupText(text.replace(tag, ''));
-    if (from) text = normalizePhoneCleanupText(text.replace(new RegExp('^\\s*' + escapeRegExp(from) + '\\s*[:：]?\\s*'), ''));
-    text = normalizePhoneCleanupText(text.replace(/^(?:朋友圈|评论|群聊(?:\s*·\s*[^:：]+)?|语音|红包|图片|定位|位置)\s*/i, ''));
-    if (!text || compactPhoneCleanupText(text) === compactPhoneCleanupText(from)) return;
-    const display = from ? `${from}: ${text}` : text;
-    const variants = [
-      full,
-      text,
-      display,
-      tag && from ? `${tag} ${from}: ${text}` : '',
-      tag && from ? `${tag}${from}: ${text}` : '',
-      tag ? `${tag} ${text}` : '',
-      from ? `${from}: ${text}` : ''
-    ].filter(Boolean);
-    items.push(makePhoneCleanupItem('rendered_echo', from, text, tag, display, variants));
+function cleanupRenderedPhoneEchoResiduals(textEl, rawSource) {
+  // Rendered summary text alone cannot authorize deletion of equal text elsewhere.
+  if (!textEl || typeof rawSource !== 'string' || !rawSource) return false;
+  const scope=createPhoneCleanupScope(textEl,rawSource);
+  return scope.sourceParts?scope.remove(['literal','body','author','noise']):false;
+}
+
+// Empty native image spans and their wrappers remain asynchronous mount targets.
+
+function phoneCleanupSourceMatches(root, raw) {
+  const mes=root?.closest?.('.mes');if(!mes)return true;
+  const id=mes.getAttribute('mesid');if(!/^\d+$/.test(id||''))return false;
+  const message=getContext()?.chat?.[Number(id)];if(!message||message.is_user)return false;
+  const normalized=value=>normalizePhoneMarkup(String(value||'').replace(/<think>[\s\S]*?<\/think>/gi,'')).trim();
+  return normalized(message.mes)===normalized(raw);
+}
+
+// Cleanup authority comes from this raw message's ordered PHONE source, not text equality alone.
+// Plain narrative anchors are aligned before claiming leftover phone ranges. Foreign DOM is opaque.
+function isPhoneCleanupForeignNode(node, root) {
+  let el = node && (node.nodeType === 1 ? node : node.parentElement);
+  const plain = /^(P|DIV|SPAN|BR|HR|EM|STRONG|B|I|U|S|DEL|SMALL|MARK|Q|BLOCKQUOTE|UL|OL|LI|A|PHONE|SMS|SYNC|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|CALL|VOICE|HONGBAO|MOMENTS|COMMENT|MOCHILOCATION|MOCHILOC)$/;
+  const protocol = /^(PHONE|SMS|SYNC|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|CALL|VOICE|HONGBAO|MOMENTS|COMMENT|MOCHILOCATION|MOCHILOC)$/;
+  for (; el && el !== root; el = el.parentElement) {
+    if (isPhoneCleanupProtectedNode(el) || !plain.test(el.tagName || '')) return true;
+    if (!protocol.test(el.tagName || '') && Array.from(el.attributes || []).some(a => /^(?:id|class|style|role|on\w+|data-.+)$/.test(a.name)&&!/^data-rp-/.test(a.name))) return true;
+  }
+  return !el;
+}
+
+function phoneCleanupSourceParts(raw) {
+  const source = normalizePhoneMarkup(raw), parts = [];
+  const re = /<PHONE\b[^>]*>[\s\S]*?<\/PHONE\s*>|<(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?>/gi;
+  let m, end = 0;
+  while ((m = re.exec(source))) {
+    if (m.index > end) parts.push({phone:false, text:source.slice(end,m.index)});
+    parts.push({phone:true, text:m[0]});end = re.lastIndex;
+  }
+  if (end < source.length) parts.push({phone:false,text:source.slice(end)});
+  return parts;
+}
+
+function phoneCleanupNarrativeChunks(raw, opaqueIslands = [], corpus = '') {
+  // Detached parsing does not run card regexes, scripts or macros a second time.
+  const template = document.createElement('template');
+  template.innerHTML = String(raw || '').replace(/```[^\n]*\n[\s\S]*?```/g,'').replace(/`[^`\n]+`/g,'').replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');
+  let text = '';
+  const plain = /^(P|DIV|SPAN|BR|HR|EM|STRONG|B|I|U|S|DEL|SMALL|MARK|Q|BLOCKQUOTE|UL|OL|LI|A)$/;
+  function visit(node) {
+    if (node.nodeType === 3) {text += node.nodeValue || '';return;}
+    if (node.nodeType !== 1) return;
+    if (!plain.test(node.tagName || '') || Array.from(node.attributes || []).some(a => /^(?:id|class|style|role|on\w+|data-.+)$/.test(a.name))) {
+      if(/^(SCRIPT|STYLE|PRE|CODE)$/.test(node.tagName||'')){text+='\n';return;}
+      const full=normalizePhoneCompareText(node.textContent||'');
+      const parts=String(node.textContent||'').replace(/【[^：:】]+[：:]([^】]+)】/g,'\n$1\n').split(/\n+/).map(normalizePhoneCompareText).filter(Boolean);
+      const occurs=value=>{const re=buildLoosePhoneFragmentRegex(value);if(!re)return false;let m;while((m=re.exec(corpus)))if(!m[0].includes('\0'))return true;return false;};
+      const fullInPlain=full&&occurs(full),anyPartInPlain=parts.some(occurs);
+      const consumed=!fullInPlain&&parts.length&&opaqueIslands.some(island=>{
+        if(!parts.every(part=>island.text.includes(part)))return false;
+        const sameId=node.id&&node.id===island.id;
+        const classes=Array.from(node.classList||[]),sameClass=classes.length&&node.tagName===island.tag&&classes.every(c=>island.classes.includes(c));
+        return sameId||sameClass||parts.length>1&&parts.some(part=>!occurs(part))||!anyPartInPlain;
+      });
+      // Unknown source tags remain narrative unless a real opaque component accounts for them.
+      text+='\n'+(consumed?'':String(node.textContent||''))+'\n';return;
+    }
+    const block = /^(P|DIV|BR|HR|BLOCKQUOTE|UL|OL|LI)$/.test(node.tagName);
+    if (block) text += '\n';
+    Array.from(node.childNodes).forEach(visit);
+    if (block) text += '\n';
+  }
+  Array.from(template.content.childNodes).forEach(visit);
+  return text.split(/\n+/).map(s => normalizePhoneCompareText(s.replace(/(?:\*\*|__|~~|`)/g,'').replace(/\*([^*\n]+)\*/g,'$1').replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+)/,''))).filter(Boolean);
+}
+
+function createPhoneCleanupScope(root, raw) {
+  const parts = phoneCleanupSourceParts(raw), records = [], tokens = [], segments = [], opaqueIslands = [];
+  const visibleCache=new Map();
+  const visible=value=>{const text=String(value||'');if(visibleCache.has(text))return visibleCache.get(text);const decoder=document.createElement('textarea');decoder.innerHTML=text;const result=normalizePhoneCompareText(decoder.value);visibleCache.set(text,result);return result;};
+  let corpus = '', disabled = String(raw || '').length > 200000;
+  const protocolTags = new Set();
+  const add = value => {corpus += value;};
+  function visit(node) {
+    if (node.nodeType === 3) {const value=node.nodeValue||'';segments.push({node,value,start:corpus.length,end:corpus.length+value.length,last:value,ranges:[],removed:new Set()});add(value);return;}
+    if (node.nodeType !== 1) return;
+    if (isPhoneCleanupForeignNode(node,root)) {
+      if(!isPhoneCleanupProtectedNode(node)&&!/^(SCRIPT|STYLE|PRE|CODE)$/.test(node.tagName||'')){
+        const visibleText=n=>n.nodeType===3?(n.nodeValue||''):n.nodeType===1&&!/^(SCRIPT|STYLE)$/.test(n.tagName)?Array.from(n.childNodes).map(visibleText).join(''):'';
+        opaqueIslands.push({text:normalizePhoneCompareText(visibleText(node)),id:node.id||'',classes:Array.from(node.classList||[]),tag:node.tagName});
+      }
+      add('\0');return;
+    }
+    const block=/^(P|DIV|BR|HR|BLOCKQUOTE|UL|OL|LI)$/.test(node.tagName || '');
+    if(block)add('\n');Array.from(node.childNodes).forEach(visit);if(block)add('\n');
+  }
+  Array.from(root.childNodes || []).forEach(visit);
+  if(corpus.length>200000)disabled=true;
+  parts.forEach((part,index) => {
+    part.index=index;
+    if (!part.phone) {phoneCleanupNarrativeChunks(part.text,opaqueIslands,corpus).forEach(text=>tokens.push({kind:'outside',part:index,text}));return;}
+    for(const tag of part.text.matchAll(/<([a-z]+)\b/gi))protocolTags.add(tag[1].toUpperCase());
+    part.items=collectPhoneCleanupItems(part.text);records.push(part);
+    const re=/<(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?>/gi;
+    let m;while((m=re.exec(part.text)))for(const item of collectPhoneCleanupItems(m[0])) {
+      if(item.from)tokens.push({kind:'author',part:index,text:visible(item.from)});
+      const body=visible(item.text || item.display);
+      if(body)tokens.push({kind:'body',part:index,text:body});
+    }
   });
-  return items.filter(function(item) { return item.variants && item.variants.length; });
+  if(tokens.length>512)disabled=true;
+  const compare=(a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2];
+  let states=[{end:0,score:[0,0,0],prev:null,match:null}];
+  if(!disabled)for(const token of tokens){
+    const regex=buildLoosePhoneFragmentRegex(token.text),hits=[];
+    if(regex){let m;while((m=regex.exec(corpus))){if(hits.length>=128){disabled=true;break;}if(!m[0].length)break;if(!m[0].includes('\0'))hits.push({start:m.index,end:m.index+m[0].length,token});}}
+    if(disabled)break;
+    const next=states.slice();
+    for(const hit of hits){let best=null;for(const state of states)if(state.end<=hit.start&&(!best||compare(state.score,best.score)>0))best=state;
+      if(!best)continue;const score=best.score.slice();if(token.kind==='outside'){score[0]+=token.text.length;score[1]++;}else score[2]+=token.kind==='body'?token.text.length:1;
+      next.push({end:hit.end,score,prev:best,match:hit});
+    }
+    next.sort((a,b)=>a.end-b.end||compare(b.score,a.score));states=[];let bestScore=null;
+    for(const state of next){if(bestScore&&compare(bestScore,state.score)>=0)continue;states.push(state);bestScore=state.score;}
+    if(states.length>512){disabled=true;break;}
+  }
+  let best=states.reduce((a,b)=>compare(a.score,b.score)>=0?a:b),matches=[];
+  for(let state=best;state;state=state.prev)if(state.match)matches.push(state.match);
+  matches.reverse();
+  const outside=matches.filter(m=>m.token.kind==='outside');
+  const aligned=!disabled&&outside.length===tokens.filter(t=>t.kind==='outside').length;
+  function mark(start,end,kind){
+    if(start>=end)return;
+    for(const segment of segments){const a=Math.max(start,segment.start),b=Math.min(end,segment.end);if(a<b)segment.ranges.push({start:a-segment.start,end:b-segment.start,kind});}
+  }
+  if(aligned){
+    // The outside source is fully accounted for. Only its unassigned gaps can hold phone residue,
+    // including fragments moved past PHONE's former DOM wrapper by another renderer.
+    const gaps=[];let cursor=0;
+    for(const keep of outside){if(cursor<keep.start)gaps.push({start:cursor,end:keep.start});cursor=keep.end;}
+    if(cursor<corpus.length)gaps.push({start:cursor,end:corpus.length});
+    for(const part of records)for(const gap of gaps){
+      const {start,end}=gap,slice=corpus.slice(start,end),proposed=[];
+      function propose(text,kind){
+        text=visible(text);if(!text)return;const regex=buildLoosePhoneFragmentRegex(text);if(!regex)return;let m;
+        while((m=regex.exec(slice))){if(!m[0].length)break;if(!m[0].includes('\0'))proposed.push({start:start+m.index,end:start+m.index+m[0].length,kind});}
+      }
+      for(const item of part.items){for(const v of item.variants||[])if(v)propose(v,'body');if(item.from)propose(item.from,'author');}
+      const literal=/<phone\b[^>]*>(?:(?!\0)[\s\S])*?<\/phone\s*>|&lt;phone\b(?:(?!\0)[\s\S])*?&lt;\/phone&gt;/gi;
+      let m;while((m=literal.exec(slice))){
+        const text=visible(normalizePhoneMarkup(m[0]));
+        if(part.items.some(item=>item.text&&text.includes(visible(item.text))))mark(start+m.index,start+m.index+m[0].length,'literal');
+      }
+      const tags=/<\/?(?:phone|sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b[^>]*>|&lt;\/?(?:phone|sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b(?:(?!&gt;|\0)[\s\S])*?&gt;/gi;
+      while((m=tags.exec(slice)))if(!m[0].includes('\0'))proposed.push({start:start+m.index,end:start+m.index+m[0].length,kind:'literal'});
+      let lineStart=start;
+      for(const line of slice.split(/[\n\0]/)){
+        const lineEnd=lineStart+line.length,hits=proposed.filter(r=>r.start<lineEnd&&r.end>lineStart);
+        const labelOnly=/^(?:(?:📱|📸|🎤|🧧|🖼️|📍)?\s*(?:朋友圈|评论|群聊|手机消息|语音|红包|图片|定位|位置))[:：\s]*$/.test(line.trim());
+        if(hits.length||labelOnly&&proposed.length){
+          let rest='';for(let i=0;i<line.length;i++)if(!hits.some(r=>lineStart+i>=r.start&&lineStart+i<r.end))rest+=line[i];
+          rest=rest.replace(/(?:📱|📸|🎤|🧧|🖼️|📍|朋友圈|评论|群聊|手机消息|语音|红包|图片|定位|位置|回复|reply)/gi,'').replace(/[\s:：,，;；|｜\-—–_~～·•。.!！？?「」『』“”"'()[\]{}]+/g,'');
+          if(!rest){for(const hit of hits)mark(Math.max(lineStart,hit.start),Math.min(lineEnd,hit.end),hit.kind);mark(lineStart,lineEnd,'noise');}
+        }
+        lineStart=lineEnd+1;
+      }
+    }
+  }
+  function protocolNodes(){if(!phoneCleanupSourceMatches(root,raw))return [];return Array.from(root.querySelectorAll('phone,sms,sync,gmsg,gvoice,ghongbao,simg,notify,call,voice,hongbao,moments,comment,mochilocation,mochiloc')).filter(el=>protocolTags.has(el.tagName)&&!isPhoneCleanupForeignNode(el,root));}
+  function prune(node){
+    let el=node.parentElement;
+    while(el&&el!==root&&!isPhoneCleanupForeignNode(el,root)&&!hasPhoneCleanupMedia(el)&&!Array.from(el.querySelectorAll('*')).some(child=>isPhoneCleanupForeignNode(child,root))&&!String(el.textContent||'').trim()){
+      const parent=el.parentElement;el.remove();el=parent;
+    }
+  }
+  const scope={root,sourceParts:records.length,aligned,ambiguous:!aligned,valid:el=>el===root&&phoneCleanupSourceMatches(root,raw),
+    protocolNodes,
+    has:kind=>phoneCleanupSourceMatches(root,raw)&&segments.some(s=>root.contains(s.node)&&s.ranges.some(r=>(!kind||r.kind===kind)&&s.value.slice(r.start,r.end).trim())),
+    remove(kinds,filter){
+      if(!phoneCleanupSourceMatches(root,raw))return false;
+      const allowed=new Set(kinds);let changed=false;
+      for(const segment of segments){
+        const node=segment.node;if(!root.contains(node)||node.nodeValue!==segment.last||isPhoneCleanupForeignNode(node,root))continue;
+        if(filter&&!(filter===node||filter.contains?.(node)))continue;
+        for(const r of segment.ranges)if(allowed.has(r.kind))segment.removed.add(r.kind);
+        const ranges=segment.ranges.filter(r=>segment.removed.has(r.kind));if(!ranges.length)continue;
+        let next='';for(let i=0;i<segment.value.length;i++)if(!ranges.some(r=>i>=r.start&&i<r.end))next+=segment.value[i];
+        if(next!==segment.last){node.nodeValue=next;segment.last=next;changed=true;prune(node);}
+      }
+      return changed;
+    }
+  };
+  return scope;
 }
 
-function cleanupRenderedPhoneEchoResiduals(textEl) {
-  if (!textEl) return false;
-  const items = collectPhoneCleanupItemsFromRenderedEcho(textEl);
-  if (!items.length) return false;
-  const before = normalizePhoneCleanupText(textEl.textContent || '');
-  removePhoneLines(textEl, items);
-  cleanupPhoneResidualNoise(textEl);
-  const after = normalizePhoneCleanupText(textEl.textContent || '');
-  return before !== after;
+function hasPhoneCleanupProtocolResidue(textEl, raw) {
+  if(!textEl)return false;const scope=createPhoneCleanupScope(textEl,raw);
+  return scope.protocolNodes().length>0||scope.has('literal');
 }
 
-// Empty native image spans are asynchronous mount targets, not phone residue.
-// Preserve their ancestors too so cleanup cannot detach a pending image indirectly.
+function removePhoneProtocolNodes(textEl, scope, savedImageBtns) {
+  if(!scope?.valid(textEl))return;
+  for(const el of scope.protocolNodes()){
+    if(!textEl.contains(el))continue;
+    const kept=[];
+    for(const child of Array.from(el.querySelectorAll('*'))){
+      if(kept.some(parent=>parent.contains(child)))continue;
+      if(isPhoneCleanupForeignNode(child,el)||/^(IMG|VIDEO|AUDIO|BUTTON|IFRAME|CANVAS|SVG)$/.test(child.tagName))kept.push(child);
+    }
+    for(const child of kept){
+      if(Array.isArray(savedImageBtns)&&child.matches?.('button.st-chatu8-image-button,button.image-tag-button')){
+        if(!savedImageBtns.includes(child))savedImageBtns.push(child);child.remove();
+      }else el.before(child);
+    }
+    el.remove();
+  }
+}
+
 function isPhoneCleanupChatu8Node(node, includeDescendants = false) {
   const el = node && (node.nodeType === 1 ? node : node.parentElement);
   if (!el) return false;
@@ -15007,369 +15133,29 @@ function hasPhoneCleanupMedia(el) {
   return isPhoneCleanupChatu8Node(el, true) || !!(el && (el.matches?.('img, video, audio, button, iframe, canvas, svg') || el.querySelector?.('img, video, audio, button, iframe, canvas, svg')));
 }
 
-function isPhoneCleanupBlockEl(el, root) {
-  if (!el || el === root || el.nodeType !== 1) return false;
-  if (isPhoneCleanupProtectedNode(el)) return false;
-  return /^(P|DIV|LI|BLOCKQUOTE|PRE|SECTION|ARTICLE)$/i.test(el.tagName || '');
+function removePhoneLines(textEl, cleanupItems, scope) {
+  if(!scope?.valid(textEl)||!Array.isArray(cleanupItems))return;
+  removePhoneEchoFragments(textEl,cleanupItems.flatMap(item=>item.variants||[]),scope);
+  removePhoneAuthorStubs(textEl,cleanupItems,scope);
+  cleanupPhoneResidualNoise(textEl,scope);
 }
 
-function scanVisibleLines(textEl) {
-  const lines = [];
-  if (!textEl) return lines;
-  const seenEls = new Set();
-
-  Array.from(textEl.querySelectorAll('p, li, blockquote, pre, section, article, div')).forEach(function(el) {
-    if (!isPhoneCleanupBlockEl(el, textEl)) return;
-    if (Array.from(el.children || []).some(function(ch) { return isPhoneCleanupBlockEl(ch, textEl); })) return;
-    const text = normalizePhoneCleanupText(el.textContent || '');
-    if (!text) return;
-    seenEls.add(el);
-    lines.push({ text: text, normalizedText: text, compactText: compactPhoneCleanupText(text), element: el, nodes: null, hasMedia: hasPhoneCleanupMedia(el), kind: 'element' });
-  });
-
-  let buf = [];
-  function flush() {
-    if (!buf.length) return;
-    const text = normalizePhoneCleanupText(buf.map(function(n) { return n.textContent || ''; }).join(''));
-    if (text) {
-      lines.push({ text: text, normalizedText: text, compactText: compactPhoneCleanupText(text), element: null, nodes: buf.slice(), hasMedia: buf.some(function(n) { return n.nodeType === 1 && hasPhoneCleanupMedia(n); }), kind: 'range' });
-    }
-    buf = [];
-  }
-  Array.from(textEl.childNodes || []).forEach(function(node) {
-    if (node.nodeType === 1 && isPhoneCleanupProtectedNode(node)) { flush(); return; }
-    if (node.nodeType === 1 && /^(BR|HR)$/i.test(node.tagName || '')) { flush(); return; }
-    if (node.nodeType === 1 && seenEls.has(node)) { flush(); return; }
-    if (node.nodeType === 1 && isPhoneCleanupBlockEl(node, textEl)) { flush(); return; }
-    if (node.nodeType === 3 || node.nodeType === 1) buf.push(node);
-  });
-  flush();
-
-  return lines;
-}
-
-function phoneCleanupLineMatchesItem(line, item) {
-  if (!line || !item) return false;
-  const raw = normalizePhoneCleanupText(line.normalizedText || line.text || '');
-  const n = stripPhoneCleanupDecorations(raw);
-  const c = compactPhoneCleanupText(n);
-  const variants = item.variants || [];
-  const compactVariants = item.compactVariants || [];
-  if (!n || !c) return false;
-
-  for (let i = 0; i < variants.length; i++) {
-    if (n === variants[i]) return true;
-    if (normalizePhoneCleanupText(raw) === variants[i]) return true;
-  }
-  for (let i = 0; i < compactVariants.length; i++) {
-    const cv = compactVariants[i];
-    if (cv && c === cv) return true;
-  }
-
-  if (item.from && item.text) {
-    const fromC = compactPhoneCleanupText(item.from);
-    const textC = compactPhoneCleanupText(item.text);
-    if (fromC && textC && c === fromC + textC) return true;
-    const colonRe = new RegExp('^\\s*' + escapeRegExp(item.from).replace(/\\s+/g, '\\s*') + '\\s*[:：]\\s*' + escapeRegExp(item.text).replace(/\\s+/g, '\\s*') + '\\s*$');
-    if (colonRe.test(n)) return true;
-  }
-
-  return false;
-}
-
-function phoneCleanupBlockLikelyOnlyPhone(line, item) {
-  if (!line || !item || line.hasMedia) return false;
-  const c = line.compactText || compactPhoneCleanupText(line.text || '');
-  if (!c) return false;
-  const compactVariants = item.compactVariants || [];
-  for (let i = 0; i < compactVariants.length; i++) {
-    const v = compactVariants[i];
-    if (!v || v.length < 2) continue;
-    if (c === v) return true;
-    if (c.indexOf(v) >= 0) {
-      const residual = c.replace(v, '');
-      if (!residual || residual.length <= Math.max(4, Math.floor(v.length * 0.25))) return true;
-    }
-  }
-  return false;
-}
-
-function removeScannedPhoneLine(line) {
-  if (!line) return;
-  if (line.element && line.element.parentNode && !line.hasMedia) {
-    line.element.remove();
-    return;
-  }
-  (line.nodes || []).forEach(function(node) {
-    if (!node || !node.parentNode) return;
-    if (node.nodeType === 1 && hasPhoneCleanupMedia(node)) return;
-    node.parentNode.removeChild(node);
-  });
-}
-
-function removePhoneLines(textEl, cleanupItems) {
-  if (!textEl || !Array.isArray(cleanupItems) || cleanupItems.length === 0) return;
-  const removedElements = new Set();
-  scanVisibleLines(textEl).forEach(function(line) {
-    if (line.element && removedElements.has(line.element)) return;
-    const hit = cleanupItems.some(function(item) { return phoneCleanupLineMatchesItem(line, item); });
-    if (!hit) return;
-    removeScannedPhoneLine(line);
-    if (line.element) removedElements.add(line.element);
-  });
-
-  scanVisibleLines(textEl).forEach(function(line) {
-    if (line.element && removedElements.has(line.element)) return;
-    const hit = cleanupItems.some(function(item) { return phoneCleanupBlockLikelyOnlyPhone(line, item); });
-    if (!hit) return;
-    removeScannedPhoneLine(line);
-    if (line.element) removedElements.add(line.element);
-  });
-
-  const residualFragments = [];
-  cleanupItems.forEach(function(item) {
-    (item.variants || []).forEach(function(v) {
-      if (v && v.length >= 2) residualFragments.push(v);
-    });
-  });
-  removePhoneEchoFragments(textEl, residualFragments);
-  removePhoneAuthorStubs(textEl, cleanupItems);
-}
-
-function phoneCleanupLineIsAuthorStub(line, cleanupItems) {
-  if (!line || line.hasMedia || !Array.isArray(cleanupItems)) return false;
-  const raw = normalizePhoneCleanupText(line.normalizedText || line.text || '');
-  const stripped = stripPhoneCleanupDecorations(raw)
-    .replace(/^(?:回复|reply)\s+[^:：]+\s*[:：]?\s*/i, '')
-    .replace(/^[\s:：,，;；|｜\-—–_~～·•。.!！？?]+|[\s:：,，;；|｜\-—–_~～·•。.!！？?]+$/g, '')
-    .trim();
-  const compact = compactPhoneCleanupText(stripped);
-  if (!compact) return true;
-  return cleanupItems.some(function(item) {
-    const fromC = compactPhoneCleanupText(item.from || '');
-    const auxC = compactPhoneCleanupText(item.aux || '');
-    if (fromC && compact === fromC) return true;
-    if (fromC && auxC && (compact === fromC + auxC || compact === fromC + '回复' + auxC || compact === fromC + 'reply' + auxC)) return true;
-    return false;
-  });
-}
-
-function removePhoneAuthorStubs(textEl, cleanupItems) {
-  if (!textEl || !Array.isArray(cleanupItems) || !cleanupItems.length) return;
-  scanVisibleLines(textEl).forEach(function(line) {
-    if (!phoneCleanupLineIsAuthorStub(line, cleanupItems)) return;
-    removeScannedPhoneLine(line);
-  });
-  Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
-    if (isPhoneCleanupProtectedNode(el)) return;
-    const hasMedia = hasPhoneCleanupMedia(el);
-    if (hasMedia) return;
-    const normalized = normalizePhoneCleanupText(el.textContent || '');
-    const line = { text: normalized, normalizedText: normalized, compactText: compactPhoneCleanupText(normalized), element: el, hasMedia: false };
-    if (phoneCleanupLineIsAuthorStub(line, cleanupItems)) el.remove();
-  });
+function removePhoneAuthorStubs(textEl, cleanupItems, scope) {
+  if(scope?.valid(textEl)&&Array.isArray(cleanupItems))scope.remove(['author']);
 }
 
 function hasPhoneEchoResidualText(textEl, block) {
-  if (!textEl || !block) return false;
-  const cleanupItems = collectPhoneCleanupItems(block);
-  if (!cleanupItems.length) return false;
-  const lines = scanVisibleLines(textEl);
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.element && line.element.closest && line.element.closest('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns')) continue;
-    if (cleanupItems.some(function(item) { return phoneCleanupLineMatchesItem(line, item) || phoneCleanupBlockLikelyOnlyPhone(line, item) || phoneCleanupLineIsAuthorStub(line, cleanupItems); })) return true;
-    const n = stripPhoneCleanupDecorations(line.normalizedText || line.text || '');
-    const c = compactPhoneCleanupText(n);
-    if (!c) continue;
-    for (let j = 0; j < cleanupItems.length; j++) {
-      const item = cleanupItems[j];
-      const textC = compactPhoneCleanupText(item.text || '');
-      const fromC = compactPhoneCleanupText(item.from || '');
-      if (textC && c.indexOf(textC) >= 0) return true;
-      if (fromC && textC && c.indexOf(fromC + textC) >= 0) return true;
-    }
-  }
-  return false;
+  if(!textEl||!block)return false;
+  const scope=createPhoneCleanupScope(textEl,block);
+  return scope.has('body')||scope.has('author')||scope.has('noise');
 }
 
-function removePhoneEchoFragments(textEl, fragments) {
-  if (!textEl || !Array.isArray(fragments) || fragments.length === 0) return;
-
-  const cleaned = Array.from(new Set(
-    fragments
-      .map(function(s) { return normalizePhoneCompareText(s); })
-      .filter(Boolean)
-  )).sort(function(a, b) { return b.length - a.length; });
-
-  if (!cleaned.length) return;
-
-  const matchers = cleaned.map(function(fragment) {
-    return {
-      fragment,
-      regex: buildLoosePhoneFragmentRegex(fragment),
-    };
-  }).filter(function(x) { return x.regex; });
-
-  if (!matchers.length) return;
-
-  const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      if (!node || !node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-      const p = node.parentElement;
-      if (!p) return NodeFilter.FILTER_REJECT;
-      if (isPhoneCleanupProtectedNode(p)) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    }
-  });
-
-  const textNodes = [];
-  let n;
-  while ((n = walker.nextNode())) textNodes.push(n);
-
-  textNodes.forEach(function(node) {
-    let val = node.nodeValue;
-    let changed = false;
-    matchers.forEach(function(item) {
-      if (!item.fragment || !item.regex) return;
-      const normalizedVal = normalizePhoneCompareText(val);
-      // 不用 normalizedVal.includes(fragment) 做硬门禁：DOM 原文和 cleanup fragment 可能只在标点/空白/引号上等价，
-      // 真正的判断交给 loose regex。这里的预检查一旦过严，就会让清理链完全失效。
-      if (!normalizedVal) return;
-      const before = val;
-      val = val.replace(item.regex, '');
-      if (val !== before) changed = true;
-    });
-    if (!changed) return;
-    val = val
-      .replace(/[ \t]{2,}/g, ' ')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/^[ \t]+|[ \t]+$/g, '');
-    node.nodeValue = val;
-  });
-
-  Array.from(textEl.querySelectorAll('p, div, span')).forEach(function(el) {
-    if (isPhoneCleanupProtectedNode(el)) return;
-    const txt = normalizePhoneCompareText(el.textContent || '');
-    const hasMedia = hasPhoneCleanupMedia(el);
-    if (cleaned.includes(txt) && !hasMedia) {
-      el.remove();
-      return;
-    }
-    if (!txt && !hasMedia) el.remove();
-  });
+function removePhoneEchoFragments(textEl, fragments, scope) {
+  if(scope?.valid(textEl)&&Array.isArray(fragments))scope.remove(['body']);
 }
 
-function stripPhoneLiteralNodes(textEl) {
-  if (!textEl) return;
-  const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
-      const p = node.parentElement;
-      if (!p) return NodeFilter.FILTER_REJECT;
-      if (isPhoneCleanupProtectedNode(p) || p.closest('pre, code')) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    }
-  });
-  const textNodes = [];
-  let n;
-  while ((n = walker.nextNode())) textNodes.push(n);
-  if (!textNodes.length) return;
-
-  // ── FIX: 聚合所有 text node 后统一跑 regex，解决 text node 碎片化导致跨节点匹配失败 ──
-  // 特殊字符（引号、破折号、省略号等）会使 ST 渲染器将文本切碎到多个 text node，
-  // 原逐 node 独立 regex 方案无法跨 node 匹配完整 <phone>...</phone> 块。
-  const combined = textNodes.map(function(nd) { return String(nd.nodeValue || ''); }).join('');
-  const MAX_LEN = 200000;
-  if (combined.length > MAX_LEN) {
-    // 退化回逐 node 处理，避免超大消息 OOM
-    textNodes.forEach(function(node) {
-      let val = String(node.nodeValue || '');
-      const before = val;
-      val = val
-        .replace(/<phone>[\s\S]*?<\/phone>/gi, '')
-        .replace(/&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi, '')
-        .replace(/<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b[^>]*>/gi, '')
-        .replace(/&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b(?:(?!&gt;)[\s\S])*?&gt;/gi, '')
-        .replace(/[ \t]{2,}/g, ' ')
-        .replace(/\n{3,}/g, '\n\n');
-      if (val !== before) node.nodeValue = val.trim();
-    });
-    return;
-  }
-
-  // Build char→nodeIdx map for the combined string
-  const map = new Array(combined.length);
-  let cursor = 0;
-  for (let i = 0; i < textNodes.length; i++) {
-    const len = String(textNodes[i].nodeValue || '').length;
-    for (let j = 0; j < len; j++) map[cursor + j] = i;
-    cursor += len;
-  }
-
-  // Collect all removal ranges from the combined string
-  var removeRanges = [];
-  var mm;
-  var rawPhoneRe = /<phone>[\s\S]*?<\/phone>/gi;
-  while ((mm = rawPhoneRe.exec(combined)) !== null) {
-    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
-  }
-  var encPhoneRe = /&lt;phone&gt;[\s\S]*?&lt;\/phone&gt;/gi;
-  while ((mm = encPhoneRe.exec(combined)) !== null) {
-    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
-  }
-  var rawTagRe = /<\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b[^>]*>/gi;
-  while ((mm = rawTagRe.exec(combined)) !== null) {
-    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
-  }
-  var encTagRe = /&lt;\/?(?:sms|sync|gmsg|gvoice|ghongbao|simg|notify|call|voice|hongbao|moments|comment|mochilocation|mochiloc)\b(?:(?!&gt;)[\s\S])*?&gt;/gi;
-  while ((mm = encTagRe.exec(combined)) !== null) {
-    removeRanges.push({ start: mm.index, end: mm.index + mm[0].length });
-  }
-
-  if (!removeRanges.length) return;
-
-  // Merge overlapping/adjacent ranges (sort by start)
-  removeRanges.sort(function(a, b) { return a.start - b.start; });
-  var merged = [];
-  for (var ri = 0; ri < removeRanges.length; ri++) {
-    var r = removeRanges[ri];
-    if (merged.length && r.start <= merged[merged.length - 1].end) {
-      merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, r.end);
-    } else {
-      merged.push({ start: r.start, end: r.end });
-    }
-  }
-
-  // Keep mask
-  var keep = new Array(combined.length);
-  for (var ki = 0; ki < combined.length; ki++) keep[ki] = true;
-  for (var mi = 0; mi < merged.length; mi++) {
-    for (var mj = merged[mi].start; mj < merged[mi].end && mj < combined.length; mj++) {
-      keep[mj] = false;
-    }
-  }
-
-  // Collect kept chars per node
-  var nodeChars = [];
-  for (var nci = 0; nci < textNodes.length; nci++) nodeChars.push([]);
-  for (var ci = 0; ci < combined.length; ci++) {
-    if (keep[ci]) {
-      var nodeIdx = map[ci];
-      nodeChars[nodeIdx].push(combined[ci]);
-    }
-  }
-
-  // Write back
-  for (var wi = 0; wi < textNodes.length; wi++) {
-    var newVal = nodeChars[wi].join('')
-      .replace(/[ \t]{2,}/g, ' ')
-      .replace(/\n{3,}/g, '\n\n');
-    var oldVal = String(textNodes[wi].nodeValue || '');
-    if (newVal !== oldVal) {
-      textNodes[wi].nodeValue = newVal;
-    }
-  }
+function stripPhoneLiteralNodes(textEl, scope) {
+  if(scope?.valid(textEl))scope.remove(['literal']);
 }
 
 function buildPhoneEchoContainer(block, smsList, commentList, groupList, momentsList, directPhoneList) {
@@ -15483,12 +15269,13 @@ function buildPhoneEchoContainer(block, smsList, commentList, groupList, moments
 // fp: 指纹（传入则防重复，历史重建时传 null 跳过指纹检查）
 function applyPhoneCollapseToEl(textEl, block, fp) {
   try {
-    if (!textEl) return;
+    if (!textEl || hasUnclosedPhonePairedTag(normalizePhoneMarkup(block)) || !phoneCleanupSourceMatches(textEl,block)) return;
+    const cleanupScope=createPhoneCleanupScope(textEl,block);
     const hasExistingPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
-    if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi) {
+    if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi && !cleanupScope.protocolNodes().length && !cleanupScope.has()) {
       return;
     }
-    const existingEchoCleanupItems = collectPhoneCleanupItemsFromRenderedEcho(textEl);
+
 
     // 先解析出所有手机 / 朋友圈内容，后面用来从正文里精确删除。
     // 支持同一楼层内多个 <PHONE> 块 + PHONE 外裸标签。
@@ -15514,30 +15301,21 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
       savedImageBtns.push(btn);
     };
     textEl.querySelectorAll('.rp-phone-live-img-btns button.st-chatu8-image-button, .rp-phone-live-img-btns button.image-tag-button').forEach(collectLiveBtn);
-    textEl.querySelectorAll('phone').forEach(phoneEl => {
-      Array.from(phoneEl.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(collectLiveBtn);
-      while (phoneEl.firstChild) phoneEl.removeChild(phoneEl.firstChild);
-      phoneEl.remove();
-    });
-    textEl.querySelectorAll('sms, sync, gmsg, gvoice, ghongbao, simg, notify, call, voice, hongbao, moments, comment, mochilocation, mochiloc').forEach(tag => {
-      Array.from(tag.querySelectorAll('button.st-chatu8-image-button, button.image-tag-button')).forEach(collectLiveBtn);
-      while (tag.firstChild) tag.removeChild(tag.firstChild);
-      tag.remove();
-    });
+    removePhoneProtocolNodes(textEl,cleanupScope,savedImageBtns);
 
     // ── 步骤2:尽量只做 DOM 级清理，不再整体重写 mes_text.innerHTML ──
     textEl.querySelectorAll('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-saved-img-btns, .rp-phone-live-img-btns').forEach(function(el) { el.remove(); });
-    stripPhoneLiteralNodes(textEl);
-    cleanupPhoneResidualNoise(textEl);
+    stripPhoneLiteralNodes(textEl,cleanupScope);
+    cleanupPhoneResidualNoise(textEl,cleanupScope);
     // 不再删除主楼正文里的 image-tag-button，避免删掉 st-chatu8 自己渲染的 inline 生图按钮
     // savedImageBtns 收集的是 <phone> 标签内的按钮，已在上方随 phoneEl.remove() 一起删除，无需再进行二次清理
 
     // ── 步骤3：统一主楼清理链 ──
-    // 从原始 PHONE / 裸标签块抽取 cleanup items，再按主楼可见整行/整块删除。
-    // 最后才由 removePhoneLines 内部调用 removePhoneEchoFragments 做少量残渣补刀。
-    const cleanupItems = collectPhoneCleanupItems(echoSource).concat(existingEchoCleanupItems);
-    removePhoneLines(textEl, cleanupItems);
-    cleanupPhoneResidualNoise(textEl);
+    // 只应用当前原消息已认领的残留范围；不再在整条消息中按同名、同文删行或删块。
+    // 片段、作者、噪声清理共用同一来源范围，未认领的组件和叙事保持。
+    const cleanupItems = collectPhoneCleanupItems(echoSource);
+    removePhoneLines(textEl, cleanupItems, cleanupScope);
+    cleanupPhoneResidualNoise(textEl,cleanupScope);
 
     // ── 步骤4/5：单独挂载摘要容器，避免覆盖正文和按钮 ──
     const echoWrap = buildPhoneEchoContainer(echoSource, smsList, commentList, groupList, momentsList, directPhoneList);
@@ -15565,75 +15343,13 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
 
 function rewritePhoneEchoInChat(block, fp, targetMesId) {
   try {
-    // 实时链路优先精确命中当前这条消息，不再让目标楼层靠 DOM 内容猜测。
-    if (Number.isFinite(targetMesId) && targetMesId >= 0) {
-      const exactMsg = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"])`);
-      const exactTextEl = exactMsg?.querySelector('.mes_text') || null;
-      if (exactTextEl) {
-        applyPhoneCollapseToEl(exactTextEl, block, fp);
-        return true;
-      }
-    }
-
-    const allMsgs = Array.from(document.querySelectorAll('.mes:not([is_user="true"])'));
-    if (!allMsgs.length) return false;
-
-    // 不再盲信“最后一条 AI DOM 消息就是目标消息”。
-    // 某些 ST 渲染/扩展时序下，最后一条 DOM 可能不是刚才那条含 PHONE 的消息，
-    // 结果导致真正目标消息完全没被折叠，主楼只剩 4 条裸文本。
-    const smsList = extractSmsSummaries(block);
-    const commentList = extractCommentSummaries(block);
-    const groupList = extractGroupSummaries(block);
-    const momentsList = extractMomentSummaries(block).map(function(x) { return x.text; });
-    const directPhoneList = extractDirectPhoneSummaries(block);
-
-    const fragments = []
-      .concat(smsList.map(x => String(x.text || '').trim()))
-      .concat(commentList.map(x => String(x.text || '').trim()))
-      .concat(groupList.map(function(g) {
-        if (g.kind === 'gmsg') return String(g.text || '').trim();
-        if (g.kind === 'gvoice') return String(g.text || '').trim();
-        if (g.kind === 'ghongbao') return [g.amount, g.note].filter(Boolean).join(' ').trim();
-        return '';
-      }))
-      .concat(momentsList)
-      .concat(directPhoneList.map(function(item) {
-        if (item.kind === 'voice') return String(item.text || '').trim();
-        if (item.kind === 'hongbao') return [item.amount, item.note].filter(Boolean).join(' ').trim();
-        if (item.kind === 'image') return String(item.text || '').trim();
-        if (item.kind === 'location') return String(item.place || '').trim();
-        return '';
-      }))
-      .filter(Boolean);
-
-    let taggedTarget = null;
-    for (let i = allMsgs.length - 1; i >= 0; i--) {
-      const textEl = allMsgs[i]?.querySelector('.mes_text');
-      if (!textEl) continue;
-      const html = textEl.innerHTML || '';
-      const hasPhoneTag = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc)\b/i.test(html);
-      if (hasPhoneTag) {
-        taggedTarget = textEl;
-        break;
-      }
-    }
-
-    if (taggedTarget) {
-      applyPhoneCollapseToEl(taggedTarget, block, fp);
-      return true;
-    }
-
-    // 不再按正文片段去全历史模糊匹配。
-    // 那会把这次 PHONE 内容错误挂到上一条已经渲染过手机摘要的 AI 楼层上，造成 4→2 / 6→4 这种稳定错层。
-    const lastMsg = allMsgs[allMsgs.length - 1];
-    const fallbackTextEl = lastMsg?.querySelector('.mes_text') || null;
-    if (!fallbackTextEl) return false;
-    applyPhoneCollapseToEl(fallbackTextEl, block, fp);
-    return true;
-  } catch(e) {
-    console.warn('[Raymond Phone] rewritePhoneEchoInChat:', rpErrorInfo(e));
-    return false;
-  }
+    const chat=getContext()?.chat||[];
+    const ids=Number.isInteger(targetMesId)&&targetMesId>=0?[targetMesId]:chat.flatMap((m,i)=>m&&!m.is_user&&normalizePhoneMarkup(String(m.mes||'').replace(/<think>[\s\S]*?<\/think>/gi,'')).trim()===normalizePhoneMarkup(block).trim()?[i]:[]);
+    if(ids.length!==1)return false;
+    const textEl=document.querySelector('.mes[mesid="'+ids[0]+'"]:not([is_user="true"]) .mes_text');
+    if(!textEl||!phoneCleanupSourceMatches(textEl,block))return false;
+    applyPhoneCollapseToEl(textEl,block,fp);return true;
+  }catch(error){console.warn('[Raymond Phone] rewritePhoneEchoInChat:',rpErrorInfo(error));return false;}
 }
 
 function schedulePhonePostProcess(block, fp, targetMesId) {
@@ -15852,7 +15568,7 @@ function repairPhoneMessageByMesId(targetMesId) {
 
     const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     const textHtml = textEl.innerHTML || '';
-    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
+    const hasResidualPhoneMarkup = hasPhoneCleanupProtocolResidue(textEl,normalizedRaw);
     const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
     if (hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) {
       return false;
@@ -15925,7 +15641,7 @@ function rewriteAllHistoryPhoneBlocks() {
 
       const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
       const textHtml = textEl.innerHTML || '';
-      const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
+      const hasResidualPhoneMarkup = hasPhoneCleanupProtocolResidue(textEl,normalizedRaw);
       const hasResidualPhoneEchoText = hasPhoneEchoResidualText(textEl, normalizedRaw);
       // 历史扫描只负责把真实 PHONE 标签渲染出来；不再做“已渲染摘要反向清残留”的自愈清理，避免干扰其他扩展 DOM。
       if (textEl.dataset.rpHistDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup && !hasResidualPhoneEchoText) {
@@ -16015,6 +15731,8 @@ function rpParsePhoneOrdered(block, source = {}) {
     let token, total = 0;
     while ((token = tags.exec(String(block || ''))) !== null) {
       const kind = (token[1] || token[2] || token[3]).toUpperCase();
+      // Hide legacy output without updating stage, progress or status.
+      if (kind === 'SYNC') { total++; continue; }
       const ordinal = counters[kind] || 0; counters[kind] = ordinal + 1;
       const attrs = getTagAttrs(token[0].match(/^<\w+\b([^>]*)>/)?.[1] || '');
       const deleted = STATE.deletedContacts?.[normalizePhonePersonName(resolveCanonicalPhoneName(attrs.FROM || ''))];
@@ -16393,13 +16111,7 @@ function rpParsePhoneAtom(block, source = {}) {
 
 
 
-  const sync = block.match(/<SYNC\s+STAGE="(\d+)"\s+PROGRESS="(\d+)"\s+STATUS="([^"]+)"\/>/i);
-  if (sync) {
-    STATE.sync = { stage: +sync[1], progress: +sync[2], status: sync[3] };
-    refreshWidget();
-    saveState(); // FIX2: 持久化关系进度
-    parsedCount++;
-  }
+  // Retired SYNC is consumed only by the ordered legacy-tag filter.
 
   // ── CALL ──
   const callRe = /<CALL\s+FROM="([^"]+)"\s+TIME="([^"]+)"\s*\/?>/gi;
@@ -16855,18 +16567,7 @@ function updatePreviews() {
   });
 }
 
-const STAGE_NAMES = { 1: '初识 · 试探', 2: '增进 · 主导', 3: '陷落 · 占有' };
-function refreshWidget() {
-  if (rpDeferUi("refreshWidget", () => refreshWidget())) return;
-  const { stage, progress, status } = STATE.sync;
-  $('#rp-wd-stage').text(`Stage ${stage} · ${(STAGE_NAMES[stage] || '').split('·')[1]?.trim()}`);
-  $('#rp-wd-fill').css('width', (progress / 99 * 100).toFixed(1) + '%');
-  $('#rp-wd-status').text(status);
-}
-
-// ================================================================
-//  DRAGGABLE
-// ================================================================
+// Relationship widget retired. Shared theme variables remain available to games.
 function makeDraggable() {
   const phone = document.querySelector('#rp-phone');
   if (!phone) return;
@@ -17830,36 +17531,20 @@ function scheduleUserOocChatCleanup(opts) {
 }
 
 function hidePhoneTagsInChat(targetMesId) {
-  if (!isMochiPhoneEnabled()) return;
-  // 默认只清理目标楼层；只有未指定时才全量扫历史。
-  let targets = [];
-  if (Number.isFinite(targetMesId) && targetMesId >= 0) {
-    const exactEl = document.querySelector(`.mes[mesid="${targetMesId}"] .mes_text`);
-    if (exactEl) targets = [exactEl];
-  }
-  if (!targets.length) {
-    targets = Array.from(document.querySelectorAll('.mes_text'));
-  }
-
-  targets.forEach(el => {
-    // 方法1:先整体清空 <phone> 元素内容再移除,防止子文本节点遗留在 DOM 里
-    el.querySelectorAll('phone').forEach(phoneEl => {
-      // 清空所有子节点(包括 sms/text 文本节点),再从 DOM 删除
-      while (phoneEl.firstChild) phoneEl.removeChild(phoneEl.firstChild);
-      phoneEl.remove();
-    });
-    // 残余的裸 sms/gmsg 等标签(不在 phone 内)也一并清除
-    el.querySelectorAll('sms, moments, comment, notify, sync, call, voice, gmsg, gvoice, ghongbao, simg, hongbao, mochilocation, mochiloc').forEach(tag => {
-      while (tag.firstChild) tag.removeChild(tag.firstChild);
-      tag.remove();
-    });
-    // 不再整体改写 innerHTML，避免把智绘姬按钮节点重建掉
-    stripPhoneLiteralNodes(el);
-    cleanupPhoneResidualNoise(el);
+  if(!isMochiPhoneEnabled())return;
+  const ctx=getContext(),exact=Number.isInteger(targetMesId)&&targetMesId>=0;
+  const targets=exact?Array.from(document.querySelectorAll('.mes[mesid="'+targetMesId+'"]:not([is_user="true"]) .mes_text')):Array.from(document.querySelectorAll('.mes:not([is_user="true"]) .mes_text'));
+  targets.forEach(el=>{
+    const sourceId=el.closest('.mes')?.getAttribute('mesid'),index=/^\d+$/.test(sourceId||'')?Number(sourceId):NaN,message=ctx?.chat?.[index];
+    if(!Number.isInteger(index)||!message||message.is_user||!message.mes||hasUnclosedPhonePairedTag(normalizePhoneMarkup(message.mes)))return;
+    const scope=createPhoneCleanupScope(el,message.mes);
+    removePhoneProtocolNodes(el,scope);
+    stripPhoneLiteralNodes(el,scope);cleanupPhoneResidualNoise(el,scope);
   });
 }
 
-// 清理用户气泡里遗留的 OOC 括号指令（历史消息持久化清理）
+// User OOC cleanup is separate from AI PHONE residue ownership.
+
 function hideOocInUserBubbles() {
   if (!isMochiPhoneEnabled()) return;
   document.querySelectorAll('.mes[is_user="true"] .mes_text').forEach(el => {
@@ -17891,7 +17576,8 @@ function beautifySMSInChat(targetMesId) {
     if (!textEl) return;
     const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-divider, .rp-phone-live-img-btns');
     const textHtml = textEl.innerHTML || '';
-    const hasResidualPhoneMarkup = /<phone>|&lt;phone&gt;|<(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b|&lt;(sms|moments|voice|hongbao|simg|gmsg|gvoice|ghongbao|mochilocation|mochiloc|notify|sync|call)\b/i.test(textHtml);
+    const sourceMesAttr=textEl.closest('.mes')?.getAttribute('mesid'),sourceMesId=/^\d+$/.test(sourceMesAttr||'')?Number(sourceMesAttr):NaN;
+    const hasResidualPhoneMarkup = Number.isInteger(sourceMesId)&&hasPhoneCleanupProtocolResidue(textEl,ctx?.chat?.[sourceMesId]?.mes||'');
     if (textEl.dataset.rpDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) {
       return;
     }
