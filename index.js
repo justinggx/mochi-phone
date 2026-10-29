@@ -12252,14 +12252,14 @@ function rpUpdateCustomApiHints() {
     const ark = provider?.id === 'ark';
     $('#rp-api-model' + suffix).attr('placeholder', ark ? 'Model ID 或 ep- 开头的接入点 ID' : provider ? '模型名称，如 ' + provider.model : '模型名称 (如 deepseek-chat)');
     const details = {ark:'填写方舟 API Key 和已开通的 Model ID 或 ep- 接入点 ID，模型请手填。',
-      deepseek:'填写开放平台 API Key，可获取模型列表或直接修改模型名称。',
       kimi:'填写 Kimi 开放平台 API Key，可获取模型或手填；国内与国际地址需对应账号。默认 K2.6；K3、K2.7 等强制思考型号可能等待更久。',
       qwen:'填写百炼 API Key，地址地域需与密钥一致；可获取模型或手填，示例模型可自行修改。',
       glm:'填写智谱开放平台 API Key，模型请从控制台手填；支持保留已有套餐地址，快捷按钮使用标准按量接口。',
       minimax:'填写 MiniMax 开放平台 API Key，模型请手填；国内与国际地址需匹配。M2、M3.1 等型号仍可能先思考。'};
-    $('#rp-api-provider-note' + suffix).text(provider
-      ? provider.label + '：' + details[provider.id] + ' 请求经当前酒馆服务器转发，不更改酒馆主 API；API Key 不会另行保存到酒馆密钥库。'
-      : '').toggle(!!provider);
+    const note = provider && details[provider.id];
+    $('#rp-api-provider-note' + suffix).text(note
+      ? provider.label + '：' + note + ' 请求经当前酒馆服务器转发，不更改酒馆主 API；API Key 不会另行保存到酒馆密钥库。'
+      : '').toggle(!!note);
   }
   const provider = rpCustomApiProvider($('#rp-api-url-v').val());
   $('#rp-api-fetch-models').text(provider && !provider.models ? '模型说明' : '获取模型');
