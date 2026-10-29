@@ -4844,6 +4844,26 @@ ${XHS_COVER_CSS}
 .rp-api-profile-status:empty{display:none}
 #rp-api-profile,#rp-api-profile-v{max-width:100%;min-width:0;text-overflow:ellipsis}
 #rp-api-box{max-height:calc(100% - 32px);overflow-y:auto;overscroll-behavior:contain}
+/* Connection inputs precede optional profile management on small phone screens. */
+#rp-phone .rp-api-mode-switch{display:flex;gap:8px;margin-bottom:10px;min-width:0}
+#rp-phone #rp-screen .rp-api-mode-switch .rp-api-opt{flex:1;justify-content:center;min-width:0;min-height:30px;box-sizing:border-box;gap:5px;padding:5px 6px;margin:0!important;font-size:12px;border:1px solid var(--rp-v-border,rgba(168,85,247,.2));border-radius:10px}
+#rp-phone .rp-api-mode-switch input{margin:0;flex-shrink:0}
+#rp-phone .rp-api-profiles{gap:5px;margin-bottom:4px;padding-bottom:0;border:0}
+#rp-phone .rp-api-profile-picker{display:flex;align-items:center;gap:6px;min-width:0}
+#rp-phone .rp-api-profile-picker select{flex:1;width:0;min-width:0}
+#rp-phone .rp-api-profile-picker button{flex:0 0 auto;white-space:nowrap;padding-inline:9px}
+#rp-phone .rp-api-secondary{border:1px solid var(--rp-v-border,rgba(168,85,247,.2));border-radius:10px;font-size:12px;min-width:0}
+#rp-phone .rp-api-secondary summary{padding:8px 10px;cursor:pointer;color:var(--rp-v-text,#7c3aed);font-weight:500;line-height:1.4}
+#rp-phone .rp-api-secondary-body{display:flex;flex-direction:column;gap:7px;padding:2px 10px 10px;min-width:0}
+#rp-phone #rp-api-custom-fields-v{gap:6px!important}
+#rp-phone #rp-screen #rp-view-api-settings .rp-api-scroll{padding-top:8px!important;padding-bottom:8px!important}
+#rp-phone #rp-screen #rp-view-api-settings .rp-api-footer{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);align-items:stretch;gap:8px!important;padding:8px 18px 16px!important}
+#rp-phone #rp-screen #rp-view-api-settings .rp-api-footer button{min-width:0;min-height:40px;margin:0!important;padding:10px 6px!important;border-radius:12px!important;line-height:1.3;overflow-wrap:anywhere}
+#rp-phone #rp-screen #rp-view-api-settings #rp-api-test-v{font-size:12px!important}
+#rp-phone #rp-screen #rp-view-api-settings #rp-api-status-v{grid-column:1/-1;min-height:0!important;max-height:44px;overflow-y:auto;line-height:1.4;margin:0!important;font-size:11px}
+#rp-phone #rp-screen #rp-view-api-settings #rp-api-status-v:empty{display:none}
+#rp-phone #rp-api-box{box-sizing:border-box;width:262px;max-width:calc(100% - 24px);max-height:calc(100% - 32px)}
+
 .rp-api-preset-btn{padding:3px 9px;border-radius:10px;border:1px solid rgba(168,85,247,.3);background:transparent;color:#7c3aed;font-size:10px;cursor:pointer;transition:background .15s}
 .rp-api-preset-btn:hover{background:rgba(168,85,247,.12)}
 .rp-api-input{background:rgba(255,255,255,.9);border:1.5px solid rgba(180,120,200,.25);border-radius:12px;padding:7px 12px;font-size:11.5px;color:#2d1060;font-family:inherit;outline:none;width:100%;box-sizing:border-box}
@@ -9007,21 +9027,11 @@ const HTML = `
             <span class="rp-nav-title">API 设置</span>
           </div>
           <div class="rp-api-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px 10px;display:flex;flex-direction:column;gap:0">
-            <div class="rp-api-heading" style="font-size:17px;color:#2d1060;font-weight:800;text-align:center;margin-bottom:12px;letter-spacing:-.2px">⚡ 自定义API设置</div>
-            <label class="rp-api-opt" style="margin-bottom:10px"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 使用当前 API(SillyTavern)</label>
-            <label class="rp-api-opt" style="margin-bottom:12px"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 接入其他 API</label>
+            <div class="rp-api-mode-switch"><label class="rp-api-opt"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 酒馆 API</label><label class="rp-api-opt"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 自定义 API</label></div>
             <div id="rp-api-custom-fields-v" style="display:none;flex-direction:column;gap:8px">
               ${rpApiProfileControlsHtml('-v')}
-              <div class="rp-api-presets" style="margin-bottom:4px">
-                <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
-                <button class="rp-api-preset-btn" data-url="https://api.moonshot.cn/v1" data-model="kimi-k2.6">Kimi</button>
-                <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">豆包·火山方舟</button>
-                <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">通义千问</button>
-                <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱 GLM</button>
-                <button class="rp-api-preset-btn" data-url="https://api.minimax.cn/v1" data-model="MiniMax-M3">MiniMax</button>
-                <button class="rp-api-preset-btn" data-url="" data-model="">其他OpenAI</button>
-              </div>
-              <label class="rp-api-field-label" for="rp-api-url-v">API 地址</label>
+
+              <label class="rp-api-field-label" for="rp-api-url-v">API 地址（URL）</label>
               <input class="rp-api-input" id="rp-api-url-v" placeholder="https://api.deepseek.com/v1" type="url">
               <label class="rp-api-field-label" for="rp-api-key-v">API Key</label>
               <input class="rp-api-input" id="rp-api-key-v" placeholder="API Key" type="password">
@@ -9031,17 +9041,28 @@ const HTML = `
                 <button id="rp-api-fetch-models" style="flex-shrink:0;padding:7px 10px;border-radius:12px;border:1.5px solid rgba(168,85,247,.3);background:rgba(168,85,247,.08);color:#7c3aed;font-size:11px;cursor:pointer;white-space:nowrap;font-weight:600">获取模型</button>
               </div>
               <div id="rp-model-list" style="display:none;background:rgba(255,255,255,.95);border:1px solid rgba(168,85,247,.2);border-radius:12px;max-height:140px;overflow-y:auto"></div>
+              <details class="rp-api-secondary rp-api-service-presets"><summary>常用服务快捷填入</summary><div class="rp-api-secondary-body"><div class="rp-api-presets" style="margin-bottom:4px">
+                <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
+                <button class="rp-api-preset-btn" data-url="https://api.moonshot.cn/v1" data-model="kimi-k2.6">Kimi</button>
+                <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">豆包·火山方舟</button>
+                <button class="rp-api-preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">通义千问</button>
+                <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱 GLM</button>
+                <button class="rp-api-preset-btn" data-url="https://api.minimax.cn/v1" data-model="MiniMax-M3">MiniMax</button>
+                <button class="rp-api-preset-btn" data-url="" data-model="">其他OpenAI</button>
+              </div></div></details>
+              ${rpApiProfileControlsHtml('-v','manage')}
               <div id="rp-api-provider-note-v" class="rp-set-hint" style="display:none;line-height:1.6"></div>
               <div class="rp-api-privacy" style="font-size:11px;color:#9070b0;line-height:1.6">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
             </div>
-            <div id="rp-api-status-v" role="status" aria-live="polite" style="font-size:11px;color:#a855f7;min-height:18px;margin-top:8px"></div>
+
             <div class="rp-api-explanation" style="font-size:11px;color:#9070b0;line-height:1.7;background:rgba(168,85,247,.06);border-radius:12px;padding:10px 12px">
               信息仍用酒馆 API；其他小手机功能可使用此接口，需自备 Key。
               <span id="rp-api-blink" style="color:#a855f7;font-weight:700">支持 DeepSeek、Kimi、豆包、通义、GLM、MiniMax。</span>
             </div>
           </div>
           <div class="rp-api-footer" style="padding:10px 18px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
-            <button id="rp-api-test-v" style="width:100%;padding:11px;margin-bottom:8px;background:rgba(255,255,255,.18);border:1.5px solid rgba(168,85,247,.45);color:#6d28d9;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer">📡 测试连通性</button>
+            <div id="rp-api-status-v" role="status" aria-live="polite" style="font-size:11px;color:#a855f7;min-height:18px;margin-top:8px"></div>
+            <button id="rp-api-test-v" style="width:100%;padding:11px;margin-bottom:8px;background:rgba(255,255,255,.18);border:1.5px solid rgba(168,85,247,.45);color:#6d28d9;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer">测试连接</button>
             <button id="rp-api-save-v" style="width:100%;padding:13px;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;border:none;border-radius:18px;font-size:14px;font-weight:700;cursor:pointer">保存并使用</button>
           </div>
         </div>
@@ -9511,14 +9532,17 @@ const HTML = `
           <!-- API 设置面板 -->
           <div id="rp-api-panel" style="display:none">
             <div id="rp-api-box">
-              <div class="rp-api-title">⚡ 回复速度设置</div>
-              <div class="rp-api-desc">建议接入 DeepSeek 等国产模型<br>让角色在飞行棋任务中回复更快<br><span style="color:#a855f7;font-weight:600">接入后直接调用真实 API,需自备 Key</span></div>
-              <label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="st" id="rp-api-mode-st" checked> 使用当前 API(SillyTavern)</label>
-              <label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="custom" id="rp-api-mode-custom"> 接入其他 API</label>
+              <div class="rp-api-title">API 设置</div>
+              <div class="rp-api-desc">选择已存配置，或新增一套接口。</div>
+              <div class="rp-api-mode-switch"><label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="st" id="rp-api-mode-st" checked> 酒馆 API</label><label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="custom" id="rp-api-mode-custom"> 自定义 API</label></div>
               <div id="rp-api-custom-fields" style="display:none">
                 ${rpApiProfileControlsHtml('')}
-                <div style="font-size:11px;color:#9070b0;line-height:1.6;margin-bottom:8px">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
-                <div class="rp-api-presets">
+
+
+                <input class="rp-api-input" id="rp-api-url" placeholder="API 地址 (如 https://api.deepseek.com/v1)" type="url">
+                <input class="rp-api-input" id="rp-api-key" placeholder="API Key" type="password">
+                <input class="rp-api-input" id="rp-api-model" placeholder="模型名称 (如 deepseek-chat)">
+                <details class="rp-api-secondary rp-api-service-presets"><summary>常用服务快捷填入</summary><div class="rp-api-secondary-body"><div class="rp-api-presets">
                   <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                   <button class="rp-api-preset-btn" data-url="https://api.moonshot.cn/v1" data-model="kimi-k2.6">Kimi</button>
                   <button class="rp-api-preset-btn" data-url="https://ark.cn-beijing.volces.com/api/v3" data-model="">豆包·火山方舟</button>
@@ -9526,10 +9550,9 @@ const HTML = `
                   <button class="rp-api-preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱 GLM</button>
                   <button class="rp-api-preset-btn" data-url="https://api.minimax.cn/v1" data-model="MiniMax-M3">MiniMax</button>
                   <button class="rp-api-preset-btn" data-url="" data-model="">其他 OpenAI</button>
-                </div>
-                <input class="rp-api-input" id="rp-api-url" placeholder="API 地址 (如 https://api.deepseek.com/v1)" type="url">
-                <input class="rp-api-input" id="rp-api-key" placeholder="API Key" type="password">
-                <input class="rp-api-input" id="rp-api-model" placeholder="模型名称 (如 deepseek-chat)">
+                </div></div></details>
+                ${rpApiProfileControlsHtml('','manage')}
+                <div style="font-size:11px;color:#9070b0;line-height:1.6;margin-bottom:8px">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
                 <div id="rp-api-provider-note" class="rp-set-hint" style="display:none;line-height:1.6"></div>
               </div>
               <div class="rp-api-save-row">
@@ -12083,17 +12106,23 @@ function rpSaveCustomApiConfig(cfg) {
   return rpWriteApiSettingsStore(next);
 }
 
-function rpApiProfileControlsHtml(suffix) {
+function rpApiProfileControlsHtml(suffix, part = 'picker') {
+  if(part==='manage')return `<details class="rp-api-secondary rp-api-profile-manager" id="rp-api-profile-manager${suffix}">
+    <summary>配置管理（名称 / 删除）</summary>
+    <div class="rp-api-secondary-body">
+      <label class="rp-api-field-label" for="rp-api-profile-name${suffix}">配置名称</label>
+      <input class="rp-api-input" id="rp-api-profile-name${suffix}" maxlength="60" placeholder="例如 DeepSeek 日常、配置1" autocomplete="off">
+      <button type="button" class="rp-api-profile-action" id="rp-api-profile-delete${suffix}" data-api-profile-delete="${suffix}">删除此配置</button>
+      <div class="rp-api-profile-hint">名称可在这里修改；保存会更新当前所选配置。</div>
+      <div class="rp-api-profile-status" id="rp-api-profile-status${suffix}" role="status" aria-live="polite"></div>
+    </div>
+  </details>`;
   return `<div class="rp-api-profiles">
     <label class="rp-api-field-label" for="rp-api-profile${suffix}">我的配置</label>
-    <select class="rp-api-input" id="rp-api-profile${suffix}" aria-label="已保存的API配置"><option value="">新建配置</option></select>
-    <label class="rp-api-field-label" for="rp-api-profile-name${suffix}">配置名称</label>
-    <input class="rp-api-input" id="rp-api-profile-name${suffix}" maxlength="60" placeholder="例如 DeepSeek 日常、配置1" autocomplete="off">
-    <div class="rp-api-profile-actions"><button type="button" class="rp-api-profile-action" data-api-profile-new="${suffix}">新增配置</button><button type="button" class="rp-api-profile-action" id="rp-api-profile-delete${suffix}" data-api-profile-delete="${suffix}">删除配置</button></div>
-    <div class="rp-api-profile-hint">选择后点「保存并使用」切换；新增可另存一套，保存会更新所选配置。</div>
-    <div class="rp-api-profile-status" id="rp-api-profile-status${suffix}" role="status" aria-live="polite"></div>
+    <div class="rp-api-profile-picker"><select class="rp-api-input" id="rp-api-profile${suffix}" aria-label="已保存的API配置"><option value="">新建配置</option></select><button type="button" class="rp-api-profile-action" data-api-profile-new="${suffix}">＋ 新增</button></div>
   </div>`;
 }
+
 
 function rpApiProfileFormCurrent(suffix) {
   const host=document.getElementById(suffix==='-v'?'rp-view-api-settings':'rp-api-panel'),account=rpAccountStoragePrefix();
@@ -12119,6 +12148,7 @@ function rpFillApiProfileForm(suffix, selectedId, newDraft = false) {
   for(const field of ['url','key','model'])$('#rp-api-'+field+suffix).val(profile?.[field]||'');
   $('#rp-api-profile-name'+suffix).val(profile?.name||rpNextApiProfileName(profiles));
   $('#rp-api-custom-fields'+suffix).css('display',mode==='custom'?'flex':'none');
+  if(newDraft&&suffix==='-v'){const scroll=document.querySelector('#rp-view-api-settings .rp-api-scroll');if(scroll)scroll.scrollTop=0;}
   rpApiProfileNotice('',suffix);rpUpdateCustomApiHints();
 }
 
@@ -12127,7 +12157,7 @@ function rpSelectApiProfile(suffix, id) {
   const {profiles}=rpReadApiProfiles();
   if(id&&!profiles.some(p=>p.id===id)){rpApiProfileNotice('该配置已变化，请重新打开设置。',suffix);return;}
   rpFillApiProfileForm(suffix,id,!id);
-  rpApiProfileNotice(id?'已载入配置，点击「保存并使用」后生效。':'填写新配置后点击「保存并使用」。',suffix);
+  rpApiProfileNotice(id?'已载入，保存后使用。':'填写连接信息后保存。',suffix);
 }
 
 function rpApplyApiPreset(button) {
@@ -12139,6 +12169,7 @@ function rpApplyApiPreset(button) {
   $('#rp-api-url'+suffix).val(url);$('#rp-api-model'+suffix).val(model);
   if(!same)$('#rp-api-key'+suffix).val('');
   $(url?'#rp-api-key'+suffix:'#rp-api-url'+suffix).trigger('focus');
+  button.closest('details')?.removeAttribute('open');
   rpResetApiTest();rpResetModelRequest();rpUpdateCustomApiHints();
 }
 
@@ -12723,12 +12754,13 @@ function rpApiTestFingerprint() {
 function rpResetApiTest() {
   const test = rpApiTest; rpApiTest = null;
   if (test) { clearTimeout(test.timeout); clearTimeout(test.resetTimer); test.request.abort(); }
-  $('#rp-api-test-v').prop('disabled', false).removeClass('testing ok fail').text('📡 测试连通性');
+  $('#rp-api-test-v').prop('disabled', false).removeClass('testing ok fail').text('测试连接');
   if (test) $('#rp-api-status-v').text('');
 }
 // 读取已保存 API 配置并填入 view 表单
 function lgFillAPIView() {
   rpFillApiProfileForm('-v');
+  const scroll=document.querySelector('#rp-view-api-settings .rp-api-scroll');if(scroll)scroll.scrollTop=0;
 }
 
 function getGroupMemberEntries(thread) {
