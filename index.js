@@ -4836,6 +4836,14 @@ ${XHS_COVER_CSS}
 .rp-dark .rp-api-opt{color:#e8d0ff}
 #rp-api-custom-fields{margin-top:10px;display:flex;flex-direction:column;gap:7px}
 .rp-api-presets{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:2px}
+.rp-api-profiles{display:flex;flex-direction:column;gap:7px;min-width:0;margin-bottom:10px;padding-bottom:12px;border-bottom:1px solid var(--rp-v-border,rgba(168,85,247,.2))}
+.rp-api-profile-actions{display:flex;gap:8px;min-width:0}
+.rp-api-profile-action{flex:1;min-width:0;min-height:32px;border:1px solid var(--rp-v-border,rgba(168,85,247,.25));border-radius:10px;padding:6px 8px;background:var(--rp-v-card,rgba(168,85,247,.08));color:var(--rp-v-text,#7c3aed);font:inherit;font-size:12px;cursor:pointer}
+.rp-api-profile-action:disabled{opacity:.45;cursor:default}
+.rp-api-profile-hint,.rp-api-profile-status{font-size:11px;line-height:1.5;color:var(--rp-v-muted,#9070b0);overflow-wrap:anywhere}
+.rp-api-profile-status:empty{display:none}
+#rp-api-profile,#rp-api-profile-v{max-width:100%;min-width:0;text-overflow:ellipsis}
+#rp-api-box{max-height:calc(100% - 32px);overflow-y:auto;overscroll-behavior:contain}
 .rp-api-preset-btn{padding:3px 9px;border-radius:10px;border:1px solid rgba(168,85,247,.3);background:transparent;color:#7c3aed;font-size:10px;cursor:pointer;transition:background .15s}
 .rp-api-preset-btn:hover{background:rgba(168,85,247,.12)}
 .rp-api-input{background:rgba(255,255,255,.9);border:1.5px solid rgba(180,120,200,.25);border-radius:12px;padding:7px 12px;font-size:11.5px;color:#2d1060;font-family:inherit;outline:none;width:100%;box-sizing:border-box}
@@ -9003,6 +9011,7 @@ const HTML = `
             <label class="rp-api-opt" style="margin-bottom:10px"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 使用当前 API(SillyTavern)</label>
             <label class="rp-api-opt" style="margin-bottom:12px"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 接入其他 API</label>
             <div id="rp-api-custom-fields-v" style="display:none;flex-direction:column;gap:8px">
+              ${rpApiProfileControlsHtml('-v')}
               <div class="rp-api-presets" style="margin-bottom:4px">
                 <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
                 <button class="rp-api-preset-btn" data-url="https://api.moonshot.cn/v1" data-model="kimi-k2.6">Kimi</button>
@@ -9033,7 +9042,7 @@ const HTML = `
           </div>
           <div class="rp-api-footer" style="padding:10px 18px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
             <button id="rp-api-test-v" style="width:100%;padding:11px;margin-bottom:8px;background:rgba(255,255,255,.18);border:1.5px solid rgba(168,85,247,.45);color:#6d28d9;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer">📡 测试连通性</button>
-            <button id="rp-api-save-v" style="width:100%;padding:13px;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;border:none;border-radius:18px;font-size:14px;font-weight:700;cursor:pointer">保存设置</button>
+            <button id="rp-api-save-v" style="width:100%;padding:13px;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;border:none;border-radius:18px;font-size:14px;font-weight:700;cursor:pointer">保存并使用</button>
           </div>
         </div>
 
@@ -9507,6 +9516,7 @@ const HTML = `
               <label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="st" id="rp-api-mode-st" checked> 使用当前 API(SillyTavern)</label>
               <label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="custom" id="rp-api-mode-custom"> 接入其他 API</label>
               <div id="rp-api-custom-fields" style="display:none">
+                ${rpApiProfileControlsHtml('')}
                 <div style="font-size:11px;color:#9070b0;line-height:1.6;margin-bottom:8px">隐私提示：此端点会收到该功能所需的角色人设、世界书片段、相关聊天或手机内容；Key 仍保存在本浏览器。请只使用可信服务，非本机地址建议使用 HTTPS。</div>
                 <div class="rp-api-presets">
                   <button class="rp-api-preset-btn" data-url="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
@@ -9523,7 +9533,7 @@ const HTML = `
                 <div id="rp-api-provider-note" class="rp-set-hint" style="display:none;line-height:1.6"></div>
               </div>
               <div class="rp-api-save-row">
-                <button class="rp-api-save-btn" id="rp-api-save">保存</button>
+                <button class="rp-api-save-btn" id="rp-api-save">保存并使用</button>
                 <button class="rp-api-cancel-btn" id="rp-api-cancel">取消</button>
               </div>
             </div>
@@ -11288,6 +11298,7 @@ function bindUI() {
   $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, #rp-api-model-v, input[name="rp-api-mode-v"]', () => rpResetApiTest());
   $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-url', () => rpUpdateCustomApiHints());
   $(document).on("click.mochiPhone", '#rp-api-test-v', async function() {
+    if(!rpApiProfileFormCurrent('-v'))return;
     rpResetApiTest();
     const $btn = $(this), fingerprint = rpApiTestFingerprint(), task = rpRuntime.task();
     const test = { request: new AbortController(), fingerprint, task };
@@ -11321,7 +11332,7 @@ function bindUI() {
         : typeof content === 'string' && content.trim();
       if (!hasText || (choice.finish_reason && choice.finish_reason !== 'stop')) { finish('fail', '⚠️ 接口可连接，但未完成正文生成'); return; }
       finish('ok', '✅ ' + String(d.model || model).replace(/^.+\//, '') + ' ' + (Date.now() - t0) + 'ms');
-      $('#rp-api-status-v').text('连接与正文生成正常；更改配置后仍需点击「保存设置」');
+      $('#rp-api-status-v').text('连接与正文生成正常；更改配置后点击「保存并使用」生效。');
     } catch (error) {
       if (current()) {
         finish('fail', '❌ 连接未完成');
@@ -11330,82 +11341,17 @@ function bindUI() {
     }
   });
 
-  $(document).on("click.mochiPhone", '#rp-api-save-v', function() {
-    const mode = $('input[name="rp-api-mode-v"]:checked').val() || 'st';
-    const cfg = { mode };
-    if (mode === 'custom') {
-      cfg.url   = $('#rp-api-url-v').val().trim();
-      cfg.key   = $('#rp-api-key-v').val().trim();
-      cfg.model = $('#rp-api-model-v').val().trim();
-      if (!cfg.url || !cfg.key) {
-        $('#rp-api-status-v').text('⚠️ 请填写 API 地址和 Key');
-        return;
-      }
-      try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); cfg.model = rpResolveCustomApiModel(cfg); }
-      catch(e) { $('#rp-api-status-v').text(e.message); return; }
-    }
-    if (!rpSaveCustomApiConfig(cfg)) return;
-    // 保存成功 toast
-    const $btn = $('#rp-api-save-v');
-    const origText = $btn.text();
-    $btn.text('✓ 保存成功').css('background','linear-gradient(135deg,#34d399,#059669)');
-    setTimeout(() => {
-      $btn.text(origText).css('background','linear-gradient(135deg,#f472b6,#a855f7)');
-      // Do not pull the user away from a page they opened after saving.
-      if (STATE.currentView === 'api-settings') go('home');
-    }, 1400);
-  });
-
-  $(document).on("click.mochiPhone", '#rp-api-btn', function() {
-    const cfg = readCustomApiConfig();
-    if (cfg.mode === 'custom') {
-      $('#rp-api-mode-custom').prop('checked', true);
-      $('#rp-api-url').val(cfg.url || '');
-      $('#rp-api-key').val(cfg.key || '');
-      $('#rp-api-model').val(cfg.model || '');
-      $('#rp-api-custom-fields').show();
-    } else {
-      $('#rp-api-mode-st').prop('checked', true);
-      $('#rp-api-custom-fields').hide();
-    }
-    rpUpdateCustomApiHints();
-    rpSetSurfaceOpen('#rp-api-panel',true);
-  });
+  $(document).on('change.mochiPhone','#rp-api-profile-v,#rp-api-profile',function(){rpSelectApiProfile(this.id.endsWith('-v')?'-v':'',this.value);});
+  $(document).on('click.mochiPhone','[data-api-profile-new]',function(){if(rpApiProfileFormCurrent(this.getAttribute('data-api-profile-new')))rpSelectApiProfile(this.getAttribute('data-api-profile-new'),'');});
+  $(document).on('click.mochiPhone','[data-api-profile-delete]',function(){rpDeleteApiProfile(this.getAttribute('data-api-profile-delete'));});
+  $(document).on('click.mochiPhone','#rp-api-save-v',function(){rpSaveApiProfileForm('-v');});
+  $(document).on('click.mochiPhone','#rp-api-btn',function(){rpFillApiProfileForm('');rpSetSurfaceOpen('#rp-api-panel',true);});
   $(document).on("change.mochiPhone", 'input[name="rp-api-mode"]', function() {
     if ($(this).val() === 'custom') $('#rp-api-custom-fields').show();
     else $('#rp-api-custom-fields').hide();
   });
-  $(document).on("click.mochiPhone", '.rp-api-preset-btn', function(e) {
-    e.preventDefault();
-    const url   = $(this).data('url');
-    const model = $(this).data('model');
-    // In-game panel inputs
-    $('#rp-api-url').val(url);
-    $('#rp-api-model').val(model);
-    if (!url) { $('#rp-api-url').focus(); } else { $('#rp-api-key').val('').focus(); }
-    // View inputs
-    $('#rp-api-url-v').val(url);
-    $('#rp-api-model-v').val(model);
-    if (!url) { $('#rp-api-url-v').focus(); } else { $('#rp-api-key-v').val('').focus(); }
-    rpResetApiTest(); rpResetModelRequest(); rpUpdateCustomApiHints();
-  });
-  $(document).on("click.mochiPhone", '#rp-api-save', function() {
-    const mode = $('input[name="rp-api-mode"]:checked').val() || 'st';
-    const cfg = { mode };
-    if (mode === 'custom') {
-      cfg.url   = $('#rp-api-url').val().trim();
-      cfg.key   = $('#rp-api-key').val().trim();
-      cfg.model = $('#rp-api-model').val().trim();
-      if (!cfg.url || !cfg.key) { lgMsg('sys', '⚠️ 请填写 API 地址和 Key'); return; }
-      try { buildCustomApiEndpoint(cfg.url, 'chat/completions'); cfg.model = rpResolveCustomApiModel(cfg); }
-      catch(e) { lgMsg('sys', e.message); return; }
-    }
-    if (!rpSaveCustomApiConfig(cfg)) { lgMsg('sys', 'API设置未保存，请检查浏览器存储空间后重试。'); return; }
-    rpSetSurfaceOpen('#rp-api-panel',false);
-    lgMsg('sys', mode === 'custom'
-      ? `⚡ 已切换到 ${cfg.model}(自定义 API)`
-      : '⚡ 已切换回 SillyTavern API');
-  });
+  $(document).on('click.mochiPhone','.rp-api-preset-btn',function(e){e.preventDefault();rpApplyApiPreset(this);});
+  $(document).on('click.mochiPhone','#rp-api-save',function(){if(!rpSaveApiProfileForm(''))return;rpSetSurfaceOpen('#rp-api-panel',false);const cfg=readCustomApiConfig();lgMsg('sys',cfg.mode==='custom'?'⚡ 已使用保存的自定义 API':'⚡ 已切换回 SillyTavern API');});
   $(document).on("click.mochiPhone", '#rp-api-cancel', function() {
     rpSetSurfaceOpen('#rp-api-panel',false);
   });
@@ -11413,6 +11359,7 @@ function bindUI() {
   // 获取模型列表
   $(document).on('input.mochiPhone change.mochiPhone', '#rp-api-url-v, #rp-api-key-v, input[name="rp-api-mode-v"]', () => {rpResetModelRequest();rpUpdateCustomApiHints();});
   $(document).on("click.mochiPhone", '#rp-api-fetch-models', async function() {
+    if(!rpApiProfileFormCurrent('-v'))return;
     rpResetModelRequest();
     const task = rpRuntime.task(), request = new AbortController();
     rpModelRequest = request;
@@ -12068,21 +12015,161 @@ function appendModelListItem($list, model) {
   $list.append(item);
 }
 
-function readCustomApiConfig() {
+function rpReadApiSettingsStore() {
   try {
-    const cfg = JSON.parse(localStorage.getItem('rp_ludo_api') || '{}');
-    return cfg && typeof cfg === 'object' && !Array.isArray(cfg) ? cfg : {};
-  } catch(e) { return {}; }
+    const cfg=JSON.parse(localStorage.getItem('rp_ludo_api')||'{}');
+    return cfg&&typeof cfg==='object'&&!Array.isArray(cfg)?cfg:{};
+  } catch { return {}; }
+}
+
+function readCustomApiConfig() {
+  // Consumers and request snapshots receive the active connection only.
+  // The saved profile library must never be sent to a provider or chat backup.
+  const cfg=rpReadApiSettingsStore();
+  if(cfg.mode!=='custom')return cfg.mode?{mode:'st'}:{};
+  return {mode:'custom',url:typeof cfg.url==='string'?cfg.url:'',key:typeof cfg.key==='string'?cfg.key:'',model:typeof cfg.model==='string'?cfg.model:''};
+}
+
+function rpReadApiProfiles() {
+  const store=rpReadApiSettingsStore(),ids=new Set(),profiles=[];
+  for(const entry of Array.isArray(store.profiles)?store.profiles:[]){
+    if(!entry||typeof entry.id!=='string'||!entry.id||ids.has(entry.id)||typeof entry.url!=='string'||typeof entry.key!=='string')continue;
+    ids.add(entry.id);profiles.push({id:entry.id,name:typeof entry.name==='string'&&entry.name.trim()?entry.name.trim():'配置'+(profiles.length+1),url:entry.url,key:entry.key,model:typeof entry.model==='string'?entry.model:''});
+  }
+  // Reading does not write or replace an existing user's connection. A legacy
+  // single connection becomes a saved entry on the next explicit save only.
+  if(typeof store.url==='string'&&store.url.trim()&&typeof store.key==='string'&&store.key.trim()&&!profiles.some(p=>p.url===store.url&&p.key===store.key&&p.model===(store.model||''))){
+    let id='legacy-current';while(ids.has(id))id+='-old';
+    profiles.unshift({id,name:rpCustomApiProvider(store.url)?.label||'配置1',url:store.url,key:store.key,model:typeof store.model==='string'?store.model:''});
+  }
+  const active=profiles.find(p=>p.id===store.profileId)||profiles.find(p=>p.url===store.url&&p.key===store.key&&p.model===(store.model||''));
+  return {store,profiles,activeId:active?.id||''};
+}
+
+function rpNextApiProfileName(profiles) {
+  let n=1;while(profiles.some(p=>p.name==='配置'+n))n++;return '配置'+n;
+}
+
+function rpApiProfileNotice(message, suffix) {
+  $('#rp-api-status-v').text(message);
+  if(suffix===undefined)$('#rp-api-profile-status,#rp-api-profile-status-v').text(message);
+  else $('#rp-api-profile-status'+suffix).text(message);
+}
+
+function rpWriteApiSettingsStore(cfg) {
+  try { localStorage.setItem('rp_ludo_api',JSON.stringify(cfg));return true; }
+  catch {
+    rpApiProfileNotice('设置未保存：本机存储不可用，输入已保留，请检查空间后重试。');
+    toastr.warning('API设置保存失败，输入已保留，请检查浏览器存储后重试。');return false;
+  }
 }
 
 function rpSaveCustomApiConfig(cfg) {
-  try { localStorage.setItem('rp_ludo_api', JSON.stringify(cfg)); return true; }
-  catch (_) {
-    $('#rp-api-status-v').text('设置未保存：本机存储不可用，请检查空间后重试。');
-    toastr.warning('API设置保存失败，输入已保留，请检查浏览器存储后重试。');
-    return false;
-  }
+  const {store,profiles,activeId}=rpReadApiProfiles();
+  const next={...store,mode:cfg.mode==='custom'?'custom':'st',profiles,profilesVersion:1};
+  if(next.mode==='custom'){
+    const connection={url:String(cfg.url||'').trim(),key:String(cfg.key||'').trim(),model:String(cfg.model||'').trim()};
+    if(!connection.url||!connection.key){rpApiProfileNotice('请填写 API 地址和 Key');return false;}
+    try{buildCustomApiEndpoint(connection.url,'chat/completions');connection.model=rpResolveCustomApiModel(connection);}catch(e){rpApiProfileNotice(e.message);return false;}
+    const explicit=Object.prototype.hasOwnProperty.call(cfg,'profileId');
+    let profile=explicit?profiles.find(p=>p.id===cfg.profileId):profiles.find(p=>p.url===connection.url&&p.key===connection.key&&p.model===connection.model);
+    if(explicit&&cfg.profileId&&!profile){rpApiProfileNotice('该配置已变化，请重新选择后保存。');return false;}
+    const name=String(cfg.profileName||'').trim()||profile?.name||rpNextApiProfileName(profiles);
+    if(name.length>60){rpApiProfileNotice('配置名称请控制在60字以内。');return false;}
+    if(profiles.some(p=>p!==profile&&p.name===name)){rpApiProfileNotice('已有同名配置，请使用其他名称。');return false;}
+    if(!profile){profile={id:'api-'+(window.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2))};profiles.push(profile);}
+    Object.assign(profile,connection,{name});Object.assign(next,connection,{profileId:profile.id});
+  }else next.profileId=activeId||store.profileId||'';
+  return rpWriteApiSettingsStore(next);
 }
+
+function rpApiProfileControlsHtml(suffix) {
+  return `<div class="rp-api-profiles">
+    <label class="rp-api-field-label" for="rp-api-profile${suffix}">我的配置</label>
+    <select class="rp-api-input" id="rp-api-profile${suffix}" aria-label="已保存的API配置"><option value="">新建配置</option></select>
+    <label class="rp-api-field-label" for="rp-api-profile-name${suffix}">配置名称</label>
+    <input class="rp-api-input" id="rp-api-profile-name${suffix}" maxlength="60" placeholder="例如 DeepSeek 日常、配置1" autocomplete="off">
+    <div class="rp-api-profile-actions"><button type="button" class="rp-api-profile-action" data-api-profile-new="${suffix}">新增配置</button><button type="button" class="rp-api-profile-action" id="rp-api-profile-delete${suffix}" data-api-profile-delete="${suffix}">删除配置</button></div>
+    <div class="rp-api-profile-hint">选择后点「保存并使用」切换；新增可另存一套，保存会更新所选配置。</div>
+    <div class="rp-api-profile-status" id="rp-api-profile-status${suffix}" role="status" aria-live="polite"></div>
+  </div>`;
+}
+
+function rpApiProfileFormCurrent(suffix) {
+  const host=document.getElementById(suffix==='-v'?'rp-view-api-settings':'rp-api-panel'),account=rpAccountStoragePrefix();
+  if(account&&host?.dataset.rpApiAccount===account)return true;
+  rpFillApiProfileForm(suffix);
+  rpApiProfileNotice('账号已变化，已重新载入当前账号配置，请重新操作。',suffix);return false;
+}
+
+function rpRenderApiProfileOptions(suffix, profiles, selectedId) {
+  const select=document.getElementById('rp-api-profile'+suffix);if(!select)return;
+  select.replaceChildren();const blank=document.createElement('option');blank.value='';blank.textContent='新建配置';select.append(blank);
+  for(const profile of profiles){const option=document.createElement('option');option.value=profile.id;option.textContent=profile.name;select.append(option);}
+  select.value=selectedId||'';$('#rp-api-profile-delete'+suffix).prop('disabled',!selectedId);
+}
+
+function rpFillApiProfileForm(suffix, selectedId, newDraft = false) {
+  const {store,profiles,activeId}=rpReadApiProfiles(),id=newDraft?'':(selectedId??(activeId||profiles[0]?.id||''));
+  const profile=profiles.find(p=>p.id===id),host=document.getElementById(suffix==='-v'?'rp-view-api-settings':'rp-api-panel');
+  if(host)host.dataset.rpApiAccount=rpAccountStoragePrefix()||'';
+  rpResetApiTest();rpResetModelRequest();rpRenderApiProfileOptions(suffix,profiles,profile?.id||'');
+  const mode=newDraft||selectedId!==undefined?'custom':store.mode==='custom'?'custom':'st';
+  $('input[name="rp-api-mode'+suffix+'"][value="'+mode+'"]').prop('checked',true);
+  for(const field of ['url','key','model'])$('#rp-api-'+field+suffix).val(profile?.[field]||'');
+  $('#rp-api-profile-name'+suffix).val(profile?.name||rpNextApiProfileName(profiles));
+  $('#rp-api-custom-fields'+suffix).css('display',mode==='custom'?'flex':'none');
+  rpApiProfileNotice('',suffix);rpUpdateCustomApiHints();
+}
+
+function rpSelectApiProfile(suffix, id) {
+  if(!rpApiProfileFormCurrent(suffix))return;
+  const {profiles}=rpReadApiProfiles();
+  if(id&&!profiles.some(p=>p.id===id)){rpApiProfileNotice('该配置已变化，请重新打开设置。',suffix);return;}
+  rpFillApiProfileForm(suffix,id,!id);
+  rpApiProfileNotice(id?'已载入配置，点击「保存并使用」后生效。':'填写新配置后点击「保存并使用」。',suffix);
+}
+
+function rpApplyApiPreset(button) {
+  const suffix=button.closest('#rp-api-custom-fields-v')?'-v':'';
+  if(!rpApiProfileFormCurrent(suffix))return;
+  const url=button.getAttribute('data-url')||'',model=button.getAttribute('data-model')||'';
+  const same=url&&String($('#rp-api-url'+suffix).val()||'').trim().replace(/\/+$/,'')===url.replace(/\/+$/,'');
+  if(!same)rpFillApiProfileForm(suffix,'',true);
+  $('#rp-api-url'+suffix).val(url);$('#rp-api-model'+suffix).val(model);
+  if(!same)$('#rp-api-key'+suffix).val('');
+  $(url?'#rp-api-key'+suffix:'#rp-api-url'+suffix).trigger('focus');
+  rpResetApiTest();rpResetModelRequest();rpUpdateCustomApiHints();
+}
+
+function rpDeleteApiProfile(suffix) {
+  if(!rpApiProfileFormCurrent(suffix))return;
+  const {store,profiles,activeId}=rpReadApiProfiles(),id=$('#rp-api-profile'+suffix).val(),profile=profiles.find(p=>p.id===id);
+  if(!profile)return;
+  const account=rpAccountStoragePrefix(),active=id===activeId;
+  if(!window.confirm('删除配置「'+profile.name+'」？'+(active&&store.mode==='custom'?'当前接口将切回酒馆 API。':'其他配置会保留。')))return;
+  if(account!==rpAccountStoragePrefix()){rpApiProfileFormCurrent(suffix);return;}
+  if(!rpApiProfileFormCurrent(suffix))return;
+  const latest=rpReadApiProfiles();
+  if(!latest.profiles.some(p=>p.id===id)){rpFillApiProfileForm(suffix);return;}
+  const next={...latest.store,profilesVersion:1,profiles:latest.profiles.filter(p=>p.id!==id)};
+  if(id===latest.activeId){next.profileId='';next.mode='st';delete next.url;delete next.key;delete next.model;}
+  if(!rpWriteApiSettingsStore(next))return;
+  rpFillApiProfileForm(suffix);rpApiProfileNotice('已删除配置。',suffix);
+}
+
+function rpSaveApiProfileForm(suffix) {
+  if(!rpApiProfileFormCurrent(suffix))return false;
+  const mode=$('input[name="rp-api-mode'+suffix+'"]:checked').val()||'st';
+  const cfg={mode};
+  if(mode==='custom')for(const field of ['url','key','model'])cfg[field]=String($('#rp-api-'+field+suffix).val()||'').trim();
+  if(mode==='custom'){cfg.profileId=$('#rp-api-profile'+suffix).val()||'';cfg.profileName=String($('#rp-api-profile-name'+suffix).val()||'').trim();}
+  if(!rpSaveCustomApiConfig(cfg))return false;
+  rpFillApiProfileForm(suffix);
+  rpApiProfileNotice(mode==='custom'?'已保存并使用：'+$('#rp-api-profile-name'+suffix).val():'已使用酒馆 API，保存的配置仍保留。',suffix);
+  return true;
+}
+
 
 function buildCustomApiEndpoint(rawUrl, endpoint) {
   let url;
@@ -12641,20 +12728,7 @@ function rpResetApiTest() {
 }
 // 读取已保存 API 配置并填入 view 表单
 function lgFillAPIView() {
-  rpResetApiTest(); rpResetModelRequest();
-  const cfg = readCustomApiConfig();
-  if (cfg.mode === 'custom') {
-    $('#rp-api-mode-custom-v').prop('checked', true);
-    $('#rp-api-url-v').val(cfg.url || '');
-    $('#rp-api-key-v').val(cfg.key || '');
-    $('#rp-api-model-v').val(cfg.model || '');
-    $('#rp-api-custom-fields-v').css('display','flex');
-  } else {
-    $('#rp-api-mode-st-v').prop('checked', true);
-    $('#rp-api-custom-fields-v').hide();
-  }
-  $('#rp-api-status-v').text('');
-  rpUpdateCustomApiHints();
+  rpFillApiProfileForm('-v');
 }
 
 function getGroupMemberEntries(thread) {
