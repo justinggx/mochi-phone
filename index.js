@@ -3,7 +3,7 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261029-optimizatio
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261029-slim-174';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-group-avatar-176';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -14,7 +14,8 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261029-optimization-173';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-group-avatar-176';
+import { createGroupAvatars } from './group-avatar.mjs?v=20261030-group-avatar-176';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -1950,11 +1951,12 @@ function rpAvatarEditAttrs(key, label) {
 }
 function rpRefreshEditableAvatars(key) {
   const image = getAvatar(key);
-  if (!image) return;
+  if (!image) { rpGroupAvatars.refresh(); return; }
   $('#rp-phone [data-rp-avatar-key]').each(function() {
     if (this.getAttribute('data-rp-avatar-key') !== key) return;
     $(this).addClass('rp-av-img').empty().append($('<img class="rp-av-photo" alt="">').attr('src', image)).css('background','transparent');
   });
+  rpGroupAvatars.refresh();
   if ($('#rp-avatar-select').val() === key) updateAvatarPreviewSwatch(key);
 }
 let rpAvatarStudio = null;
@@ -2644,18 +2646,14 @@ function getGroupSenderThread(nameRaw) {
   return null;
 }
 
+const rpGroupAvatars = createGroupAvatars({
+  get document(){return document;}, state:()=>STATE, getAvatar, normalizeName:name=>normalizePhonePersonName(resolveCanonicalPhoneName(name)), validImage:rpValidAvatarImage,
+  runtime:()=>rpRuntime, account:()=>rpArchiveAccountHandle, currentSlot:()=>getPhoneChatSlotKey(getContext()),
+  dialog:(...args)=>rpFeatureDialog(...args), closeDialog:()=>rpCloseFeatureDialog(true), save:()=>saveState({immediate:true,activity:false})
+});
 function buildGroupSenderAvatarHtml(msg) {
-  const rawName = String((msg && msg.name) || '').trim();
-  const th = getGroupSenderThread(rawName);
-  const displayName = (th && th.name) || rawName || 'C';
-  const img = getAvatar(displayName) || (rawName && getAvatar(rawName));
-  const edit = rpAvatarEditAttrs(displayName);
-  if (img) {
-    return `<div class="rp-grp-av rp-av-img"${edit}><img class="rp-av-photo" src="${escHtml(img)}" alt=""/></div>`;
-  }
-  const initials = escHtml((th && th.initials) || (msg && msg.initials) || displayName.slice(0, 2) || 'C');
-  const avatarBg = escHtml((th && th.avatarBg) || (msg && msg.avatarBg) || '#7c3aed');
-  return `<div class="rp-grp-av"${edit} style="background:${avatarBg}">${initials}</div>`;
+  const rawName=String(msg?.name||'').trim(),th=getGroupSenderThread(rawName),name=th?.name||rawName||'成员';
+  return rpGroupAvatars.memberHtml(name,name,'rp-grp-av',rpAvatarEditAttrs(name),getAvatar(name)||(rawName&&getAvatar(rawName)));
 }
 
 function appendGroupSenderBody(wrap, msg, contentEl, btnRow, time) {
@@ -4041,6 +4039,7 @@ function rpCloseFeatureDialog(immediate = false) { rpSetSurfaceOpen('#rp-feature
 function rpCloseChatOverlays() {
   for (const key of ['ludo','g2048','gm','gword']) rpCloseGameHistoryViewport(key);
   rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false);
+  rpGroupAvatars.cancel();
   rpCloseFeatureDialog(true);
   rpSetSurfaceOpen('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create',false,{remove:true,immediate:true});
   rpSetGameFolderOpen(false,true);
@@ -4687,10 +4686,13 @@ function bindUI() {
     if (e.target === this) rpSetSurfaceOpen(this,false);
   });
 
-  $(document).on("click.mochiPhone", '#rp-hd-av.rp-group-members-trigger', function(e) {
+  $(document).on("click.mochiPhone keydown.mochiPhone", '#rp-hd-av.rp-group-members-trigger', function(e) {
+    if(e.type==='keydown'&&(!['Enter',' '].includes(e.key)||e.repeat))return;
+    e.preventDefault();
     e.stopPropagation();
     showGroupMembersModal(STATE.currentThread);
   });
+  $(document).on('click.mochiPhone','#rp-gm-change-avatar',function(e){e.preventDefault();e.stopPropagation();rpGroupAvatars.open(this.dataset.thread);});
   $(document).on("click.mochiPhone", '#rp-group-members-modal, #rp-gm-close', function(e) {
     if (e.target === this || e.currentTarget.id === 'rp-gm-close') rpSetSurfaceOpen('#rp-group-members-modal',false);
   });
@@ -6121,7 +6123,7 @@ function renderThreadList() {
 
     container.append(`
       <div class="rp-thread" data-thread="${escHtml(th.id)}">
-        ${(()=>{const ci=getAvatar(th.name);const edit=rpIsGroupThread(th)?'':rpAvatarEditAttrs(th.name);return ci?`<div class="rp-av rp-av-img"${edit}><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-av"${edit} style="background:${escHtml(th.avatarBg)}">${escHtml(th.initials)}</div>`;})()}
+        ${(()=>{if(rpIsGroupThread(th))return rpGroupAvatars.html(th);const ci=getAvatar(th.name);const edit=rpIsGroupThread(th)?'':rpAvatarEditAttrs(th.name);return ci?`<div class="rp-av rp-av-img"${edit}><img class="rp-av-photo" src="${escHtml(ci)}" alt=""/></div>`:`<div class="rp-av"${edit} style="background:${escHtml(th.avatarBg)}">${escHtml(th.initials)}</div>`;})()}
         <div class="rp-ti">
           <div class="rp-tn">${escHtml(th.name)}</div>
           <div class="rp-tp" id="rp-tp-${escHtml(th.id)}">${escHtml(preview)}</div>
@@ -6151,7 +6153,7 @@ function go(view) {
   rpPauseGameAnimations();
   if (view === 'darkmode') { toggleDarkMode(); return; }
   if (view === 'ludo') view = 'game';
-  rpInstallGameStats();
+  rpInstallGameStats(); rpGroupAvatars.install();
   if (view === 'game' && !rpShowGameResume('ludo')) { if (!LG.active) lgInit(); else if (rpGameVisible('game')) lgRender(); }
   if (view === 'g2048' && !rpShowGameResume('g2048')) { if (!LG2048.active) g2048Init(); else g2048Render(); }
   if (view === 'ggold' && !rpShowGameResume('gm')) { if (!GM.active) ggoldOpen(); }
@@ -6243,32 +6245,7 @@ function lgFillAPIView() {
   const scroll=document.querySelector('#rp-view-api-settings .rp-api-scroll');if(scroll)scroll.scrollTop=0;
 }
 
-function getGroupMemberEntries(thread) {
-  if (!thread || thread.type !== 'group') return [];
-  const seen = new Set();
-  const entries = [];
-  function addUser() {
-    if (seen.has('user')) return;
-    seen.add('user');
-    entries.push({ id:'user', name:'我', initials:'我', avatarBg:'linear-gradient(145deg,#64748b,#475569)', role:'我' });
-  }
-  function addThreadMember(memberId) {
-    if (!memberId || seen.has(memberId)) return;
-    if (memberId === 'user') { addUser(); return; }
-    const th = STATE.threads && STATE.threads[memberId];
-    if (!th) return;
-    seen.add(memberId);
-    entries.push({ id:memberId, name:th.name || memberId, initials:th.initials || String(th.name || memberId).slice(0,2), avatarBg:th.avatarBg || 'linear-gradient(145deg,#64748b,#475569)', role:'成员' });
-  }
-  addUser();
-  (thread.members || []).forEach(addThreadMember);
-  (thread.messages || []).forEach(function(msg) {
-    if (!msg || !msg.name) return;
-    const senderTh = findOrCreateThread(msg.name);
-    if (senderTh) addThreadMember(senderTh.id);
-  });
-  return entries;
-}
+function getGroupMemberEntries(thread) { return rpGroupAvatars.members(thread); }
 
 function showGroupMembersModal(threadId) {
   const thread = STATE.threads && STATE.threads[threadId];
@@ -6278,15 +6255,13 @@ function showGroupMembersModal(threadId) {
     const key = m.id === 'user' ? 'user' : m.name;
     const edit = rpAvatarEditAttrs(key, m.name);
     const img = getAvatar(key);
-    const av = img
-      ? `<div class="rp-gm-av"${edit}><img src="${escHtml(img)}" alt=""/></div>`
-      : `<div class="rp-gm-av"${edit} style="background:${escHtml(m.avatarBg)}">${escHtml(m.initials || String(m.name).slice(0,2))}</div>`;
+    const av = rpGroupAvatars.memberHtml(key,m.name,'rp-gm-av',edit,img);
     return `<div class="rp-gm-row">${av}<div class="rp-gm-name">${escHtml(m.name)}</div><div class="rp-gm-role">${escHtml(m.role || '成员')}</div></div>`;
   }).join('');
   $('#rp-group-members-modal').html(`
     <div class="rp-gm-sheet">
       <div class="rp-gm-head">
-        <div class="rp-gm-title">${escHtml(thread.name)}<div class="rp-gm-sub">${escHtml(members.length)} 位群成员</div></div>
+        <div class="rp-gm-identity">${rpGroupAvatars.html(thread,'rp-gm-cover')}<div class="rp-gm-title">${escHtml(thread.name)}<div class="rp-gm-sub">${escHtml(members.length)} 位群成员</div><button type="button" id="rp-gm-change-avatar" class="rp-gm-change" data-thread="${escHtml(thread.id)}">更换群头像</button></div></div>
         <button id="rp-gm-close" class="rp-gm-close" type="button" aria-label="关闭">×</button>
       </div>
       <div class="rp-gm-list">${rows || '<div class="rp-gm-row"><div class="rp-gm-name">暂无成员</div></div>'}</div>
@@ -6308,14 +6283,17 @@ function openThread(threadId) {
   refreshBadges();
 
   const hdAv = $('#rp-hd-av').removeClass('rp-group-members-trigger rp-av-img').removeAttr('title aria-label data-rp-avatar-key role tabindex');
-  const _hdImg = getAvatar(th.name);
-  if (_hdImg) {
+  rpGroupAvatars.clear(hdAv[0]);
+  const _hdImg = rpIsGroupThread(th)?null:getAvatar(th.name);
+  if (rpIsGroupThread(th)) {
+    rpGroupAvatars.paint(hdAv[0],th);
+  } else if (_hdImg) {
     hdAv.empty().append(`<img class="rp-av-photo" src="${escHtml(_hdImg)}" alt=""/>`).css('background', 'transparent');
   } else {
     hdAv.empty().text(th.initials).css('background', th.avatarBg);
   }
   if (th.type === 'group') {
-    hdAv.addClass('rp-group-members-trigger').attr('title', '查看群成员').attr('aria-label', '查看群成员');
+    hdAv.addClass('rp-group-members-trigger').attr('title', '查看群成员').attr('aria-label', '查看群成员').attr('role','button').attr('tabindex','0');
   }
   if (!rpIsGroupThread(th)) {
     hdAv.attr('data-rp-avatar-key', th.name).attr('role','button').attr('tabindex','0').attr('title','更换头像').attr('aria-label','更换' + th.name + '的头像');

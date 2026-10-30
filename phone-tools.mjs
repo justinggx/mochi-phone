@@ -1,3 +1,4 @@
+import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261030-group-avatar-176';
 import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261029-optimization-173';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
@@ -420,6 +421,7 @@ export function createPhoneTools(api) {
     for(const field of ['moments','xhsFeed'])for(const post of value.data[field]||[])if(!object(post)||(post.comments!==undefined&&(!Array.isArray(post.comments)||post.comments.some(c=>!object(c)))))throw new Error('备份评论格式不完整。');
     for(const[id,thread]of Object.entries(value.data.threads))if(!object(thread)||thread.id!==id||typeof thread.name!=='string'||!Array.isArray(thread.messages)||thread.messages.some(m=>!object(m)))throw new Error('备份联系人或消息格式不完整。');
     for(const thread of Object.values(value.data.threads)){
+      if(thread.groupAvatar!==undefined&&!normalizeGroupAvatar(thread.groupAvatar))throw new Error('备份群头像格式不完整。');
       if(thread.pendingMessages!==undefined&&(!Array.isArray(thread.pendingMessages)||thread.pendingMessages.some(v=>typeof v!=='string')))throw new Error('备份暂存消息格式不完整。');
       if(thread.pendingQuotes!==undefined&&(!Array.isArray(thread.pendingQuotes)||thread.pendingQuotes.some(v=>v!==null&&!object(v))))throw new Error('备份引用格式不完整。');
       if(thread.draft!==undefined&&typeof thread.draft!=='string')throw new Error('备份草稿格式不完整。');
@@ -440,6 +442,7 @@ export function createPhoneTools(api) {
       if(existing){
         if(existing.name!==thread.name||String(existing.type||'private')!==String(thread.type||'private')){stats.skipped++;continue;}
         mergeList(existing.messages,thread.messages,stats,'messages');
+        if(!existing.groupAvatar&&normalizeGroupAvatar(thread.groupAvatar))existing.groupAvatar=normalizeGroupAvatar(thread.groupAvatar);
         if(!existing.draft&&thread.draft){existing.draft=thread.draft;existing.draftQuote=thread.draftQuote||null;}
         if(!existing.pendingMessages?.length&&thread.pendingMessages?.length){existing.pendingMessages=clone(thread.pendingMessages);existing.pendingQuotes=clone(thread.pendingQuotes||[]);}
       }else{result.threads[id]=clone(thread);delete result.threads[id].pendingHostActions;stats.contacts++;stats.messages+=thread.messages.length;}
