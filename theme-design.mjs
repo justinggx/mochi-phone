@@ -129,3 +129,9 @@ export function parseThemeScheme(text,sanitize) {
   let legacyCss;if(value.legacyCss!=null){if(typeof value.legacyCss!=='string'||value.legacyCss.length>160000)throw new Error('旧样式过大。');legacyCss=sanitize(value.legacyCss);if(value.legacyCss.trim()&&!legacyCss.trim())throw new Error('旧样式未通过安全检查。');}
   return {label:String(value.name||'导入主题').slice(0,40),css,design,...(legacyCss!==undefined?{legacyCss}:{})};
 }
+
+// Old single-palette CSS has no night branch. Keep its day appearance and add
+// the same night fallback to the live phone and isolated previews, without
+// rewriting stored CSS or themes which already provide their own night rules.
+export const needsLegacyNight = css => !/\.rp-dark\b|prefers-color-scheme\s*:\s*dark/i.test(String(css||'').replace(/\/\*[\s\S]*?\*\//g,''));
+export const LEGACY_THEME_NIGHT_CSS = compileThemeDesign(themePreset()).split('\n')[1].replace('#rp-phone.rp-theme-custom.rp-dark','#rp-phone.rp-theme-custom.rp-dark[data-rp-theme-legacy-night]')+'\n'+THEME_CONTRACT_CSS.replaceAll('[data-rp-theme-design]','.rp-dark[data-rp-theme-legacy-night]');

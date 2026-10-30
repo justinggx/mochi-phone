@@ -232,12 +232,8 @@ const HTML = `
               <h2>告诉 AI，你想要什么风格？</h2>
               <p class="rp-ts-intro">先说想法，AI会填好配色和样式。看过效果后，可以继续聊，也可以自己微调。</p>
               <div id="rp-ts-chat-log" role="log" aria-label="主题设计对话" hidden></div>
-              <div id="rp-ts-composer">
-                <textarea id="rp-ts-input" aria-label="告诉AI你的主题想法" placeholder="比如：奶油白配浅粉，气泡圆润一点，文字清楚些…" rows="3"></textarea>
-                <div class="rp-ts-compose-actions"><span>可继续描述想改的部分</span><button id="rp-ts-send" type="button">发送想法</button></div>
-              </div>
               <div class="rp-ts-examples" aria-label="试试这些想法"><button type="button" class="rp-ts-tpl-btn" data-tpl="想要奶油白和浅粉色，气泡圆润，文字清楚，整体温柔干净。">奶油暖色</button><button type="button" class="rp-ts-tpl-btn" data-tpl="改成清爽的薄荷绿，背景浅一点，保留清楚的文字和简洁边框。">清爽薄荷</button><button type="button" class="rp-ts-tpl-btn" data-tpl="保留其他设计，只把聊天气泡改得更柔和，文字保持清楚。">调整气泡</button></div>
-              <p id="rp-ts-chat-status" role="status" aria-live="polite"></p><button id="rp-ts-jump-preview" class="rp-te-button" type="button" hidden>查看效果 ↓</button>
+<button id="rp-ts-jump-preview" class="rp-te-button" type="button" hidden>查看效果 ↓</button>
             </section>
             <div id="rp-ts-draft"></div>
             <details class="rp-ts-history"><summary>方案与历史</summary>
@@ -248,6 +244,11 @@ const HTML = `
               <p id="rp-ts-tip">预览不会直接替换当前主题；应用满意后，可把当前主题另存为方案。</p>
             </details>
           </div>
+              <div id="rp-ts-composer">
+                <textarea id="rp-ts-input" aria-label="告诉AI你的主题想法" placeholder="比如：奶油白配浅粉，气泡圆润一点，文字清楚些…" rows="2"></textarea>
+                <div class="rp-ts-compose-actions"><span>可继续描述想改的部分</span><button id="rp-ts-send" type="button">发送想法</button></div>
+              </div>
+          <p id="rp-ts-chat-status" role="status" aria-live="polite"></p>
         </div>
 
         <!-- 信息列表 -->

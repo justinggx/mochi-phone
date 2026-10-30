@@ -1,6 +1,6 @@
 import { createMessageUI } from './message-ui.mjs?v=20261030-messages-182';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-flow-181';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-preview-183';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
@@ -17,7 +17,7 @@ import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-mosaic-179';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261030-mosaic-179';
-import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-flow-181';
+import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-preview-183';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -6894,7 +6894,7 @@ function renderBubbles(threadId, options = {}) {
       // 用 data 属性存参数，避免 prompt 含特殊字符导致 inline onclick JS 语法错误
       const pendingBtn = $(`
         <div class="rp-img-bbl rp-pending-img" style="min-width:90px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:12px 18px;gap:7px;" title="点击触发生图">
-          <span style="font-size:17px;">📷</span>
+          <span class="rp-message-card-icon">${rpMessageUI.icon('image')}</span>
           <span class="rp-pending-label" style="font-size:12px;opacity:0.75;">${escHtml(rpPhoneImageLabel(msg))}</span>
         </div>
       `);
@@ -6911,7 +6911,7 @@ function renderBubbles(threadId, options = {}) {
       });
       const timeEl = $(`<div class="rp-bts">${escHtml(msg.time)}</div>`);
       const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
-      wrap.append(pendingBtn, timeEl, delBtn);
+      if(thread.type==='group')appendGroupSenderBody(wrap,msg,pendingBtn,delBtn,msg.time);else wrap.append(pendingBtn,timeEl,delBtn);
       area.append(wrap); return;
     }
     // ── 图片 ──
@@ -6928,7 +6928,7 @@ function renderBubbles(threadId, options = {}) {
       });
       const timeEl = $(`<div class="rp-bts">${escHtml(msg.time)}</div>`);
       const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
-      wrap.append(imgEl, timeEl, delBtn);
+      if(thread.type==='group'&&!isUser)appendGroupSenderBody(wrap,msg,imgEl,delBtn,msg.time);else wrap.append(imgEl,timeEl,delBtn);
       area.append(wrap); return;
     }
     // ── 位置 ──
@@ -7412,8 +7412,8 @@ function rpPhoneImageInput(threadId, item) {
     const index = thread.messages.indexOf(item);
     const nearby = thread.messages.slice(Math.max(0, index - 6), index + 1);
     for (const next of thread.messages.slice(index + 1, index + 3)) { if (next.time !== item.time) break; nearby.push(next); }
-    const dialogue = nearby.filter(m => m !== item && typeof m.text === 'string').map(m => (m.from === 'user' ? user : thread.name) + '：' + clean(m.text)).join('\n');
-    body = '手机信息图片\n对话双方：' + thread.name + '、' + user + '\n图片发送者：' + (item.from === 'user' ? user : thread.name) + '\n相关手机对话：\n' + dialogue + '\n目标图片的画面意图参考：' + clean(item.prompt);
+    const dialogue = nearby.filter(m => m !== item && typeof m.text === 'string').map(m => (m.from === 'user' ? user : m.name || thread.name) + '：' + clean(m.text)).join('\n');
+    body = '手机信息图片\n对话双方：' + thread.name + '、' + user + '\n图片发送者：' + (item.from === 'user' ? user : item.name || thread.name) + '\n相关手机对话：\n' + dialogue + '\n目标图片的画面意图参考：' + clean(item.prompt);
   } else {
     body = '手机朋友圈配图\n发布者：' + (item.from === 'user' ? user : item.name || '联系人') + '\n本条动态：' + clean(item.text) + '\n目标图片的画面意图参考：' + clean(item.pendingImg);
   }
@@ -8941,18 +8941,40 @@ function rpParsePhoneAtom(block, source = {}) {
   }
 
   // ── 辅助：把图片 src 路由到指定线程
-  function routeImgToThread(threadId, src, time) {
+  function routeImgToThread(threadId, src, time, fromRaw='') {
     const th = STATE.threads[threadId];
     if (!th) return;
     const fallbackTime = resolvePhoneTime(time);
     const isDup = th.messages.some(msg => msg.type === 'image' && msg.src === src);
     if (isDup) return;
-    th.messages.push({ id: `aimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: threadId, type: 'image', time: fallbackTime, src });
+    th.messages.push({ id: `aimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, from: th.type==='group'?'incoming':threadId, type: 'image', time: fallbackTime, src, ...(th.type==='group'?{name:fromRaw}:{} ) });
     if (!rpIsReadingThread(threadId)) th.unread++;
     refreshBadges(); updatePreviews();
     if (STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
     showBanner(th.name, '[图片]', fallbackTime, th.id);
     saveState();
+  }
+
+  // Resolve image destinations from the explicit protocol, never the open view.
+  function imageThread(fromRaw, groupName='') {
+    if (!fromRaw || isPhoneUserName(fromRaw, ctx) || _isUserFrom(fromRaw)) return null;
+    const sender=findOrCreateThread(fromRaw);if(!sender)return null;
+    if(!groupName)return sender.id;
+    const id=`grp_${groupName}`;if(!rpCanReceiveGroup(id,groupName))return null;
+    if(!STATE.threads[id]){const i=Object.keys(STATE.threads).length%GROUP_COLORS.length;STATE.threads[id]={id,name:groupName,initials:groupName.slice(0,2),avatarBg:`linear-gradient(145deg,${GROUP_COLORS[i]},${GROUP_COLORS[(i+1)%GROUP_COLORS.length]})`,type:'group',messages:[],unread:0,members:['user']};}
+    const th=STATE.threads[id];th.members||=['user'];if(!th.members.includes(sender.id))th.members.push(sender.id);return id;
+  }
+  function routePendingToThread(threadId,prompt,time,fromRaw,kind,ordinal) {
+    const th=STATE.threads[threadId];if(!th||!prompt)return;
+    const origin=messageSource(kind,ordinal,fromRaw,time,prompt),resolved=resolvePhoneTime(time);
+    const matches=msg=>msg.prompt===prompt&&['pending_image','image'].includes(msg.type);
+    if(origin?rpPhoneMessageAlreadyReceived(th,origin,matches,resolved):th.messages.some(msg=>matches(msg)&&msg.time===resolved))return;
+    const sender=matchThread(fromRaw)?STATE.threads[matchThread(fromRaw)]:null;
+    th.messages.push({id:`pimg_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,from:th.type==='group'?'incoming':threadId,type:'pending_image',prompt,time:resolved,
+      ...(th.type==='group'?{name:fromRaw,initials:sender?.initials,avatarBg:sender?.avatarBg}:{}),
+      ...(origin?{phoneSource:{key:origin.key,signature:origin.signature}}:{})});
+    if(!rpIsReadingThread(threadId))th.unread=(th.unread||0)+1;
+    refreshBadges();updatePreviews();if(STATE.currentView==='thread'&&STATE.currentThread===threadId)renderBubbles(threadId);saveState();
   }
 
   // 更鲁棒:支持属性顺序变化、单引号/双引号
@@ -9041,21 +9063,9 @@ function rpParsePhoneAtom(block, source = {}) {
     // pending_image 占位：image###prompt### 表示 AI 要求生图但图片尚未就绪（智绘姬模式）
     // 存入线程作为占位，MutationObserver 捕捉到新图片时会来替换它
     const pendingPrompts = smsPendingPrompts;
-    pendingPrompts.forEach(prompt => {
-      if (routeAsGroup) return;
-      const th = STATE.threads[threadId];
-      if (!th) return;
-      // 避免重复添加同一 prompt 的 pending_image
-      const alreadyPending = th.messages.some(m => m.prompt === prompt && (m.type === 'pending_image' || (m.type === 'image' && m.phoneImageSource === 'chatu8-llm' && m.time === msgTime)));
-      if (alreadyPending) return;
-      const pid = `pimg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
-      th.messages.push({ id: pid, from: threadId, type: 'pending_image', prompt, time: msgTime });
-      if (!rpIsReadingThread(threadId)) th.unread++;
-      refreshBadges(); updatePreviews();
-      if (STATE.currentView === 'thread' && STATE.currentThread === threadId) renderBubbles(threadId);
-      showBanner(th.name, '📷 图片生成中...', msgTime, th.id);
-      saveState();
-    });
+    const imageTarget=routeAsGroup?imageThread(fromRaw,autoGroupName):threadId;
+    if(routeAsGroup&&imageTarget)smsImgs.forEach(src=>routeImgToThread(imageTarget,src,msgTime,fromRaw));
+    pendingPrompts.forEach((prompt,i)=>routePendingToThread(imageTarget,prompt,msgTime,fromRaw,'SMS_IMAGE',ordinal*100+i));
 
     if (text) {
       const origin = messageSource('SMS', ordinal, fromRaw, time, text);
@@ -9258,8 +9268,10 @@ function rpParsePhoneAtom(block, source = {}) {
     const gmsgFrom = (gAttrs.FROM || '').trim();
     const groupName = (gAttrs.GROUP || '').trim();
     if (!gmsgFrom || !groupName || isPhoneUserName(gmsgFrom, ctx) || _isUserFrom(gmsgFrom)) { parsedCount++; continue; }
-    const time = (gAttrs.TIME || '').trim(), text = String(m[2] || '').trim();
-    incomingGroupMsg(gmsgFrom, groupName, time, text, messageSource('GMSG', ordinal, gmsgFrom, time, text));
+    const time = (gAttrs.TIME || '').trim(),rawContent=String(m[2]||'');
+    const {imgs,cleanText,pendingPrompts}=extractImgsFromText(rawContent),text=sanitizeSmsText(cleanText);
+    if(text)incomingGroupMsg(gmsgFrom, groupName, time, text, messageSource('GMSG', ordinal, gmsgFrom, time, text));
+    if(imgs.length||pendingPrompts.length){const target=imageThread(gmsgFrom,groupName);if(target){imgs.forEach(src=>routeImgToThread(target,src,time,gmsgFrom));pendingPrompts.forEach((prompt,i)=>routePendingToThread(target,prompt,time,gmsgFrom,'GMSG_IMAGE',ordinal*100+i));}}
     parsedCount++;
   }
 
@@ -9359,29 +9371,18 @@ function rpParsePhoneAtom(block, source = {}) {
   // 内容里的 <img src="..."> 由生图插件替换，小手机在这里提取
   // 也支持纯 src 属性形式: <SIMG FROM="角色名" SRC="url" TIME="HH:MM"/>
   const simgRe = /<SIMG\b([^>]*)>([\s\S]*?)<\/SIMG>/gi;
+  let simgOrdinal=0;
   while ((m = simgRe.exec(block)) !== null) {
-    const attrs = getTagAttrs(m[1]);
-    const fromRaw = (attrs.FROM || '').trim();
-    const time = (attrs.TIME || '').trim();
-    const innerContent = m[2] || '';
-    const { imgs: simgImgs } = extractImgsFromText(innerContent);
-    // 也接受 SRC 属性直接指定（给 AI 更简单的写法兜底）
-    if (attrs.SRC) simgImgs.unshift(attrs.SRC.trim());
-    if (simgImgs.length === 0) continue;
-    // 路由线程
-    let simgThreadId = null;
-    if (fromRaw) {
-      simgThreadId = matchThread(fromRaw);
-      if (!simgThreadId) {
-        const createdTh = findOrCreateThread(fromRaw);
-        simgThreadId = createdTh ? createdTh.id : null;
-      }
-    } else {
-      simgThreadId = STATE.currentThread || null;
-    }
-    if (!simgThreadId) continue;
-    simgImgs.forEach(src => routeImgToThread(simgThreadId, src, time));
-    parsedCount++;
+    const ordinal=simgOrdinal++,attrs=getTagAttrs(m[1]),fromRaw=(attrs.FROM||'').trim(),time=(attrs.TIME||'').trim();
+    const {imgs,cleanText,pendingPrompts}=extractImgsFromText(m[2]||'');
+    if(attrs.SRC)imgs.unshift(attrs.SRC.trim());
+    // SIMG's plain body is itself an image description. Do not turn a Comfy
+    // trigger into a second paid request; its observer owns that path.
+    if(!imgs.length&&!pendingPrompts.length&&cleanText&&!/<pic\b/i.test(m[2]||''))pendingPrompts.push(cleanText);
+    const target=imageThread(fromRaw,(attrs.GROUP||'').trim());if(!target)continue;
+    imgs.forEach(src=>routeImgToThread(target,src,time,fromRaw));
+    pendingPrompts.forEach((prompt,i)=>routePendingToThread(target,prompt,time,fromRaw,'SIMG_IMAGE',ordinal*100+i));
+    if(imgs.length||pendingPrompts.length)parsedCount++;
   }
 
   // ── SIMG 自闭合形式: <SIMG FROM="角色" SRC="url" TIME="HH:MM"/> ──
@@ -9392,18 +9393,9 @@ function rpParsePhoneAtom(block, source = {}) {
     const time = (attrs.TIME || '').trim();
     const src = (attrs.SRC || '').trim();
     if (!src) continue;
-    let simgThreadId2 = null;
-    if (fromRaw) {
-      simgThreadId2 = matchThread(fromRaw);
-      if (!simgThreadId2) {
-        const createdTh2 = findOrCreateThread(fromRaw);
-        simgThreadId2 = createdTh2 ? createdTh2.id : null;
-      }
-    } else {
-      simgThreadId2 = STATE.currentThread || null;
-    }
-    if (!simgThreadId2) continue;
-    routeImgToThread(simgThreadId2, src, time);
+    const simgThreadId2=imageThread(fromRaw,(attrs.GROUP||'').trim());
+    if(!simgThreadId2)continue;
+    routeImgToThread(simgThreadId2,src,time,fromRaw);
     parsedCount++;
   }
   return parsedCount;
