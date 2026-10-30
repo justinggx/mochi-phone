@@ -16,8 +16,9 @@ export function echoContrast(a,b){
 const palettes={name:[[104,76,153],[211,188,246],[8,0,16],[253,249,255]],tag:[[158,52,102],[245,182,210],[16,0,6],[255,249,252]]};
 export function chooseEchoAccent(background,kind,minimum=4.6){
   const p=palettes[kind];if(!p||!background)return null;
-  const branches=[[p[0],p[2]],[p[1],p[3]]].sort((a,b)=>echoContrast(b[0],background)-echoContrast(a[0],background));
-  for(const[base,end]of branches)for(let i=0;i<=24;i++){const color=base.map((v,j)=>Math.round(v+(end[j]-v)*i/24));if(echoContrast(color,background)>=minimum)return'rgb('+color.join(', ')+')';}return null;
+  const contrast=color=>{if(!background.bounds)return echoContrast(color,background);const [low,high]=background.bounds,a=echoContrast(color,low),b=echoContrast(color,high);const l=echoContrast(color,[0,0,0]),lo=echoContrast(low,[0,0,0]),hi=echoContrast(high,[0,0,0]);return l>=lo&&l<=hi?1:Math.min(a,b);};
+  const branches=[[p[0],p[2]],[p[1],p[3]]].sort((a,b)=>contrast(b[0])-contrast(a[0]));
+  for(const[base,end]of branches)for(let i=0;i<=24;i++){const color=base.map((v,j)=>Math.round(v+(end[j]-v)*i/24));if(contrast(color)>=minimum)return'rgb('+color.join(', ')+')';}return null;
 }
 const active=value=>value&&value!=='none'&&value!=='normal';
 function pseudoPaint(style){
@@ -27,18 +28,20 @@ function pseudoPaint(style){
 // Compose foreground background layers outward. Opaque local surfaces shield
 // lower wallpapers; group effects or possible overlays make the result unknown.
 export function resolveEchoBackground(element,readStyle,globalBackdrop=()=>false){
-  const sum=[0,0,0];let alpha=0,opaqueAt=null;
+  const sum=[0,0,0];let alpha=0,opaqueAt=null,unknown=false;
+  const uncertain=()=>{if(alpha<=0)return null;const low=sum.slice(),high=sum.map(v=>v+255*(1-alpha)),mid=low.map((v,i)=>(v+high[i])/2);mid.bounds=[low,high];return mid;};
   for(let el=element;el?.nodeType===1;el=el.parentElement){
     const style=readStyle(el);if(!style)return null;
-    const opacity=Number(style.opacity||1);if(!Number.isFinite(opacity)||opacity<.999||active(style.filter)||active(style.backdropFilter)||active(style.webkitBackdropFilter)||active(style.mixBlendMode))return null;
+    const opacity=Number(style.opacity||1);if(!Number.isFinite(opacity)||opacity<.999||active(style.filter)||active(style.mixBlendMode))return null;
     for(const pseudo of['::before','::after']){const ps=readStyle(el,pseudo);if(!ps)return null;if(pseudoPaint(ps)&&(!opaqueAt||!Number.isFinite(Number(ps.zIndex))||Number(ps.zIndex)>=0))return null;}
-    if(alpha>=.999)continue;
-    if(active(style.backgroundImage))return null;
+    if(alpha>=.999||unknown)continue;
+    if(active(style.backgroundImage)||(['BODY','HTML'].includes(el.tagName)&&globalBackdrop())){unknown=true;continue;}
     const bg=parseEchoColor(style.backgroundColor);if(!bg)return null;
     const weight=bg[3]*(1-alpha);for(let i=0;i<3;i++)sum[i]+=bg[i]*weight;alpha+=weight;
-    if(alpha>=.999){opaqueAt=el;if(['BODY','HTML'].includes(el.tagName)&&globalBackdrop())return null;}
+    if(alpha<.999&&(active(style.backdropFilter)||active(style.webkitBackdropFilter)))unknown=true;
+    if(alpha>=.999)opaqueAt=el;
   }
-  return alpha>=.999?sum.map(v=>v/alpha):null;
+  return alpha>=.999?sum.map(v=>v/alpha):uncertain();
 }
 export function createEchoAccent({document:doc,window:win,runtime,enabled=()=>true,readStyle=null}){
   const roots=new Set(),pending=new Set(),writes=new WeakMap(),listeners=[];let installed=false,owner=null,observer=null,frame=null,globalDirty=false,disposed=false,updates=0;

@@ -78,7 +78,7 @@ export const PHONE_TOOLS_CSS = [
 "#rp-phone #rp-screen .rp-nav-bar :is(.rp-nav-add,#rp-gen-diary,#rp-gen-moments,#rp-bank-refresh){width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important;min-height:40px!important;max-height:40px!important;box-sizing:border-box!important;margin:0!important;padding:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 40px!important;line-height:40px!important}",
 "#rp-phone #rp-screen #rp-view-thread>.rp-nav-bar{height:auto!important;min-height:116px!important;padding:46px 12px 14px!important;grid-template-columns:88px minmax(0,1fr) 88px;align-items:start}",
 "#rp-phone #rp-screen #rp-view-thread .rp-thread-hd{grid-column:2;grid-row:1;align-self:start;justify-self:stretch}",
-"#rp-phone #rp-screen #rp-view-thread .rp-thread-tools-actions{width:82px;gap:2px;flex-wrap:nowrap}",
+"#rp-phone #rp-screen #rp-view-thread .rp-thread-tools-actions{width:40px;gap:0;flex-wrap:nowrap}",
 "#rp-phone #rp-screen #rp-view-thread :is(#rp-thread-search,#rp-thread-menu){flex:0 0 40px;width:40px;min-width:40px;max-width:40px;height:40px;min-height:40px;max-height:40px;box-sizing:border-box;padding:0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;line-height:40px}",
 "#rp-phone #rp-screen :is(#rp-view-messages,#rp-view-moments)>.rp-nav-bar>.rp-nav-title{max-width:calc(100% - 184px)}",
 "#rp-phone #rp-screen #rp-view-xhs>.rp-nav-bar>.rp-nav-title{max-width:calc(100% - 224px)}",
@@ -89,6 +89,9 @@ export const PHONE_TOOLS_CSS = [
 "#rp-phone #rp-screen .rp-feature-header{align-items:flex-start}",
 "#rp-phone #rp-screen .rp-feature-header>strong{flex:1;min-width:0;overflow-wrap:anywhere}",
 "#rp-phone #rp-screen .rp-feature-close{flex:0 0 40px;width:40px;min-width:40px;max-width:40px;height:40px;min-height:40px;max-height:40px;padding:0;line-height:40px;box-sizing:border-box}",
+'#rp-phone #rp-screen .rp-thread-popover{position:absolute;top:86px;right:12px;z-index:110;box-sizing:border-box;width:190px;max-width:calc(100% - 24px);max-height:calc(100% - 108px);overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--rp-v-border,#e1d6dc);border-radius:14px;padding:5px;background:var(--rp-v-bg,#faf7f4);color:var(--rp-v-text,#493b44);box-shadow:0 7px 24px rgba(40,22,35,.12)}',
+'#rp-phone #rp-screen .rp-thread-popover>button{display:block;box-sizing:border-box;width:100%;min-height:38px;margin:0;padding:9px 12px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;font:inherit;font-size:12px;line-height:1.5;box-shadow:none;white-space:normal;overflow-wrap:anywhere;cursor:pointer}',
+'#rp-phone #rp-screen .rp-thread-popover>button:is(:hover,:focus-visible){background:var(--rp-v-card,#f1ecef);outline:0}',
 ].join('\n');
 
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -295,18 +298,43 @@ export function createPhoneTools(api) {
     api.dialog('调整字号大小',content,[{label:'恢复默认',run:()=>{api.rememberReading();if(applyReading(null,true)){input.val(prefs.scale);output.text(prefs.scale+'%');density.val(prefs.density);api.restoreReading();}return false;}},{label:'完成'}]);
   }
   const conversation=createConversationFeatures({...api,node,button,info,toolsState,snapshot,ensureId,jump,safeImage,fontScale:()=>prefs.scale/100});
+  let threadMenu=null;
+  function closeThreadMenu(focus=false){
+    if(!threadMenu)return;const menu=threadMenu;threadMenu=null;menu.off();menu.box.remove();$('#rp-thread-menu').attr('aria-expanded','false');if(focus)doc.getElementById('rp-thread-menu')?.focus();
+  }
+  function openRenameGroup(thread){
+    const owner=state(),slot=owner.chatId;
+    const content=node('div'),input=node('input').attr({type:'text',maxlength:80,'aria-label':'群聊名称',id:'rp-group-rename-input'}).val(thread.name);
+    const status=node('p','rp-feature-note').attr({role:'status','aria-live':'polite'});
+    content.append(node('label','rp-conv-field').append(node('span','','群聊名称'),input),node('p','rp-feature-note','修改群名后，聊天记录、成员和群头像都会保留。'),status);
+    api.dialog('修改群名',content,[{label:'取消'},{label:'保存',run:()=>{
+      if(state()!==owner||state().chatId!==slot||state().threads[thread.id]!==thread){status.text('聊天已切换，请重新打开修改。');return false;}
+      const name=String(input.val()||'').trim();
+      if(!name||name.length>80||/[<>"\r\n\u0000-\u001f]/.test(name)){status.text('请输入1–80字的群名，不含换行或尖括号、双引号。');return false;}
+      const key=name.normalize('NFKC').toLocaleLowerCase();
+      const conflict=Object.values(state().threads||{}).some(t=>t!==thread&&(t.type==='group'||t.id?.startsWith('grp_'))&&[t.name,t.id?.slice(4),...(Array.isArray(t.groupNameAliases)?t.groupNameAliases:[])].some(n=>String(n||'').normalize('NFKC').toLocaleLowerCase()===key));
+      if(conflict){status.text('已有同名群聊，请换一个群名。');return false;}
+      if(name!==thread.name){thread.groupNameAliases=[...new Set([...(Array.isArray(thread.groupNameAliases)?thread.groupNameAliases:[]),thread.name])];thread.name=name;thread.initials=name.slice(0,2);thread.groupNameAt=Date.now();api.save();api.renderThreads();if(state().currentThread===thread.id)$('#rp-hd-name').text(name);api.refreshPrompt?.();}
+    }}]);input.trigger('focus');
+  }
   function openThreadMenu() {
-    const thread=state().threads[state().currentThread];if(!thread)return;
-    const content=node('div').append(node('p','',thread.name),node('p','rp-feature-note','免打扰只关闭该聊天的消息横幅，消息、未读数和来电照常保留。'));
-    const live=()=>state().threads[thread.id]===thread;
-    api.dialog('聊天设置',content,[
-      {label:thread.phonePinned?'取消置顶':'置顶聊天',run:()=>{if(live()){thread.phonePinned=!thread.phonePinned;thread.phonePrefsAt=Date.now();api.renderThreads();api.save();}}},
-      {label:thread.phoneMuted?'关闭免打扰':'开启免打扰',run:()=>{if(live()){thread.phoneMuted=!thread.phoneMuted;thread.phonePrefsAt=Date.now();api.hideBanner();api.renderThreads();api.save();}}},
-      {label:'消息收藏',run:()=>{openBookmarks(thread.id);return false;}},
-      {label:'好友消息一键翻译'+(api.autoTranslation?.prefs().messages?'（已开启）':''),run:()=>{conversation.openAuto();return false;}},
-      {label:'聊天长图',run:()=>{conversation.openExport(thread);return false;}},
-      {label:'关闭'}
-    ]);
+    if(threadMenu){closeThreadMenu(true);return;}
+    const owner=state(),thread=owner.threads[owner.currentThread];if(!thread)return;
+    const slot=owner.chatId,live=()=>state()===owner&&state().chatId===slot&&state().currentView==='thread'&&state().currentThread===thread.id&&state().threads[thread.id]===thread;
+    const box=node('div','rp-thread-popover').attr({id:'rp-thread-popover',role:'menu','aria-label':'聊天操作'});
+    const item=(label,run)=>box.append(node('button','',label).attr({type:'button',role:'menuitem'}).on('click',()=>{const valid=live();closeThreadMenu();if(valid)run();}));
+    item('搜索聊天记录',()=>conversation.openSearch(thread.id));
+    if(thread.type==='group'||thread.id.startsWith('grp_'))item('修改群名',()=>openRenameGroup(thread));
+    item(thread.phonePinned?'取消置顶':'置顶聊天',()=>{thread.phonePinned=!thread.phonePinned;thread.phonePrefsAt=Date.now();api.renderThreads();api.save();});
+    item(thread.phoneMuted?'关闭免打扰':'开启免打扰',()=>{thread.phoneMuted=!thread.phoneMuted;thread.phonePrefsAt=Date.now();api.hideBanner();api.renderThreads();api.save();});
+    item('消息收藏',()=>openBookmarks(thread.id));
+    item('消息翻译'+(api.autoTranslation?.prefs().messages?' · 已开启':''),()=>conversation.openAuto());
+    item('聊天长图',()=>conversation.openExport(thread));
+    const rt=api.runtime(),off=[];
+    off.push(rt.listenDOM(doc,'pointerdown',event=>{if(!box[0].contains(event.target)&&!event.target.closest?.('#rp-thread-menu'))closeThreadMenu();}));
+    off.push(rt.listenDOM(doc,'focusin',event=>{if(!box[0].contains(event.target)&&!event.target.closest?.('#rp-thread-menu'))closeThreadMenu();}));
+    off.push(rt.listenDOM(doc,'keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeThreadMenu(true);return;}if(event.key==='Tab'){closeThreadMenu();return;}const keys=['ArrowDown','ArrowUp','Home','End'];if(!keys.includes(event.key))return;event.preventDefault();const items=[...box[0].querySelectorAll('button')],i=items.indexOf(doc.activeElement);items[event.key==='Home'?0:event.key==='End'?items.length-1:(i+(event.key==='ArrowUp'?-1:1)+items.length)%items.length]?.focus();}));
+    threadMenu={box,off:()=>off.splice(0).forEach(fn=>fn?.())};box.appendTo('#rp-screen');$('#rp-thread-menu').attr('aria-expanded','true');box.find('button').first().trigger('focus');
   }
   function sourceOf(entry) {
     const thread=state().threads[entry.threadId],message=thread?.messages.find(m=>String(m.id||'')===String(entry.messageId));
@@ -581,14 +609,14 @@ export function createPhoneTools(api) {
     settingsLink('#rp-phone-tools-settings','rp-settings-font','调整字号大小','所有界面字号与消息间距',openReading);
     settingsLink('#rp-settings-bookmark-slot','rp-settings-bookmarks','消息收藏','查看已收藏的消息快照',()=>openBookmarks());
     settingsLink('#rp-settings-backup-slot','rp-settings-backup','备份与恢复','导出当前聊天，或预览并合并备份',openBackup);
-    if(!doc.getElementById('rp-thread-menu'))$('#rp-thread-search').wrap('<div class="rp-thread-tools-actions"></div>').parent().append(node('button','','⋯').attr({id:'rp-thread-menu',type:'button','aria-label':'聊天设置与收藏'}).on('click',openThreadMenu));
+    $('#rp-thread-menu').off('click.mochiThread').on('click.mochiThread',openThreadMenu);
     if(!doc.getElementById('rp-reply-preview'))node('div').attr('id','rp-reply-preview').hide().insertBefore('#rp-pending-queue');
     conversation.mount();
     mountedRuntime=api.runtime();const ns='.mochiPhoneTools'+uid();
     $(doc).on('keydown'+ns,event=>{if(event.key==='Escape'&&state().currentView==='thread'&&!doc.getElementById('rp-feature-layer')){const thread=state().threads[state().currentThread];if(thread?.draftQuote){delete thread.draftQuote;api.save();renderReply();}}});
-    unbind=()=>{$(doc).off(ns);unbind=null;};mountedRuntime.own(unbind);renderReply();
+    unbind=()=>{closeThreadMenu();$(doc).off(ns);unbind=null;};mountedRuntime.own(unbind);renderReply();
   }
-  return {conversation,mount,applyReading,openReading,refreshTypography,openThreadMenu,openBookmarks,openMessage,renderReply,decorateMessages,decorateThreads,isMuted,quotes,quoteText,normalizeSaved,mergeContacts,makeBackup,parseBackup,planMerge,restoreBackup,previewBackup,openBackup,exportBackup,portable,signature,prefs:()=>({...prefs}),snapshot,toolsState};
+  return {conversation,mount,applyReading,openReading,refreshTypography,openThreadMenu,closeThreadMenu,openRenameGroup,openBookmarks,openMessage,renderReply,decorateMessages,decorateThreads,isMuted,quotes,quoteText,normalizeSaved,mergeContacts,makeBackup,parseBackup,planMerge,restoreBackup,previewBackup,openBackup,exportBackup,portable,signature,prefs:()=>({...prefs}),snapshot,toolsState};
 }
 
 

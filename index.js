@@ -1,11 +1,11 @@
-import { createEchoAccent } from './echo-accent.mjs?v=20261030-echo-adaptive-186';
-import { createMessageUI } from './message-ui.mjs?v=20261030-messages-182';
+import { createEchoAccent } from './echo-accent.mjs?v=20261030-thread-feedback-188';
+import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-preview-183';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261030-thread-feedback-188';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-echo-adaptive-186';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-thread-feedback-188';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -16,9 +16,9 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-mosaic-179';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-thread-feedback-188';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261030-mosaic-179';
-import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-resume-186';
+import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-result-shape-188';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -684,7 +684,7 @@ function rpSetPhoneOpen(open) {
         STATE._savedView = STATE.currentView;
         if (STATE.currentView === 'thread' && STATE.currentThread) STATE._savedThread = STATE.currentThread;
       }
-      rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false);
+      rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false); rpPhoneTools?.closeThreadMenu();
       rpRememberReading();
       saveState();
       rpClearPhoneMotion();
@@ -2546,6 +2546,12 @@ function normalizeAutoGroupTargetName(toRaw, ctx) {
   return to;
 }
 
+function rpGroupThreadId(name){
+  const direct='grp_'+name;
+  if(rpIsGroupThread(STATE.threads?.[direct]))return direct;
+  const matches=Object.values(STATE.threads||{}).filter(t=>rpIsGroupThread(t)&&(t.name===name||(Array.isArray(t.groupNameAliases)&&t.groupNameAliases.includes(name))));
+  return matches.length===1?matches[0].id:direct;
+}
 function makeAutoGroupName(fromRaw, toRaw, text, preferredName = '') {
   const preferred=String(preferredName||'').trim();
   if(preferred&&preferred.length<=80&&!/[<>\r\n\u0000-\u001f]/.test(preferred))return preferred;
@@ -2553,12 +2559,12 @@ function makeAutoGroupName(fromRaw, toRaw, text, preferredName = '') {
   // Keep old automatic conversations addressable. This suffix is only a lookup
   // for existing data, never a name template for a newly created group.
   const legacy=names.length?names.join('、')+'现场小群':'现场小群';
-  if(STATE.threads?.['grp_'+legacy]?.type==='group')return legacy;
+  if(STATE.threads?.['grp_'+legacy]?.type==='group')return STATE.threads['grp_'+legacy].name;
   const norm=name=>normalizePhonePersonName(resolveCanonicalPhoneName(name));
   const people=[...new Set(names.map(norm).filter(Boolean))].sort();
   if(people.length>1){
     const matches=Object.values(STATE.threads||{}).filter(thread=>{
-      if(!rpIsGroupThread(thread)||thread.id!=='grp_'+thread.name||!Array.isArray(thread.members))return false;
+      if(!rpIsGroupThread(thread)||!Array.isArray(thread.members))return false;
       const members=[...new Set(thread.members.filter(id=>id!=='user').map(id=>norm(STATE.threads[id]?.name||id)).filter(Boolean))].sort();
       return JSON.stringify(members)===JSON.stringify(people);
     });
@@ -2572,7 +2578,7 @@ function makeAutoGroupName(fromRaw, toRaw, text, preferredName = '') {
 function ensureGroupTargetMember(groupName, toRaw, ctx) {
   const targetName = normalizeAutoGroupTargetName(toRaw, ctx);
   if (!groupName || !targetName || isPhoneToUser(targetName, ctx)) return false;
-  const groupId = `grp_${groupName}`;
+  const groupId = rpGroupThreadId(groupName);
   const thread = STATE.threads && STATE.threads[groupId];
   if (!thread) return false;
   if (!thread.members) thread.members = ['user'];
@@ -2596,7 +2602,7 @@ function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName,
   const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
   const name = groupName || makeAutoGroupName(fromRaw, targetName, text || '语音');
   const resolvedTime = resolvePhoneTime(time);
-  const groupId = `grp_${name}`;
+  const groupId = rpGroupThreadId(name);
   if (!rpCanReceiveGroup(groupId, name)) return;
   if (!STATE.threads[groupId]) {
     const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
@@ -2633,7 +2639,7 @@ function incomingAutoGroupVoice(fromRaw, toRaw, time, duration, text, groupName,
 function incomingAutoGroupHongbao(fromRaw, toRaw, amount, note, groupName, time, source) {
   const targetName = normalizeAutoGroupTargetName(toRaw, getContext());
   const name = groupName || makeAutoGroupName(fromRaw, targetName, note || '红包');
-  const groupId = `grp_${name}`;
+  const groupId = rpGroupThreadId(name);
   if (!rpCanReceiveGroup(groupId, name)) return;
   if (!STATE.threads[groupId]) {
     const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
@@ -4046,7 +4052,7 @@ function rpTools() {
     $: $, document, state: () => STATE, touch: () => IS_TOUCH_DEVICE, storage: localStorage,
     notify: text => toastr.info(text), rememberReading: rpRememberReading, restoreReading: rpRestoreReadingPosition,
     dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog, runtime: () => rpRuntime, reflow: rpAvoidFabControls,
-    renderThreads: renderThreadList, save: saveState, hideBanner: rpHideBanner,
+    renderThreads: renderThreadList, save: saveState, hideBanner: rpHideBanner, refreshPrompt:refreshMochiPrompt,
     cached: item=>rpPhoneTranslationSnapshot(item,rpPhoneTranslationSource({kind:'message',item})),
     source: item=>rpPhoneTranslationSource({kind:'message',item}), avatar:getAvatar,
     stickerImage: item=>rpStickerApp().imageSource(item),
@@ -4080,7 +4086,7 @@ function rpTools() {
 function rpCloseFeatureDialog(immediate = false) { rpSetSurfaceOpen('#rp-feature-layer',false,{remove:true,immediate}); }
 function rpCloseChatOverlays() {
   for (const key of ['ludo','g2048','gm','gword']) rpCloseGameHistoryViewport(key);
-  rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false);
+  rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false); rpPhoneTools?.closeThreadMenu();
   rpGroupAvatars.cancel(); rpThemeStudio.leave();
   rpCloseFeatureDialog(true);
   rpSetSurfaceOpen('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create',false,{remove:true,immediate:true});
@@ -4816,7 +4822,7 @@ function bindUI() {
 
   // 小红书 - 发帖按钮
   $(document).on("click.mochiPhone", '#rp-xhs-compose', function() {
-    rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false);
+    rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false); rpPhoneTools?.closeThreadMenu();
     if (rpXhsFavoritesOnly) rpSetFavoritesOnly(false);
     go('xhs-compose');
   });
@@ -6956,7 +6962,7 @@ function renderBubbles(threadId, options = {}) {
       const imgEl = imgSrc === '__img_expired__'
         ? $(`<div class="rp-img-bbl" style="min-width:90px;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:12px 18px;font-size:12px;opacity:.7">图片已过期</div>`)
         : $(`<div class="rp-img-bbl"><img src="${escHtml(imgSrc)}" alt="图片"/></div>`);
-      if (msg.delivery === 'pending') imgEl.append($('<div>').css({fontSize:'11px',padding:'4px',color:'var(--rp-v-muted)'}).text('待酒馆确认'));
+      if (['pending','cancelled'].includes(msg.delivery)) imgEl.append($('<div>').css({fontSize:'11px',padding:'4px',color:'var(--rp-v-muted)'}).text(msg.delivery==='cancelled'?'已取消发送 · 原图已保留':'待酒馆确认'));
       imgEl.find('img').on('load', function() {
         if (this.closest('#rp-bubbles') === el) settleScroll();
       });
@@ -7515,8 +7521,20 @@ function rpRenderHostOutbox(threadId) {
   $('#rp-host-outbox').remove();
   const thread=STATE.threads[threadId],actions=thread?.pendingHostActions||[];if(!actions.length)return;
   const action=actions[0];
-  const box=rpMessageUI.outbox(actions.length,{busy:action.status==='sending'&&!!rpHostSubmission,note:action.note||'内容已保留，核对后可重试',retry:()=>rpAttemptThreadAction(thread,action)});
+  const box=rpMessageUI.outbox(actions.length,{busy:action.status==='sending'&&!!rpHostSubmission,note:action.note||'内容已保留，核对后可重试',retry:()=>rpAttemptThreadAction(thread,action),cancel:()=>rpCancelThreadAction(thread,action)});
   $('#rp-bubbles').before(box);
+}
+function rpCancelThreadAction(thread,action){
+  if(STATE.threads[thread.id]!==thread||getPhoneChatSlotKey(getContext())!==STATE.chatId||!(thread.pendingHostActions||[]).includes(action)||(action.status==='sending'&&rpHostSubmission))return false;
+  thread.pendingHostActions=thread.pendingHostActions.filter(item=>item!==action);
+  rpHostActionCallbacks.delete(action.id);
+  // Preserve the abandoned request, original attachment and receipt metadata.
+  (thread.cancelledHostActions||=[]).push({...action,status:'cancelled',cancelledAt:Date.now()});
+  if(action.imageMessageId){const image=thread.messages.find(m=>m.id===action.imageMessageId);if(image)image.delivery='cancelled';
+    const input=document.getElementById('file_form_input'),files=Array.from(input?.files||[]),names=rpActionImageNames(action.imageMessageId);
+    if(input&&files.some(file=>names.includes(file.name)))try{const transfer=new DataTransfer();for(const file of files)if(!names.includes(file.name))transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));}catch{}
+  }
+  saveState();if(STATE.currentThread===thread.id)renderBubbles(thread.id);return true;
 }
 function rpHostExpectedText(text) {
   try{if(typeof _rp_script_mod?.substituteParamsExtended==='function')return String(_rp_script_mod.substituteParamsExtended(text)).trim();}catch{}
@@ -7547,7 +7565,7 @@ function rpCompleteThreadAction(thread,action,index){
 function rpAttemptThreadAction(thread,action){
   if(STATE.threads[thread.id]!==thread||getPhoneChatSlotKey(getContext())!==STATE.chatId||!(thread.pendingHostActions||[]).includes(action))return false;
   const receipt=rpActionReceipt(thread,action);if(receipt>=0)return rpCompleteThreadAction(thread,action,receipt);
-  const fail=note=>{action.status='pending';action.note=note;saveState();if(STATE.currentThread===thread.id)rpRenderHostOutbox(thread.id);return false;};
+  const fail=note=>{if(STATE.threads[thread.id]!==thread||!(thread.pendingHostActions||[]).includes(action))return false;action.status='pending';action.note=note;saveState();if(STATE.currentThread===thread.id)rpRenderHostOutbox(thread.id);return false;};
   if(!rpHostReady()||rpHostSubmission)return fail('酒馆正在忙，内容已保留');
   if(action.imageMessageId){
     const image=thread.messages.find(m=>m.id===action.imageMessageId),input=document.getElementById('file_form_input');
@@ -7564,7 +7582,7 @@ function rpAttemptThreadAction(thread,action){
   }
   action.hostBase=getContext()?.chat?.length||0;action.expectedText=rpHostExpectedText(action.text);action.status='sending';action.note='正在等待酒馆确认';saveState();rpRenderHostOutbox(thread.id);
   const submitted=rpSubmitHostAction(action.text,index=>rpCompleteThreadAction(thread,action,index),false,{imageMessageId:action.imageMessageId,onUnconfirmed:()=>fail('尚未收到确认，请先核对主楼')});
-  if(!submitted)fail('酒馆暂不可发送，内容已保留');return submitted;
+  if(!submitted)fail('酒馆暂不可发送，内容已保留');else if(STATE.currentThread===thread.id&&(thread.pendingHostActions||[]).includes(action))rpRenderHostOutbox(thread.id);return submitted;
 }
 function rpSubmitThreadAction(thread, text, message, confirmed, imageMessageId) {
   const action = {id:'host_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),text,message,imageMessageId};
@@ -8994,7 +9012,7 @@ function rpParsePhoneAtom(block, source = {}) {
     if (!fromRaw || isPhoneUserName(fromRaw, ctx) || _isUserFrom(fromRaw)) return null;
     const sender=findOrCreateThread(fromRaw);if(!sender)return null;
     if(!groupName)return sender.id;
-    const id=`grp_${groupName}`;if(!rpCanReceiveGroup(id,groupName))return null;
+    const id=rpGroupThreadId(groupName);if(!rpCanReceiveGroup(id,groupName))return null;
     if(!STATE.threads[id]){const i=Object.keys(STATE.threads).length%GROUP_COLORS.length;STATE.threads[id]={id,name:groupName,initials:groupName.slice(0,2),avatarBg:`linear-gradient(145deg,${GROUP_COLORS[i]},${GROUP_COLORS[(i+1)%GROUP_COLORS.length]})`,type:'group',messages:[],unread:0,members:['user']};}
     const th=STATE.threads[id];th.members||=['user'];if(!th.members.includes(sender.id))th.members.push(sender.id);return id;
   }
@@ -9320,7 +9338,7 @@ function rpParsePhoneAtom(block, source = {}) {
     // 严禁 AI 替 user 发言
     if (!fromRaw || !groupName || isPhoneUserName(fromRaw, ctx) || _isUserFrom(fromRaw)) { parsedCount++; continue; }
     const duration = (gAttrs.DURATION || '').trim(), voiceText = String(m[2] || '').trim();
-    const groupId = `grp_${groupName}`;
+    const groupId = rpGroupThreadId(groupName);
     if (!STATE.threads[groupId]) {
       const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
       STATE.threads[groupId] = {
@@ -9363,7 +9381,7 @@ function rpParsePhoneAtom(block, source = {}) {
     const fromRaw = (gAttrs.FROM || '').trim(), groupName = (gAttrs.GROUP || '').trim();
     if (!fromRaw || !groupName || isPhoneUserName(fromRaw, ctx) || _isUserFrom(fromRaw)) { parsedCount++; continue; }
     const amount = (gAttrs.AMOUNT || '').trim(), note = (gAttrs.NOTE || '').trim() || '恭喜发财';
-    const groupId = `grp_${groupName}`;
+    const groupId = rpGroupThreadId(groupName);
     if (!STATE.threads[groupId]) {
       const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
       STATE.threads[groupId] = {
@@ -10196,7 +10214,7 @@ const GROUP_COLORS = ['#7c3aed','#0891b2','#0d9488','#b45309','#be185d','#1d4ed8
 
 function incomingGroupMsg(fromRaw, groupName, time, text, source) {
   const resolvedTime = resolvePhoneTime(time);
-  const groupId = `grp_${groupName}`;
+  const groupId = rpGroupThreadId(groupName);
   if (!rpCanReceiveGroup(groupId, groupName)) return;
   if (!STATE.threads[groupId]) {
     const colorIdx = Object.keys(STATE.threads).length % GROUP_COLORS.length;
@@ -10447,7 +10465,7 @@ function confirmCreateGroup() {
   const memberIds = selected.map((_, el) => $(el).data('tid')).get();
   let name = $('#rp-grp-name-inp').val().trim();
   if (!name) name = memberIds.map(id => STATE.threads[id]?.name || id).join('、');
-  const groupId = `grp_${name}`;
+  const groupId = rpGroupThreadId(name);
   if (STATE.threads[groupId] || Object.values(STATE.threads).some(t => t?.type === 'group' && normalizePhonePersonName(t.name) === normalizePhonePersonName(name))) {
     if (typeof toastr !== 'undefined') toastr.warning('已有同名群聊，请换一个群名；原聊天记录已保留');
     $('#rp-grp-name-inp').trigger('focus');

@@ -276,7 +276,7 @@ const HTML = `
               <div class="rp-hd-av" id="rp-hd-av"></div>
               <span class="rp-hd-name" id="rp-hd-name"></span>
             </div>
-            <button type="button" class="rp-feature-nav" id="rp-thread-search">搜索</button>
+            <div class="rp-thread-tools-actions"><button type="button" id="rp-thread-menu" aria-label="聊天更多操作" aria-haspopup="menu" aria-expanded="false">⋯</button></div>
           </div>
           <div id="rp-bubbles"></div>
           <button id="rp-go-latest" type="button" class="rp-feature-pill" style="display:none">↓ 最新</button>
