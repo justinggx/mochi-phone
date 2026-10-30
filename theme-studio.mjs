@@ -31,8 +31,6 @@ export const THEME_EDITOR_CSS=`
 #rp-phone .rp-te-field button{height:28px;padding:0;border:0;border-radius:6px;background:transparent;color:inherit;}
 #rp-phone .rp-te-field label{font-size:11px;}
 #rp-phone .rp-te-field input[aria-invalid="true"]{outline:2px solid #b33d48;}
-#rp-phone .rp-te-review{padding:9px;border-radius:10px;background:var(--rp-v-card,#f1ebee);margin:10px 0;font-size:11px;}
-#rp-phone .rp-te-review ul{padding-left:17px;margin:5px 0;}
 #rp-phone .rp-te-candidates{display:grid;gap:8px;margin-top:10px;}
 #rp-phone .rp-te-candidate{display:flex;gap:9px;align-items:center;text-align:left;padding:8px;border:1px solid var(--rp-v-border,#d9cdd4);border-radius:12px;background:transparent;color:inherit;}
 #rp-phone .rp-te-swatches{display:flex;gap:3px;}
@@ -90,8 +88,6 @@ export const THEME_EDITOR_CSS=`
 #rp-phone .rp-te-alternatives{margin:9px 0;font-size:11px;color:var(--rp-v-muted);}
 #rp-phone .rp-te-alternatives summary{cursor:pointer;}
 #rp-phone .rp-te-actions{position:static;padding:3px 0;}
-#rp-phone .rp-te-review{font-size:10px;padding:8px;margin:9px 0;}
-#rp-phone .rp-te-review p{margin:4px 0;}
 #rp-phone #rp-screen #rp-view-theme-studio .rp-ts-history{margin:0 12px 18px;border-top:1px solid var(--rp-v-border);padding-top:10px;font-size:11px;color:var(--rp-v-muted);}
 #rp-phone #rp-screen #rp-view-theme-studio .rp-ts-history summary{cursor:pointer;}
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-action-bar{gap:7px!important;padding:9px 0 0!important;}
@@ -116,6 +112,10 @@ export const THEME_EDITOR_CSS=`
 #rp-phone #rp-screen #rp-view-theme-studio .rp-te-manual .rp-te-tabs{position:sticky;top:45px;z-index:1;background:var(--rp-v-surface);}
 
 #rp-phone #rp-screen #rp-view-theme-studio.rp-te-adjusting :is(.rp-ts-conversation,.rp-ts-history,.rp-te-result,.rp-te-actions,#rp-ts-composer,#rp-ts-chat-status),#rp-phone #rp-screen #rp-view-theme-studio.rp-te-adjusting>.rp-nav-bar{display:none!important;}
+#rp-phone .rp-te-color-warning{font-size:10px;line-height:1.5;margin-top:8px;padding-left:8px;border-left:2px solid var(--rp-v-accent);}
+#rp-phone .rp-te-color-warning[hidden]{display:none!important;}
+#rp-phone .rp-te-color-warning p{margin:0 0 4px;}
+#rp-phone .rp-te-color-warning ul{margin:4px 0;padding-left:16px;}
 `;
 
 // A single shared stylesheet is adopted by previews when supported. It never
@@ -197,9 +197,9 @@ export function createThemeStudio(api) {
     install();leave();const parent=doc.getElementById('rp-ts-draft')||doc.getElementById('rp-ts-bubbles');if(!parent)return;
     const task=api.runtime().task(),root=doc.createElement('div');root.className='rp-theme-editor';const initial=snapshot();
     session={root,task,controller:new (doc.defaultView.AbortController)(),account:api.account(),slot:api.slot(),baseline:signature(),draft:currentDraft(initial),locks:{},mode:api.dark()?'night':'day',view:initial.wallpaper?'home':'chat',tab:'colors',hasResult:!!initial.design||!!initial.css,group:'bubbles',candidates:[],busy:false,editRevision:0,legacyEnabled:!initial.design&&!!initial.css};const s=session;
-    root.innerHTML=`<section class="rp-te-result" data-te-result><div class="rp-te-result-title"><strong>预览与确认</strong><button class="rp-te-button" type="button" data-te-chat-again>继续和 AI 改</button></div><section data-te-pane="preview"><div class="rp-te-row"><select data-te-view aria-label="预览页面"><option value="chat">聊天</option><option value="home">主屏</option><option value="moments">朋友圈</option></select><select data-te-mode aria-label="编辑日夜配色"><option value="day">日间</option><option value="night">夜间</option></select><button class="rp-te-button" type="button" data-te-show-colors>微调</button></div><div class="rp-te-preview" aria-label="主题效果预览"></div><p class="rp-te-help">修改只在预览中，确认后再应用。壁纸可在主屏预览查看。</p><details class="rp-te-alternatives" hidden><summary>其他配色方案</summary><div class="rp-te-candidates"></div></details></section><details class="rp-te-review"><summary>可读性检查</summary><div data-te-review-body></div></details></section>
+    root.innerHTML=`<section class="rp-te-result" data-te-result><div class="rp-te-result-title"><strong>预览与确认</strong><button class="rp-te-button" type="button" data-te-chat-again>继续和 AI 改</button></div><section data-te-pane="preview"><div class="rp-te-row"><select data-te-view aria-label="预览页面"><option value="chat">聊天</option><option value="home">主屏</option><option value="moments">朋友圈</option></select><select data-te-mode aria-label="编辑日夜配色"><option value="day">日间</option><option value="night">夜间</option></select><button class="rp-te-button" type="button" data-te-show-colors>微调</button></div><div class="rp-te-preview" aria-label="主题效果预览"></div><p class="rp-te-help">修改只在预览中，确认后再应用。壁纸可在主屏预览查看。</p><details class="rp-te-alternatives" hidden><summary>其他配色方案</summary><div class="rp-te-candidates"></div></details></section></section>
 <section class="rp-te-manual" aria-label="手动微调" hidden><div class="rp-te-manual-head"><button class="rp-te-button" type="button" data-te-return>‹ 返回</button><strong>手动微调</strong></div><div class="rp-te-tabs" role="tablist" aria-label="主题编辑分组">${Object.entries(groupLabels).map(([key,label])=>'<button type="button" role="tab" data-te-tab="'+key+'" aria-selected="'+(key==='colors')+'">'+label+'</button>').join('')}</div><div class="rp-te-row"><label>设计起点</label><select data-te-base aria-label="设计骨架">${Object.entries(THEME_BASES).map(([key,v])=>'<option value="'+key+'">'+v.name+'</option>').join('')}</select></div>
-<label class="rp-te-row">编辑配色<select data-te-edit-mode aria-label="微调日夜配色"><option value="day">日间</option><option value="night">夜间</option></select></label><section data-te-pane="colors"><select data-te-group aria-label="配色分组">${Object.entries(THEME_GROUP_NAMES).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('')}</select><p class="rp-te-help">可用取色器或HEX微调。锁住的项目不随AI修改，↺恢复当前起点的颜色。</p><div class="rp-te-fields"></div></section>
+<label class="rp-te-row">编辑配色<select data-te-edit-mode aria-label="微调日夜配色"><option value="day">日间</option><option value="night">夜间</option></select></label><section data-te-pane="colors"><select data-te-group aria-label="配色分组">${Object.entries(THEME_GROUP_NAMES).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('')}</select><p class="rp-te-help">可用取色器或HEX微调。锁住的项目不随AI修改，↺恢复当前起点的颜色。</p><div class="rp-te-fields"></div><div class="rp-te-color-warning" hidden></div></section>
 <section data-te-pane="shape" hidden><div class="rp-te-shapes"></div><label class="rp-te-row">应用时显示<select data-te-apply-mode aria-label="应用时显示模式"><option value="keep">跟随当前手机模式</option><option value="day">日间</option><option value="night">夜间</option></select></label><p class="rp-te-help">字号沿用设置中的阅读大小。</p></section>
 <section data-te-pane="assets" hidden><label>图标风格 <select data-te-icons><option value="line">简洁线条</option><option value="candy">糖果图标</option><option value="misty">雾蓝图标</option><option value="star">星夜图标</option></select></label><div class="rp-te-row"><label><input type="checkbox" data-te-keep-wallpaper>保留当前聊天壁纸</label></div><div class="rp-te-row"><button class="rp-te-button" type="button" data-te-wallpaper>选择壁纸</button><button class="rp-te-button" type="button" data-te-extract>从壁纸取色</button><button class="rp-te-button" type="button" data-te-remove-wallpaper>预览移除壁纸</button><input class="rp-te-file" type="file" accept="image/*" data-te-wall-file></div><div class="rp-te-palette"></div><p class="rp-te-help">图片在本浏览器取色，不传给AI。选择色块可设为当前模式的强调色。</p></section>
 <section data-te-pane="advanced" hidden><label><input type="checkbox" data-te-legacy-only>仅使用原CSS（高级兼容）</label><p class="rp-te-help">旧CSS原文保留。取消或回到上一版可完整恢复。</p><textarea class="rp-te-legacy" spellcheck="false" aria-label="高级自定义CSS"></textarea><button class="rp-te-button" type="button" data-te-validate-css>检查CSS</button></section>
@@ -215,8 +215,9 @@ export function createThemeStudio(api) {
     function cssForDraft(){const old=s.draft.legacyCss===s.draft.legacyOriginal?s.draft.legacyCss:validateCss(s.draft.legacyCss);return s.draft.legacyOnly?old:old+'\n'+compileThemeDesign(s.draft.design);}
     function refresh(){if(!valid())return;q('[data-te-result]').hidden=!s.hasResult;const jump=doc.getElementById('rp-ts-jump-preview');if(jump)jump.hidden=!s.hasResult;q('.rp-te-actions').hidden=!s.hasResult;const legacy=s.draft.legacyOnly;try{const design=legacy?null:s.draft.design;makeThemePreview(doc,q('.rp-te-preview'),{css:cssForDraft(),baseCss:api.baseCss(),design,mode:s.mode,view:s.view,wallpaper:s.draft.wallpaper,icons:api.previewIcons?.(s.draft.design.icons)||[]});}catch(error){s.status(error.message);}
       q('[data-te-icons]').value=s.draft.design.icons;q('[data-te-keep-wallpaper]').checked=s.draft.design.keepWallpaper;
-      const review=legacy?{failures:[],unknown:['高级CSS可能包含渐变/透明/自定义规则，需在预览和实际页面核对，不能仅按配色表判定。']}:checkThemeContrast(s.draft.design,{wallpaper:!!s.draft.wallpaper});
-      q('[data-te-review-body]').innerHTML='<strong>可读性检查</strong>'+(review.failures.length?'<ul>'+review.failures.map(p=>'<li>'+(p.mode==='day'?'日间':'夜间')+THEME_FIELDS[p.foreground]+' / '+THEME_FIELDS[p.background]+'：'+p.ratio.toFixed(2)+'∶1</li>').join('')+'</ul><button class="rp-te-button" type="button" data-te-fix>调整未锁定文字</button>':'<p>'+(legacy?'':'配色表文字检查达到4.5∶1。')+'</p>')+review.unknown.map(t=>'<p>'+esc(t)+'</p>').join('');
+      const failures=legacy?[]:checkThemeContrast(s.draft.design).failures.filter(pair=>pair.mode===s.mode&&THEME_GROUPS[s.group].includes(pair.foreground));
+      const warning=q('.rp-te-color-warning');warning.hidden=!failures.length;
+      warning.innerHTML=failures.length?'<p>这些文字与背景较接近，可调整颜色：</p><ul>'+failures.map(pair=>'<li>'+THEME_FIELDS[pair.foreground]+' / '+THEME_FIELDS[pair.background]+'</li>').join('')+'</ul><button class="rp-te-button" type="button" data-te-fix>改善未锁定文字</button>':'';
     }
     s.refresh=refresh;s.fields=fields;s.shapes=shapeFields;s.pane=pane;s.css=cssForDraft;s.edit=edit;
     s.choose=index=>{
@@ -247,7 +248,7 @@ export function createThemeStudio(api) {
       if(el.hasAttribute('data-te-apply-mode'))s.editRevision++;
       if(el.hasAttribute('data-te-mode')||el.hasAttribute('data-te-edit-mode')){s.mode=el.value;q('[data-te-mode]').value=s.mode;q('[data-te-view]').value=s.view;q('[data-te-edit-mode]').value=s.mode;fields();refresh();}
       if(el.hasAttribute('data-te-scope'))s.editRevision++;
-      if(el.hasAttribute('data-te-group')){s.group=el.value;fields();}
+      if(el.hasAttribute('data-te-group')){s.group=el.value;fields();refresh();}
       if(el.hasAttribute('data-te-view')){s.view=el.value;refresh();}
       if(el.hasAttribute('data-te-base')){edit();const preset=themePreset(el.value),old=s.draft.design;for(const mode of ['day','night'])for(const key of Object.keys(THEME_FIELDS))if(s.locks[mode+'.'+key])preset[mode][key]=old[mode][key];for(const key of Object.keys(old.shape))if(s.locks['shape.'+key])preset.shape[key]=old.shape[key];preset.icons=old.icons;preset.keepWallpaper=old.keepWallpaper;s.draft.design=preset;fields();shapeFields();refresh();}
       if(el.dataset.teShape){edit();s.draft.design.shape[el.dataset.teShape]=['radius','opacity'].includes(el.dataset.teShape)?Number(el.value):el.value;refresh();}
