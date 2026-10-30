@@ -13,7 +13,7 @@ const people = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="12" cy="
 const palette = ['#eadce3','#dce7e5','#e4e0ee','#e8e2d7','#dce4ef','#eeded7'];
 const symbols = ['🌷','☕','🌙','🍀','🐾','🎮','📚','🎵'];
 export const GROUP_AVATAR_CSS = `
-#rp-phone .rp-group-face{display:grid!important;position:relative;isolation:isolate;overflow:hidden;padding:3px!important;gap:2px;border-radius:28%;background:var(--rp-v-border,#e7dfe5)!important;box-sizing:border-box;flex-shrink:0;color:#685c70;}
+#rp-phone .rp-group-face{display:grid!important;align-items:stretch!important;justify-items:stretch;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);position:relative;isolation:isolate;overflow:hidden;padding:3px!important;gap:2px;border-radius:28%;background:var(--rp-v-border,#e7dfe5)!important;box-sizing:border-box;flex-shrink:0;color:#685c70;}
 #rp-phone .rp-group-face[data-rp-group-layout="2"]{grid-template-columns:1fr 1fr;}
 #rp-phone .rp-group-face[data-rp-group-layout="3"],#rp-phone .rp-group-face[data-rp-group-layout="4"]{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
 #rp-phone .rp-group-face[data-rp-group-layout="3"]>:first-child{grid-row:span 2;}
