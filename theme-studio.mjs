@@ -44,8 +44,11 @@ export const THEME_EDITOR_CSS=`
 #rp-phone .rp-te-palette button{width:32px;height:32px;border:2px solid #fff8;border-radius:50%;}
 #rp-phone .rp-te-note{white-space:pre-wrap;font-size:11px;color:var(--rp-v-muted,#786b74);}
 #rp-phone .rp-saved-card-preview.rp-te-thumbnail{height:104px;overflow:hidden;}
-#rp-phone .rp-saved-card-actions{flex-wrap:wrap;}
-#rp-phone .rp-te-library-tools{display:flex;gap:7px;margin:12px 0;flex-wrap:wrap;}
+#rp-phone #rp-view-themes .rp-saved-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;}
+#rp-phone #rp-view-themes .rp-saved-card-act-btn:is([data-te-copy],[data-te-export]){background:var(--rp-tc-bg,rgba(150,120,140,.08))!important;color:var(--rp-nav-btn,#95677d)!important;border:1px solid rgba(150,120,140,.2)!important;}
+#rp-phone #rp-view-themes .rp-te-library-tools{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0 12px;flex-wrap:wrap;}
+#rp-phone #rp-view-themes .rp-te-library-tools .rp-te-button{appearance:none;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:0 1 auto;width:auto;min-width:0;max-width:100%;height:auto;min-height:28px;padding:5px 10px;border:1px solid rgba(150,120,140,.22);border-radius:9px;box-shadow:none;background:var(--rp-tc-bg,rgba(150,120,140,.06));color:var(--rp-nav-btn,#95677d);font-family:inherit;font-size:11px;font-weight:600;line-height:1.3;letter-spacing:0;white-space:nowrap;cursor:pointer;}
+#rp-phone #rp-view-themes .rp-te-library-tools .rp-te-button:active{opacity:.72;}
 `;
 
 // A single shared stylesheet is adopted by previews when supported. It never
