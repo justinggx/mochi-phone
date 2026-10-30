@@ -1,3 +1,4 @@
+import { createMessageUI } from './message-ui.mjs?v=20261030-messages-182';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-flow-181';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
@@ -6412,12 +6413,28 @@ function rpAutoTranslationAllowed(target) {
   return ['moment','comment'].includes(target.kind) && item.from!=='user' && !blocked(item.name||item.from);
 }
 function rpAutoTranslationTargets(scope) {
-  // Receive timelines stay intact; reverse copies prioritize the latest content.
+  // Newest receive batch first; within each AI floor retain the authored order.
   if (scope === 'messages') {
     const threads=Object.values(STATE.threads||{}).sort((a,b)=>Number(b.id===STATE.currentThread)-Number(a.id===STATE.currentThread));
-    return threads.flatMap(t=>[...(t.messages||[])].reverse().map(item=>({kind:'message',threadId:t.id,item}))).filter(rpAutoTranslationAllowed);
+    return threads.flatMap(thread=>{
+      const batches=[],sourceBatches=new Map();let batch=null,previous=null;
+      for(const item of thread.messages||[]){
+        let key=null;try{const source=JSON.parse(item.phoneSource?.key||'null');if(Array.isArray(source)&&Number.isInteger(source[0]))key=JSON.stringify(source.slice(0,2));}catch{}
+        // Legacy items have no floor identity. Preserve same-time incoming runs,
+        // splitting at user/system messages; never rewrite stored order.
+        const incoming=item.from!=='user'&&item.from!=='system';
+        if(key){
+          batch=sourceBatches.get(key);if(!batch){batch=[];sourceBatches.set(key,batch);batches.push(batch);}
+        }else{
+          key='legacy:'+String(item.time||'');
+          if(!batch||key!==previous||!incoming){batch=[];batches.push(batch);}
+        }
+        batch.push({kind:'message',threadId:thread.id,item});previous=incoming?key:null;
+      }
+      return batches.reverse().flat();
+    }).filter(rpAutoTranslationAllowed);
   }
-  return [...(STATE.moments||[])].reverse().flatMap(moment=>[...[...(moment.comments||[])].reverse().map(item=>({kind:'comment',moment,item})),{kind:'moment',moment,item:moment}]).filter(rpAutoTranslationAllowed);
+  return [...(STATE.moments||[])].reverse().flatMap(moment=>[{kind:'moment',moment,item:moment},...(moment.comments||[]).map(item=>({kind:'comment',moment,item}))]).filter(rpAutoTranslationAllowed);
 }
 async function rpPumpAutoTranslation() {
   if (rpAutoTranslationBusy || !rpAutoTranslationVisible()) return false;
@@ -6686,6 +6703,7 @@ function rpNormalizeMessageMeta(wrap) {
 }
 
 function renderBubbles(threadId, options = {}) {
+  rpMessageUI.install();
   if (rpDeferUi("bubbles:" + threadId, () => renderBubbles(threadId, options))) return;
   rpRenderHostOutbox(threadId);
   const area = $('#rp-bubbles'), el = area[0];
@@ -6743,7 +6761,7 @@ function renderBubbles(threadId, options = {}) {
       wrap.html(`
         <div class="rp-hongbao ${msg.opened?'opened':''}">
           <div class="rp-hb-top">
-            <div class="rp-hb-ico">🧧</div>
+            <div class="rp-hb-ico rp-message-card-icon">${rpMessageUI.icon('gift')}</div>
             <div class="rp-hb-info">
               <div class="rp-hb-from">${escHtml(msg.name)}</div>
               <div class="rp-hb-note">${escHtml(msg.note||'恭喜发财')}</div>
@@ -6828,7 +6846,7 @@ function renderBubbles(threadId, options = {}) {
       const hongbaoEl = $(`
         <div class="rp-hongbao ${msg.opened?'opened':''}">
           <div class="rp-hb-top">
-            <div class="rp-hb-ico">🧧</div>
+            <div class="rp-hb-ico rp-message-card-icon">${rpMessageUI.icon('gift')}</div>
             <div class="rp-hb-info">
               <div class="rp-hb-from">${escHtml(msg.name)}</div>
               <div class="rp-hb-note">${escHtml(msg.note||'恭喜发财')}</div>
@@ -6852,7 +6870,7 @@ function renderBubbles(threadId, options = {}) {
       wrap.html(`
         <div class="rp-hongbao opened" style="cursor:default">
           <div class="rp-hb-top">
-            <div class="rp-hb-ico">🧧</div>
+            <div class="rp-hb-ico rp-message-card-icon">${rpMessageUI.icon('gift')}</div>
             <div class="rp-hb-info">
               <div class="rp-hb-from">我</div>
               <div class="rp-hb-note">${escHtml(msg.note||'恭喜发财')}</div>
@@ -6919,7 +6937,7 @@ function renderBubbles(threadId, options = {}) {
       const wrap = $(`<div class="rp-bwrap ${isUser?'rp-out':'rp-in'}"></div>`);
       wrap.html(`
         <div class="rp-loc-card">
-          <div class="rp-loc-ico">📍</div>
+          <div class="rp-loc-ico rp-message-card-icon">${rpMessageUI.icon('location')}</div>
           <div class="rp-loc-txt">${escHtml(msg.place)}</div>
         </div>
         <div class="rp-bts">${escHtml(msg.time)}</div>
@@ -7458,47 +7476,61 @@ function rpTriggerPendingImg(threadId, msgId, prompt, triggerEl) {
 // ================================================================
 let rpHostSubmission = null, rpMergeDeferred = false;
 const rpHostActionCallbacks = new Map();
+const rpMessageUI=createMessageUI({document,runtime:()=>rpRuntime,baseURI:()=>document.baseURI});
 function rpRenderHostOutbox(threadId) {
   $('#rp-host-outbox').remove();
-  const thread = STATE.threads[threadId], actions = thread?.pendingHostActions || [];
-  if (!actions.length) return;
-  const box = $('<div id="rp-host-outbox" role="status">').css({padding:'8px 14px',fontSize:'12px',color:'var(--rp-v-muted)'}).text('有 ' + actions.length + ' 项操作待酒馆确认 ');
-  $('<button type="button">').css({border:0,background:'transparent',color:'var(--rp-nav-btn)',cursor:'pointer'}).text('重试同步').on('click',()=>rpAttemptThreadAction(thread, actions[0])).appendTo(box);
+  const thread=STATE.threads[threadId],actions=thread?.pendingHostActions||[];if(!actions.length)return;
+  const action=actions[0];
+  const box=rpMessageUI.outbox(actions.length,{busy:action.status==='sending'&&!!rpHostSubmission,note:action.note||'内容已保留，核对后可重试',retry:()=>rpAttemptThreadAction(thread,action)});
   $('#rp-bubbles').before(box);
 }
-function rpAttemptThreadAction(thread, action) {
-  if (action.imageMessageId) {
-    if (!rpHostReady() || rpHostSubmission) { toastr.warning('酒馆正在忙，图片已保留，可稍后重试同步。'); return false; }
-    const image = thread.messages.find(m=>m.id===action.imageMessageId);
-    const input = document.getElementById('file_form_input');
-    if (!image || !input || !String(image.src).startsWith('data:image/')) { toastr.warning('图片附件暂不可发送，原图已保留。'); return false; }
-    try {
-      const fileName = 'mochi-' + image.id + '.png', transfer = new DataTransfer();
-      for (const file of input.files || []) transfer.items.add(file);
-      if (!Array.from(input.files || []).some(f=>f.name===fileName)) {
-        const blob = dataURLtoBlob(image.src); transfer.items.add(new File([blob],fileName,{type:blob.type}));
-      }
-      input.files = transfer.files; input.dispatchEvent(new Event('change',{bubbles:true}));
-    } catch (_) { toastr.warning('无法准备图片附件，原图已保留。'); return false; }
+function rpHostExpectedText(text) {
+  try{if(typeof _rp_script_mod?.substituteParamsExtended==='function')return String(_rp_script_mod.substituteParamsExtended(text)).trim();}catch{}
+  const ctx=getContext();return String(text||'').replace(/{{user}}/gi,()=>ctx?.name1||'{{user}}').replace(/{{char}}/gi,()=>ctx?.name2||'{{char}}').trim();
+}
+function rpActionImageNames(id){return ['png','jpg','jpeg','webp','gif','avif','bmp'].map(ext=>'mochi-'+id+'.'+ext);}
+function rpActionReceipt(thread,action){
+  const chat=getContext()?.chat||[],names=action.imageMessageId?rpActionImageNames(action.imageMessageId):[];
+  if(action.imageMessageId){const found=chat.findIndex(message=>message?.is_user&&(message.extra?.media||[]).some(media=>media.type==='image'&&names.includes(media.title)));if(found>=0)return found;}
+  if(Number.isInteger(action.receiptIndex)&&chat[action.receiptIndex]?.is_user&&typeof action.receiptText==='string'&&String(chat[action.receiptIndex].mes||'')===action.receiptText)return action.receiptIndex;
+  if(!Number.isInteger(action.hostBase))return -1;
+  return chat.findIndex((message,i)=>i>=action.hostBase&&message?.is_user&&String(message.mes||'').trim()===action.expectedText);
+}
+function rpCompleteThreadAction(thread,action,index){
+  if(!(thread.pendingHostActions||[]).some(x=>x.id===action.id))return false;
+  action.receiptIndex=index;action.receiptText=String(getContext()?.chat?.[index]?.mes||'');action.status='pending';
+  if(action.imageMessageId){
+    const hostMessage=getContext()?.chat?.[index];
+    if(!hostMessage?.extra?.image&&!(hostMessage?.extra?.media||[]).some(m=>m.type==='image')){action.note='主楼已有这条消息，附件尚未确认';saveState();rpRenderHostOutbox(thread.id);return false;}
+    const image=thread.messages.find(m=>m.id===action.imageMessageId);if(image){image.delivery='sent';image.hostIndex=index;}
   }
-  return rpSubmitHostAction(action.text, index => {
-    if (!(thread.pendingHostActions || []).some(x=>x.id===action.id)) return;
-    if (action.imageMessageId) {
-      const hostMessage = getContext()?.chat?.[index];
-      if (!hostMessage?.extra?.image && !(hostMessage?.extra?.media || []).some(m=>m.type==='image')) {
-        toastr.warning('酒馆未确认图片附件，原图仍待同步，请先检查主楼。'); return;
-      }
-      const image = thread.messages.find(m=>m.id===action.imageMessageId);
-      if (image) { image.delivery='sent'; image.hostIndex=index; }
-    }
-    thread.pendingHostActions = thread.pendingHostActions.filter(x=>x.id!==action.id);
-    STATE._suppressUserNotifUntil = Date.now()+8000;
-    const callback = rpHostActionCallbacks.get(action.id); rpHostActionCallbacks.delete(action.id);
-    if (callback) callback(index);
-    else if (action.message) thread.messages.push({...action.message, hostIndex:index});
-    if (STATE.currentThread===thread.id) renderBubbles(thread.id);
-    saveState();
-  });
+  thread.pendingHostActions=thread.pendingHostActions.filter(x=>x.id!==action.id);
+  STATE._suppressUserNotifUntil=Date.now()+8000;
+  const callback=rpHostActionCallbacks.get(action.id);rpHostActionCallbacks.delete(action.id);
+  if(callback)callback(index);else if(action.message)thread.messages.push({...action.message,hostIndex:index});
+  if(STATE.currentThread===thread.id)renderBubbles(thread.id);saveState();return true;
+}
+function rpAttemptThreadAction(thread,action){
+  if(STATE.threads[thread.id]!==thread||getPhoneChatSlotKey(getContext())!==STATE.chatId||!(thread.pendingHostActions||[]).includes(action))return false;
+  const receipt=rpActionReceipt(thread,action);if(receipt>=0)return rpCompleteThreadAction(thread,action,receipt);
+  const fail=note=>{action.status='pending';action.note=note;saveState();if(STATE.currentThread===thread.id)rpRenderHostOutbox(thread.id);return false;};
+  if(!rpHostReady()||rpHostSubmission)return fail('酒馆正在忙，内容已保留');
+  if(action.imageMessageId){
+    const image=thread.messages.find(m=>m.id===action.imageMessageId),input=document.getElementById('file_form_input');
+    if(!image||!input||!String(image.src).startsWith('data:image/'))return fail('图片暂不可发送，原图已保留');
+    try{
+      const blob=dataURLtoBlob(image.src),ext=({'image/png':'png','image/jpeg':'jpeg','image/webp':'webp','image/gif':'gif','image/avif':'avif','image/bmp':'bmp'})[blob.type];
+      if(!ext)return fail('暂不支持这种图片格式，原图已保留');
+      const names=rpActionImageNames(image.id),existing=Array.from(input.files||[]);
+      if(existing.some(file=>!names.includes(file.name)))return fail('主楼还有未发送附件，请先处理');
+      const fileName='mochi-'+image.id+'.'+ext,transfer=new DataTransfer();
+      transfer.items.add(new File([blob],fileName,{type:blob.type}));input.files=transfer.files;
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+    }catch{return fail('无法准备图片附件，原图已保留');}
+  }
+  action.hostBase=getContext()?.chat?.length||0;action.expectedText=rpHostExpectedText(action.text);action.status='sending';action.note='正在等待酒馆确认';saveState();rpRenderHostOutbox(thread.id);
+  const submitted=rpSubmitHostAction(action.text,index=>rpCompleteThreadAction(thread,action,index),false,{imageMessageId:action.imageMessageId,onUnconfirmed:()=>fail('尚未收到确认，请先核对主楼')});
+  if(!submitted)fail('酒馆暂不可发送，内容已保留');return submitted;
 }
 function rpSubmitThreadAction(thread, text, message, confirmed, imageMessageId) {
   const action = {id:'host_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),text,message,imageMessageId};
@@ -7512,7 +7544,7 @@ function rpHostReady() {
   return !!(button && !button.disabled && button.getAttribute('aria-disabled') !== 'true'
     && document.getElementById('send_textarea') && !_rp_script_mod?.isGenerating?.());
 }
-function rpSubmitHostAction(text, confirmed, replace = false) {
+function rpSubmitHostAction(text, confirmed, replace = false, options = {}) {
   if (rpHostSubmission || !rpHostReady()) {
     toastr.warning('酒馆正在忙或暂不可发送，内容已保留，请稍后再点发送。'); return false;
   }
@@ -7521,6 +7553,7 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
   const original = ta.value, content = replace ? text : (original.trim() ? original.trim() + '\n' + text : text);
   const source = ctx?.eventSource || eventSource, types = ctx?.eventTypes || ctx?.event_types || event_types;
   if (!source || !types?.USER_MESSAGE_RENDERED) { toastr.warning('无法确认酒馆发送状态，内容已保留。'); return false; }
+  const expected=rpHostExpectedText(content);
   const job = { base: ctx.chat?.length || 0, task }; rpHostSubmission = job;
   $('#rp-send').prop('disabled', true);
   let stop, timer;
@@ -7531,9 +7564,9 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
   };
   const cancel = () => { if (getPhoneChatSlotKey(getContext()) === originSlot && ta.value === content) { ta.value = original; ta.dispatchEvent(new Event('input', {bubbles:true})); } release(); };
   const accepted = () => {
-    if (job.done || !task.valid()) return;
+    if (job.done || !task.valid() || getPhoneChatSlotKey(getContext()) !== originSlot) return;
     const chat = getContext()?.chat || [];
-    const index = chat.findIndex((message, i) => i >= job.base && message?.is_user && String(message.mes || '').trim() === content.trim());
+    const index = chat.findIndex((message, i) => i >= job.base && message?.is_user && (String(message.mes || '').trim() === content.trim() || String(message.mes || '').trim() === expected || (options.imageMessageId && (message.extra?.media||[]).some(media=>media.type==='image'&&rpActionImageNames(options.imageMessageId).includes(media.title)))));
     if (index < 0) return;
     job.done = true; release(); confirmed(index);
   };
@@ -7541,11 +7574,11 @@ function rpSubmitHostAction(text, confirmed, replace = false) {
   task.signal.addEventListener('abort', cancel, {once:true});
   timer = setTimeout(() => {
     accepted();
-    if (rpHostSubmission === job) { cancel(); toastr.warning('尚未确认发送成功，内容已保留；请先检查主楼，再决定是否重试。'); }
+    if (rpHostSubmission === job) { cancel(); if(options.onUnconfirmed)options.onUnconfirmed();else toastr.warning('尚未确认发送成功，内容已保留；请先检查主楼，再决定是否重试。'); }
   }, 12000);
   ta.value = content; ta.dispatchEvent(new Event('input', {bubbles:true}));
   try { document.getElementById('send_but').click(); accepted(); }
-  catch (_) { cancel(); toastr.warning('发送未完成，内容已保留。'); }
+  catch (_) { cancel(); options.onUnconfirmed?.(); toastr.warning('发送未完成，内容已保留。'); }
   return true;
 }
 
@@ -10184,19 +10217,20 @@ function toggleAttachPanel() {
   if (rpSurfaceIsOpen(p)) { rpSetSurfaceOpen(p,false); return; }
   p.html(`
     <div class="rp-attach-row">
-      <div class="rp-attach-item" onclick="showHongbaoSheet()">
-        <div class="rp-attach-ico">🧧</div><span>红包</span>
-      </div>
-      <div class="rp-attach-item" onclick="triggerImagePick()">
-        <div class="rp-attach-ico">🖼️</div><span>图片</span>
-      </div>
-      <div class="rp-attach-item" onclick="showLocationInput()">
-        <div class="rp-attach-ico">📍</div><span>位置</span>
-      </div>
+      <button type="button" class="rp-attach-item" onclick="showHongbaoSheet()">
+        <div class="rp-attach-ico"></div><span>红包</span>
+      </button>
+      <button type="button" class="rp-attach-item" onclick="triggerImagePick()">
+        <div class="rp-attach-ico"></div><span>图片</span>
+      </button>
+      <button type="button" class="rp-attach-item" onclick="showLocationInput()">
+        <div class="rp-attach-ico"></div><span>位置</span>
+      </button>
     </div>
   `);
   rpSetSurfaceOpen(p,true);
   p.find('.rp-attach-row').append(rpStickerApp().attachment());
+  const row=p[0].querySelector('.rp-attach-row');if(row)rpMessageUI.attachments(row);
 }
 
 function showHongbaoSheet() {
@@ -10205,7 +10239,7 @@ function showHongbaoSheet() {
   $('#rp-screen').append(`
     <div class="rp-hb-modal" id="rp-hb-modal">
       <div class="rp-hb-sheet">
-        <h3>🧧 发红包</h3>
+        <h3>发红包</h3>
         <input id="rp-hb-amount" type="number" placeholder="金额(¥)" min="1"/>
         <input id="rp-hb-note"   type="text"   placeholder="祝福语(选填)" maxlength="15"/>
         <button class="rp-hb-send-btn" onclick="sendUserHongbao()">发送红包</button>
@@ -10241,6 +10275,7 @@ function triggerImagePick() {
   fi.on('change', function() {
     const file = this.files[0];
     if (!file) { cleanup(); return; }
+    if(!file.type.startsWith('image/')||file.size>16*1024*1024){cleanup();toastr.warning('请选择16MB以内的图片');return;}
     const reader = new FileReader();
     reader.onload = rpRuntime.guard((e) => {
       const thread = STATE.threads[targetId];
@@ -10254,7 +10289,7 @@ function triggerImagePick() {
       cleanup();
       sendImageMessage(thread, message.id);
     });
-    reader.onerror = reader.onabort = cleanup;
+    reader.onerror = ()=>{cleanup();toastr.warning('图片读取失败，请重新选择');};reader.onabort=cleanup;
     reader.readAsDataURL(file);
   });
   fi.trigger('click');
@@ -10281,7 +10316,7 @@ function showLocationInput() {
   $('#rp-screen').append(`
     <div class="rp-loc-modal ${dark}" id="rp-loc-modal" data-rp-motion-backdrop="rp-loc-modal">
       <div class="rp-loc-sheet">
-        <h3>📍 发送位置</h3>
+        <h3>发送位置</h3>
         <input id="rp-loc-inp" type="text" placeholder="输入你的位置..."/>
         <button class="rp-loc-send-btn" onclick="sendLocation()">发送</button>
         <button class="rp-loc-cancel-btn" data-rp-motion-dismiss="rp-loc-modal">取消</button>
