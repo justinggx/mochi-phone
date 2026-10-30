@@ -234,9 +234,9 @@ const HTML = `
             <button id="rp-ts-undo-v2" class="rp-ts-action-btn rp-ts-undo-btn">回到上一版</button>
             <button id="rp-ts-save-v2" class="rp-ts-action-btn rp-ts-save-btn">保存本次方案</button>
           </div>
-          <div id="rp-ts-tip">⚡ 提示：本功能比较吃模型智商，建议使用 Claude 等聪明模型，尽量使用按量模型防止截断</div>
+          <div id="rp-ts-tip">先调配色或描述风格生成候选，预览确认后应用。</div>
           <div id="rp-ts-composer">
-            <textarea id="rp-ts-input" placeholder="描述你想要的风格…" rows="1"></textarea>
+            <textarea id="rp-ts-input" placeholder="描述想要的风格，或只想修改的部分…" rows="1"></textarea>
             <button id="rp-ts-send" type="button">↑</button>
           </div>
         </div>
