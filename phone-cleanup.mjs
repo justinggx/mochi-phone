@@ -1,5 +1,25 @@
 // Extracted from the existing entry; dependencies stay live through host getters.
 export function createPhoneCleanup(phoneHost) {
+function phoneCleanupProtocolView(raw) {
+  // Keep offsets and line breaks while excluding inert HTML/Markdown examples.
+  const source=String(raw||''),ranges=[];
+  for(const match of source.matchAll(/<(script|style|pre|code|textarea)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)|<!--[\s\S]*?(?:-->|$)/gi))ranges.push([match.index,match.index+match[0].length]);
+  const fences=/(^|\n)[ \t]{0,3}(`{3,}|~{3,})([^\n]*)(?:\n|$)/g;let match;
+  while((match=fences.exec(source))){
+    if(match[2][0]==='`'&&match[3].includes('`'))continue;
+    const close=new RegExp('(?:^|\\n)[ \\t]{0,3}'+match[2][0]+'{'+match[2].length+',}[ \\t]*(?=\\n|$)','g');close.lastIndex=fences.lastIndex;
+    const end=close.exec(source),stop=end?end.index+end[0].length:source.length;
+    ranges.push([match.index,stop]);fences.lastIndex=stop;
+  }
+  for(const code of source.matchAll(/(?<![\\`])(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g))ranges.push([code.index,code.index+code[0].length]);
+  for(const match of source.matchAll(/<(think|thinking)\b[^>]*>[\s\S]*?<\/\1\s*>/gi))ranges.push([match.index,match.index+match[0].length]);
+  if(!ranges.length)return source;
+  ranges.sort((a,b)=>a[0]-b[0]||b[1]-a[1]);
+  const chars=source.split('');let end=-1;
+  for(const[a,b]of ranges){if(a<end)continue;end=b;for(let i=a;i<b;i++)if(chars[i]!=='\n'&&chars[i]!=='\r')chars[i]=' ';}
+  return chars.join('');
+}
+
 function normalizePhoneCompareText(s) {
   return String(s || '')
     .replace(/&quot;|&#34;/gi, '"')
@@ -201,6 +221,7 @@ function markPhoneCleanupSourceHtml(html, meta = {}) {
     const sourceParts=phoneCleanupSourceParts(normalized).filter(p=>p.phone);
     for(const p of sourceParts){const tag=p.text.match(/^<([a-z]+)\b/i)?.[1]?.toUpperCase();if(tag)available.set(tag,(available.get(tag)||0)+1);}
     const tags=/<PHONE\b[^>]*>[\s\S]*?<\/PHONE\s*>|<(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?>|&lt;PHONE\b[\s\S]*?&lt;\/PHONE\s*&gt;|&lt;(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[\s\S]*?&lt;\/\2\s*&gt;|&lt;(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b(?:(?!&gt;)[\s\S])*?&gt;/gi;
+    if(available.size)(0,phoneHost.rpQueuePhoneRenderRepair)?.(Number(meta.messageId),message,raw);
     return html.replace(tags,(match,_a,_b,offset)=>{
       if(codeRanges.some(([a,b])=>offset>=a&&offset<b))return match;
       const tag=(0,phoneHost.normalizePhoneMarkup)(match).match(/^<([a-z]+)\b/i)?.[1]?.toUpperCase(),left=available.get(tag)||0;
@@ -260,12 +281,12 @@ function isPhoneCleanupForeignNode(node, root) {
 }
 
 function phoneCleanupSourceParts(raw) {
-  const source = (0,phoneHost.normalizePhoneMarkup)(raw), parts = [];
+  const source = (0,phoneHost.normalizePhoneMarkup)(raw), view=phoneCleanupProtocolView(source), parts = [];
   const re = /<PHONE\b[^>]*>[\s\S]*?<\/PHONE\s*>|<(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?>/gi;
   let m, end = 0;
-  while ((m = re.exec(source))) {
+  while ((m = re.exec(view))) {
     if (m.index > end) parts.push({phone:false, text:source.slice(end,m.index)});
-    parts.push({phone:true, text:m[0]});end = re.lastIndex;
+    parts.push({phone:true, text:source.slice(m.index,re.lastIndex)});end = re.lastIndex;
   }
   if (end < source.length) parts.push({phone:false,text:source.slice(end)});
   return parts;
@@ -492,5 +513,5 @@ function stripPhoneLiteralNodes(textEl, scope) {
   if(scope?.valid(textEl))scope.remove(['literal']);
 }
 
-return { normalizePhoneCompareText, buildLoosePhoneFragmentRegex, normalizePhoneCleanupText, compactPhoneCleanupText, stripPhoneCleanupDecorations, uniquePhoneCleanupVariants, makePhoneCleanupItem, collectPhoneCleanupItems, cleanupRenderedPhoneEchoResiduals, installPhoneCleanupSourceMarkers, markPhoneCleanupSourceHtml, isPhoneCleanupSourceMarker, removePhoneSourceMarkedResidue, phoneCleanupSourceMatches, isPhoneCleanupForeignNode, phoneCleanupSourceParts, phoneCleanupNarrativeChunks, createPhoneCleanupScope, hasPhoneCleanupProtocolResidue, removePhoneProtocolNodes, isPhoneCleanupChatu8Node, isPhoneCleanupProtectedNode, hasPhoneCleanupMedia, removePhoneLines, removePhoneAuthorStubs, hasPhoneEchoResidualText, removePhoneEchoFragments, stripPhoneLiteralNodes };
+return { phoneCleanupProtocolView, normalizePhoneCompareText, buildLoosePhoneFragmentRegex, normalizePhoneCleanupText, compactPhoneCleanupText, stripPhoneCleanupDecorations, uniquePhoneCleanupVariants, makePhoneCleanupItem, collectPhoneCleanupItems, cleanupRenderedPhoneEchoResiduals, installPhoneCleanupSourceMarkers, markPhoneCleanupSourceHtml, isPhoneCleanupSourceMarker, removePhoneSourceMarkedResidue, phoneCleanupSourceMatches, isPhoneCleanupForeignNode, phoneCleanupSourceParts, phoneCleanupNarrativeChunks, createPhoneCleanupScope, hasPhoneCleanupProtocolResidue, removePhoneProtocolNodes, isPhoneCleanupChatu8Node, isPhoneCleanupProtectedNode, hasPhoneCleanupMedia, removePhoneLines, removePhoneAuthorStubs, hasPhoneEchoResidualText, removePhoneEchoFragments, stripPhoneLiteralNodes };
 }

@@ -2,7 +2,7 @@ import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-sli
 import { createPhoneTemplate } from './phone-template.mjs?v=20261029-optimization-173';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
-import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261029-optimization-173';
+import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
 import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261029-slim-174';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
@@ -3409,6 +3409,7 @@ async function rpInitBody() {
         }
       }
     });
+    if(liveET.CHARACTER_MESSAGE_RENDERED)rpRuntime.listen(liveES,liveET.CHARACTER_MESSAGE_RENDERED,rpOnCharacterMessageRendered);
     if(liveET.GENERATION_STOPPED)rpRuntime.listen(liveES,liveET.GENERATION_STOPPED,()=>{rpStickerGeneration=null;});
     // 用户消息渲染后也清理 OOC（处理历史记录重新渲染的情况）
     const userMsgKey = liveET['USER_MESSAGE_RENDERED'] || liveET['MESSAGE_UPDATED'];
@@ -7709,20 +7710,20 @@ function normalizePhoneMarkup(raw) {
     .replace(/&nbsp;/gi, ' ');
   // 全角尖括号兼容
   s = s.replace(/</g, '<').replace(/>/g, '>');
-  return s;
+  return s.replace(/<\/(PHONE|SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|mochiLOCATION|mochiLOC)\s+>/gi, '</$1>');
 }
 
 
 function getPhoneParseParts(raw) {
-  const normalized = normalizePhoneMarkup(raw);
+  const normalized = normalizePhoneMarkup(raw), view=phoneCleanupProtocolView(normalized);
   const blocks = [];
   let outside = '';
   let lastIdx = 0;
   const phoneRe = /<PHONE\b[^>]*>([\s\S]*?)<\/PHONE>/gi;
   let m;
-  while ((m = phoneRe.exec(normalized)) !== null) {
+  while ((m = phoneRe.exec(view)) !== null) {
     outside += normalized.slice(lastIdx, m.index);
-    blocks.push(m[1] || '');
+    blocks.push(normalized.slice(m.index,m.index+m[0].length).replace(/^<PHONE\b[^>]*>/i,'').replace(/<\/PHONE>$/i,''));
     lastIdx = m.index + m[0].length;
   }
   outside += normalized.slice(lastIdx);
@@ -7732,11 +7733,11 @@ function getPhoneParseParts(raw) {
 
 
 function hasBarePhoneTagsIn(raw) {
-  return /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|mochiLOCATION|mochiLOC)\b/i.test(String(raw || ''));
+  return /<(SMS|GMSG|GVOICE|GHONGBAO|SIMG|NOTIFY|MOMENTS|COMMENT|SYNC|CALL|VOICE|HONGBAO|mochiLOCATION|mochiLOC)\b/i.test(phoneCleanupProtocolView(normalizePhoneMarkup(raw)));
 }
 
 function hasUnclosedPhonePairedTag(raw) {
-  const s = String(raw || '');
+  const s = phoneCleanupProtocolView(normalizePhoneMarkup(raw));
   const paired = ['PHONE', 'SMS', 'GMSG', 'GVOICE', 'SIMG', 'MOMENTS', 'COMMENT', 'VOICE', 'mochiLOCATION', 'mochiLOC'];
   for (const tag of paired) {
     const openRe = new RegExp('<' + tag + '\\b(?![^>]*\\/>)', 'gi');
@@ -8262,7 +8263,8 @@ function extractDirectPhoneSummaries(block) {
   return out;
 }
 
-const { normalizePhoneCompareText, buildLoosePhoneFragmentRegex, normalizePhoneCleanupText, compactPhoneCleanupText, stripPhoneCleanupDecorations, uniquePhoneCleanupVariants, makePhoneCleanupItem, collectPhoneCleanupItems, cleanupRenderedPhoneEchoResiduals, installPhoneCleanupSourceMarkers, markPhoneCleanupSourceHtml, isPhoneCleanupSourceMarker, removePhoneSourceMarkedResidue, phoneCleanupSourceMatches, isPhoneCleanupForeignNode, phoneCleanupSourceParts, phoneCleanupNarrativeChunks, createPhoneCleanupScope, hasPhoneCleanupProtocolResidue, removePhoneProtocolNodes, isPhoneCleanupChatu8Node, isPhoneCleanupProtectedNode, hasPhoneCleanupMedia, removePhoneLines, removePhoneAuthorStubs, hasPhoneEchoResidualText, removePhoneEchoFragments, stripPhoneLiteralNodes } = createPhoneCleanup({
+const { phoneCleanupProtocolView, normalizePhoneCompareText, buildLoosePhoneFragmentRegex, normalizePhoneCleanupText, compactPhoneCleanupText, stripPhoneCleanupDecorations, uniquePhoneCleanupVariants, makePhoneCleanupItem, collectPhoneCleanupItems, cleanupRenderedPhoneEchoResiduals, installPhoneCleanupSourceMarkers, markPhoneCleanupSourceHtml, isPhoneCleanupSourceMarker, removePhoneSourceMarkedResidue, phoneCleanupSourceMatches, isPhoneCleanupForeignNode, phoneCleanupSourceParts, phoneCleanupNarrativeChunks, createPhoneCleanupScope, hasPhoneCleanupProtocolResidue, removePhoneProtocolNodes, isPhoneCleanupChatu8Node, isPhoneCleanupProtectedNode, hasPhoneCleanupMedia, removePhoneLines, removePhoneAuthorStubs, hasPhoneEchoResidualText, removePhoneEchoFragments, stripPhoneLiteralNodes } = createPhoneCleanup({
+  get rpQueuePhoneRenderRepair() { return rpQueuePhoneRenderRepair; },
   get escapeRegExp() { return escapeRegExp; },
   get extractSmsSummaries() { return extractSmsSummaries; },
   get extractGroupSummaries() { return extractGroupSummaries; },
@@ -8598,6 +8600,29 @@ function scheduleRepairPhoneByMesId(targetMesId, reason) {
 
 
 
+// A formatter can run after MESSAGE_RECEIVED or independently of generation.
+// Defer until its synchronous DOM assignment completes; reject edits/chat switches.
+const rpQueuedPhoneRenders = new WeakMap();
+function rpQueuePhoneRenderRepair(index, message, raw) {
+  if (!Number.isInteger(index) || index < 0 || !message || !isMochiPhoneEnabled()) return;
+  const previous = rpQueuedPhoneRenders.get(message);
+  if (previous?.raw === raw && previous.task.valid()) return;
+  const record = {raw,task:rpRuntime.task()}; rpQueuedPhoneRenders.set(message,record);
+  Promise.resolve().then(() => {
+    if (rpQueuedPhoneRenders.get(message) !== record) return;
+    rpQueuedPhoneRenders.delete(message);
+    const ctx=getContext();
+    if (!record.task.valid() || !rpPhoneContextReady(ctx) || getPhoneChatSlotKey(ctx)!==STATE.chatId || ctx?.chat?.[index] !== message || message.mes !== raw) return;
+    repairPhoneMessageByMesId(index);
+  }).catch(error => console.warn('[Phone] render completion repair failed',rpErrorInfo(error)));
+}
+function rpOnCharacterMessageRendered(value) {
+  const index = typeof value === 'number' ? value : typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN;
+  const ctx=getContext();
+  if (!Number.isInteger(index) || index < 0 || !isMochiPhoneEnabled() || !rpPhoneContextReady(ctx) || getPhoneChatSlotKey(ctx)!==STATE.chatId) return;
+  repairPhoneMessageByMesId(index);
+}
+
 function repairPhoneMessageByMesId(targetMesId) {
   if (!isMochiPhoneEnabled()) return false;
   try {
@@ -8779,19 +8804,21 @@ function rpParsePhoneOrdered(block, source = {}) {
     const context = source._parseContext || { ids: [], authors: [], byAuthor: {} };
     const counters = {};
     const tags = /<(SMS|GMSG|VOICE|GVOICE|MOMENTS|COMMENT|SIMG)\b[^>]*\/>|<(SMS|GMSG|VOICE|GVOICE|MOMENTS|COMMENT|SIMG)\b[^>]*>[\s\S]*?<\/\2\s*>|<(NOTIFY|SYNC|CALL|HONGBAO|GHONGBAO)\b[^>]*\/?\s*>/gi;
+    const rawBlock=String(block || ''), view=phoneCleanupProtocolView(rawBlock);
     let token, total = 0;
-    while ((token = tags.exec(String(block || ''))) !== null) {
+    while ((token = tags.exec(view)) !== null) {
+      const atom=rawBlock.slice(token.index,tags.lastIndex);
       const kind = (token[1] || token[2] || token[3]).toUpperCase();
       // Hide legacy output without updating stage, progress or status.
       if (kind === 'SYNC') { total++; continue; }
       const ordinal = counters[kind] || 0; counters[kind] = ordinal + 1;
-      const attrs = getTagAttrs(token[0].match(/^<\w+\b([^>]*)>/)?.[1] || '');
+      const attrs = getTagAttrs(atom.match(/^<\w+\b([^>]*)>/)?.[1] || '');
       const deleted = STATE.deletedContacts?.[normalizePhonePersonName(resolveCanonicalPhoneName(attrs.FROM || ''))];
       const groupDeleted = STATE.deletedContacts?.['group:' + normalizePhonePersonName(attrs.GROUP || '')];
       if ([deleted, groupDeleted].some(record=>record && !(Number.isInteger(source.messageIndex) && source.messageIndex > record.through))) continue;
       const origin = { ...source, _parseContext: context, _ordinal: ordinal };
       if (kind === 'SMS' && !source._fragment) {
-        const sms = token[0].match(/^<SMS\b([^>]*)>([\s\S]*?)<\/SMS\s*>$/i);
+        const sms = atom.match(/^<SMS\b([^>]*)>([\s\S]*?)<\/SMS\s*>$/i);
         if (sms) {
           const media = /<img\b[^>]*>|image###[\s\S]*?###|<pic\b[^>]*\/>/gi;
           const pieces = []; let match, cursor = 0;
@@ -8815,7 +8842,7 @@ function rpParsePhoneOrdered(block, source = {}) {
           }
         }
       }
-      total += rpParsePhoneAtom(token[0], origin);
+      total += rpParsePhoneAtom(atom, origin);
     }
     return total;
   } finally { STATE._parseMessageIndex = previousIndex; }
@@ -10607,87 +10634,10 @@ function hideOocInUserBubbles() {
 
 function beautifySMSInChat(targetMesId) {
   if (!isMochiPhoneEnabled()) return;
-  try {
-    // 生成期只清理目标楼层，避免反复全楼扫描
-    hidePhoneTagsInChat(targetMesId);
-
-    const ctx = getContext();
-    const charName = ctx?.name2 || ctx?.name || '';
-    if (!charName) return;
-    let textEl = null;
-    if (Number.isFinite(targetMesId) && targetMesId >= 0) {
-      textEl = document.querySelector(`.mes[mesid="${targetMesId}"]:not([is_user="true"]) .mes_text`);
-    }
-    if (!textEl) {
-      const allMsgs = document.querySelectorAll('.mes:not([is_user="true"])');
-      if (!allMsgs.length) return;
-      const lastMsg = allMsgs[allMsgs.length - 1];
-      textEl = lastMsg?.querySelector('.mes_text') || null;
-    }
-    if (!textEl) return;
-    const hasRenderedPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-divider, .rp-phone-live-img-btns');
-    const textHtml = textEl.innerHTML || '';
-    const sourceMesAttr=textEl.closest('.mes')?.getAttribute('mesid'),sourceMesId=/^\d+$/.test(sourceMesAttr||'')?Number(sourceMesAttr):NaN;
-    const hasResidualPhoneMarkup = Number.isInteger(sourceMesId)&&hasPhoneCleanupProtocolResidue(textEl,ctx?.chat?.[sourceMesId]?.mes||'');
-    if (textEl.dataset.rpDone === '1' && hasRenderedPhoneUi && !hasResidualPhoneMarkup) {
-      return;
-    }
-    textEl.dataset.rpDone = '1';
-
-    const thread   = Object.values(STATE.threads).find(t => t.name === charName);
-    const avatarBg = thread?.avatarBg || 'linear-gradient(145deg,#555,#333)';
-    const initials = charName.slice(0, 2);
-    const customImg = STATE.avatars?.[charName];
-    const avHtml = customImg
-      ? `<div class="rp-cb-av"><img src="${escHtml(customImg)}" alt=""/></div>`
-      : `<div class="rp-cb-av" style="background:${escHtml(avatarBg)}">${escHtml(initials)}</div>`;
-    const mkBubble = (text) => {
-      const d = document.createElement('div');
-      d.className = 'rp-cb';
-      d.innerHTML = `${avHtml}<div class="rp-cb-txt">${escHtml(text.trim())}</div>`;
-      return d;
-    };
-    // Match em/i elements: curly quotes, straight quotes, or brackets
-    textEl.querySelectorAll('em, i').forEach(el => {
-      if (el.closest('.rp-cb')) return;
-      const raw = el.textContent.trim();
-      const isDialogue = /^["\u201c\u00ab\u300c\u300e\u300a\uff02]/.test(raw)
-                      || /["\u201d\u00bb\u300d\u300f\u300b\uff02\u300c]$/.test(raw)
-                      || /^\u300c|\u300d$/.test(raw);
-      if (!isDialogue && raw.length < 3) return;
-      // Strip wrapping quote chars
-      const inner = raw.replace(/^["\u201c\u00ab\u300c\u300e\u300a\uff02\u300c]/, '')
-                       .replace(/["\u201d\u00bb\u300d\u300f\u300b\uff02]$/, '');
-      if (inner.trim().length > 0) el.replaceWith(mkBubble(inner));
-    });
-    // Match text nodes with curly-quote spans
-    const walkText = (node) => {
-      if (node.nodeType === 3) {
-        const txt = node.textContent;
-        const re = /[\u201c"][^\u201d"\n]{2,}[\u201d"]|[\u300c\u300e][^\u300d\u300f\n]{2,}[\u300d\u300f]/g;
-        if (!re.test(txt)) return;
-        re.lastIndex = 0;
-        const frag = document.createDocumentFragment();
-        let last = 0, m;
-        while ((m = re.exec(txt)) !== null) {
-          if (m.index > last) frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
-          const inner = m[0].slice(1, -1);
-          frag.appendChild(mkBubble(inner));
-          last = m.index + m[0].length;
-        }
-        if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
-        node.replaceWith(frag);
-      } else if (node.nodeType === 1 && !node.classList.contains('rp-cb')) {
-        Array.from(node.childNodes).forEach(walkText);
-      }
-    };
-    Array.from(textEl.childNodes).forEach(walkText);
-
-    // ── 黑名单主楼过滤：隐藏被拉黑角色的对话行 ──
-    hideBlockedLinesInChat(targetMesId);
-  } catch(e) {
-    console.warn('[Raymond Phone] beautify:', rpErrorInfo(e));
-  }
+  // Narrative quotation/emphasis is host content. Only explicit PHONE sources
+  // authorize protocol cleanup and the existing protocol summary renderer.
+  hidePhoneTagsInChat(targetMesId);
+  hideBlockedLinesInChat(targetMesId);
 }
 
 // ================================================================
