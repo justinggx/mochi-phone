@@ -1,5 +1,5 @@
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-177';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-flow-181';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
@@ -16,7 +16,7 @@ import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-mosaic-179';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261030-mosaic-179';
-import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-buttons-180';
+import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-flow-181';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -4982,10 +4982,10 @@ function bindUI() {
   $(document).on("click.mochiPhone", '.rp-ts-tpl-btn', function() {
     const tpl = $(this).data('tpl');
     const $inp = $('#rp-ts-input');
-    $inp.val(tpl).focus();
+    $inp.val(tpl).trigger('input').focus();
     const el = $inp[0];
     el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+    el.style.height = Math.min(el.scrollHeight, 150) + 'px';
   });
 
   // 工作室：发送
@@ -5006,7 +5006,7 @@ function bindUI() {
     STATE.themeStudioDraft = String(this.value || '');
     saveState();
     this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
   });
 
   // 工作室：撤销
@@ -11045,7 +11045,7 @@ const rpThemeStudio = createThemeStudio({
   refresh:()=>{applyWallpaper();lgRenderThemePicker();lgTsUpdateActionBar();},refreshLibrary:()=>lgRenderSavedThemes(),navigate:()=>go('theme-studio'),
   sanitizeCSS:lgTsSanitizeCSS,baseCss:()=>RP_PHONE_CSS,previewIcons:rpThemePreviewIcons,
   history:()=>STATE.themeStudioMessages||[],addMessage:(role,text)=>{STATE.themeStudioMessages||=[];STATE.themeStudioMessages.push({role,text});saveState();},
-  updateActions:()=>lgTsUpdateActionBar(),setGenerating:busy=>{$('#rp-ts-send').prop('disabled',busy);},call:(prompt,max,system)=>lgCallAPI(prompt,max,system),
+  updateActions:()=>lgTsUpdateActionBar(),setGenerating:busy=>{$('#rp-ts-send').prop('disabled',busy).text(busy?'生成中…':'发送想法');},call:(prompt,max,system)=>lgCallAPI(prompt,max,system),
   download:(value,name)=>{const data=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(data),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 });
 const rpThemePreviewIconCache=new Map();
@@ -11296,7 +11296,7 @@ function lgTsSanitizeCSS(css) {
 // ─────────────────────────────────────────────────────────────────
 
 /** 核心：发送描述 → AI 生成 CSS → 注入 */
-async function lgThemeStudioSend(userText) { return rpThemeStudio.generate(lgTsSanitizeInput(userText)); }
+async function lgThemeStudioSend(userText) { const sent=lgTsSanitizeInput(userText),ok=await rpThemeStudio.generate(sent);if(ok&&String($('#rp-ts-input').val()||'').trim()===sent)$('#rp-ts-input').val('').trigger('input');return ok; }
 
 // ================================================================
 

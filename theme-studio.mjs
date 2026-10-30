@@ -3,7 +3,7 @@ import {THEME_FIELDS,THEME_GROUPS,THEME_GROUP_NAMES,THEME_BASES,themePreset,norm
 const parse=(text,fallback)=>{try{return JSON.parse(text)||fallback;}catch{return fallback;}};
 const array=text=>{const value=parse(text,[]);return Array.isArray(value)?value:[];};
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const groupLabels={preview:'预览',colors:'配色',shape:'风格',assets:'图标与壁纸',advanced:'高级CSS'};
+const groupLabels={colors:'配色',shape:'风格',assets:'图标与壁纸',advanced:'高级CSS'};
 const previewSheets=new WeakMap();
 export const THEME_EDITOR_CSS=`
 #rp-phone #rp-view-theme-studio #rp-ts-bubbles{padding:0;overflow:auto;min-height:0;}
@@ -49,6 +49,55 @@ export const THEME_EDITOR_CSS=`
 #rp-phone #rp-view-themes .rp-te-library-tools{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0 12px;flex-wrap:wrap;}
 #rp-phone #rp-view-themes .rp-te-library-tools .rp-te-button{appearance:none;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:0 1 auto;width:auto;min-width:0;max-width:100%;height:auto;min-height:28px;padding:5px 10px;border:1px solid rgba(150,120,140,.22);border-radius:9px;box-shadow:none;background:var(--rp-tc-bg,rgba(150,120,140,.06));color:var(--rp-nav-btn,#95677d);font-family:inherit;font-size:11px;font-weight:600;line-height:1.3;letter-spacing:0;white-space:nowrap;cursor:pointer;}
 #rp-phone #rp-view-themes .rp-te-library-tools .rp-te-button:active{opacity:.72;}
+#rp-phone #rp-screen #rp-view-theme-studio{--rp-v-surface:#fcfaf8;--rp-v-card:#f2edf0;--rp-v-text:#403a40;--rp-v-muted:#706670;--rp-v-border:#d9cfd6;--rp-v-accent:#83566e;background:var(--rp-v-surface)!important;color:var(--rp-v-text)!important;}
+#rp-phone.rp-dark #rp-screen #rp-view-theme-studio{--rp-v-surface:#24232a;--rp-v-card:#302e37;--rp-v-text:#eee8ed;--rp-v-muted:#c5b8c2;--rp-v-border:#5a4d58;--rp-v-accent:#d9b2c7;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-bubbles{display:block;flex:1;min-height:0;overflow:auto;padding:0!important;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-conversation{padding:15px 12px 11px;border-bottom:1px solid var(--rp-v-border);background:var(--rp-v-surface);}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-conversation h2{font-family:inherit;font-size:15px;font-weight:600;line-height:1.45;margin:0 0 6px;color:var(--rp-v-text);}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-intro{font-size:11px;line-height:1.65;color:var(--rp-v-muted);margin:0 0 11px;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-composer{display:block!important;padding:0!important;border:0!important;background:transparent!important;backdrop-filter:none!important;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-input{width:100%!important;min-height:80px!important;max-height:150px!important;padding:10px!important;border-radius:12px!important;font-size:12px!important;line-height:1.6!important;background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;border:1px solid var(--rp-v-border)!important;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-input::placeholder{color:var(--rp-v-muted)!important;opacity:.85;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-compose-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-compose-actions>span{font-size:10px;color:var(--rp-v-muted);}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-send{width:auto!important;min-width:68px!important;height:30px!important;padding:0 11px!important;border-radius:10px!important;font-size:11px!important;line-height:1.3!important;background:var(--rp-v-accent)!important;color:#fff!important;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-examples{display:flex;flex-wrap:wrap;gap:5px;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-examples .rp-ts-tpl-btn{width:auto;min-height:25px;padding:4px 7px;border:1px solid var(--rp-v-border)!important;border-radius:8px;font-family:inherit;font-weight:500;font-size:10px;line-height:1.3;box-shadow:none!important;background:transparent!important;color:var(--rp-v-muted)!important;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-jump-preview{font-family:inherit;font-size:11px;line-height:1.3;min-height:28px;padding:5px 9px;border-radius:9px;color:var(--rp-v-accent);border:1px solid var(--rp-v-border);background:transparent;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-status{font-size:11px;line-height:1.6;color:var(--rp-v-muted);margin:8px 0 0;white-space:pre-wrap;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-status:empty{display:none;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-log{max-height:156px;overflow:auto;display:flex;flex-direction:column;gap:7px;margin:10px 0;padding:3px 0;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-log[hidden]{display:none;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-chat-message{max-width:92%;padding:7px 9px;border-radius:10px;background:var(--rp-v-card);color:var(--rp-v-text);font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-chat-message[data-role="user"]{align-self:flex-end;border:1px solid var(--rp-v-border);background:transparent;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-chat-message strong{display:block;font-size:10px;color:var(--rp-v-muted);margin-bottom:2px;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-theme-editor{padding:12px;}
+#rp-phone .rp-te-result-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}
+#rp-phone .rp-te-result-title strong{font-size:13px;}
+#rp-phone .rp-te-result-title button{font-size:10px;padding:4px 7px;min-height:26px;}
+#rp-phone .rp-te-preview{height:174px;}
+#rp-phone .rp-te-manual{margin:12px 0;padding:9px;border:1px solid var(--rp-v-border);border-radius:12px;}
+#rp-phone .rp-te-manual>summary{cursor:pointer;font-size:12px;font-weight:600;line-height:1.5;}
+#rp-phone .rp-te-manual>summary span{display:block;font-size:10px;font-weight:400;color:var(--rp-v-muted);margin:3px 0 0 13px;}
+#rp-phone .rp-te-manual .rp-te-tabs{position:static;margin-top:7px;}
+#rp-phone .rp-te-manual .rp-te-tabs button{min-width:0;font-size:10px;}
+#rp-phone .rp-te-manual .rp-te-row label{font-size:11px;}
+#rp-phone .rp-te-manual .rp-te-field{grid-template-columns:minmax(40px,1fr) 24px 60px 22px 22px;gap:3px;}
+#rp-phone .rp-te-manual .rp-te-field input[type="text"]{width:100%;min-width:0;}
+#rp-phone .rp-te-manual .rp-te-field input[type="color"]{width:24px;}
+#rp-phone .rp-te-manual .rp-te-field label{font-size:10px;}
+#rp-phone .rp-te-manual .rp-te-shape-row button{min-height:28px;padding:3px;}
+#rp-phone .rp-te-alternatives{margin:9px 0;font-size:11px;color:var(--rp-v-muted);}
+#rp-phone .rp-te-alternatives summary{cursor:pointer;}
+#rp-phone .rp-te-actions{position:static;padding:3px 0;}
+#rp-phone .rp-te-review{font-size:10px;padding:8px;margin:9px 0;}
+#rp-phone .rp-te-review p{margin:4px 0;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-history{margin:0 12px 18px;border-top:1px solid var(--rp-v-border);padding-top:10px;font-size:11px;color:var(--rp-v-muted);}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-history summary{cursor:pointer;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-action-bar{gap:7px!important;padding:9px 0 0!important;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-action-btn{min-height:29px!important;padding:5px 8px!important;font-size:11px!important;line-height:1.3!important;border-radius:9px!important;box-shadow:none!important;}
+#rp-phone #rp-screen #rp-view-theme-studio #rp-ts-tip{font-size:10px!important;line-height:1.5;padding:7px 0 0!important;text-align:left;animation:none;text-shadow:none!important;color:var(--rp-v-muted)!important;background:transparent!important;}
+
 `;
 
 // A single shared stylesheet is adopted by previews when supported. It never
@@ -115,42 +164,52 @@ export function createThemeStudio(api) {
     const legacy=source.design?(source.legacyCss||''):source.css;
     return {design:source.design?cloneTheme(source.design):themePreset(),legacyCss:legacy,legacyOriginal:legacy,wallpaper:source.wallpaper,legacyOnly:!source.design&&!!source.css};
   }
+  function scrollContentTo(element){const area=doc.getElementById('rp-ts-bubbles');if(!area||!element)return;const top=area.scrollTop+element.getBoundingClientRect().top-area.getBoundingClientRect().top-10;if(area.scrollTo)area.scrollTo({top:Math.max(0,top),behavior:'smooth'});else area.scrollTop=Math.max(0,top);}
+  function renderConversation(){const log=doc.getElementById('rp-ts-chat-log');if(!log)return;const messages=(api.history()||[]).slice(-8);log.replaceChildren();for(const message of messages){const bubble=doc.createElement('div');bubble.className='rp-ts-chat-message';bubble.dataset.role=message.role==='user'?'user':'ai';const label=doc.createElement('strong');label.textContent=message.role==='user'?'你':'AI';bubble.append(label,doc.createTextNode(String(message.text||'')));log.append(bubble);}log.hidden=!messages.length;log.scrollTop=log.scrollHeight;}
   function render(){
-    install();leave();const parent=doc.getElementById('rp-ts-bubbles');if(!parent)return;
+    install();leave();const parent=doc.getElementById('rp-ts-draft')||doc.getElementById('rp-ts-bubbles');if(!parent)return;
     const task=api.runtime().task(),root=doc.createElement('div');root.className='rp-theme-editor';const initial=snapshot();
-    session={root,task,controller:new (doc.defaultView.AbortController)(),account:api.account(),slot:api.slot(),baseline:signature(),draft:currentDraft(initial),locks:{},mode:api.dark()?'night':'day',view:'chat',tab:'preview',group:'bubbles',candidates:[],busy:false,editRevision:0,legacyEnabled:!initial.design&&!!initial.css};const s=session;
-    root.innerHTML='<div class="rp-te-tabs" role="tablist" aria-label="主题编辑分组">'+Object.entries(groupLabels).map(([key,label])=>'<button type="button" role="tab" data-te-tab="'+key+'" aria-selected="'+(key==='preview')+'">'+label+'</button>').join('')+'</div><div class="rp-te-row"><label>设计骨架</label><select data-te-base aria-label="设计骨架">'+Object.entries(THEME_BASES).map(([key,v])=>'<option value="'+key+'">'+v.name+'</option>').join('')+'</select><select data-te-mode aria-label="编辑日夜配色"><option value="day">日间</option><option value="night">夜间</option></select></div><section data-te-pane="preview"><div class="rp-te-row"><select data-te-view aria-label="预览页面"><option value="chat">聊天</option><option value="home">主屏</option><option value="moments">朋友圈</option></select><button class="rp-te-button" type="button" data-te-show-colors>调整颜色</button></div><div class="rp-te-preview" aria-label="主题效果预览"></div><p class="rp-te-help">预览独立显示，不改变当前主题。应用后才会保存。</p><div class="rp-te-candidates"></div></section><section data-te-pane="colors" hidden><select data-te-group aria-label="配色分组">'+Object.entries(THEME_GROUP_NAMES).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('')+'</select><p class="rp-te-help">取色器或HEX均可。锁定限制AI与自动调整，仍可手动编辑；↺恢复当前骨架的本项颜色。</p><div class="rp-te-fields"></div></section><section data-te-pane="shape" hidden><div class="rp-te-shapes"></div><label class="rp-te-row">应用时显示<select data-te-apply-mode aria-label="应用时显示模式"><option value="keep">跟随当前手机模式</option><option value="day">日间</option><option value="night">夜间</option></select></label><p class="rp-te-help">字号沿用设置中的阅读大小，不另起一套字号。</p></section><section data-te-pane="assets" hidden><label>图标风格 <select data-te-icons><option value="line">简洁线条</option><option value="candy">糖果图标</option><option value="misty">雾蓝图标</option><option value="star">星夜图标</option></select></label><div class="rp-te-row"><label><input type="checkbox" data-te-keep-wallpaper>保留当前聊天壁纸</label></div><div class="rp-te-row"><button class="rp-te-button" type="button" data-te-wallpaper>选择壁纸</button><button class="rp-te-button" type="button" data-te-extract>从壁纸取色</button><button class="rp-te-button" type="button" data-te-remove-wallpaper>预览移除壁纸</button><input class="rp-te-file" type="file" accept="image/*" data-te-wall-file></div><div class="rp-te-palette"></div><p class="rp-te-help">图片在本浏览器取色，不传给AI。选择色块可设为当前模式的强调色；图标复用已有素材。</p></section><section data-te-pane="advanced" hidden><label><input type="checkbox" data-te-legacy-only>仅使用原CSS（高级兼容）</label><p class="rp-te-help">旧CSS原文保留。使用配色编辑器时，受控配色覆盖在旧CSS之后；取消或回到上一版可完整恢复。</p><textarea class="rp-te-legacy" spellcheck="false" aria-label="高级自定义CSS"></textarea><button class="rp-te-button" type="button" data-te-validate-css>检查CSS</button></section><div class="rp-te-review"></div><div class="rp-te-row"><label>AI修改范围</label><select data-te-scope aria-label="AI修改范围"><option value="all">整套未锁定设计</option>'+Object.entries(THEME_GROUP_NAMES).map(([k,v])=>'<option value="'+k+'">只改'+v+'</option>').join('')+'</select></div><p class="rp-te-note" role="status" aria-live="polite"></p><div class="rp-te-actions"><button class="rp-te-button" type="button" data-te-cancel>取消修改</button><button class="rp-te-button rp-te-apply" type="button" data-te-apply>应用预览</button></div>';
-    parent.replaceChildren(root);const q=selector=>root.querySelector(selector);q('[data-te-base]').value=s.draft.design.base;q('[data-te-mode]').value=s.mode;q('[data-te-group]').value=s.group;q('.rp-te-legacy').value=s.draft.legacyCss;q('[data-te-legacy-only]').checked=s.draft.legacyOnly;
+    session={root,task,controller:new (doc.defaultView.AbortController)(),account:api.account(),slot:api.slot(),baseline:signature(),draft:currentDraft(initial),locks:{},mode:api.dark()?'night':'day',view:'chat',tab:'colors',hasResult:!!initial.design||!!initial.css,group:'bubbles',candidates:[],busy:false,editRevision:0,legacyEnabled:!initial.design&&!!initial.css};const s=session;
+    root.innerHTML=`<section class="rp-te-result" data-te-result><div class="rp-te-result-title"><strong>预览与确认</strong><button class="rp-te-button" type="button" data-te-chat-again>继续和 AI 改</button></div><section data-te-pane="preview"><div class="rp-te-row"><select data-te-view aria-label="预览页面"><option value="chat">聊天</option><option value="home">主屏</option><option value="moments">朋友圈</option></select><select data-te-mode aria-label="编辑日夜配色"><option value="day">日间</option><option value="night">夜间</option></select><button class="rp-te-button" type="button" data-te-show-colors>微调</button></div><div class="rp-te-preview" aria-label="主题效果预览"></div><p class="rp-te-help">修改只在预览中，确认后再应用到小手机。</p><details class="rp-te-alternatives" hidden><summary>其他配色方案</summary><div class="rp-te-candidates"></div></details></section><div class="rp-te-review"></div></section>
+<details class="rp-te-manual"><summary>手动微调<span>配色、风格、图标与壁纸、高级CSS</span></summary><div class="rp-te-tabs" role="tablist" aria-label="主题编辑分组">${Object.entries(groupLabels).map(([key,label])=>'<button type="button" role="tab" data-te-tab="'+key+'" aria-selected="'+(key==='colors')+'">'+label+'</button>').join('')}</div><div class="rp-te-row"><label>设计起点</label><select data-te-base aria-label="设计骨架">${Object.entries(THEME_BASES).map(([key,v])=>'<option value="'+key+'">'+v.name+'</option>').join('')}</select></div>
+<label class="rp-te-row">编辑配色<select data-te-edit-mode aria-label="微调日夜配色"><option value="day">日间</option><option value="night">夜间</option></select></label><section data-te-pane="colors"><select data-te-group aria-label="配色分组">${Object.entries(THEME_GROUP_NAMES).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('')}</select><p class="rp-te-help">可用取色器或HEX微调。锁住的项目不随AI修改，↺恢复当前起点的颜色。</p><div class="rp-te-fields"></div></section>
+<section data-te-pane="shape" hidden><div class="rp-te-shapes"></div><label class="rp-te-row">应用时显示<select data-te-apply-mode aria-label="应用时显示模式"><option value="keep">跟随当前手机模式</option><option value="day">日间</option><option value="night">夜间</option></select></label><p class="rp-te-help">字号沿用设置中的阅读大小。</p></section>
+<section data-te-pane="assets" hidden><label>图标风格 <select data-te-icons><option value="line">简洁线条</option><option value="candy">糖果图标</option><option value="misty">雾蓝图标</option><option value="star">星夜图标</option></select></label><div class="rp-te-row"><label><input type="checkbox" data-te-keep-wallpaper>保留当前聊天壁纸</label></div><div class="rp-te-row"><button class="rp-te-button" type="button" data-te-wallpaper>选择壁纸</button><button class="rp-te-button" type="button" data-te-extract>从壁纸取色</button><button class="rp-te-button" type="button" data-te-remove-wallpaper>预览移除壁纸</button><input class="rp-te-file" type="file" accept="image/*" data-te-wall-file></div><div class="rp-te-palette"></div><p class="rp-te-help">图片在本浏览器取色，不传给AI。选择色块可设为当前模式的强调色。</p></section>
+<section data-te-pane="advanced" hidden><label><input type="checkbox" data-te-legacy-only>仅使用原CSS（高级兼容）</label><p class="rp-te-help">旧CSS原文保留。取消或回到上一版可完整恢复。</p><textarea class="rp-te-legacy" spellcheck="false" aria-label="高级自定义CSS"></textarea><button class="rp-te-button" type="button" data-te-validate-css>检查CSS</button></section>
+<div class="rp-te-row"><label>AI修改范围</label><select data-te-scope aria-label="AI修改范围"><option value="all">整套未锁定设计</option>${Object.entries(THEME_GROUP_NAMES).map(([k,v])=>'<option value="'+k+'">只改'+v+'</option>').join('')}</select></div></details><p class="rp-te-note" role="status" aria-live="polite"></p><div class="rp-te-actions"><button class="rp-te-button" type="button" data-te-cancel>重置草稿</button><button class="rp-te-button rp-te-apply" type="button" data-te-apply>应用到小手机</button></div>`;
+    parent.replaceChildren(root);const q=selector=>root.querySelector(selector);q('[data-te-base]').value=s.draft.design.base;q('[data-te-mode]').value=s.mode;q('[data-te-edit-mode]').value=s.mode;q('[data-te-group]').value=s.group;q('.rp-te-legacy').value=s.draft.legacyCss;q('[data-te-legacy-only]').checked=s.draft.legacyOnly;
     const valid=()=>session===s&&s.task.valid()&&!s.controller.signal.aborted&&api.account()===s.account&&api.slot()===s.slot&&root.isConnected;
-    s.valid=valid;s.status=text=>{q('.rp-te-note').textContent=text;};s.q=q;
-    function edit(){s.editRevision++;s.draft.legacyOnly=false;q('[data-te-legacy-only]').checked=false;}
-    function pane(tab){s.tab=tab;root.querySelectorAll('[data-te-pane]').forEach(el=>el.hidden=el.dataset.tePane!==tab);root.querySelectorAll('[data-te-tab]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.teTab===tab)));}
+    s.valid=valid;s.status=text=>{q('.rp-te-note').textContent=text;const status=doc.getElementById('rp-ts-chat-status');if(status)status.textContent=text;};s.q=q;q('.rp-te-note').hidden=!!doc.getElementById('rp-ts-chat-status');renderConversation();const jump=doc.getElementById('rp-ts-jump-preview');if(jump)jump.onclick=()=>{if(valid())scrollContentTo(q('[data-te-result]'));};
+    function edit(){s.editRevision++;s.hasResult=true;s.draft.legacyOnly=false;q('[data-te-legacy-only]').checked=false;}
+    function pane(tab){if(tab==='preview'){q('.rp-te-manual').open=false;return;}s.tab=tab;q('.rp-te-manual').open=true;root.querySelectorAll('[data-te-pane]').forEach(el=>{if(el.dataset.tePane!=='preview')el.hidden=el.dataset.tePane!==tab;});root.querySelectorAll('[data-te-tab]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.teTab===tab)));}
     function fields(){q('.rp-te-fields').innerHTML=THEME_GROUPS[s.group].map(field=>{const path=s.mode+'.'+field,color=s.draft.design[s.mode][field];return '<div class="rp-te-field"><label for="rp-te-'+field+'">'+THEME_FIELDS[field]+'</label><input type="color" data-te-color="'+field+'" value="'+color+'" aria-label="'+THEME_FIELDS[field]+'取色器"><input id="rp-te-'+field+'" type="text" data-te-hex="'+field+'" value="'+color+'" maxlength="7" aria-label="'+THEME_FIELDS[field]+'HEX"><button type="button" data-te-lock="'+path+'" aria-pressed="'+!!s.locks[path]+'" aria-label="锁定'+THEME_FIELDS[field]+'">'+(s.locks[path]?'🔒':'🔓')+'</button><button type="button" data-te-reset="'+field+'" aria-label="重置'+THEME_FIELDS[field]+'">↺</button></div>';}).join('');}
     const shapes={radius:{label:'圆角',values:[[8,'小'],[16,'适中'],[24,'圆润']]},spacing:{label:'留白',values:[['compact','紧凑'],['normal','标准'],['airy','宽松']]},shadow:{label:'阴影',values:[['none','无'],['soft','轻柔']]},border:{label:'边线',values:[['none','无'],['subtle','细线']]},opacity:{label:'气泡透明',values:[[100,'不透明'],[90,'90%'],[80,'80%']]},wallStyle:{label:'背景样式',values:[['solid','纯色'],['soft','柔和渐变']]}};
     function shapeFields(){q('.rp-te-shapes').innerHTML=Object.entries(shapes).map(([key,def])=>'<div class="rp-te-shape-row"><label>'+def.label+'</label><select data-te-shape="'+key+'">'+def.values.map(([v,label])=>'<option value="'+v+'"'+(s.draft.design.shape[key]===v?' selected':'')+'>'+label+'</option>').join('')+'</select><button class="rp-te-button" type="button" data-te-lock="shape.'+key+'" aria-pressed="'+!!s.locks['shape.'+key]+'" aria-label="锁定'+def.label+'">'+(s.locks['shape.'+key]?'🔒':'🔓')+'</button></div>').join('');}
     function cssForDraft(){const old=s.draft.legacyCss===s.draft.legacyOriginal?s.draft.legacyCss:validateCss(s.draft.legacyCss);return s.draft.legacyOnly?old:old+'\n'+compileThemeDesign(s.draft.design);}
-    function refresh(){if(!valid())return;const legacy=s.draft.legacyOnly;try{const design=legacy?null:s.draft.design;makeThemePreview(doc,q('.rp-te-preview'),{css:cssForDraft(),baseCss:api.baseCss(),design,mode:s.mode,view:s.view,wallpaper:s.draft.wallpaper,icons:api.previewIcons?.(s.draft.design.icons)||[]});}catch(error){s.status(error.message);}
+    function refresh(){if(!valid())return;q('[data-te-result]').hidden=!s.hasResult;const jump=doc.getElementById('rp-ts-jump-preview');if(jump)jump.hidden=!s.hasResult;q('.rp-te-actions').hidden=!s.hasResult;const legacy=s.draft.legacyOnly;try{const design=legacy?null:s.draft.design;makeThemePreview(doc,q('.rp-te-preview'),{css:cssForDraft(),baseCss:api.baseCss(),design,mode:s.mode,view:s.view,wallpaper:s.draft.wallpaper,icons:api.previewIcons?.(s.draft.design.icons)||[]});}catch(error){s.status(error.message);}
       q('[data-te-icons]').value=s.draft.design.icons;q('[data-te-keep-wallpaper]').checked=s.draft.design.keepWallpaper;
       const review=legacy?{failures:[],unknown:['高级CSS可能包含渐变/透明/自定义规则，需在预览和实际页面核对，不能仅按配色表判定。']}:checkThemeContrast(s.draft.design,{wallpaper:!!s.draft.wallpaper});
       q('.rp-te-review').innerHTML='<strong>可读性检查</strong>'+(review.failures.length?'<ul>'+review.failures.map(p=>'<li>'+(p.mode==='day'?'日间':'夜间')+THEME_FIELDS[p.foreground]+' / '+THEME_FIELDS[p.background]+'：'+p.ratio.toFixed(2)+'∶1</li>').join('')+'</ul><button class="rp-te-button" type="button" data-te-fix>调整未锁定文字</button>':'<p>'+(legacy?'':'配色表文字检查达到4.5∶1。')+'</p>')+review.unknown.map(t=>'<p>'+esc(t)+'</p>').join('');
     }
     s.refresh=refresh;s.fields=fields;s.shapes=shapeFields;s.pane=pane;s.css=cssForDraft;s.edit=edit;
-    root.addEventListener('click',event=>{const b=event.target.closest('button');if(!b||!valid())return;
-      if(b.dataset.teTab)pane(b.dataset.teTab);if(b.hasAttribute('data-te-show-colors'))pane('colors');
-      if(b.dataset.teLock){s.locks[b.dataset.teLock]=!s.locks[b.dataset.teLock];s.editRevision++;fields();shapeFields();}
-      if(b.dataset.teReset){edit();s.draft.design[s.mode][b.dataset.teReset]=themePreset(s.draft.design.base)[s.mode][b.dataset.teReset];fields();refresh();}
-      if(b.hasAttribute('data-te-fix')){edit();s.draft.design=fixThemeContrast(s.draft.design,s.locks);fields();refresh();}
-      if(b.hasAttribute('data-te-cancel')){leave();render();session?.status('已取消未应用的修改，当前主题保持。');}
-      if(b.hasAttribute('data-te-apply'))applySession(s);
-      if(b.dataset.teCandidate){
-        const choice=s.candidates[Number(b.dataset.teCandidate)],incoming=normalizeThemeDesign(choice?.design);
+    s.choose=index=>{
+        const choice=s.candidates[index],incoming=normalizeThemeDesign(choice?.design);
         if(incoming){
           edit();const scope=choice.scope||'all',next=cloneTheme(s.draft.design),allowed=scope==='all'?Object.keys(THEME_FIELDS):(THEME_GROUPS[scope]||[]);
           for(const mode of ['day','night'])for(const field of allowed)if(!s.locks[mode+'.'+field])next[mode][field]=incoming[mode][field];
           if(scope==='all'){next.base=incoming.base;for(const key of Object.keys(incoming.shape))if(!s.locks['shape.'+key])next.shape[key]=incoming.shape[key];}
           s.draft.design=next;q('[data-te-base]').value=next.base;fields();shapeFields();pane('preview');refresh();s.status('已选择「'+choice.name+'」，保留当前锁定与范围之外的内容，确认预览后应用。');
         }
-      }
+      s.selectedCandidate=index;root.querySelectorAll('[data-te-candidate]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.teCandidate)===index)));
+    };
+    root.addEventListener('click',event=>{const b=event.target.closest('button');if(!b||!valid())return;
+      if(b.hasAttribute('data-te-chat-again')){scrollContentTo(doc.getElementById('rp-ts-composer'));doc.getElementById('rp-ts-input')?.focus({preventScroll:true});}if(b.dataset.teTab)pane(b.dataset.teTab);if(b.hasAttribute('data-te-show-colors'))pane('colors');
+      if(b.dataset.teLock){s.locks[b.dataset.teLock]=!s.locks[b.dataset.teLock];s.editRevision++;fields();shapeFields();}
+      if(b.dataset.teReset){edit();s.draft.design[s.mode][b.dataset.teReset]=themePreset(s.draft.design.base)[s.mode][b.dataset.teReset];fields();refresh();}
+      if(b.hasAttribute('data-te-fix')){edit();s.draft.design=fixThemeContrast(s.draft.design,s.locks);fields();refresh();}
+      if(b.hasAttribute('data-te-cancel')){leave();render();session?.status('已取消未应用的修改，当前主题保持。');}
+      if(b.hasAttribute('data-te-apply'))applySession(s);
+      if(b.dataset.teCandidate!==undefined)s.choose(Number(b.dataset.teCandidate));
       if(b.hasAttribute('data-te-wallpaper'))q('[data-te-wall-file]').click();
       if(b.hasAttribute('data-te-remove-wallpaper')){edit();const pending=s.pendingWallpaper;s.pendingWallpaper=null;pending?.cancel?.();q('[data-te-apply]').disabled=false;s.draft.wallpaper=null;refresh();s.status('已从预览移除壁纸，应用后才保存。');}
       if(b.hasAttribute('data-te-extract'))void extractWallpaper(s);
@@ -159,7 +218,7 @@ export function createThemeStudio(api) {
     });
     root.addEventListener('change',event=>{if(!valid())return;const el=event.target;
       if(el.hasAttribute('data-te-apply-mode'))s.editRevision++;
-      if(el.hasAttribute('data-te-mode')){s.mode=el.value;fields();refresh();}
+      if(el.hasAttribute('data-te-mode')||el.hasAttribute('data-te-edit-mode')){s.mode=el.value;q('[data-te-mode]').value=s.mode;q('[data-te-edit-mode]').value=s.mode;fields();refresh();}
       if(el.hasAttribute('data-te-scope'))s.editRevision++;
       if(el.hasAttribute('data-te-group')){s.group=el.value;fields();}
       if(el.hasAttribute('data-te-view')){s.view=el.value;refresh();}
@@ -170,7 +229,7 @@ export function createThemeStudio(api) {
       if(el.hasAttribute('data-te-legacy-only')){s.editRevision++;s.draft.legacyOnly=el.checked;refresh();}
       if(el.hasAttribute('data-te-wall-file'))void readWallpaper(el.files?.[0],s).finally(()=>el.value='');
     });
-    root.addEventListener('input',event=>{if(!valid())return;const el=event.target,field=el.dataset.teColor||el.dataset.teHex;if(field){const value=el.value;el.setAttribute('aria-invalid',String(!validThemeHex(value)));if(!validThemeHex(value))return;edit();s.draft.design[s.mode][field]=value.toLowerCase();const sibling=q(el.dataset.teHex?'[data-te-color="'+field+'"]':'[data-te-hex="'+field+'"]');sibling.value=value;sibling.removeAttribute('aria-invalid');refresh();}if(el.classList.contains('rp-te-legacy')){s.editRevision++;s.draft.legacyCss=el.value;refresh();}});
+    root.addEventListener('input',event=>{if(!valid())return;const el=event.target,field=el.dataset.teColor||el.dataset.teHex;if(field){const value=el.value;el.setAttribute('aria-invalid',String(!validThemeHex(value)));if(!validThemeHex(value))return;edit();s.draft.design[s.mode][field]=value.toLowerCase();const sibling=q(el.dataset.teHex?'[data-te-color="'+field+'"]':'[data-te-hex="'+field+'"]');sibling.value=value;sibling.removeAttribute('aria-invalid');refresh();}if(el.classList.contains('rp-te-legacy')){s.hasResult=true;s.editRevision++;s.draft.legacyCss=el.value;refresh();}});
     fields();shapeFields();refresh();api.updateActions();return s;
   }
   function applySession(s=session){if(!s?.valid())return false;if(s.pendingWallpaper){s.status('壁纸正在读取和处理，完成后再应用。');return false;}if(s.baseline!==signature()){s.status('当前主题或壁纸已改变，请重新打开工作室后应用，原主题保持。');return false;}if(s.root.querySelector('[aria-invalid="true"]')){s.status('请先修正HEX颜色。');return false;}
@@ -178,11 +237,11 @@ export function createThemeStudio(api) {
   }
   async function generate(description){const s=session||render();if(!s?.valid()||s.busy)return false;
     let request;try{request=themePrompt(s.draft.design,s.locks,s.q('[data-te-scope]').value,description,api.history());}catch(error){s.status(error.message);return false;}
-    const startSignature=signature(),edit=s.editRevision,rev=revision,task=api.runtime().task();s.busy=true;s.status('正在生成2–3套候选，当前主题保持…');api.setGenerating(true);api.addMessage('user',description.trim());
-    try{const result=await api.call(request.prompt,request.maxTokens,request.system);if(!s.valid()||!task.valid())return false;if(startSignature!==signature()||rev!==revision||edit!==s.editRevision){s.status('生成期间有新的选择或编辑，旧结果未覆盖当前内容。');return false;}const choices=parseThemeSuggestions(result,s.draft.design,s.locks,s.q('[data-te-scope]').value);s.candidates=choices.map(choice=>({...choice,scope:s.q('[data-te-scope]').value}));s.q('.rp-te-candidates').innerHTML=choices.map((c,i)=>'<button class="rp-te-candidate" type="button" data-te-candidate="'+i+'"><span class="rp-te-swatches">'+[c.design.day.wall,c.design.day.sent,c.design.day.received,c.design.day.text].map(v=>'<i style="background:'+v+'"></i>').join('')+'</span><span>'+esc(c.name)+'<br><small>选择后预览</small></span></button>').join('');s.pane('preview');s.status('候选已生成。选择一套查看日夜效果，确认后应用。');api.addMessage('ai','生成了'+choices.length+'套配色候选，等待预览确认。');return true;
-    }catch(error){if(s.valid()&&task.valid()){s.status(error.message||'生成未完成，原主题已保留。');api.addMessage('ai','生成未完成：'+(error.message||'请重试'));}return false;}finally{s.busy=false;if(session===s)api.setGenerating(false);}
+    const startSignature=signature(),edit=s.editRevision,rev=revision,task=api.runtime().task();s.busy=true;s.status('正在按你的想法调整配色和样式…');api.setGenerating(true);api.addMessage('user',description.trim());renderConversation();
+    try{const result=await api.call(request.prompt,request.maxTokens,request.system);if(!s.valid()||!task.valid())return false;if(startSignature!==signature()||rev!==revision||edit!==s.editRevision){s.status('生成期间有新的选择或编辑，旧结果未覆盖当前内容。');return false;}const choices=parseThemeSuggestions(result,s.draft.design,s.locks,s.q('[data-te-scope]').value);s.candidates=choices.map(choice=>({...choice,scope:s.q('[data-te-scope]').value}));s.q('.rp-te-candidates').innerHTML=choices.map((c,i)=>'<button class="rp-te-candidate" type="button" data-te-candidate="'+i+'"><span class="rp-te-swatches">'+[c.design.day.wall,c.design.day.sent,c.design.day.received,c.design.day.text].map(v=>'<i style="background:'+v+'"></i>').join('')+'</span><span>'+esc(c.name)+'<br><small>选择后预览</small></span></button>').join('');s.q('.rp-te-alternatives').hidden=choices.length<2;s.choose(0);s.status('预览已更新，确认应用后才替换当前主题。');api.addMessage('ai','已生成「'+choices[0].name+'」，配色和样式已填入预览。你可以接着说想改哪里，或手动微调。');renderConversation();return true;
+    }catch(error){if(s.valid()&&task.valid()){s.status(error.message||'生成未完成，原主题已保留。');api.addMessage('ai','生成未完成：'+(error.message||'请重试'));renderConversation();}return false;}finally{s.busy=false;if(session===s)api.setGenerating(false);}
   }
-  function previewSaved(index){const entry=saved()[index];if(typeof entry?.css!=='string')return;api.navigate();const s=session||render();if(!s)return;s.draft=currentDraft({theme:'custom',css:entry.css,design:normalizeThemeDesign(entry.design),legacyCss:entry.legacyCss??null,wallpaper:api.wallpaper()});s.q('.rp-te-legacy').value=s.draft.legacyCss;s.q('[data-te-legacy-only]').checked=s.draft.legacyOnly;s.q('[data-te-base]').value=s.draft.design.base;s.editRevision++;s.fields();s.shapes();s.refresh();s.status('正在预览「'+entry.label+'」，应用后才替换当前主题。');}
+  function previewSaved(index){const entry=saved()[index];if(typeof entry?.css!=='string')return;api.navigate();const s=session||render();if(!s)return;s.draft=currentDraft({theme:'custom',css:entry.css,design:normalizeThemeDesign(entry.design),legacyCss:entry.legacyCss??null,wallpaper:api.wallpaper()});s.q('.rp-te-legacy').value=s.draft.legacyCss;s.q('[data-te-legacy-only]').checked=s.draft.legacyOnly;s.q('[data-te-base]').value=s.draft.design.base;s.editRevision++;s.hasResult=true;s.fields();s.shapes();s.pane('preview');s.refresh();scrollContentTo(s.q('[data-te-result]'));s.status('正在预览「'+entry.label+'」，应用后才替换当前主题。');}
   function decodeWallpaper(data,s){
     return new Promise((resolve,reject)=>{
       if(typeof data!=='string'||!data.startsWith('data:image/')){reject(new Error('壁纸图片数据无效。'));return;}
