@@ -1,4 +1,4 @@
-import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261030-group-avatar-176';
+import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261030-day-audit-178';
 import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261029-optimization-173';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [

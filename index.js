@@ -3,7 +3,7 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-177';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-theme-177';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-day-audit-178';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -14,9 +14,9 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-group-avatar-176';
-import { createGroupAvatars } from './group-avatar.mjs?v=20261030-group-avatar-176';
-import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-177';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-day-audit-178';
+import { createGroupAvatars } from './group-avatar.mjs?v=20261030-day-audit-178';
+import { createThemeStudio } from './theme-studio.mjs?v=20261030-day-audit-178';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -11139,7 +11139,7 @@ function lgDeleteSavedTheme(idx) {
   const saved = (() => { try { return JSON.parse(readPhoneThemeValue('rp_saved_themes') || '[]'); } catch(e) { return []; } })();
   saved.splice(idx, 1);
   // 重新编号
-  saved.forEach((s, i) => { if (/^方案 \d+$/.test(s.label)) s.label = `方案 ${i+1}`; });
+  saved.forEach((s, i) => { if (s && typeof s === 'object' && /^方案 \d+$/.test(s.label)) s.label = `方案 ${i+1}`; });
   writePhoneThemeValue('rp_saved_themes', JSON.stringify(saved));
   lgRenderSavedThemes();
   try { saveState(); } catch(e) {}

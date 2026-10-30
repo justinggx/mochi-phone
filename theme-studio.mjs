@@ -65,7 +65,7 @@ export function makeThemePreview(doc,host,{css='',baseCss='',design=null,mode='d
   const pane=doc.createElement('div');pane.className='rp-view';pane.id='rp-view-'+(view==='home'?'home':view==='moments'?'moments':'thread');
   if(view==='home'){
     pane.innerHTML='<div id="rp-home-clock">12:00</div><div style="text-align:center;color:var(--rp-app-lbl)">星期五 · 好好生活</div><div id="rp-app-grid"></div>';
-    const names=['信息','朋友圈','日记','游戏'];for(let i=0;i<4;i++){const el=doc.createElement('div');el.className='rp-app';const icon=doc.createElement('div');icon.className='rp-app-ico';if(icons[i]){icon.className=icons[i].className;icon.style.cssText=icons[i].style.cssText;for(const child of icons[i].childNodes)icon.append(child.cloneNode(true));}else icon.textContent=['☏','◎','▤','◇'][i];const label=doc.createElement('div');label.className='rp-app-lbl';label.textContent=names[i];el.append(icon,label);pane.querySelector('#rp-app-grid').append(el);}
+    const names=['信息','朋友圈','设置','游戏'];for(let i=0;i<4;i++){const el=doc.createElement('div');el.className='rp-app';const icon=doc.createElement('div');icon.className='rp-app-ico';if(icons[i]){icon.className=icons[i].className;icon.style.cssText=icons[i].style.cssText;for(const child of icons[i].childNodes)icon.append(child.cloneNode(true));}else icon.textContent=['☏','◎','▤','◇'][i];const label=doc.createElement('div');label.className='rp-app-lbl';label.textContent=names[i];el.append(icon,label);pane.querySelector('#rp-app-grid').append(el);}
     const background=doc.createElement('div');background.className='rp-home-bg';background.style.cssText='position:absolute;inset:0;background:var(--rp-home-wall);z-index:0';if(wallpaper&&(!design||design.keepWallpaper)){background.style.backgroundImage='url('+JSON.stringify(wallpaper)+')';background.style.backgroundSize='cover';background.style.backgroundPosition='center';}pane.prepend(background);
   }else if(view==='moments')pane.innerHTML='<div class="rp-nav-bar"><span class="rp-nav-title">朋友圈</span></div><div class="rp-moment rp-moment-card"><div class="rp-moment-name">朋友</div><p class="rp-moment-text">阳光很好，想把这份轻松分享给你。</p><div class="rp-moment-time">刚刚 · 2人喜欢</div><div class="rp-moment-comment">我：晚点一起散步。</div></div>';
   else pane.innerHTML='<div class="rp-nav-bar"><span class="rp-nav-title">聊天预览</span></div><div id="rp-bubbles"><div class="rp-bubble rp-recv"><span class="rp-bubble-text">今天也想和你聊聊天。</span></div><div class="rp-bubble rp-sent" style="align-self:flex-end"><span class="rp-bubble-text">晚点一起散步吧。</span></div></div><div id="rp-composer"><input id="rp-input" placeholder="发送消息…" tabindex="-1"><button id="rp-send" tabindex="-1">↑</button></div>';
@@ -87,11 +87,11 @@ export function createThemeStudio(api) {
   function undo(){const list=undoList();if(list.length){const previous=list.pop();api.write(undoKey,JSON.stringify(list));writeSnapshot(previous);if(session?.valid())render();api.notify('已完整还原上一版主题和壁纸。');return true;}const legacy=array(api.read('rp_custom_css_history'));if(!legacy.length)return false;const previous=legacy.pop();if(typeof previous!=='string')return false;api.write('rp_custom_css_history',JSON.stringify(legacy));writeSnapshot({...snapshot(),theme:'custom',css:previous,design:null,legacyCss:previous});if(session?.valid())render();return true;}
   const canUndo=()=>undoList().length>0||array(api.read('rp_custom_css_history')).length>0;
   function applyLegacy(css){if(typeof css!=='string')return;commit({...snapshot(),theme:'custom',css,design:null,legacyCss:css});}
-  function saved(){return array(api.read('rp_saved_themes')).filter(s=>s&&typeof s.css==='string');}
-  function persistLibrary(list){api.write('rp_saved_themes',JSON.stringify(list));api.save();api.refreshLibrary();}
-  function saveCopy(index){const list=saved(),current=snapshot(),src=Number.isInteger(index)?list[index]:{css:current.css,design:current.design,legacyCss:current.legacyCss};if(!src?.css?.trim()){api.notify('先预览并应用一套主题，再另存。');return false;}const entry={...cloneTheme(src),label:(src.label?src.label+' 副本':'方案 '+(list.length+1)).slice(0,40),timeStr:new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})};list.push(entry);persistLibrary(list);api.notify('已另存为「'+entry.label+'」。');return entry;}
-  function exportOne(index){const entry=saved()[index];if(!entry)return;api.download(exportThemeScheme(entry),'MochiPhone-theme.json');}
-  function importText(text){const entry=parseThemeScheme(text,api.sanitizeCSS),list=saved();entry.timeStr='导入';list.push(entry);persistLibrary(list);return entry;}
+  function saved(){return array(api.read('rp_saved_themes'));}
+  function persistLibrary(list){const raw=api.read('rp_saved_themes');if(raw&&!Array.isArray(parse(raw,null))){api.notify('方案库记录格式异常，原记录已保留，请先检查备份。');return false;}api.write('rp_saved_themes',JSON.stringify(list));api.save();api.refreshLibrary();return true;}
+  function saveCopy(index){const list=saved(),current=snapshot(),src=Number.isInteger(index)?list[index]:{css:current.css,design:current.design,legacyCss:current.legacyCss};if(typeof src?.css!=='string'||!src.css.trim()){api.notify('先预览并应用一套主题，再另存。');return false;}const entry={...cloneTheme(src),label:(src.label?src.label+' 副本':'方案 '+(list.length+1)).slice(0,40),timeStr:new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})};list.push(entry);if(!persistLibrary(list))return false;api.notify('已另存为「'+entry.label+'」。');return entry;}
+  function exportOne(index){const entry=saved()[index];if(typeof entry?.css!=='string')return;api.download(exportThemeScheme(entry),'MochiPhone-theme.json');}
+  function importText(text){const entry=parseThemeScheme(text,api.sanitizeCSS),list=saved();entry.timeStr='导入';list.push(entry);if(!persistLibrary(list))throw new Error('方案库记录格式异常，原记录已保留。');return entry;}
   function thumbnail(host,scheme,mode='day'){
     const design=normalizeThemeDesign(scheme?.design);return makeThemePreview(doc,host,{css:scheme?.css||'',baseCss:api.baseCss(),design,mode,view:'chat'});
   }
@@ -100,7 +100,7 @@ export function createThemeStudio(api) {
     let tools=section.querySelector('.rp-te-library-tools');if(!tools){tools=doc.createElement('div');tools.className='rp-te-library-tools';tools.innerHTML='<button class="rp-te-button" type="button" data-te-library="copy">另存当前副本</button><button class="rp-te-button" type="button" data-te-library="import">导入主题</button><input class="rp-te-file" type="file" accept="application/json,.json">';section.insertBefore(tools,cards);tools.querySelector('[data-te-library="copy"]').onclick=()=>saveCopy();tools.querySelector('[data-te-library="import"]').onclick=()=>tools.querySelector('input').click();}
     // Rebind to the current account/slot on every render, before opening a picker.
     tools.querySelector('input').onchange=async event=>{const file=event.target.files?.[0];event.target.value='';const ticket=signature(),task=api.runtime().task();if(!file)return;try{if(file.size>400000)throw new Error('请选择400KB以内的单主题JSON。');const text=await file.text();if(!task.valid()||ticket!==signature())return;importText(text);api.notify('主题已导入方案库，点击方案可先预览。');}catch(error){if(task.valid()&&ticket===signature())api.notify(error.message);}};
-    const current=api.read('rp_custom_css')||'';saved().forEach((entry,index)=>{
+    const current=api.read('rp_custom_css')||'';saved().forEach((entry,index)=>{if(!entry||typeof entry.css!=='string')return;
       const card=doc.createElement('div');card.className='rp-saved-card'+(api.read('rp_theme')==='custom'&&entry.css===current?' rp-tc-active':'');card.dataset.idx=index;
       card.innerHTML='<div class="rp-saved-card-preview rp-te-thumbnail"></div><div class="rp-saved-card-info"><div class="rp-saved-card-name">'+esc(entry.label)+'</div><div class="rp-saved-card-time">'+esc(entry.timeStr||'')+'</div></div><div class="rp-saved-card-actions"><button class="rp-saved-card-act-btn rp-saved-card-rename-btn" data-idx="'+index+'">改名</button><button class="rp-saved-card-act-btn" data-te-copy="'+index+'">副本</button><button class="rp-saved-card-act-btn" data-te-export="'+index+'">导出</button><button class="rp-saved-card-act-btn rp-saved-card-delete-btn" data-idx="'+index+'">删除</button></div>';
       card.querySelector('[data-te-copy]').onclick=e=>{e.stopPropagation();saveCopy(index);};card.querySelector('[data-te-export]').onclick=e=>{e.stopPropagation();exportOne(index);};cards.append(card);thumbnail(card.firstChild,entry,api.dark()?'night':'day');
@@ -139,9 +139,17 @@ export function createThemeStudio(api) {
       if(b.hasAttribute('data-te-fix')){edit();s.draft.design=fixThemeContrast(s.draft.design,s.locks);fields();refresh();}
       if(b.hasAttribute('data-te-cancel')){leave();render();session?.status('已取消未应用的修改，当前主题保持。');}
       if(b.hasAttribute('data-te-apply'))applySession(s);
-      if(b.dataset.teCandidate){const index=Number(b.dataset.teCandidate),choice=s.candidates[index];if(choice){edit();s.draft.design=cloneTheme(choice.design);fields();shapeFields();pane('preview');refresh();s.status('已选择「'+choice.name+'」，确认预览后应用。');}}
+      if(b.dataset.teCandidate){
+        const choice=s.candidates[Number(b.dataset.teCandidate)],incoming=normalizeThemeDesign(choice?.design);
+        if(incoming){
+          edit();const scope=choice.scope||'all',next=cloneTheme(s.draft.design),allowed=scope==='all'?Object.keys(THEME_FIELDS):(THEME_GROUPS[scope]||[]);
+          for(const mode of ['day','night'])for(const field of allowed)if(!s.locks[mode+'.'+field])next[mode][field]=incoming[mode][field];
+          if(scope==='all'){next.base=incoming.base;for(const key of Object.keys(incoming.shape))if(!s.locks['shape.'+key])next.shape[key]=incoming.shape[key];}
+          s.draft.design=next;q('[data-te-base]').value=next.base;fields();shapeFields();pane('preview');refresh();s.status('已选择「'+choice.name+'」，保留当前锁定与范围之外的内容，确认预览后应用。');
+        }
+      }
       if(b.hasAttribute('data-te-wallpaper'))q('[data-te-wall-file]').click();
-      if(b.hasAttribute('data-te-remove-wallpaper')){edit();s.draft.wallpaper=null;refresh();}
+      if(b.hasAttribute('data-te-remove-wallpaper')){edit();const pending=s.pendingWallpaper;s.pendingWallpaper=null;pending?.cancel?.();q('[data-te-apply]').disabled=false;s.draft.wallpaper=null;refresh();s.status('已从预览移除壁纸，应用后才保存。');}
       if(b.hasAttribute('data-te-extract'))void extractWallpaper(s);
       if(b.dataset.teSample){edit();s.draft.design[s.mode].accent=b.dataset.teSample;fields();refresh();s.status('已将取样色设为强调色，可在配色页继续调整。');}
       if(b.hasAttribute('data-te-validate-css')){try{validateCss(q('.rp-te-legacy').value);s.status('CSS结构与安全检查通过，仍需预览可读性。');}catch(error){s.status(error.message);}}
@@ -162,17 +170,51 @@ export function createThemeStudio(api) {
     root.addEventListener('input',event=>{if(!valid())return;const el=event.target,field=el.dataset.teColor||el.dataset.teHex;if(field){const value=el.value;el.setAttribute('aria-invalid',String(!validThemeHex(value)));if(!validThemeHex(value))return;edit();s.draft.design[s.mode][field]=value.toLowerCase();const sibling=q(el.dataset.teHex?'[data-te-color="'+field+'"]':'[data-te-hex="'+field+'"]');sibling.value=value;sibling.removeAttribute('aria-invalid');refresh();}if(el.classList.contains('rp-te-legacy')){s.editRevision++;s.draft.legacyCss=el.value;refresh();}});
     fields();shapeFields();refresh();api.updateActions();return s;
   }
-  function applySession(s=session){if(!s?.valid())return false;if(s.baseline!==signature()){s.status('当前主题或壁纸已改变，请重新打开工作室后应用，原主题保持。');return false;}if(s.root.querySelector('[aria-invalid="true"]')){s.status('请先修正HEX颜色。');return false;}
+  function applySession(s=session){if(!s?.valid())return false;if(s.pendingWallpaper){s.status('壁纸正在读取和处理，完成后再应用。');return false;}if(s.baseline!==signature()){s.status('当前主题或壁纸已改变，请重新打开工作室后应用，原主题保持。');return false;}if(s.root.querySelector('[aria-invalid="true"]')){s.status('请先修正HEX颜色。');return false;}
     try{const css=s.css();if(!css.trim())throw new Error('请填写有效样式或使用配色编辑器。');commit({theme:'custom',css,design:s.draft.legacyOnly?null:s.draft.design,legacyCss:s.draft.legacyCss,wallpaper:s.draft.wallpaper,darkMode:s.q('[data-te-apply-mode]').value==='keep'?!!api.dark():s.q('[data-te-apply-mode]').value==='night'});s.baseline=signature();s.selectionChanged=false;s.status('预览已应用。可另存副本，或完整回到上一版。');return true;}catch(error){s.status(error.message);return false;}
   }
   async function generate(description){const s=session||render();if(!s?.valid()||s.busy)return false;
     let request;try{request=themePrompt(s.draft.design,s.locks,s.q('[data-te-scope]').value,description,api.history());}catch(error){s.status(error.message);return false;}
     const startSignature=signature(),edit=s.editRevision,rev=revision,task=api.runtime().task();s.busy=true;s.status('正在生成2–3套候选，当前主题保持…');api.setGenerating(true);api.addMessage('user',description.trim());
-    try{const result=await api.call(request.prompt,request.maxTokens,request.system);if(!s.valid()||!task.valid())return false;if(startSignature!==signature()||rev!==revision||edit!==s.editRevision){s.status('生成期间有新的选择或编辑，旧结果未覆盖当前内容。');return false;}const choices=parseThemeSuggestions(result,s.draft.design,s.locks,s.q('[data-te-scope]').value);s.candidates=choices;s.q('.rp-te-candidates').innerHTML=choices.map((c,i)=>'<button class="rp-te-candidate" type="button" data-te-candidate="'+i+'"><span class="rp-te-swatches">'+[c.design.day.wall,c.design.day.sent,c.design.day.received,c.design.day.text].map(v=>'<i style="background:'+v+'"></i>').join('')+'</span><span>'+esc(c.name)+'<br><small>选择后预览</small></span></button>').join('');s.pane('preview');s.status('候选已生成。选择一套查看日夜效果，确认后应用。');api.addMessage('ai','生成了'+choices.length+'套配色候选，等待预览确认。');return true;
+    try{const result=await api.call(request.prompt,request.maxTokens,request.system);if(!s.valid()||!task.valid())return false;if(startSignature!==signature()||rev!==revision||edit!==s.editRevision){s.status('生成期间有新的选择或编辑，旧结果未覆盖当前内容。');return false;}const choices=parseThemeSuggestions(result,s.draft.design,s.locks,s.q('[data-te-scope]').value);s.candidates=choices.map(choice=>({...choice,scope:s.q('[data-te-scope]').value}));s.q('.rp-te-candidates').innerHTML=choices.map((c,i)=>'<button class="rp-te-candidate" type="button" data-te-candidate="'+i+'"><span class="rp-te-swatches">'+[c.design.day.wall,c.design.day.sent,c.design.day.received,c.design.day.text].map(v=>'<i style="background:'+v+'"></i>').join('')+'</span><span>'+esc(c.name)+'<br><small>选择后预览</small></span></button>').join('');s.pane('preview');s.status('候选已生成。选择一套查看日夜效果，确认后应用。');api.addMessage('ai','生成了'+choices.length+'套配色候选，等待预览确认。');return true;
     }catch(error){if(s.valid()&&task.valid()){s.status(error.message||'生成未完成，原主题已保留。');api.addMessage('ai','生成未完成：'+(error.message||'请重试'));}return false;}finally{s.busy=false;if(session===s)api.setGenerating(false);}
   }
-  function previewSaved(index){const entry=saved()[index];if(!entry)return;api.navigate();const s=session||render();if(!s)return;s.draft=currentDraft({theme:'custom',css:entry.css,design:normalizeThemeDesign(entry.design),legacyCss:entry.legacyCss??null,wallpaper:api.wallpaper()});s.q('.rp-te-legacy').value=s.draft.legacyCss;s.q('[data-te-legacy-only]').checked=s.draft.legacyOnly;s.q('[data-te-base]').value=s.draft.design.base;s.editRevision++;s.fields();s.shapes();s.refresh();s.status('正在预览「'+entry.label+'」，应用后才替换当前主题。');}
-  async function readWallpaper(file,s){if(!file||!s.valid())return;const sequence=++s.editRevision;try{if(!file.type.startsWith('image/')||file.size>16*1024*1024)throw new Error('请选择16MB以内的图片。');const data=await new Promise((resolve,reject)=>{const reader=new (doc.defaultView.FileReader)();const cancel=()=>{reader.abort();reject(new Error('操作已取消。'));};s.controller.signal.addEventListener('abort',cancel,{once:true});reader.onload=()=>{s.controller.signal.removeEventListener('abort',cancel);resolve(reader.result);};reader.onerror=()=>{s.controller.signal.removeEventListener('abort',cancel);reject(new Error('壁纸无法读取。'));};reader.readAsDataURL(file);});const image=await api.prepareWallpaper(data);if(!s.valid()||s.editRevision!==sequence)return;s.draft.wallpaper=image;s.draft.design.keepWallpaper=true;s.draft.legacyOnly=false;s.refresh();s.status('壁纸已进入预览，应用后才保存。');}catch(error){if(s.valid())s.status(error.message);}}
+  function previewSaved(index){const entry=saved()[index];if(typeof entry?.css!=='string')return;api.navigate();const s=session||render();if(!s)return;s.draft=currentDraft({theme:'custom',css:entry.css,design:normalizeThemeDesign(entry.design),legacyCss:entry.legacyCss??null,wallpaper:api.wallpaper()});s.q('.rp-te-legacy').value=s.draft.legacyCss;s.q('[data-te-legacy-only]').checked=s.draft.legacyOnly;s.q('[data-te-base]').value=s.draft.design.base;s.editRevision++;s.fields();s.shapes();s.refresh();s.status('正在预览「'+entry.label+'」，应用后才替换当前主题。');}
+  function decodeWallpaper(data,s){
+    return new Promise((resolve,reject)=>{
+      if(typeof data!=='string'||!data.startsWith('data:image/')){reject(new Error('壁纸图片数据无效。'));return;}
+      const image=new (doc.defaultView.Image)();let settled=false;
+      const finish=(fn,value)=>{if(settled)return;settled=true;clearTimeout(timer);s.controller.signal.removeEventListener('abort',cancel);image.onload=image.onerror=null;image.removeAttribute?.('src');fn(value);};
+      const cancel=()=>finish(reject,new Error('操作已取消。'));
+      const timer=setTimeout(()=>finish(reject,new Error('壁纸图片读取超时，请重试。')),15000);
+      s.controller.signal.addEventListener('abort',cancel,{once:true});
+      image.onload=()=>image.naturalWidth>0&&image.naturalHeight>0?finish(resolve,true):finish(reject,new Error('壁纸图片尺寸无效。'));
+      image.onerror=()=>finish(reject,new Error('壁纸图片无法读取，原壁纸已保留。'));image.src=data;
+      if(s.controller.signal.aborted)cancel();
+    });
+  }
+  async function readWallpaper(file,s){
+    if(!file||!s.valid())return;
+    const previous=s.pendingWallpaper,ticket={cancel:null};s.pendingWallpaper=ticket;previous?.cancel?.();s.editRevision++;
+    s.q('[data-te-apply]').disabled=true;s.status('正在读取和处理壁纸，完成后可应用。');
+    try{
+      if(!file.type.startsWith('image/')||file.size>16*1024*1024)throw new Error('请选择16MB以内的图片。');
+      const data=await new Promise((resolve,reject)=>{
+        const reader=new (doc.defaultView.FileReader)();let settled=false;
+        const finish=(fn,value)=>{if(settled)return;settled=true;reader.onload=reader.onerror=null;s.controller.signal.removeEventListener('abort',cancel);ticket.cancel=null;fn(value);};
+        const cancel=()=>{if(reader.readyState===1)reader.abort();finish(reject,new Error('操作已取消。'));};ticket.cancel=cancel;
+        s.controller.signal.addEventListener('abort',cancel,{once:true});
+        reader.onload=()=>finish(resolve,reader.result);reader.onerror=()=>finish(reject,new Error('壁纸无法读取。'));reader.readAsDataURL(file);
+        if(s.controller.signal.aborted)cancel();
+      });
+      await decodeWallpaper(data,s);if(!s.valid()||s.pendingWallpaper!==ticket)return;
+      const image=await api.prepareWallpaper(data);
+      if(typeof image!=='string'||!image.startsWith('data:image/'))throw new Error('壁纸处理失败，原壁纸已保留。');
+      if(!s.valid()||s.pendingWallpaper!==ticket)return;
+      s.editRevision++;s.draft.wallpaper=image;s.draft.design.keepWallpaper=true;s.draft.legacyOnly=false;s.refresh();s.status('壁纸已进入预览，应用后才保存。');
+    }catch(error){if(s.valid()&&s.pendingWallpaper===ticket)s.status(error.message);}
+    finally{if(s.pendingWallpaper===ticket){s.pendingWallpaper=null;if(s.valid())s.q('[data-te-apply]').disabled=false;}}
+  }
   async function extractWallpaper(s){if(!s.valid()||!s.draft.wallpaper){s.status('先选择一张壁纸，再本地取色。');return;}const sequence=s.editRevision;try{const palette=await new Promise((resolve,reject)=>{const image=new (doc.defaultView.Image)(),timer=setTimeout(()=>finish(reject,new Error('壁纸读取超时。')),8000);function finish(fn,value){clearTimeout(timer);s.controller.signal.removeEventListener('abort',cancel);image.onload=image.onerror=null;fn(value);}const cancel=()=>finish(reject,new Error('操作已取消。'));s.controller.signal.addEventListener('abort',cancel,{once:true});image.crossOrigin='anonymous';image.onerror=()=>finish(reject,new Error('图片不允许本地取色，请选择本地上传的图片。'));image.onload=()=>{try{const canvas=doc.createElement('canvas');canvas.width=canvas.height=32;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0,32,32);const data=ctx.getImageData(0,0,32,32).data,bins=new Map();for(let i=0;i<data.length;i+=4){if(data[i+3]<200)continue;const values=[data[i],data[i+1],data[i+2]].map(v=>Math.min(255,Math.round(v/32)*32)),color='#'+values.map(v=>v.toString(16).padStart(2,'0')).join('');bins.set(color,(bins.get(color)||0)+1);}finish(resolve,[...bins.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5).map(([color])=>color));}catch{finish(reject,new Error('图片取色受浏览器限制，原壁纸保持。'));}};image.src=s.draft.wallpaper;});if(!s.valid()||s.editRevision!==sequence)return;s.q('.rp-te-palette').innerHTML=palette.map(color=>'<button type="button" data-te-sample="'+color+'" style="background:'+color+'" aria-label="使用颜色'+color+'"></button>').join('');s.status('颜色只在本浏览器提取，未发送图片给AI。');}catch(error){if(s.valid())s.status(error.message);}}
   function iconPack(){return api.read('rp_theme')==='custom'?readDesign()?.icons||'line':null;}
   return {install,sync,invalidate,snapshot,readDesign,undo,canUndo,applyLegacy,saveCopy,exportOne,importText,renderLibrary,thumbnail,render,leave,generate,previewSaved,iconPack,applySession,get session(){return session;},validateCss};
