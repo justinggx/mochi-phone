@@ -80,8 +80,11 @@ export function createGroupAvatars(api) {
   }
   function legacyImage(thread) {
     // Old group images used the group name; never borrow a same-name contact.
-    if(Object.values(api.state().threads||{}).some(th=>th&&!group(th)&&nameKey(th.name)===nameKey(thread.name)))return null;
-    const src=api.state().avatars?.[thread.name];return api.validImage(src,Infinity)?src:null;
+    const names=[thread.name,...(Array.isArray(thread.groupNameAliases)?thread.groupNameAliases.slice().reverse():[])];
+    for(const name of names){
+      if(typeof name!=='string'||Object.values(api.state().threads||{}).some(th=>th&&th.id!==thread.id&&nameKey(th.name)===nameKey(name)))continue;
+      const src=api.state().avatars?.[name];if(api.validImage(src,Infinity))return src;
+    }return null;
   }
   function face(thread,override) {
     const record=normalizeGroupAvatar(override===undefined?thread?.groupAvatar:override);

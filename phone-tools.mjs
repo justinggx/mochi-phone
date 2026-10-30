@@ -1,4 +1,4 @@
-import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261030-mosaic-179';
+import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261031-all-functions-189';
 import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261029-optimization-173';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
@@ -314,7 +314,12 @@ export function createPhoneTools(api) {
       const key=name.normalize('NFKC').toLocaleLowerCase();
       const conflict=Object.values(state().threads||{}).some(t=>t!==thread&&(t.type==='group'||t.id?.startsWith('grp_'))&&[t.name,t.id?.slice(4),...(Array.isArray(t.groupNameAliases)?t.groupNameAliases:[])].some(n=>String(n||'').normalize('NFKC').toLocaleLowerCase()===key));
       if(conflict){status.text('已有同名群聊，请换一个群名。');return false;}
-      if(name!==thread.name){thread.groupNameAliases=[...new Set([...(Array.isArray(thread.groupNameAliases)?thread.groupNameAliases:[]),thread.name])];thread.name=name;thread.initials=name.slice(0,2);thread.groupNameAt=Date.now();api.save();api.renderThreads();if(state().currentThread===thread.id)$('#rp-hd-name').text(name);api.refreshPrompt?.();}
+      if(name!==thread.name){
+        const keys=['name','initials','groupNameAliases','groupNameAt'],previous=keys.map(key=>({key,had:Object.hasOwn(thread,key),value:thread[key]}));
+        thread.groupNameAliases=[...new Set([...(Array.isArray(thread.groupNameAliases)?thread.groupNameAliases:[]),thread.name])];thread.name=name;thread.initials=name.slice(0,2);thread.groupNameAt=Date.now();
+        try{if(api.save()===false)throw new Error('群名未能保存，请重试。');}catch(error){for(const item of previous)if(item.had)thread[item.key]=item.value;else delete thread[item.key];status.text(error?.message||'群名未能保存，原名称已保留。');return false;}
+        api.renderThreads();if(state().currentThread===thread.id)$('#rp-hd-name').text(name);api.refreshPrompt?.();
+      }
     }}]);input.trigger('focus');
   }
   function openThreadMenu() {
@@ -449,6 +454,8 @@ export function createPhoneTools(api) {
     for(const field of ['moments','xhsFeed'])for(const post of value.data[field]||[])if(!object(post)||(post.comments!==undefined&&(!Array.isArray(post.comments)||post.comments.some(c=>!object(c)))))throw new Error('备份评论格式不完整。');
     for(const[id,thread]of Object.entries(value.data.threads))if(!object(thread)||thread.id!==id||typeof thread.name!=='string'||!Array.isArray(thread.messages)||thread.messages.some(m=>!object(m)))throw new Error('备份联系人或消息格式不完整。');
     for(const thread of Object.values(value.data.threads)){
+      if(thread.groupNameAliases!==undefined&&(!Array.isArray(thread.groupNameAliases)||thread.groupNameAliases.some(name=>typeof name!=='string')))throw new Error('备份群聊旧名称格式不完整。');
+      if(thread.cancelledHostActions!==undefined&&(!Array.isArray(thread.cancelledHostActions)||thread.cancelledHostActions.some(item=>!object(item)||typeof item.id!=='string'||typeof item.text!=='string')))throw new Error('备份取消记录格式不完整。');
       if(thread.groupAvatar!==undefined&&!normalizeGroupAvatar(thread.groupAvatar))throw new Error('备份群头像格式不完整。');
       if(thread.pendingMessages!==undefined&&(!Array.isArray(thread.pendingMessages)||thread.pendingMessages.some(v=>typeof v!=='string')))throw new Error('备份暂存消息格式不完整。');
       if(thread.pendingQuotes!==undefined&&(!Array.isArray(thread.pendingQuotes)||thread.pendingQuotes.some(v=>v!==null&&!object(v))))throw new Error('备份引用格式不完整。');
@@ -468,7 +475,12 @@ export function createPhoneTools(api) {
       if(api.blocked(thread,current)){stats.skipped++;continue;}
       const existing=Object.hasOwn(result.threads,id)?result.threads[id]:null;
       if(existing){
-        if(existing.name!==thread.name||String(existing.type||'private')!==String(thread.type||'private')){stats.skipped++;continue;}
+        const group=(existing.type==='group'||id.startsWith('grp_'))&&(thread.type==='group'||id.startsWith('grp_'));
+        if((existing.name!==thread.name&&!group)||String(existing.type||'private')!==String(thread.type||'private')){stats.skipped++;continue;}
+        if(group)existing.groupNameAliases=[...new Set([...(Array.isArray(existing.groupNameAliases)?existing.groupNameAliases:[]),thread.name,...(Array.isArray(thread.groupNameAliases)?thread.groupNameAliases:[])].filter(name=>typeof name==='string'&&name!==existing.name))];
+        if(Array.isArray(thread.cancelledHostActions)){
+          const cancelled=existing.cancelledHostActions||=[],known=new Set(cancelled.map(item=>item.id));for(const item of thread.cancelledHostActions)if(!known.has(item.id)){cancelled.push(clone(item));known.add(item.id);}
+        }
         mergeList(existing.messages,thread.messages,stats,'messages');
         if(!existing.groupAvatar&&normalizeGroupAvatar(thread.groupAvatar))existing.groupAvatar=normalizeGroupAvatar(thread.groupAvatar);
         if(!existing.draft&&thread.draft){existing.draft=thread.draft;existing.draftQuote=thread.draftQuote||null;}

@@ -5,7 +5,7 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261030-thread-feed
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-thread-feedback-188';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-all-functions-189';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -16,8 +16,8 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261026-upload-top-139';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-thread-feedback-188';
-import { createGroupAvatars } from './group-avatar.mjs?v=20261030-mosaic-179';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-all-functions-189';
+import { createGroupAvatars } from './group-avatar.mjs?v=20261031-all-functions-189';
 import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-result-shape-188';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
@@ -2549,8 +2549,10 @@ function normalizeAutoGroupTargetName(toRaw, ctx) {
 function rpGroupThreadId(name){
   const direct='grp_'+name;
   if(rpIsGroupThread(STATE.threads?.[direct]))return direct;
-  const matches=Object.values(STATE.threads||{}).filter(t=>rpIsGroupThread(t)&&(t.name===name||(Array.isArray(t.groupNameAliases)&&t.groupNameAliases.includes(name))));
-  return matches.length===1?matches[0].id:direct;
+  const groups=Object.values(STATE.threads||{}).filter(rpIsGroupThread),exact=groups.filter(t=>t.name===name);
+  if(exact.length===1)return exact[0].id;
+  const matches=groups.filter(t=>Array.isArray(t.groupNameAliases)&&t.groupNameAliases.includes(name));
+  return exact.length===0&&matches.length===1?matches[0].id:direct;
 }
 function makeAutoGroupName(fromRaw, toRaw, text, preferredName = '') {
   const preferred=String(preferredName||'').trim();
@@ -2722,8 +2724,8 @@ function rpDeletedContactKey(thread) {
 }
 function rpCanReceiveGroup(id, name) {
   if (STATE.threads[id]) return true;
-  const deleted = STATE.deletedContacts?.['group:' + normalizePhonePersonName(name)];
-  return !deleted || (Number.isInteger(STATE._parseMessageIndex) && STATE._parseMessageIndex > deleted.through);
+  const deleted=[STATE.deletedContacts?.['group:' + normalizePhonePersonName(name)],STATE.deletedContacts?.['group-id:'+id]].filter(Boolean);
+  return deleted.every(record=>Number.isInteger(STATE._parseMessageIndex)&&STATE._parseMessageIndex>record.through);
 }
 function findOrCreateThread(nameRaw) {
   const ctx = getContext();
@@ -3106,6 +3108,8 @@ function rpNormalizePhoneState(state) {
     });
     if (thread.pendingHostActions !== undefined) array(thread, 'pendingHostActions', 'threads.' + id + '.pendingHostActions',
       x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.text === 'string');
+    if(thread.groupNameAliases!==undefined)array(thread,'groupNameAliases','threads.'+id+'.groupNameAliases',name=>typeof name==='string');
+    if(thread.cancelledHostActions!==undefined)array(thread,'cancelledHostActions','threads.'+id+'.cancelledHostActions',item=>item&&typeof item==='object'&&typeof item.id==='string'&&typeof item.text==='string');
     thread.id = thread.id || id;
     if (typeof thread.name !== 'string') { preserve('threads.' + id + '.name', thread.name); thread.name = id; }
     thread.unread = Number.isFinite(thread.unread) && thread.unread >= 0 ? thread.unread : 0;
@@ -4046,7 +4050,7 @@ function rpTools() {
   const blocked = (thread,current) => {
     const name = normalizePhonePersonName(resolveCanonicalPhoneName(thread.name || ''));
     return (current.blocklist || []).some(item => normalizePhonePersonName(resolveCanonicalPhoneName(item)) === name)
-      || !!current.deletedContacts?.[rpDeletedContactKey(thread)];
+      || !!current.deletedContacts?.[rpDeletedContactKey(thread)] || (rpIsGroupThread(thread)&&!!current.deletedContacts?.['group-id:'+thread.id]);
   };
   rpPhoneTools = createPhoneTools({
     $: $, document, state: () => STATE, touch: () => IS_TOUCH_DEVICE, storage: localStorage,
@@ -4263,9 +4267,13 @@ function rpDeleteContacts(ids) {
   }
   const oldTombstones=new Map(), newTombstones=new Map(); STATE.deletedContacts ||= {};
   for(const contact of contacts){
-    const key=rpDeletedContactKey(contact);
-    oldTombstones.set(key,{had:Object.hasOwn(STATE.deletedContacts,key),value:STATE.deletedContacts[key]});
-    const record={through:(getContext()?.chat?.length||0)-1}; newTombstones.set(key,record);STATE.deletedContacts[key]=record;delete STATE.threads[contact.id];
+    const keys=new Set();
+    if(rpIsGroupThread(contact)){
+      keys.add('group-id:'+contact.id);
+      for(const name of [contact.name,contact.id.slice(4),...(Array.isArray(contact.groupNameAliases)?contact.groupNameAliases:[])])if(typeof name==='string'&&rpGroupThreadId(name)===contact.id)keys.add('group:'+normalizePhonePersonName(name));
+    }else keys.add(rpDeletedContactKey(contact));
+    for(const key of keys){if(newTombstones.has(key))continue;oldTombstones.set(key,{had:Object.hasOwn(STATE.deletedContacts,key),value:STATE.deletedContacts[key]});const record={through:(getContext()?.chat?.length||0)-1};newTombstones.set(key,record);STATE.deletedContacts[key]=record;}
+    delete STATE.threads[contact.id];
   }
   STATE.moments=STATE.moments.filter(m=>!removedPosts.includes(m));
   if(contacts.some(t=>t.id===STATE.currentThread)){STATE.currentThread=null;STATE.pendingMessages=[];$('#rp-input').val('');renderPendingQueue();}
@@ -6962,7 +6970,7 @@ function renderBubbles(threadId, options = {}) {
       const imgEl = imgSrc === '__img_expired__'
         ? $(`<div class="rp-img-bbl" style="min-width:90px;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:12px 18px;font-size:12px;opacity:.7">图片已过期</div>`)
         : $(`<div class="rp-img-bbl"><img src="${escHtml(imgSrc)}" alt="图片"/></div>`);
-      if (['pending','cancelled'].includes(msg.delivery)) imgEl.append($('<div>').css({fontSize:'11px',padding:'4px',color:'var(--rp-v-muted)'}).text(msg.delivery==='cancelled'?'已取消发送 · 原图已保留':'待酒馆确认'));
+      if (['pending','cancelled'].includes(msg.delivery)) imgEl.append($('<div>').css({fontSize:'11px',padding:'4px',color:'var(--rp-v-muted)'}).text(msg.delivery==='cancelled'?'已取消重试 · 原图已保留':'待酒馆确认'));
       imgEl.find('img').on('load', function() {
         if (this.closest('#rp-bubbles') === el) settleScroll();
       });
@@ -7541,9 +7549,14 @@ function rpHostExpectedText(text) {
   const ctx=getContext();return String(text||'').replace(/{{user}}/gi,()=>ctx?.name1||'{{user}}').replace(/{{char}}/gi,()=>ctx?.name2||'{{char}}').trim();
 }
 function rpActionImageNames(id){return ['png','jpg','jpeg','webp','gif','avif','bmp'].map(ext=>'mochi-'+id+'.'+ext);}
+function rpHostImageReceipt(message,id){
+  if(!message?.is_user||!id)return false;const names=rpActionImageNames(id),extra=message.extra||{};
+  const matches=value=>{if(typeof value!=='string')return false;if(names.includes(value))return true;try{return names.includes(decodeURIComponent(new URL(value,document.baseURI).pathname.split('/').pop()));}catch{return false;}};
+  return (Array.isArray(extra.media)?extra.media:[]).some(media=>media?.type==='image'&&(matches(media.title)||matches(media.name)||matches(media.url)))||matches(extra.image);
+}
 function rpActionReceipt(thread,action){
   const chat=getContext()?.chat||[],names=action.imageMessageId?rpActionImageNames(action.imageMessageId):[];
-  if(action.imageMessageId){const found=chat.findIndex(message=>message?.is_user&&(message.extra?.media||[]).some(media=>media.type==='image'&&names.includes(media.title)));if(found>=0)return found;}
+  if(action.imageMessageId){const found=chat.findIndex(message=>rpHostImageReceipt(message,action.imageMessageId));if(found>=0)return found;}
   if(Number.isInteger(action.receiptIndex)&&chat[action.receiptIndex]?.is_user&&typeof action.receiptText==='string'&&String(chat[action.receiptIndex].mes||'')===action.receiptText)return action.receiptIndex;
   if(!Number.isInteger(action.hostBase))return -1;
   return chat.findIndex((message,i)=>i>=action.hostBase&&message?.is_user&&String(message.mes||'').trim()===action.expectedText);
@@ -7553,7 +7566,7 @@ function rpCompleteThreadAction(thread,action,index){
   action.receiptIndex=index;action.receiptText=String(getContext()?.chat?.[index]?.mes||'');action.status='pending';
   if(action.imageMessageId){
     const hostMessage=getContext()?.chat?.[index];
-    if(!hostMessage?.extra?.image&&!(hostMessage?.extra?.media||[]).some(m=>m.type==='image')){action.note='主楼已有这条消息，附件尚未确认';saveState();rpRenderHostOutbox(thread.id);return false;}
+    if(!rpHostImageReceipt(hostMessage,action.imageMessageId)){action.note='主楼已有这条消息，附件尚未确认';saveState();rpRenderHostOutbox(thread.id);return false;}
     const image=thread.messages.find(m=>m.id===action.imageMessageId);if(image){image.delivery='sent';image.hostIndex=index;}
   }
   thread.pendingHostActions=thread.pendingHostActions.filter(x=>x.id!==action.id);
@@ -7581,7 +7594,7 @@ function rpAttemptThreadAction(thread,action){
     }catch{return fail('无法准备图片附件，原图已保留');}
   }
   action.hostBase=getContext()?.chat?.length||0;action.expectedText=rpHostExpectedText(action.text);action.status='sending';action.note='正在等待酒馆确认';saveState();rpRenderHostOutbox(thread.id);
-  const submitted=rpSubmitHostAction(action.text,index=>rpCompleteThreadAction(thread,action,index),false,{imageMessageId:action.imageMessageId,onUnconfirmed:()=>fail('尚未收到确认，请先核对主楼')});
+  const submitted=rpSubmitHostAction(action.text,index=>rpCompleteThreadAction(thread,action,index),false,{imageMessageId:action.imageMessageId,onPrepared:(base,expected)=>{action.hostBase=base;action.expectedText=expected;saveState();},onUnconfirmed:()=>fail('尚未收到确认，请先核对主楼')});
   if(!submitted)fail('酒馆暂不可发送，内容已保留');else if(STATE.currentThread===thread.id&&(thread.pendingHostActions||[]).includes(action))rpRenderHostOutbox(thread.id);return submitted;
 }
 function rpSubmitThreadAction(thread, text, message, confirmed, imageMessageId) {
@@ -7606,7 +7619,7 @@ function rpSubmitHostAction(text, confirmed, replace = false, options = {}) {
   const source = ctx?.eventSource || eventSource, types = ctx?.eventTypes || ctx?.event_types || event_types;
   if (!source || !types?.USER_MESSAGE_RENDERED) { toastr.warning('无法确认酒馆发送状态，内容已保留。'); return false; }
   const expected=rpHostExpectedText(content);
-  const job = { base: ctx.chat?.length || 0, task }; rpHostSubmission = job;
+  const job = { base: ctx.chat?.length || 0, task };options.onPrepared?.(job.base,expected);rpHostSubmission = job;
   $('#rp-send').prop('disabled', true);
   let stop, timer;
   const release = () => {
@@ -7618,7 +7631,7 @@ function rpSubmitHostAction(text, confirmed, replace = false, options = {}) {
   const accepted = () => {
     if (job.done || !task.valid() || getPhoneChatSlotKey(getContext()) !== originSlot) return;
     const chat = getContext()?.chat || [];
-    const index = chat.findIndex((message, i) => i >= job.base && message?.is_user && (String(message.mes || '').trim() === content.trim() || String(message.mes || '').trim() === expected || (options.imageMessageId && (message.extra?.media||[]).some(media=>media.type==='image'&&rpActionImageNames(options.imageMessageId).includes(media.title)))));
+    const index = chat.findIndex((message, i) => i >= job.base && message?.is_user && (String(message.mes || '').trim() === content.trim() || String(message.mes || '').trim() === expected || (options.imageMessageId && rpHostImageReceipt(message,options.imageMessageId))));
     if (index < 0) return;
     job.done = true; release(); confirmed(index);
   };
@@ -9529,6 +9542,7 @@ function rpHideBanner() {
   $('#rp-live-chat').empty();
 }
 function showBanner(from, text, time, threadId, allowCall = false) {
+  if(rpIsGroupThread(STATE.threads[threadId]))from=STATE.threads[threadId].name;
   if (!allowCall && rpTools().isMuted(threadId,from)) return;
   // 短时去重:同 from+text 在 3s 内不重复弹出
   const key = from + '|' + text;
