@@ -1,10 +1,11 @@
+import { createEchoAccent } from './echo-accent.mjs?v=20261030-echo-adaptive-186';
 import { createMessageUI } from './message-ui.mjs?v=20261030-messages-182';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 import { createPhoneTemplate } from './phone-template.mjs?v=20261030-theme-preview-183';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-echo-readability-184';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261030-echo-adaptive-186';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -17,7 +18,7 @@ import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261030-mosaic-179';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261030-mosaic-179';
-import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-review-tidy-185';
+import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-resume-186';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -417,6 +418,7 @@ rpInstallWandLauncher(runtime);
 return runtime;
 }
 rpRuntime = rpCreateRuntime();
+const rpEchoAccent=createEchoAccent({document,window,runtime:()=>rpRuntime,enabled:()=>isMochiPhoneEnabled()});
 
 const RP_IMAGE_WAIT_TTL = 120000;
 function rpPruneImageWaitQueue(now = Date.now()) {
@@ -3260,6 +3262,7 @@ async function rpInitBody() {
   try { localStorage.removeItem('rp-phone-threads-global'); } catch(e) {}
 
   injectStyles();
+  rpEchoAccent.install();
   $('body').append(HTML);
   // Defensive: ensure FAB visible after append
   var _f = document.getElementById('rp-fab');
@@ -11072,7 +11075,7 @@ const rpThemeStudio = createThemeStudio({
   refresh:()=>{applyWallpaper();lgRenderThemePicker();lgTsUpdateActionBar();},refreshLibrary:()=>lgRenderSavedThemes(),navigate:()=>go('theme-studio'),
   sanitizeCSS:lgTsSanitizeCSS,baseCss:()=>RP_PHONE_CSS,previewIcons:rpThemePreviewIcons,
   history:()=>STATE.themeStudioMessages||[],addMessage:(role,text)=>{STATE.themeStudioMessages||=[];STATE.themeStudioMessages.push({role,text});saveState();},
-  updateActions:()=>lgTsUpdateActionBar(),setGenerating:busy=>{$('#rp-ts-send').prop('disabled',busy).text(busy?'生成中…':'发送想法');},call:(prompt,max,system)=>lgCallAPI(prompt,max,system),
+  updateActions:()=>lgTsUpdateActionBar(),setGenerating:busy=>{$('#rp-ts-send').prop('disabled',busy).text(busy?'生成中…':'发送想法');},call:(prompt,max,system)=>lgCallAPI(prompt,max,system,{phoneTheme:true,reportErrors:true}),
   download:(value,name)=>{const data=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(data),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 });
 const rpThemePreviewIconCache=new Map();
@@ -17252,7 +17255,7 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
       const finishReason = data.choices[0]?.finish_reason;
       if (finishReason === 'length') throw rpPhoneApiError('truncated');
       if (finishReason && finishReason !== 'stop') throw rpPhoneApiError('interrupted');
-      if(options.gameTask || options.phoneXhs || options.phoneTranslation)return rpGameApiText(data,d=>d.choices?.[0]?.message?.content);
+      if(options.gameTask || options.phoneXhs || options.phoneTranslation || options.phoneTheme)return rpGameApiText(data,d=>d.choices?.[0]?.message?.content);
       const _msg = data.choices?.[0]?.message;
       // 优先用 content；若 content 为空且 reasoning_content 存在，
       // 尝试从 reasoning_content 提取 </think> 之后的正文部分
@@ -17305,17 +17308,17 @@ async function lgCallAPI(prompt, maxTokens = 150, sysMsg = '', options = {}) {
   // 未设置自定义 API → 走 ST generateRaw，用 messages 数组格式避免 text completion 续写单字
   try {
     const { generateRaw, generateRawData, extractMessageFromData } = await rpGuardAwait(import('../../../../script.js').catch(rpRuntime.guard(() => ({}))), rpTask);
-    if((options.phoneTheatre || options.gameTask || options.phoneXhs || options.phoneTranslation) && typeof generateRawData==='function' && typeof extractMessageFromData==='function'){
+    if((options.phoneTheatre || options.gameTask || options.phoneXhs || options.phoneTranslation || options.phoneTheme) && typeof generateRawData==='function' && typeof extractMessageFromData==='function'){
       const messages=options.phoneTheatre?theatreRequestMessages(prompt,sysMsg,options.theatrePreset):[];if(!options.phoneTheatre){if(sysMsg)messages.push({role:'system',content:sysMsg});messages.push({role:'user',content:prompt});}
-      const data=await rpGuardAwait(generateRawData({prompt:messages,responseLength:maxTokens,...(options.phoneTheatre || options.phoneXhs || options.phoneTranslation ? {trimNames:false}:{}),...(options.phoneShop?{instructOverride:true}:{})}),rpTask,timeout);
+      const data=await rpGuardAwait(generateRawData({prompt:messages,responseLength:maxTokens,...(options.phoneTheatre || options.phoneXhs || options.phoneTranslation || options.phoneTheme ? {trimNames:false}:{}),...(options.phoneShop?{instructOverride:true}:{})}),rpTask,timeout);
       return options.phoneTheatre ? theatreText(data,extractMessageFromData) : rpGameApiText(data,extractMessageFromData);
     }
     if (typeof generateRaw === 'function') {
       const msgs = options.phoneTheatre ? theatreRequestMessages(prompt,sysMsg,options.theatrePreset) : [];
       if (!options.phoneTheatre) { if (sysMsg) msgs.push({ role: 'system', content: sysMsg }); msgs.push({ role: 'user', content: prompt }); }
-      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneShop ? { instructOverride:true } : {}), ...(options.phoneTheatre || options.phoneTranslation || options.phoneXhs || options.phoneDiary || options.gameTask ? { trimNames: false } : {}), ...(options.phoneTheatre || options.gameTask || options.phoneDiary || options.phoneXhs || options.phoneTranslation ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
+      const resp = await rpGuardAwait(generateRaw({ prompt: msgs, ...(options.phoneShop ? { instructOverride:true } : {}), ...(options.phoneTheatre || options.phoneTranslation || options.phoneXhs || options.phoneDiary || options.gameTask || options.phoneTheme ? { trimNames: false } : {}), ...(options.phoneTheatre || options.gameTask || options.phoneDiary || options.phoneXhs || options.phoneTranslation || options.phoneTheme ? { responseLength: maxTokens } : {}) }), rpTask, timeout);
       if(options.phoneTheatre)return theatreText(resp);
-      if(options.gameTask)return rpGameApiText(resp,d=>d);
+      if(options.gameTask||options.phoneTheme)return rpGameApiText(resp,d=>d);
       if (resp && resp.trim()) {
         // ST 路径也统一清洗 think/thinking 标签
         let stText = resp.trim();
