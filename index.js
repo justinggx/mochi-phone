@@ -1,4 +1,4 @@
-import { createPhoneChat } from './phone-chat.mjs?v=20261031-message-polish-193';
+import { createPhoneChat } from './phone-chat.mjs?v=20261031-chat-mode-compact-195';
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
