@@ -221,19 +221,23 @@ function markPhoneCleanupSourceHtml(html, meta = {}) {
     const records=installPhoneCleanupSourceMarkers.records ||= new WeakMap();
     let record=records.get(message);
     if(!record||record.raw!==raw){record={raw,token:'mp-'+(phoneHost.window.crypto?.randomUUID?.()||Math.random().toString(36).slice(2))};records.set(message,record);}
-    const codeRanges=Array.from(html.matchAll(/<(pre|code|script|style|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>/gi),m=>[m.index,m.index+m[0].length]);
+    // Scan the inert-aware view, then splice the untouched original HTML. A
+    // fake opening inside code must not consume a later real block's closing.
+    const scan=phoneCleanupProtocolView(html),edits=[];
     const available=new Map();
     const sourceParts=phoneCleanupSourceParts(normalized).filter(p=>p.phone);
     for(const p of sourceParts){const tag=p.text.match(/^<([a-z]+)\b/i)?.[1]?.toUpperCase();if(tag)available.set(tag,(available.get(tag)||0)+1);}
     const tags=/<PHONE\b[^>]*>[\s\S]*?<\/PHONE\s*>|<(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?>|&lt;PHONE\b[\s\S]*?&lt;\/PHONE\s*&gt;|&lt;(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[\s\S]*?&lt;\/\2\s*&gt;|&lt;(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b(?:(?!&gt;)[\s\S])*?&gt;/gi;
     if(available.size)(0,phoneHost.rpQueuePhoneRenderRepair)?.(Number(meta.messageId),message,raw);
-    return html.replace(tags,(match,_a,_b,offset)=>{
-      if(codeRanges.some(([a,b])=>offset>=a&&offset<b))return match;
+    for(const found of scan.matchAll(tags)){
+      const offset=found.index,match=html.slice(offset,offset+found[0].length);
       const tag=(0,phoneHost.normalizePhoneMarkup)(match).match(/^<([a-z]+)\b/i)?.[1]?.toUpperCase(),left=available.get(tag)||0;
-      if(!left)return match;
-      available.set(tag,left-1);
-      return '<div data-rp-phone-source="'+record.token+'">'+match+'</div>';
-    });
+      if(!left)continue;
+      available.set(tag,left-1);edits.push({start:offset,end:offset+match.length});
+    }
+    let out='',cursor=0;
+    for(const edit of edits){out+=html.slice(cursor,edit.start)+'<div data-rp-phone-source="'+record.token+'">'+html.slice(edit.start,edit.end)+'</div>';cursor=edit.end;}
+    return out+html.slice(cursor);
   } catch { return html; }
 }
 
@@ -300,7 +304,9 @@ function phoneCleanupSourceParts(raw) {
 function phoneCleanupNarrativeChunks(raw, opaqueIslands = [], corpus = '') {
   // Detached parsing does not run card regexes, scripts or macros a second time.
   const template = phoneHost.document.createElement('template');
-  template.innerHTML = String(raw || '').replace(/```[^\n]*\n[\s\S]*?```/g,'').replace(/`[^`\n]+`/g,'').replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');
+  // Reasoning is not rendered narrative and cannot be an outside-source anchor.
+  const narrative=String(raw||'').replace(/<(think|thinking)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,'\n');
+  template.innerHTML = narrative.replace(/```[^\n]*\n[\s\S]*?```/g,'').replace(/`[^`\n]+`/g,'').replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');
   let text = '';
   const plain = /^(P|DIV|SPAN|BR|HR|EM|STRONG|B|I|U|S|DEL|SMALL|MARK|Q|BLOCKQUOTE|UL|OL|LI|A)$/;
   function visit(node) {
