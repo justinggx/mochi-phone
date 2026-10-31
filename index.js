@@ -2,11 +2,11 @@ import { createPhoneChat } from './phone-chat.mjs?v=20261031-chat-mode-compact-1
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261031-theme-sheet-198';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261031-thin-frame-199';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-echo-surface-194';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-thin-frame-199';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -19,7 +19,7 @@ import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-global-message-mode-191';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261031-all-functions-189';
-import { createThemeStudio } from './theme-studio.mjs?v=20261031-theme-sheet-198';
+import { createThemeStudio } from './theme-studio.mjs?v=20261031-thin-frame-199';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
@@ -131,7 +131,7 @@ async function rpGuardAwait(promise, token, timeout = 120000) {
 // Approved raster artwork: built-in themes only; user CSS remains independent.
 
 
-// Built-in visual system. Custom themes deliberately do not opt into rp-art-icons.
+// Phone shell is shared; rp-art-icons still opts only built-ins into their internal visual system.
 // Layout repairs below are shared; colors/surfaces stay scoped to built-in themes.
 
 
@@ -3562,7 +3562,7 @@ async function rpInitBody() {
     go('lock'); // 刷新/重启 → 锁屏
   }
   // 首次加载也清除外圈（覆盖所有主题）
-  requestAnimationFrame(() => rpStripFrameRing());
+  requestAnimationFrame(() => rpApplyThinFrame());
 
   // Home gestures include app icons: movement owns the gesture, a tap keeps its normal click.
   (function initHomeSwipe() {
@@ -11199,7 +11199,7 @@ function lgRenderHomeIcons() {
     if (!rpArtFolderFallbacks.has(el.dataset.folderApp)) rpArtFolderFallbacks.set(el.dataset.folderApp,icon.innerHTML);
     rpRestoreArtIcon(icon,rpArtFolderFallbacks.get(el.dataset.folderApp));
   });
-  document.getElementById('rp-frame')?.style.removeProperty('box-shadow');
+  rpApplyThinFrame();
   if (!artwork) return;
   rpLoadArtAtlas(theme,'home').then(atlas => {
     if (!atlas || !phone.isConnected || epoch !== rpArtPaintEpoch || phone.dataset.rpArtTheme !== theme || !phone.matches('.rp-art-icons,.rp-art-pack')) return;
@@ -11256,32 +11256,25 @@ function lgApplyTheme(id, opts) {
   }
   writePhoneThemeValue('rp_theme', id || 'candy');
   rpThemeStudio.sync();
+  rpApplyThinFrame();
   // 自定义主题 CSS 注入后需浏览器至少一帧才能计算变量，用双帧确保 --rp-clock-color 已生效
   if (id === 'custom') {
-    requestAnimationFrame(() => requestAnimationFrame(() => { lgRenderHomeIcons(); rpStripFrameRing(); }));
+    requestAnimationFrame(() => requestAnimationFrame(() => { lgRenderHomeIcons(); rpApplyThinFrame(); }));
   } else {
-    requestAnimationFrame(() => { lgRenderHomeIcons(); rpStripFrameRing(); });
+    requestAnimationFrame(() => { lgRenderHomeIcons(); rpApplyThinFrame(); });
   }
   if (!(opts && opts.skipSave)) { try { saveState(); } catch(e) {} }
 }
 
-// ── 强制去除手机边框外圈 box-shadow（无论主题如何设置）──────────
-function rpStripFrameRing() {
-  const frame = document.getElementById('rp-frame');
-  if (!frame) return;
-  if (document.getElementById('rp-phone')?.matches('.rp-art-icons,.rp-mobile-pos')) {
-    frame.style.removeProperty('box-shadow');
-    return;
-  }
-  const computed = getComputedStyle(frame).boxShadow;
-  if (!computed || computed === 'none') return;
-  // 将 box-shadow 按逗号分割，过滤掉 spread 为 7px~11px 且颜色为不透明色的那一层（外圈特征）
-  // 匹配形如 "0px 0px 0px 9px ..." 或 "0 0 0 9px ..." 的层
-  const cleaned = computed
-    .split(/,(?![^(]*\))/)  // 按逗号分割（不切 rgba 括号内的逗号）
-    .filter(layer => !/\b0\s*px\s+0\s*px\s+0\s*px\s+(7|8|9|10|11)px\b|\b0\s+0\s+0\s+(7|8|9|10|11)px\b/.test(layer))
-    .join(',');
-  frame.style.setProperty('box-shadow', cleaned, 'important');
+// The thin phone shell is shared by every theme and independent of icon packs.
+function rpApplyThinFrame() {
+  const phone=document.getElementById('rp-phone'),frame=document.getElementById('rp-frame'),screen=document.getElementById('rp-screen');if(!phone||!frame||!screen)return;
+  const selected=readPhoneThemeValue('rp_theme')||'candy',pack=['candy','star','misty'].includes(selected)?selected:rpThemeStudio.iconPack();
+  phone.dataset.rpFrameTheme=phone.classList.contains('rp-dark')?'star':['star','misty'].includes(pack)?pack:'candy';
+  const set=(el,values)=>{for(const[key,value]of Object.entries(values))if(el.style.getPropertyValue(key)!==value||el.style.getPropertyPriority(key)!=='important')el.style.setProperty(key,value,'important');};
+  set(phone,{'padding':'0px','border':'0px','outline':'0px','box-shadow':'none','background':'transparent'});
+  set(frame,{'padding':'7px','border':'0px','outline':'0px','border-radius':'38px','background':'var(--rp-art-metal)','box-shadow':'0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)'});
+  set(screen,{'border':'0px','outline':'0px','border-radius':'31px','box-shadow':'0 0 0 1px var(--rp-art-screen-edge)'});
 }
 
 function lgInitTheme() {

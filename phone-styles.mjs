@@ -3,13 +3,13 @@ import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-global-message-mod
 import { THEATRE_CSS } from './theatre.mjs?v=20261029-optimization-173';
 
 export const RP_ART_CSS = `
-#rp-phone.rp-art-icons {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
-#rp-phone.rp-art-icons[data-rp-art-theme="star"] {--rp-art-metal:linear-gradient(120deg,#716d7d,#292835 20%,#585566 40%,#343340 62%,#171923 82%,#575262);--rp-art-edge:rgba(203,197,222,.37);--rp-art-screen-edge:rgba(0,0,0,.9);--rp-art-button:#585362;--rp-art-shadow:rgba(12,10,24,.45);}
-#rp-phone.rp-art-icons[data-rp-art-theme="misty"] {--rp-art-metal:linear-gradient(120deg,#fbfdff,#afbdc9 20%,#eff4f7 39%,#c6d1da 60%,#8e9ca8 82%,#e0e7ed);--rp-art-edge:rgba(255,255,255,.88);--rp-art-screen-edge:rgba(45,70,90,.23);--rp-art-button:#8a9ca9;--rp-art-shadow:rgba(35,57,76,.22);}
-#rp-phone.rp-art-icons #rp-frame {padding:7px!important;border-radius:38px!important;background:var(--rp-art-metal)!important;box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)!important;}
-#rp-phone.rp-art-icons #rp-frame::after {content:'';position:absolute;inset:1px;border:1px solid var(--rp-art-edge);border-radius:37px;pointer-events:none;}
-#rp-phone.rp-art-icons #rp-screen {border-radius:31px!important;box-shadow:0 0 0 1px var(--rp-art-screen-edge);}
-#rp-phone.rp-art-icons #rp-frame .rp-btn {background:var(--rp-art-button);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
+#rp-phone {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
+#rp-phone[data-rp-frame-theme="star"] {--rp-art-metal:linear-gradient(120deg,#716d7d,#292835 20%,#585566 40%,#343340 62%,#171923 82%,#575262);--rp-art-edge:rgba(203,197,222,.37);--rp-art-screen-edge:rgba(0,0,0,.9);--rp-art-button:#585362;--rp-art-shadow:rgba(12,10,24,.45);}
+#rp-phone[data-rp-frame-theme="misty"] {--rp-art-metal:linear-gradient(120deg,#fbfdff,#afbdc9 20%,#eff4f7 39%,#c6d1da 60%,#8e9ca8 82%,#e0e7ed);--rp-art-edge:rgba(255,255,255,.88);--rp-art-screen-edge:rgba(45,70,90,.23);--rp-art-button:#8a9ca9;--rp-art-shadow:rgba(35,57,76,.22);}
+#rp-phone #rp-frame {padding:7px!important;border-radius:38px!important;background:var(--rp-art-metal)!important;box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18)!important;}
+#rp-phone #rp-frame::after {content:'';position:absolute;inset:1px;border:1px solid var(--rp-art-edge);border-radius:37px;pointer-events:none;}
+#rp-phone #rp-screen {border-radius:31px!important;box-shadow:0 0 0 1px var(--rp-art-screen-edge);}
+#rp-phone #rp-frame .rp-btn {background:var(--rp-art-button);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
 #rp-phone:is(.rp-art-icons,.rp-art-pack) #rp-screen #rp-app-grid .rp-app-ico {width:60px;height:60px;}
 #rp-phone.rp-art-icons #rp-screen #rp-app-grid .rp-app-lbl {font-weight:500!important;text-shadow:none!important;letter-spacing:.15px;}
 #rp-phone.rp-art-icons #rp-screen #rp-home-clock {font-weight:300!important;letter-spacing:-2px!important;text-shadow:none!important;}
@@ -827,7 +827,7 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
     border-radius: 38px !important;
   }
   #rp-screen {
-    border-radius: min(40px, 6vw) !important;
+    border-radius: 31px !important;
   }
 }
 @media (max-width: 360px) {
@@ -839,9 +839,6 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── CSS THEME TOKENS ── */
 #rp-phone {
   /* Frame */
-  --rp-frame-bg:linear-gradient(160deg,#e8e8e8,#d0d0d0);
-  --rp-frame-sh:0 0 0 1.5px rgba(0,0,0,.12),0 0 0 1.5px rgba(0,0,0,.08),0 36px 80px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.5);
-  --rp-btn-bg:#c0c0c0;
   --rp-island-bg:#000;
   --rp-island-ring:#f5f5f5;
   --rp-screen-bg:#fff;
@@ -934,9 +931,6 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 
 /* ── Star Night Theme ── */
 #rp-phone.rp-theme-star {
-  --rp-frame-bg:linear-gradient(160deg,#2c1070,#1a0850);
-  --rp-frame-sh:0 0 0 1.5px rgba(100,60,200,.3),0 0 0 1.5px rgba(100,60,200,.15),0 36px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(120,80,255,.2);
-  --rp-btn-bg:#3a1a80;
   --rp-island-bg:#0a0620;
   --rp-island-ring:#0e0a30;
   --rp-screen-bg:transparent;
@@ -1020,14 +1014,14 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── frame (iPhone 15 Pro) ── */
 #rp-frame {
   position:relative; width:286px; height:580px;
-  background:var(--rp-frame-bg);
-  border-radius:50px;
-  box-shadow:var(--rp-frame-sh);
-  padding:11px;
+  background:var(--rp-art-metal);
+  border:0;outline:0;border-radius:38px;
+  box-shadow:0 1px 2px rgba(0,0,0,.12),0 18px 32px var(--rp-art-shadow),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(0,0,0,.18);
+  padding:7px;
 }
 
 /* side buttons */
-.rp-btn { position:absolute; border-radius:2px; background:var(--rp-btn-bg); }
+.rp-btn { position:absolute; border-radius:2px; background:var(--rp-art-button); }
 .rp-vol-up  { left:-3px; top:88px;  width:3px; height:34px; }
 .rp-vol-dn  { left:-3px; top:130px; width:3px; height:34px; }
 .rp-power   { right:-3px; top:106px; width:3px; height:46px; }
@@ -1038,7 +1032,7 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
   background:var(--rp-home-wall), var(--rp-screen-bg);
   background-size:cover;
   background-position:center;
-  border-radius:40px; overflow:hidden;
+  border-radius:31px; overflow:hidden;
   position:relative;
   font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;
   image-rendering: -webkit-optimize-contrast;
@@ -1544,7 +1538,6 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-home-ind { position:absolute; bottom:7px; left:50%; transform:translateX(-50%); width:90px; height:4px; background:rgba(0,0,0,.25); border-radius:2px; z-index:300; }
 /* dark mode toggle is now an app icon on home screen */
 /* ── DARK FRAME ── */
-.rp-dark:where(:not(.rp-theme-custom)) #rp-frame{background:linear-gradient(160deg,#1e1e1e,#101010);box-shadow:0 0 0 1.5px rgba(255,255,255,.06),0 0 0 9px #0c0c0c,0 0 0 10px rgba(255,255,255,.04),0 36px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06)}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-btn{background:#2c2c2c}
 .rp-dark:where(:not(.rp-theme-custom)) #rp-screen{background:var(--rp-home-wall);background-size:cover;background-position:center}
 .rp-dark:where(:not(.rp-theme-custom)) #rp-island{background:#0a0a0a}
@@ -2760,9 +2753,6 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 /* ── THEMES VIEW ── */
 /* ── Misty Blue Hydrangea Theme ── */
 #rp-phone.rp-theme-misty {
-  --rp-frame-bg:linear-gradient(160deg,#f0f4f8,#dce6ef,#e8eff5);
-  --rp-frame-sh:0 0 0 1.5px rgba(140,170,200,.3),0 0 0 1.5px rgba(140,170,200,.15),0 36px 80px rgba(80,110,140,.25),inset 0 1px 0 rgba(255,255,255,.9);
-  --rp-btn-bg:#b0c4d8;
   --rp-island-bg:#1a2635;
   --rp-island-ring:#e8eff5;
   --rp-screen-bg:transparent;

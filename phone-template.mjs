@@ -237,7 +237,7 @@ const HTML = `
               <p id="rp-ts-tip">预览不会直接替换当前主题；应用满意后，可把当前主题另存为方案。</p>
             </details>
           </div>
-<section id="rp-ts-chat-sheet" aria-label="主题AI对话"><button id="rp-ts-sheet-toggle" type="button" aria-expanded="false" aria-controls="rp-ts-chat-content" aria-label="展开AI对话"><span class="rp-ts-sheet-grip" aria-hidden="true"></span><span class="rp-ts-sheet-arrow" aria-hidden="true">⌃</span></button><div id="rp-ts-chat-content" hidden>
+<section id="rp-ts-chat-sheet" aria-label="主题AI对话"><button id="rp-ts-sheet-toggle" type="button" aria-expanded="false" aria-controls="rp-ts-chat-content" aria-label="展开AI对话"><span class="rp-ts-sheet-grip" aria-hidden="true"></span><svg class="rp-ts-sheet-arrow" aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M5 11l7-7 7 7M12 4v16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div id="rp-ts-chat-content" hidden>
             <section class="rp-ts-conversation" aria-label="和AI设计主题">
               <h2>告诉 AI，你想要什么风格？</h2>
               <p class="rp-ts-intro">先说想法，AI会填好配色和样式。看过效果后，可以继续聊，也可以自己微调。</p>

@@ -126,7 +126,10 @@ export const THEME_EDITOR_CSS=`
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-sheet-toggle{appearance:none;display:flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;width:100%;min-height:30px;margin:0;padding:3px 12px;border:0;border-radius:0;background:transparent;color:var(--rp-v-muted);font:inherit;cursor:pointer;touch-action:none;}
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-sheet-toggle:focus-visible{outline:2px solid var(--rp-v-accent);outline-offset:-3px;}
 #rp-phone #rp-screen #rp-view-theme-studio .rp-ts-sheet-grip{width:28px;height:3px;border-radius:3px;background:var(--rp-v-border);}
-#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-sheet-arrow{font-size:17px;line-height:1;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-sheet-arrow{display:block;width:18px;height:18px;flex:0 0 auto;transform:rotate(0deg);transition:transform 180ms ease;}
+#rp-phone #rp-screen #rp-view-theme-studio.rp-ts-chat-open .rp-ts-sheet-arrow{transform:rotate(180deg);}
+#rp-phone #rp-screen #rp-view-theme-studio.rp-ts-sheet-moving #rp-ts-chat-sheet{position:absolute;left:0;right:0;bottom:0;z-index:60;contain:layout paint;will-change:height;}
+@media(prefers-reduced-motion:reduce){#rp-phone #rp-screen #rp-view-theme-studio .rp-ts-sheet-arrow{transition:none;}}
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-content{display:block;flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;}
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-content[hidden]{display:none!important;}
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-content .rp-ts-conversation{padding:6px 12px 12px;}
@@ -213,20 +216,37 @@ export function createThemeStudio(api) {
   }
   function resetChatSheet(){
     const view=doc.getElementById('rp-view-theme-studio'),main=doc.getElementById('rp-ts-bubbles'),toggle=doc.getElementById('rp-ts-sheet-toggle'),content=doc.getElementById('rp-ts-chat-content');
-    view?.classList.remove('rp-ts-chat-open');if(main){main.inert=false;main.removeAttribute('inert');main.removeAttribute('aria-hidden');}
-    if(content)content.hidden=true;if(toggle){toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','展开AI对话');const arrow=toggle.querySelector('.rp-ts-sheet-arrow');if(arrow)arrow.textContent='⌃';}
+    view?.classList.remove('rp-ts-chat-open','rp-ts-sheet-moving');if(main){main.inert=false;main.removeAttribute('inert');main.removeAttribute('aria-hidden');}
+    if(content)content.hidden=true;if(toggle){toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','展开AI对话');}
   }
   function bindChatSheet(s,valid){
     const view=doc.getElementById('rp-view-theme-studio'),main=doc.getElementById('rp-ts-bubbles'),toggle=doc.getElementById('rp-ts-sheet-toggle'),content=doc.getElementById('rp-ts-chat-content');
     if(!view||!main||!toggle||!content)return()=>{};
-    let drag=null,suppressUntil=0;
-    function expand(value){if(!valid())return;s.chatExpanded=!!value;view.classList.toggle('rp-ts-chat-open',s.chatExpanded);content.hidden=!s.chatExpanded;toggle.setAttribute('aria-expanded',String(s.chatExpanded));toggle.setAttribute('aria-label',s.chatExpanded?'收起AI对话':'展开AI对话');toggle.querySelector('.rp-ts-sheet-arrow').textContent=s.chatExpanded?'⌄':'⌃';main.inert=s.chatExpanded;main.toggleAttribute('inert',s.chatExpanded);if(s.chatExpanded)main.setAttribute('aria-hidden','true');else main.removeAttribute('aria-hidden');}
+    const sheet=doc.getElementById('rp-ts-chat-sheet');let drag=null,suppressUntil=0,motion=null;
+    function stopMotion(){const old=motion;motion=null;if(old){old.onfinish=old.oncancel=null;old.cancel();}view.classList.remove('rp-ts-sheet-moving');}
+    function settle(){stopMotion();content.hidden=!s.chatExpanded;}
+    function expand(value,{animate=true}={}){
+      if(!valid())return;const next=!!value;if(s.chatExpanded===next){if(!animate)settle();return;}
+      const from=sheet?.offsetHeight||0;stopMotion();s.chatExpanded=next;
+      view.classList.toggle('rp-ts-chat-open',next);content.hidden=!next;toggle.setAttribute('aria-expanded',String(next));toggle.setAttribute('aria-label',next?'收起AI对话':'展开AI对话');
+      main.inert=next;main.toggleAttribute('inert',next);if(next)main.setAttribute('aria-hidden','true');else main.removeAttribute('aria-hidden');
+      const to=sheet?.offsetHeight||0;
+      if(!animate||!sheet?.animate||!from||!to||Math.abs(from-to)<1||doc.hidden||doc.defaultView.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+      // Isolate the small sheet for a single native 220ms height animation;
+      // neither the underlying preview nor the full phone reflows per frame.
+      content.hidden=false;view.classList.add('rp-ts-sheet-moving');
+      try{const job=sheet.animate([{height:from+'px'},{height:to+'px'}],{duration:220,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'});motion=job;
+        job.onfinish=job.oncancel=()=>{if(motion!==job)return;settle();};
+      }catch{settle();}
+    }
+    s.controller.signal.addEventListener('abort',stopMotion,{once:true});
+    doc.defaultView.addEventListener('resize',settle,{signal:s.controller.signal});
     const listen=(type,fn,options={})=>toggle.addEventListener(type,fn,{...options,signal:s.controller.signal});
     const start=e=>{if(!valid()||(e.button!==undefined&&e.button!==0))return;drag={x:e.clientX,y:e.clientY,id:e.pointerId};try{if(e.pointerId!==undefined)toggle.setPointerCapture?.(e.pointerId);}catch{}};
     const end=e=>{const from=drag;drag=null;if(!from||!valid()||(from.id!==undefined&&e.pointerId!==from.id))return;const dx=e.clientX-from.x,dy=e.clientY-from.y;if(Math.abs(dy)>=30&&Math.abs(dy)>Math.abs(dx)*1.3){expand(dy<0);suppressUntil=Date.now()+450;e.preventDefault?.();}};
     listen('click',()=>{if(Date.now()>=suppressUntil)expand(!s.chatExpanded);});listen('pointerdown',start);listen('pointerup',end);listen('pointercancel',()=>{drag=null;});
     if(!doc.defaultView.PointerEvent){listen('touchstart',e=>{if(e.touches.length!==1){drag=null;return;}start(e.touches[0]);e.preventDefault();},{passive:false});listen('touchend',e=>{if(e.changedTouches.length)end({clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY,preventDefault:()=>e.preventDefault()});},{passive:false});listen('touchcancel',()=>{drag=null;});}
-    expand(!s.hasResult);return expand;
+    expand(!s.hasResult,{animate:false});return expand;
   }
 
   function leave(){resetChatSheet();doc.getElementById('rp-view-theme-studio')?.classList.remove('rp-te-adjusting');if(session){session.controller.abort();session=null;api.setGenerating(false);}}
@@ -252,7 +272,7 @@ export function createThemeStudio(api) {
     const valid=()=>session===s&&s.task.valid()&&!s.controller.signal.aborted&&api.account()===s.account&&api.slot()===s.slot&&root.isConnected;
     s.valid=valid;s.setChatExpanded=bindChatSheet(s,valid);s.status=text=>{q('.rp-te-note').textContent=text;q('.rp-te-manual-status').textContent=text;const status=doc.getElementById('rp-ts-chat-status');if(status)status.textContent=text;};s.q=q;q('.rp-te-note').hidden=!!doc.getElementById('rp-ts-chat-status');renderConversation();const jump=doc.getElementById('rp-ts-jump-preview');if(jump)jump.onclick=()=>{if(valid()){s.setChatExpanded(false);scrollContentTo(q('[data-te-result]'));}};
     function edit(){s.editRevision++;s.hasResult=true;s.draft.legacyOnly=false;q('[data-te-legacy-only]').checked=false;}
-    function pane(tab){if(tab==='preview'){q('.rp-te-manual').hidden=true;doc.getElementById('rp-view-theme-studio')?.classList.remove('rp-te-adjusting');return;}s.setChatExpanded(false);s.tab=tab;q('.rp-te-manual').hidden=false;doc.getElementById('rp-view-theme-studio')?.classList.add('rp-te-adjusting');q('[data-te-return]').focus({preventScroll:true});root.querySelectorAll('[data-te-pane]').forEach(el=>{if(el.dataset.tePane!=='preview')el.hidden=el.dataset.tePane!==tab;});root.querySelectorAll('[data-te-tab]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.teTab===tab)));}
+    function pane(tab){if(tab==='preview'){q('.rp-te-manual').hidden=true;doc.getElementById('rp-view-theme-studio')?.classList.remove('rp-te-adjusting');return;}s.setChatExpanded(false,{animate:false});s.tab=tab;q('.rp-te-manual').hidden=false;doc.getElementById('rp-view-theme-studio')?.classList.add('rp-te-adjusting');q('[data-te-return]').focus({preventScroll:true});root.querySelectorAll('[data-te-pane]').forEach(el=>{if(el.dataset.tePane!=='preview')el.hidden=el.dataset.tePane!==tab;});root.querySelectorAll('[data-te-tab]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.teTab===tab)));}
     function fields(){q('.rp-te-fields').innerHTML=THEME_GROUPS[s.group].map(field=>{const path=s.mode+'.'+field,color=s.draft.design[s.mode][field];return '<div class="rp-te-field"><label for="rp-te-'+field+'">'+THEME_FIELDS[field]+'</label><input type="color" data-te-color="'+field+'" value="'+color+'" aria-label="'+THEME_FIELDS[field]+'取色器"><input id="rp-te-'+field+'" type="text" data-te-hex="'+field+'" value="'+color+'" maxlength="7" aria-label="'+THEME_FIELDS[field]+'HEX"><button type="button" data-te-lock="'+path+'" aria-pressed="'+!!s.locks[path]+'" aria-label="锁定'+THEME_FIELDS[field]+'">'+(s.locks[path]?'🔒':'🔓')+'</button><button type="button" data-te-reset="'+field+'" aria-label="重置'+THEME_FIELDS[field]+'">↺</button></div>';}).join('');}
     const shapes={radius:{label:'圆角',values:[[8,'小'],[16,'适中'],[24,'圆润']]},spacing:{label:'留白',values:[['compact','紧凑'],['normal','标准'],['airy','宽松']]},shadow:{label:'阴影',values:[['none','无'],['soft','轻柔']]},border:{label:'边线',values:[['none','无'],['subtle','细线']]},opacity:{label:'气泡透明',values:[[100,'不透明'],[90,'90%'],[80,'80%']]},wallStyle:{label:'背景样式',values:[['solid','纯色'],['soft','柔和渐变']]}};
     function shapeFields(){q('.rp-te-shapes').innerHTML=Object.entries(shapes).map(([key,def])=>'<div class="rp-te-shape-row"><label>'+def.label+'</label><select data-te-shape="'+key+'">'+def.values.map(([v,label])=>'<option value="'+v+'"'+(s.draft.design.shape[key]===v?' selected':'')+'>'+label+'</option>').join('')+'</select><button class="rp-te-button" type="button" data-te-lock="shape.'+key+'" aria-pressed="'+!!s.locks['shape.'+key]+'" aria-label="锁定'+def.label+'">'+(s.locks['shape.'+key]?'🔒':'🔓')+'</button></div>').join('');}
