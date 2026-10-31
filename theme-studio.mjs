@@ -103,7 +103,7 @@ export const THEME_EDITOR_CSS=`
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-chat-log{max-height:none;overflow:visible;}
 #rp-phone #rp-screen #rp-view-theme-studio #rp-ts-bubbles{position:static!important;flex:1 1 0!important;min-height:0!important;}
 #rp-phone #rp-screen #rp-view-theme-studio .rp-theme-editor{position:static!important;}
-#rp-phone #rp-screen #rp-view-theme-studio .rp-te-manual{position:absolute!important;inset:0!important;z-index:50;overflow:auto!important;overscroll-behavior:contain;margin:0!important;padding:0 12px!important;border:0!important;border-radius:0!important;background:var(--rp-v-surface)!important;}
+#rp-phone #rp-screen #rp-view-theme-studio .rp-te-manual{position:absolute!important;inset:0!important;top:56px!important;z-index:50;overflow:auto!important;overscroll-behavior:contain;margin:0!important;padding:0 12px!important;border:0!important;border-radius:0!important;background:var(--rp-v-surface)!important;}
 #rp-phone #rp-screen #rp-view-theme-studio .rp-te-manual[hidden]{display:none!important;}
 #rp-phone #rp-screen #rp-view-theme-studio .rp-te-manual-head{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:2;min-height:44px;padding:6px 0;background:var(--rp-v-surface);border-bottom:1px solid var(--rp-v-border);}
 #rp-phone #rp-screen #rp-view-theme-studio .rp-te-manual-head strong{font-size:14px;}
