@@ -329,6 +329,7 @@ export function createPhoneTools(api) {
     const box=node('div','rp-thread-popover').attr({id:'rp-thread-popover',role:'menu','aria-label':'聊天操作'});
     const item=(label,run)=>box.append(node('button','',label).attr({type:'button',role:'menuitem'}).on('click',()=>{const valid=live();closeThreadMenu();if(valid)run();}));
     item('搜索聊天记录',()=>conversation.openSearch(thread.id));
+    if(api.openChatMode)item('聊天方式 · '+(api.chatMode?.(thread)?'独立聊天':'同步主楼'),()=>api.openChatMode(thread));
     if(thread.type==='group'||thread.id.startsWith('grp_'))item('修改群名',()=>openRenameGroup(thread));
     item(thread.phonePinned?'取消置顶':'置顶聊天',()=>{thread.phonePinned=!thread.phonePinned;thread.phonePrefsAt=Date.now();api.renderThreads();api.save();});
     item(thread.phoneMuted?'关闭免打扰':'开启免打扰',()=>{thread.phoneMuted=!thread.phoneMuted;thread.phonePrefsAt=Date.now();api.hideBanner();api.renderThreads();api.save();});
@@ -454,6 +455,8 @@ export function createPhoneTools(api) {
     for(const field of ['moments','xhsFeed'])for(const post of value.data[field]||[])if(!object(post)||(post.comments!==undefined&&(!Array.isArray(post.comments)||post.comments.some(c=>!object(c)))))throw new Error('备份评论格式不完整。');
     for(const[id,thread]of Object.entries(value.data.threads))if(!object(thread)||thread.id!==id||typeof thread.name!=='string'||!Array.isArray(thread.messages)||thread.messages.some(m=>!object(m)))throw new Error('备份联系人或消息格式不完整。');
     for(const thread of Object.values(value.data.threads)){
+      if(thread.phoneChatMode!==undefined&&!['sync','independent'].includes(thread.phoneChatMode))throw new Error('备份聊天方式格式不完整。');
+      if(thread.phoneLocalReply!==undefined&&(!object(thread.phoneLocalReply)||typeof thread.phoneLocalReply.id!=='string'||!Array.isArray(thread.phoneLocalReply.pendingIds)||thread.phoneLocalReply.pendingIds.some(id=>typeof id!=='string')))throw new Error('备份独立聊天待回复记录格式不完整。');
       if(thread.groupNameAliases!==undefined&&(!Array.isArray(thread.groupNameAliases)||thread.groupNameAliases.some(name=>typeof name!=='string')))throw new Error('备份群聊旧名称格式不完整。');
       if(thread.cancelledHostActions!==undefined&&(!Array.isArray(thread.cancelledHostActions)||thread.cancelledHostActions.some(item=>!object(item)||typeof item.id!=='string'||typeof item.text!=='string')))throw new Error('备份取消记录格式不完整。');
       if(thread.groupAvatar!==undefined&&!normalizeGroupAvatar(thread.groupAvatar))throw new Error('备份群头像格式不完整。');

@@ -64,7 +64,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
  const counts=new Map();let last=null;
  async function build(prompt,system,options,task,cfg,maxTokens){
   const p=takeRef(prompt),s=takeRef(system),ref=s.ref||p.ref;
-  const enabled=ref||options.phoneTheatre||options.phoneDiary||options.phoneXhs||options.gameTask&&!options.phoneShop||options.phoneWordHint;
+  const enabled=ref||options.phoneIndependent||options.phoneTheatre||options.phoneDiary||options.phoneXhs||options.gameTask&&!options.phoneShop||options.phoneWordHint;
   if(!enabled||options.phoneShop)return{prompt,system};
   const scope=String(owner()),ctx=context()||{};
   let char=ctx.characters?.[ctx.characterId]||ctx.char;
@@ -72,10 +72,10 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   const check=()=>{if(!task.valid()||String(owner())!==scope)throw Object.assign(new Error('Background cancelled'),{name:'AbortError'});};
   check();if(!char)throw failure('background');
   const label=s=>String(s).replace(/\{\{[\s\S]*?\}\}/g,'').replace(/[<>\r\n]/g,' ').trim();
-  const name=label(ref?.name||ctx.name2||char.name||'对方')||'对方',user=label(ctx.name1||'用户')||'用户',manual=norm(name)!==norm(char.name||ctx.name2),names=manual?[name]:namesOf(char,name);
+  const name=label(ref?.name||ctx.name2||char.name||'对方')||'对方',user=label(ctx.name1||'用户')||'用户',manual=norm(name)!==norm(char.name||ctx.name2),names=options.phoneIndependent&&Array.isArray(options.phoneParticipants)&&options.phoneParticipants.length?options.phoneParticipants:manual?[name]:namesOf(char,name);
   const isPublic=!!options.phoneXhs,isFeed=isPublic&&options.phoneXhsFeed===true,automatic=/GameEventComment|GomokuEventComment/.test(p.text);
   const presetCost=options.phoneTheatre&&typeof options.theatrePresetText==='string'?options.theatrePresetText:'';
-  let cap=options.phoneTheatre?(presetCost?64000:18000):isFeed?9000:isPublic?4000:automatic?(options.phoneGomoku?6000:2500):6000;
+  let cap=options.phoneIndependent?24000:options.phoneTheatre?(presetCost?64000:18000):isFeed?9000:isPublic?4000:automatic?(options.phoneGomoku?6000:2500):6000;
   const windowLimit=options.phoneTheatre||options.phoneGomoku?roleContextWindow(ctx,cfg):cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
   if(windowLimit)cap=Math.min(cap,windowLimit-maxTokens-(options.phoneTheatre?512:384));
   if(cap<512)throw failure('contextLimit');
@@ -124,6 +124,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   const room=cap-baseCost,profileBudget=Math.floor(room*(isFeed ? .15 : .32)),worldBudget=Math.floor(room*(isFeed ? .15 : .26)),storyBudget=room-profileBudget-worldBudget;
   const selected=field=>safe(rolePartnerText(char[field]||char.data?.[field]||'',names,manual),name,user);
   let profile=options.phoneTheatre?'小说中的角色：'+name+'；玩家角色：'+user+'。本任务是独立成篇小说，允许描写双方台词、行动和心理；其他人物保持各自性格。':(isPublic?'相关人物：':'你只扮演：')+name+'；用户：'+user+'。其他人物仅作背景，不混用其性格，不替用户发言或决定动作。';
+  if(options.phoneIndependent)profile='你扮演的手机聊天人物：'+names.join('、')+'；用户：'+user+'。人物各自保持性格和关系，不替用户发言或决定动作，主楼内容只读作背景，回复只属于本次手机会话。';
   if(isPublic){
    profile+='\n你模拟的是公开帖的路人讨论，不是角色本人；不要补写未公开的私聊或内心。';
    const relation=/父亲|母亲|爸爸|妈妈|女儿|儿子|兄弟|姐妹|丈夫|妻子|男友|女友|father|mother|daughter|son\b|husband|wife|boyfriend|girlfriend/i;
@@ -132,7 +133,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    const facts=await fit(known.join('\n'),Math.floor(profileBudget*.6),query);if(facts)profile+='\n公开帖已提到称谓的关系校验（勿补充帖外经历）：'+facts;
   }
   else{
-   if(options.phoneTheatre){const persona=await fit(safe(ctx.powerUserSettings?.persona_description||'',name,user),Math.floor(profileBudget*.2),query);if(persona)profile+='\n玩家角色人设：'+persona;}
+   if(options.phoneTheatre||options.phoneIndependent){const persona=await fit(safe(ctx.powerUserSettings?.persona_description||'',name,user),Math.floor(profileBudget*.2),query);if(persona)profile+='\n玩家角色人设：'+persona;}
    const sections=[['性格',selected('personality'),options.phoneTheatre ? .18 : .22],[options.theatreAU?'原设背景与关系（AU 按本篇重设）':'背景与关系',selected('scenario'),options.phoneTheatre ? .16 : .22],['语气示例',selected('mes_example')||selected('first_mes'),options.phoneTheatre ? .1 : .14],['人物设定',selected('description'),options.phoneTheatre ? .36 : .42]];
    for(const[label,text,share]of sections){const picked=await fit(text,Math.floor(profileBudget*share),query);if(picked)profile+='\n'+label+'：'+picked;}
    if(ref?.note)profile+='\n搭子补充：'+await fit(safe(ref.note,name,user),Math.floor(profileBudget*.2),query);
@@ -176,7 +177,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   // Count the final package, including all headings and output-format instructions.
   while(total>cap&&recent){const lines=recent.trim().split('\n');lines.shift();recent=lines.join('\n');sys=wrap();total=await measure(base+'\n'+sys+(presetCost?'\n'+presetCost:''))+64;}
   if(total>cap||isFeed&&story.length&&!recent)throw failure('contextLimit');check();
-  last={kind:options.phoneTheatre?'theatre':isPublic?'xhs':options.phoneDiary?'diary':automatic?'comment':'game',inputTokens:total,inputCap:cap,bookCount:books.length,worldEntries:entries.length,storyFloors:story.length,countMethod:measured?'host-tokenizer':'conservative-utf8-bound'};
+  last={kind:options.phoneIndependent?'phone-chat':options.phoneTheatre?'theatre':isPublic?'xhs':options.phoneDiary?'diary':automatic?'comment':'game',inputTokens:total,inputCap:cap,bookCount:books.length,worldEntries:entries.length,storyFloors:story.length,countMethod:measured?'host-tokenizer':'conservative-utf8-bound'};
   return{prompt:base,system:sys};
  }
  return{build,diagnostics:()=>last};
