@@ -4338,7 +4338,7 @@ ${XHS_COVER_CSS}
 .rp-phone-echo-container{display:block;margin-top:6px}
 .rp-phone-echo-block{display:block;margin:2px 0;font-size:13px;line-height:1.55}
 .rp-phone-echo-container .rp-phone-echo-name,#chat .mes_text .rp-phone-echo-name{font-weight:600;color:var(--rp-echo-name,inherit)!important;opacity:1!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;margin-right:2px}
-.rp-phone-echo-container .rp-phone-echo-moment-tag,#chat .mes_text .rp-phone-echo-moment-tag{font-size:10px;font-weight:700;color:var(--rp-echo-tag,inherit)!important;opacity:1!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;background:transparent!important;border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-right:4px;vertical-align:middle}
+.rp-phone-echo-container .rp-phone-echo-moment-tag,#chat .mes_text .rp-phone-echo-moment-tag{font-size:10px;font-weight:700;color:var(--rp-echo-tag,inherit)!important;opacity:1!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0;padding:0 2px 0 0;margin-right:4px;vertical-align:baseline}
 /* 隐藏旧 rp-sms-echo，统一用新样式 */
 .rp-sms-echo{display:none!important}
 /* ── WALLPAPER ── */

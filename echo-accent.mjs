@@ -9,9 +9,10 @@ export function parseEchoColor(value){
   const nums=parts.map((v,i)=>{if(!/^[+-]?(?:\d*\.)?\d+%?$/.test(v))return NaN;const n=parseFloat(v);return v.endsWith('%')?n*(i===3?.01:2.55):n;});
   if(nums.some(n=>!Number.isFinite(n)))return null;return nums.slice(0,3).map(n=>Math.min(255,Math.max(0,n))).concat(Math.min(1,Math.max(0,nums[3]??1)));
 }
+const linearEchoChannel=v=>{const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;};
+const echoLuminance=c=>c.slice(0,3).map(linearEchoChannel).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0);
 export function echoContrast(a,b){
-  const light=c=>c.slice(0,3).map(v=>{const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;}).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0);
-  const x=light(a),y=light(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+  const x=echoLuminance(a),y=echoLuminance(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);
 }
 const palettes={name:[[104,76,153],[211,188,246],[8,0,16],[253,249,255]],tag:[[158,52,102],[245,182,210],[16,0,6],[255,249,252]]};
 export function chooseEchoAccent(background,kind,minimum=4.6){
@@ -19,6 +20,16 @@ export function chooseEchoAccent(background,kind,minimum=4.6){
   const contrast=color=>{if(!background.bounds)return echoContrast(color,background);const [low,high]=background.bounds,a=echoContrast(color,low),b=echoContrast(color,high);const l=echoContrast(color,[0,0,0]),lo=echoContrast(low,[0,0,0]),hi=echoContrast(high,[0,0,0]);return l>=lo&&l<=hi?1:Math.min(a,b);};
   const branches=[[p[0],p[2]],[p[1],p[3]]].sort((a,b)=>contrast(b[0])-contrast(a[0]));
   for(const[base,end]of branches)for(let i=0;i<=24;i++){const color=base.map((v,j)=>Math.round(v+(end[j]-v)*i/24));if(contrast(color)>=minimum)return'rgb('+color.join(', ')+')';}return null;
+}
+// When the surface cannot be resolved, preserve the surrounding text's
+// luminance while tinting its hue. Never infer the host theme from phone mode.
+// Opaque text keeps its contrast; translucent text keeps its source alpha.
+export function tintEchoAccent(foreground,kind){
+  const p=palettes[kind];if(!p||!foreground||foreground.length<3||foreground.some(n=>!Number.isFinite(n))||(foreground[3]??1)<=0)return null;
+  const target=echoLuminance(foreground),base=p[1].map(linearEchoChannel),level=echoLuminance(p[1]);
+  const value=base.map(v=>target<=level?v*target/level:v+(1-v)*(target-level)/(1-level));
+  const rgb=value.map(v=>Math.round(255*(v<=.0031308?12.92*v:1.055*v**(1/2.4)-.055)*100)/100);
+  return (foreground[3]??1)>=1?'rgb('+rgb.join(', ')+')':'rgba('+rgb.join(', ')+', '+foreground[3]+')';
 }
 const active=value=>value&&value!=='none'&&value!=='normal';
 function pseudoPaint(style){
@@ -46,7 +57,7 @@ export function resolveEchoBackground(element,readStyle,globalBackdrop=()=>false
 export function createEchoAccent({document:doc,window:win,runtime,enabled=()=>true,readStyle=null}){
   const roots=new Set(),pending=new Set(),writes=new WeakMap(),listeners=[];let installed=false,owner=null,observer=null,frame=null,globalDirty=false,disposed=false,updates=0;
   // CSS.supports is required for reliable pseudo-element computed styles.
-  // Older/limited renderers conservatively retain the inherited text color.
+  // Limited pseudo inspection uses a luminance-matched surrounding-text tint.
   const read=readStyle||((el,pseudo)=>{if(pseudo&&!win.CSS?.supports?.('color','rgb(0,0,0)'))return null;try{return win.getComputedStyle(el,pseudo);}catch{return null;}});
   function write(el,key,value){if(value){if(el.style.getPropertyValue(key)!==value)el.style.setProperty(key,value);}else if(el.style.getPropertyValue(key))el.style.removeProperty(key);writes.set(el,el.getAttribute('style')||'');}
   function clear(root){for(const el of root.querySelectorAll(INK)){write(el,NAME,null);write(el,TAG,null);}}
@@ -56,7 +67,11 @@ export function createEchoAccent({document:doc,window:win,runtime,enabled=()=>tr
   function paint(root,cache){if(!root.isConnected)return;if(!enabled()){clear(root);return;}updates++;
     for(const el of root.querySelectorAll(INK)){
       const kind=el.classList.contains('rp-phone-echo-name')?'name':'tag',key=kind==='name'?NAME:TAG;
-      const bg=resolveEchoBackground(el,cache,()=>backdrop(cache));write(el,key,chooseEchoAccent(bg,kind));
+      const bg=resolveEchoBackground(el,cache,()=>backdrop(cache));
+      // Read the unmodified surrounding text, never our own accent (which
+      // would drift on every refresh). WebKit fill can differ from color.
+      const host=cache(el.parentElement),fill=parseEchoColor(host?.webkitTextFillColor),ink=fill||parseEchoColor(host?.color);
+      write(el,key,chooseEchoAccent(bg,kind)||tintEchoAccent(ink,kind));
     }
   }
   function cacheReader(){const cache=new WeakMap();return(el,pseudo)=>{let record=cache.get(el);if(!record){record=new Map();cache.set(el,record);}const key=pseudo||'';if(!record.has(key))record.set(key,read(el,pseudo));return record.get(key);};}
