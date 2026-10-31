@@ -14,7 +14,7 @@ import { createRoleContext, roleContextRef, roleContextWindow } from './role-con
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261029-optimization-173';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
-import { createStickers } from './stickers.mjs?v=20261031-independent-chat-190';
+import { createStickers } from './stickers.mjs?v=20261031-inline-sticker-202';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-global-message-mode-191';
@@ -4079,7 +4079,7 @@ function rpIndependentApp(){
     configReady:()=>{const cfg=rpReadSavedCustomApiConnection();try{if(!cfg.url||!cfg.key)return false;buildCustomApiEndpoint(cfg.url,'chat/completions');rpResolveCustomApiModel(cfg);return true;}catch{return false;}},
     participants:thread=>rpIsGroupThread(thread)?[...new Set(getGroupMemberEntries(thread).filter(m=>m.id!=='user'&&!isPhoneUserName(m.name,getContext())&&!isPhoneBlocked(m.name)).map(m=>m.name))].slice(0,16):isPhoneUserName(thread.name,getContext())||isPhoneBlocked(thread.name)?[]:[thread.name],
     memberId:name=>Object.values(STATE.threads).find(t=>!rpIsGroupThread(t)&&normalizePhonePersonName(t.name)===normalizePhonePersonName(name))?.id,
-    prepareStickers:()=>rpStickerApp().prepare(),verifySticker:id=>rpStickerApp().verify(id),stickerPrompt:text=>rpStickerApp().prompt('all',text),stickerItems:()=>rpStickerApp().store.state.items.filter(i=>i.metadataValid),
+    prepareStickers:()=>rpStickerApp().prepare(),verifySticker:id=>rpStickerApp().verify(id),stickerPrompt:text=>rpStickerApp().prompt('phone-chat',text),stickerItems:()=>rpStickerApp().store.state.items.filter(i=>i.metadataValid),
     stickerImage:item=>rpStickerApp().imageSource({type:'sticker',sticker:{id:item.id,format:item.format,owner:rpArchiveAccountHandle}}),manageStickers:()=>rpStickerApp().open('thread'),
     prepareImage:async(src,task)=>isCompressiblePhoneImageSrc(src)?rpGuardAwait(compressPhoneContentImage(src),task,20000):src,
     call:(prompt,system,thread,participants,images,task)=>lgCallAPI(prompt,2200,roleContextRef(rpIsGroupThread(thread)?getContext()?.name2||participants[0]:participants[0])+rpPhoneWorldContextRule()+rpPhoneSpeechLanguageRule()+system,{phoneIndependent:true,phoneParticipants:participants,phoneImages:images,phoneTask:task,reportErrors:true}),
@@ -6634,7 +6634,7 @@ function rpPhoneTranslationSource(target) {
   if (!target || !target.item || typeof target.item !== 'object') return '';
   const item = target.item;
   const text = target.kind === 'message' && item.type === 'group_voice' ? item.voiceText : item.text;
-  return target.kind === 'message' ? cleanMomentText(typeof text === 'string' ? text : '') : rpSocialText(text);
+  return rpSocialText(text);
 }
 
 function rpPhoneTranslationIsForeign(source) {
@@ -6826,6 +6826,40 @@ function rpNormalizeMessageMeta(wrap) {
     const control = $(this), target = control.data('phoneTranslationTarget');
     if (target) rpPaintPhoneTranslation(control, target);
   });
+}
+
+// Compatibility for text replies carrying the host's inline sticker syntax.
+// Keep the source record intact: async media belongs to this exact row only.
+const rpInlineStickerJobs = new WeakMap();
+function rpPaintInlineStickers(wrap, message, thread) {
+  if (typeof message?.text !== 'string' || !message.text.includes('[表情包:')
+      || (message.type && !['text','group_msg'].includes(message.type))) return;
+  const app=rpStickerApp(),parsed=app.extract(message.text),body=wrap.children('.rp-grp-body,.rp-private-body').first(),bubble=body.children('.rp-bubble').first();
+  if (!bubble.length) return;
+  // Leave translation controls and editing targets in place.
+  const nodes=Array.from(bubble[0].childNodes).filter(node=>node.nodeType===3),text=app.extract(nodes.map(node=>node.textContent).join('')).text;
+  nodes.forEach((node,index)=>{if(index)node.remove();else node.textContent=text;});
+  bubble.prop('hidden',!text);
+  const host=document.createElement('div');host.className='rp-inline-stickers';
+  const placeholders=(parsed.ids.length?parsed.ids:[null]).map(()=>{const tile=document.createElement('div');tile.className='rp-sticker-tile';const status=document.createElement('span');status.className='rp-sticker-missing';status.textContent='表情暂不可用';tile.append(status);host.append(tile);return tile;});
+  body.children('.rp-message-meta').before(host);
+  if (!parsed.ids.length || !isMochiPhoneEnabled()) return;
+  const owner=rpArchiveAccountHandle,slot=STATE.chatId,source=message.text,state=app.store.state;
+  const alive=()=>isMochiPhoneEnabled()&&owner===rpArchiveAccountHandle&&slot===STATE.chatId&&getPhoneChatSlotKey(getContext())===slot&&STATE.threads[thread.id]===thread&&thread.messages.includes(message)&&message.text===source;
+  let job=rpInlineStickerJobs.get(message);
+  if (!job || job.owner!==owner || job.slot!==slot || job.text!==source || job.items!==state.items || job.policyEpoch!==state.policyEpoch || !job.task.valid() || (job.finishedAt&&Date.now()-job.finishedAt>=15000)) {
+    job={owner,slot,text:source,items:state.items,policyEpoch:state.policyEpoch,task:rpRuntime.task()};rpInlineStickerJobs.set(message,job);
+    job.promise=(async()=>{const entries=Array(parsed.ids.length).fill(null);let cursor=0;
+      await Promise.all(Array.from({length:Math.min(3,parsed.ids.length)},async()=>{while(cursor<parsed.ids.length&&job.task.valid()&&alive()){const index=cursor++;try{entries[index]=await app.verify(parsed.ids[index]);}catch(_){/* A missing sticker cannot interrupt normal text. */}}}));
+      job.finishedAt=Date.now();return entries;
+    })();
+  }
+  job.promise.then(entries=>{
+    if (!job.task.valid()||!alive()||rpInlineStickerJobs.get(message)!==job||!host.isConnected||STATE.currentView!=='thread'||STATE.currentThread!==thread.id||app.store.state.policyEpoch!==job.policyEpoch||!app.store.state.prefs.enabled) return;
+    const area=document.getElementById('rp-bubbles'),follow=area.scrollHeight-area.scrollTop-area.clientHeight<30;let expected=area.scrollTop;
+    const settle=()=>{if(follow&&job.task.valid()&&host.isConnected&&alive()&&STATE.currentView==='thread'&&STATE.currentThread===thread.id&&Math.abs(area.scrollTop-expected)<=1){area.scrollTop=area.scrollHeight;expected=area.scrollTop;}};
+    entries.forEach((entry,index)=>{if(!entry)return;const tile=app.messageNode({sticker:{id:entry.id,format:entry.format,name:entry.name,owner}});tile.querySelector('img')?.addEventListener('load',settle,{once:true});placeholders[index].replaceWith(tile);});settle();
+  }).catch(()=>{ /* Keep the readable fallback if this row becomes unavailable. */ });
 }
 
 function renderBubbles(threadId, options = {}) {
@@ -7140,6 +7174,7 @@ function renderBubbles(threadId, options = {}) {
     const wrap = $(this);
     rpNormalizeMessageMeta(wrap);
     rpAttachPrivateAvatar(wrap, thread, thread.messages[Number(this.dataset.rpReadingIndex)]);
+    rpPaintInlineStickers(wrap, thread.messages[Number(this.dataset.rpReadingIndex)], thread);
   });
   rpTools().decorateMessages(el,thread);
   for (const edit of edits) {
