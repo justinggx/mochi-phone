@@ -12,11 +12,16 @@ function phoneCleanupProtocolView(raw) {
     ranges.push([match.index,stop]);fences.lastIndex=stop;
   }
   for(const code of source.matchAll(/(?<![\\`])(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g))ranges.push([code.index,code.index+code[0].length]);
-  for(const match of source.matchAll(/<(think|thinking)\b[^>]*>[\s\S]*?<\/\1\s*>/gi))ranges.push([match.index,match.index+match[0].length]);
+  const reasoning=Array.from(source.matchAll(/<(think|thinking)\b[^>]*>[\s\S]*?<\/\1\s*>/gi),match=>[match.index,match.index+match[0].length]);
+  ranges.push(...reasoning);
   if(!ranges.length)return source;
   ranges.sort((a,b)=>a[0]-b[0]||b[1]-a[1]);
   const chars=source.split('');let end=-1;
   for(const[a,b]of ranges){if(a<end)continue;end=b;for(let i=a;i<b;i++)if(chars[i]!=='\n'&&chars[i]!=='\r')chars[i]=' ';}
+  // Paired reasoning remains inert even when its opening overlaps a Markdown
+  // code span. The generic overlap skip must not expose its PHONE examples.
+  // Keep the existing code/HTML precedence for incomplete example tags.
+  for(const[a,b]of reasoning)for(let i=a;i<b;i++)if(chars[i]!=='\n'&&chars[i]!=='\r')chars[i]=' ';
   return chars.join('');
 }
 
