@@ -65,11 +65,10 @@ export function createPhoneChat(api){
  function openMode(){
   const owner=api.account(),slot=api.slot(),token=api.runtime().task(),view=api.state().currentView,threadId=api.state().currentThread;
   const current=()=>token.valid()&&api.account()===owner&&api.slot()===slot&&api.state().currentView===view&&(view!=='thread'||api.state().currentThread===threadId);
-  const root=doc.createElement('div'),description=doc.createElement('p'),select=doc.createElement('select');select.className='rp-tools-select';select.setAttribute('aria-label','聊天方式');
-  for(const[value,label]of[['sync','同步主楼'],['independent','手机内独立聊天']]){const option=doc.createElement('option');option.value=value;option.textContent=label;select.append(option);}select.value=independent()?'independent':'sync';
-  description.className='rp-feature-note';description.textContent='统一用于所有私聊和群聊，包括之后新建的聊天。同步主楼沿用当前方式；独立聊天使用已保存的自定义 API，只在手机内收发，参考人设、世界书和主楼近况。切换保留旧记录，不会补发旧消息。图片识别需要支持图片的模型，AI发图沿用智绘姬。';root.append(select,description);
-  if(Object.values(api.state().threads||{}).some(t=>t.pendingHostActions?.length)){const note=doc.createElement('p');note.className='rp-feature-note';note.textContent='尚有主楼待确认项，切换后保留，可取消；独立模式不会重试这些项。';root.append(note);}
-  api.dialog('聊天方式',root,[{label:'取消'},{label:'配置自定义 API',run:()=>{if(current()){api.closeDialog();api.openApi();}return false;}},{label:'保存',primary:true,run:()=>current()&&setMode(select.value)?undefined:false}]);
+  const root=doc.createElement('div'),select=doc.createElement('select');select.className='rp-tools-select';select.setAttribute('aria-label','聊天方式');
+  for(const[value,label]of[['sync','消息同步主楼'],['independent','手机内独立聊天']]){const option=doc.createElement('option');option.value=value;option.textContent=label;select.append(option);}select.value=independent()?'independent':'sync';
+  root.append(select);
+  api.dialog('聊天方式',root,[{label:'取消'},{label:'确定',primary:true,run:()=>current()&&setMode(select.value)?undefined:false}]);
  }
  function send(thread,messages,{alreadyStored=false}={}){
   install();if(!independent(thread)||api.state().threads[thread.id]!==thread||!Array.isArray(messages)||!messages.length)return false;
