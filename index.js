@@ -1,12 +1,12 @@
-import { createPhoneChat } from './phone-chat.mjs?v=20261031-independent-chat-190';
+import { createPhoneChat } from './phone-chat.mjs?v=20261031-global-message-mode-191';
 import { createEchoAccent } from './echo-accent.mjs?v=20261030-thread-feedback-188';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261030-thread-feedback-188';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261031-global-message-mode-191';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-independent-chat-190';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-global-message-mode-191';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -17,7 +17,7 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261031-independent-chat-190';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-independent-chat-190';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-global-message-mode-191';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261031-all-functions-189';
 import { createThemeStudio } from './theme-studio.mjs?v=20261030-theme-result-shape-188';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -3966,7 +3966,7 @@ function rpStickerApp() {
     document, runtime: () => rpRuntime, fetch: (...args) => fetch(...args),
     account: () => rpArchiveAccountHandle, slot: () => STATE.chatId, view: () => STATE.currentView,
     headers: () => getContext()?.getRequestHeaders?.() || _rp_script_mod?.getRequestHeaders?.() || {'Content-Type':'application/json'},
-    pickSticker:()=>{const thread=STATE.threads[STATE.currentThread];if(thread?.phoneChatMode==='independent'){void rpIndependentApp().openStickers(thread);return true;}return false;},
+    pickSticker:()=>{const thread=STATE.threads[STATE.currentThread];if(thread&&rpIndependentApp().isIndependent()){void rpIndependentApp().openStickers(thread);return true;}return false;},
     context: () => [String(getContext()?.chat?.slice(-3).map(m=>String(m.mes||'')).join('\n')||''),String(document.getElementById('send_textarea')?.value||'')].join('\n').slice(-1500),
     navigate: go, dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog,
     changed: refreshMochiPrompt, repaint: () => {if(STATE.currentView==='thread')renderBubbles(STATE.currentThread);else if(STATE.currentView==='moments')renderMoments();},
@@ -4047,11 +4047,34 @@ async function rpCompleteStickerGeneration(index,type) {
   await rpQueueSticker(target.thread,[id],target.item?.time,source,target.sender,requiredValid);
 }
 
+const RP_PHONE_CHAT_MODE_KEY='rp_phone_chat_mode_v1';
+const rpPhoneChatModeFallback=new Map();
+function rpReadPhoneChatMode(){
+  const owner=rpArchiveAccountHandle;if(!owner)return 'sync';
+  try{const v=JSON.parse(localStorage.getItem(RP_PHONE_CHAT_MODE_KEY)||'null');if(v&&['sync','independent'].includes(v.mode))return v.mode;}catch{}
+  if(rpPhoneChatModeFallback.has(owner))return rpPhoneChatModeFallback.get(owner);
+  // One-time migration: preserve the most recent explicit v190 choice, then use
+  // one account setting for every existing and future conversation and chat slot.
+  const previous=Object.values(STATE.threads||{}).filter(t=>['sync','independent'].includes(t.phoneChatMode)).sort((a,b)=>(Number(a.phoneChatModeAt)||0)-(Number(b.phoneChatModeAt)||0)).at(-1);
+  const mode=previous?.phoneChatMode||'sync';rpPhoneChatModeFallback.set(owner,mode);
+  try{localStorage.setItem(RP_PHONE_CHAT_MODE_KEY,JSON.stringify({mode,at:Date.now()}));}catch{}
+  return mode;
+}
+function rpWritePhoneChatMode(mode){
+  if(!rpArchiveAccountHandle||!['sync','independent'].includes(mode))return false;
+  let old;try{old=localStorage.getItem(RP_PHONE_CHAT_MODE_KEY);const text=JSON.stringify({mode,at:Date.now()});localStorage.setItem(RP_PHONE_CHAT_MODE_KEY,text);if(localStorage.getItem(RP_PHONE_CHAT_MODE_KEY)!==text)throw Error();rpPhoneChatModeFallback.set(rpArchiveAccountHandle,mode);return true;}catch{try{if(old==null)localStorage.removeItem(RP_PHONE_CHAT_MODE_KEY);else localStorage.setItem(RP_PHONE_CHAT_MODE_KEY,old);}catch{}return false;}
+}
+function rpRefreshPhoneChatMode(){
+  const independent=rpReadPhoneChatMode()==='independent';
+  const menu=document.getElementById('rp-messages-chat-mode');if(menu)menu.textContent='聊天方式 · '+(independent?'独立聊天':'同步主楼');
+  const hint=document.getElementById('rp-settings-chat-mode-hint');if(hint)hint.textContent=independent?'所有消息仅在手机内聊天':'所有消息同步主楼';
+}
+
 let rpIndependentChat=null;
 function rpIndependentApp(){
   if(rpIndependentChat)return rpIndependentChat;
   rpIndependentChat=createPhoneChat({document,runtime:()=>rpRuntime,state:()=>STATE,account:()=>rpArchiveAccountHandle,slot:()=>STATE.chatId,time:()=>resolvePhoneTime(),
-    hostBusy:()=>!!rpHostSubmission||!!rpSmsQueueLock,save:saveState,notify:text=>toastr.info(text),dialog:rpFeatureDialog,closeDialog:rpCloseFeatureDialog,openApi:()=>{rpFillApiProfileForm('-v');go('api-settings');},
+    readMode:rpReadPhoneChatMode,writeMode:rpWritePhoneChatMode,hostBusy:()=>!!rpHostSubmission||!!rpSmsQueueLock,save:saveState,notify:text=>toastr.info(text),dialog:rpFeatureDialog,closeDialog:rpCloseFeatureDialog,openApi:()=>{rpFillApiProfileForm('-v');go('api-settings');},
     configReady:()=>{const cfg=rpReadSavedCustomApiConnection();try{if(!cfg.url||!cfg.key)return false;buildCustomApiEndpoint(cfg.url,'chat/completions');rpResolveCustomApiModel(cfg);return true;}catch{return false;}},
     participants:thread=>rpIsGroupThread(thread)?[...new Set(getGroupMemberEntries(thread).filter(m=>m.id!=='user'&&!isPhoneUserName(m.name,getContext())&&!isPhoneBlocked(m.name)).map(m=>m.name))].slice(0,16):isPhoneUserName(thread.name,getContext())||isPhoneBlocked(thread.name)?[]:[thread.name],
     memberId:name=>Object.values(STATE.threads).find(t=>!rpIsGroupThread(t)&&normalizePhonePersonName(t.name)===normalizePhonePersonName(name))?.id,
@@ -4059,7 +4082,7 @@ function rpIndependentApp(){
     stickerImage:item=>rpStickerApp().imageSource({type:'sticker',sticker:{id:item.id,format:item.format,owner:rpArchiveAccountHandle}}),manageStickers:()=>rpStickerApp().open('thread'),
     prepareImage:async(src,task)=>isCompressiblePhoneImageSrc(src)?rpGuardAwait(compressPhoneContentImage(src),task,20000):src,
     call:(prompt,system,thread,participants,images,task)=>lgCallAPI(prompt,2200,roleContextRef(rpIsGroupThread(thread)?getContext()?.name2||participants[0]:participants[0])+rpPhoneWorldContextRule()+rpPhoneSpeechLanguageRule()+system,{phoneIndependent:true,phoneParticipants:participants,phoneImages:images,phoneTask:task,reportErrors:true}),
-    reading:rpIsReadingThread,changed:refreshMochiPrompt,repaint:thread=>{if(STATE.currentView==='thread'&&STATE.currentThread===thread.id)renderBubbles(thread.id);},
+    reading:rpIsReadingThread,changed:()=>{refreshMochiPrompt();rpRefreshPhoneChatMode();},repaint:thread=>{if(STATE.currentView==='thread'&&STATE.currentThread===thread.id)renderBubbles(thread.id);},
     received:(thread,messages)=>{refreshBadges();renderThreadList();updatePreviews();saveState();const last=messages.at(-1);showBanner(thread.name,last.text||last.place||(last.type==='pending_image'?'[图片]':last.type.includes('hongbao')?'[红包]':'[消息]'),last.time,thread.id);},
   });return rpIndependentChat;
 }
@@ -4071,13 +4094,8 @@ function rpSendIndependentText(thread){
   thread.pendingMessages=(thread.pendingMessages||queued).slice(queued.length);thread.pendingQuotes=rpTools().quotes(thread).slice(queued.length);if(thread.draft===current)thread.draft='';if(thread.draftQuote===quote)thread.draftQuote=null;
   STATE.pendingMessages=thread.pendingMessages;if(String($('#rp-input').val()||'').trim()===current)$('#rp-input').val('');renderPendingQueue();renderBubbles(thread.id);saveState();return true;
 }
-function rpHostPhoneSuppressed(kind,attrs){
-  if(!['SMS','GMSG','VOICE','GVOICE','SIMG','HONGBAO','GHONGBAO','CALL','mochiLOCATION','mochiLOC'].includes(kind))return false;
-  let name=String(attrs.FROM||'').trim(),target=null;
-  if(attrs.GROUP)target=STATE.threads[rpGroupThreadId(String(attrs.GROUP).trim())];
-  else if(['SMS','VOICE','HONGBAO'].includes(kind)&&isPhoneToNonUser(attrs.TO||'',getContext()))target=STATE.threads[rpGroupThreadId(makeAutoGroupName(name,normalizeAutoGroupTargetName(attrs.TO,getContext()),''))];
-  else{const norm=normalizePhonePersonName(resolveCanonicalPhoneName(name));target=Object.values(STATE.threads).find(t=>!rpIsGroupThread(t)&&normalizePhonePersonName(resolveCanonicalPhoneName(t.name))===norm);}
-  return target?.phoneChatMode==='independent';
+function rpHostPhoneSuppressed(kind){
+  return ['SMS','GMSG','VOICE','GVOICE','SIMG','HONGBAO','GHONGBAO','CALL','mochiLOCATION','mochiLOC'].includes(kind)&&rpIndependentApp().isIndependent();
 }
 
 let rpPhoneTools = null;
@@ -4092,7 +4110,7 @@ function rpTools() {
     $: $, document, state: () => STATE, touch: () => IS_TOUCH_DEVICE, storage: localStorage,
     notify: text => toastr.info(text), rememberReading: rpRememberReading, restoreReading: rpRestoreReadingPosition,
     dialog: rpFeatureDialog, closeDialog: rpCloseFeatureDialog, runtime: () => rpRuntime, reflow: rpAvoidFabControls,
-    renderThreads: renderThreadList, save: saveState, hideBanner: rpHideBanner, refreshPrompt:refreshMochiPrompt, chatMode:thread=>rpIndependentApp().isIndependent(thread),openChatMode:thread=>rpIndependentApp().openMode(thread),
+    renderThreads: renderThreadList, save: saveState, hideBanner: rpHideBanner, refreshPrompt:refreshMochiPrompt,
     cached: item=>rpPhoneTranslationSnapshot(item,rpPhoneTranslationSource({kind:'message',item})),
     source: item=>rpPhoneTranslationSource({kind:'message',item}), avatar:getAvatar,
     stickerImage: item=>rpStickerApp().imageSource(item),
@@ -4559,7 +4577,9 @@ function rpInstallBackSwipe() {
 function bindUI() {
   rpInstallBackSwipe();
   rpTheatreApp().mount();
-  rpRefreshPhoneLanguageSettings();
+  rpRefreshPhoneLanguageSettings();rpRefreshPhoneChatMode();
+  $(document).on('click.mochiPhone','#rp-messages-chat-mode,#rp-settings-chat-mode',function(){rpSetMessagesMenu(false);rpIndependentApp().openMode();});
+  rpRuntime.listenDOM(window,'storage',event=>{if(rpArchiveAccountHandle&&event.key===rpAccountStoragePrefix()+RP_PHONE_CHAT_MODE_KEY){rpPhoneChatModeFallback.delete(rpArchiveAccountHandle);rpIndependentChat?.synchronize();rpRefreshPhoneChatMode();}});
   $(document).on('change.mochiPhone','#rp-auto-messages-enabled,#rp-auto-moments-enabled',function(){
     if(!rpSetAutoTranslation(this.id === 'rp-auto-messages-enabled' ? 'messages' : 'moments',this.checked)) {rpRefreshAutoTranslationSettings();toastr.info('翻译设置未保存，请重试。');}
   });
@@ -6252,6 +6272,7 @@ function go(view) {
   if (view === 'g2048' && !rpShowGameResume('g2048')) { if (!LG2048.active) g2048Init(); else g2048Render(); }
   if (view === 'ggold' && !rpShowGameResume('gm')) { if (!GM.active) ggoldOpen(); }
   if (view === 'gword' && !rpShowGameResume('gword')) { if (!GWORD.active) gwordOpen(); }
+  if (view === 'settings' || view === 'messages') rpRefreshPhoneChatMode();
   if (view === 'api-settings') { lgFillAPIView(); }
   if (view === 'themes') { lgRenderThemePicker(); }
   if (view === 'theme-studio') { lgRenderThemeStudio(); }
@@ -6561,6 +6582,7 @@ function rpSetMessagesMenu(open, focus = false) {
   const menu = document.getElementById('rp-messages-menu'), trigger = document.getElementById('rp-messages-more');
   if (!menu || !trigger) return;
   open = !!open && STATE.currentView === 'messages';
+  if(open)rpRefreshPhoneChatMode();
   rpSetSurfaceOpen(menu,open,{hidden:true}); trigger.setAttribute('aria-expanded',String(open));
   if (focus) (open ? menu.querySelector('button:not(:disabled)') : trigger)?.focus();
 }
@@ -7614,7 +7636,7 @@ function rpCompleteThreadAction(thread,action,index){
   if(STATE.currentThread===thread.id)renderBubbles(thread.id);saveState();return true;
 }
 function rpAttemptThreadAction(thread,action){
-  if(thread?.phoneChatMode==='independent'){toastr.info('当前为独立聊天；旧主楼待确认项已保留，可取消或切回同步后重试。');return false;}
+  if(thread&&rpIndependentApp().isIndependent()){toastr.info('当前为独立聊天；旧主楼待确认项已保留，可取消或切回同步后重试。');return false;}
   if(STATE.threads[thread.id]!==thread||getPhoneChatSlotKey(getContext())!==STATE.chatId||!(thread.pendingHostActions||[]).includes(action))return false;
   const receipt=rpActionReceipt(thread,action);if(receipt>=0)return rpCompleteThreadAction(thread,action,receipt);
   const fail=note=>{if(STATE.threads[thread.id]!==thread||!(thread.pendingHostActions||[]).includes(action))return false;action.status='pending';action.note=note;saveState();if(STATE.currentThread===thread.id)rpRenderHostOutbox(thread.id);return false;};
@@ -7637,7 +7659,7 @@ function rpAttemptThreadAction(thread,action){
   if(!submitted)fail('酒馆暂不可发送，内容已保留');else if(STATE.currentThread===thread.id&&(thread.pendingHostActions||[]).includes(action))rpRenderHostOutbox(thread.id);return submitted;
 }
 function rpSubmitThreadAction(thread, text, message, confirmed, imageMessageId) {
-  if(thread?.phoneChatMode==='independent'){
+  if(thread&&rpIndependentApp().isIndependent()){
     const image=imageMessageId?thread.messages.find(m=>m.id===imageMessageId):null;
     const own=image||message||{from:'user',type:'text',text:rpHostExpectedText(text),time:resolvePhoneTime()};
     const accepted=rpIndependentApp().send(thread,[own],{alreadyStored:!!image});if(accepted)confirmed?.(null);return accepted;
@@ -7692,7 +7714,7 @@ function rpSubmitHostAction(text, confirmed, replace = false, options = {}) {
 }
 
 function sendSMS() {
-  const localThread=STATE.threads[STATE.currentThread];if(localThread?.phoneChatMode==='independent'){rpSendIndependentText(localThread);return;}
+  const localThread=STATE.threads[STATE.currentThread];if(localThread&&rpIndependentApp().isIndependent()){rpSendIndependentText(localThread);return;}
   if (rpHostSubmission) { toastr.warning('酒馆正在确认上一条发送，请稍后再试。'); return; }
   // FIX3: 先把输入框当前内容并入队列
   const currentText = $('#rp-input').val().trim();

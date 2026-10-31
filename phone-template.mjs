@@ -261,6 +261,7 @@ const HTML = `
               <div id="rp-messages-menu" role="menu" aria-label="信息操作" hidden>
                 <button id="rp-local-search" type="button" role="menuitem">搜索</button>
                 <button id="rp-add-btn" type="button" role="menuitem">添加</button>
+                <button id="rp-messages-chat-mode" type="button" role="menuitem">聊天方式 · 同步主楼</button>
                 <button id="rp-messages-read-all" type="button" role="menuitem">全部已读</button>
               </div>
             </div>
@@ -455,7 +456,7 @@ const HTML = `
                 <input id="rp-wall-file" type="file" accept="image/*" style="display:none"/>
               </div>
 </div></details></div></section>
-            <section class="rp-settings-group" aria-labelledby="rp-settings-messages-title"><h3 id="rp-settings-messages-title" class="rp-set-section-title">消息与联系人</h3><div class="rp-set-section"><details id="rp-settings-language" class="rp-settings-detail"><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">角色语言</span><span id="rp-phone-language-hint" class="rp-settings-hint">按人设说母语，提供中文翻译</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
+            <section class="rp-settings-group" aria-labelledby="rp-settings-messages-title"><h3 id="rp-settings-messages-title" class="rp-set-section-title">消息与联系人</h3><div class="rp-set-section"><button id="rp-settings-chat-mode" type="button" class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">聊天方式</span><span id="rp-settings-chat-mode-hint" class="rp-settings-hint">所有消息同步主楼</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></button><details id="rp-settings-language" class="rp-settings-detail"><summary class="rp-settings-item"><span class="rp-settings-copy"><span class="rp-settings-label">角色语言</span><span id="rp-phone-language-hint" class="rp-settings-hint">按人设说母语，提供中文翻译</span></span><span class="rp-settings-chevron" aria-hidden="true">›</span></summary><div class="rp-settings-panel">
               <fieldset id="rp-phone-language-options" aria-label="角色语言" style="border:0;margin:0;padding:0;display:grid;gap:12px;min-width:0">
                 <label class="rp-language-choice" style="display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;min-height:40px;padding:8px 0;margin:0;cursor:pointer"><input type="radio" name="rp-phone-language-mode" value="native" style="width:16px;height:16px;flex:0 0 16px;margin:2px 0 0;accent-color:var(--rp-nav-btn)"><span class="rp-set-key" style="white-space:normal;min-width:0">角色说母语（提供中文翻译）</span></label>
                 <label class="rp-language-choice" style="display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;min-height:40px;padding:8px 0;margin:0;cursor:pointer"><input type="radio" name="rp-phone-language-mode" value="zh" style="width:16px;height:16px;flex:0 0 16px;margin:2px 0 0;accent-color:var(--rp-nav-btn)"><span class="rp-set-key" style="white-space:normal;min-width:0">角色说中文</span></label>

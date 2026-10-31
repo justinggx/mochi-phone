@@ -41,7 +41,7 @@ export const PHONE_CHAT_CSS=`
 `;
 export function createPhoneChat(api){
  const doc=api.document,jobs=new Map();let installed=false;
- const independent=thread=>thread?.phoneChatMode==='independent';
+ const independent=()=>api.readMode()==='independent';
  const live=(thread,owner,slot)=>api.account()===owner&&api.slot()===slot&&api.state().threads[thread.id]===thread;
  const displayed=thread=>api.state().currentView==='thread'&&api.state().currentThread===thread.id;
  function install(){if(installed)return;installed=true;const style=doc.createElement('style');style.id='rp-phone-chat-css';style.textContent=PHONE_CHAT_CSS;doc.head.append(style);api.runtime().own(()=>{reset();style.remove();installed=false;});}
@@ -53,19 +53,23 @@ export function createPhoneChat(api){
   const r=thread.phoneLocalReply;if(r?.pendingIds?.length){r.status='paused';r.note=note;api.save();}paint(thread);
  }
  function reset(){for(const job of [...jobs.values()]){jobs.delete(job.thread.id);job.controller.abort();}doc.getElementById('rp-independent-status')?.remove();doc.getElementById('rp-phone-chat-mode')?.remove();}
- function setMode(thread,mode){
-  if(!['sync','independent'].includes(mode)||api.state().threads[thread.id]!==thread)return false;
+ function stopAll(note){for(const thread of Object.values(api.state().threads||{}))if(jobs.has(thread.id)||thread.phoneLocalReply?.pendingIds?.length)stop(thread,note);}
+ function synchronize(){stopAll('聊天方式已更新，未完成回复已停止，内容保留。');api.changed?.();const thread=api.state().threads[api.state().currentThread];if(thread)paint(thread);}
+ function setMode(mode){
+  if(!['sync','independent'].includes(mode))return false;
   if(api.hostBusy()){api.notify('酒馆仍在确认发送，请等本次确认结束后切换。');return false;}
-  const old=thread.phoneChatMode,at=thread.phoneChatModeAt;thread.phoneChatMode=mode;thread.phoneChatModeAt=Date.now();
-  try{if(api.save()===false)throw Error();}catch{if(old===undefined)delete thread.phoneChatMode;else thread.phoneChatMode=old;if(at===undefined)delete thread.phoneChatModeAt;else thread.phoneChatModeAt=at;api.notify('聊天方式未保存，原方式已保留。');return false;}
-  if(mode!=='independent')stop(thread,'已切回同步主楼，独立聊天内容保留。');paint(thread);api.changed?.();return true;
+  if(api.writeMode(mode)===false){api.notify('聊天方式未保存，原方式已保留。');return false;}
+  if(mode!=='independent')stopAll('已切回同步主楼，独立聊天内容保留。');
+  api.changed?.();const thread=api.state().threads[api.state().currentThread];if(thread)paint(thread);return true;
  }
- function openMode(thread){
-  const owner=api.account(),slot=api.slot(),root=doc.createElement('div'),description=doc.createElement('p'),select=doc.createElement('select');select.className='rp-tools-select';select.setAttribute('aria-label','聊天方式');
-  for(const[value,label]of[['sync','同步主楼'],['independent','手机内独立聊天']]){const option=doc.createElement('option');option.value=value;option.textContent=label;select.append(option);}select.value=independent(thread)?'independent':'sync';
-  description.className='rp-feature-note';description.textContent='同步主楼沿用当前方式；独立聊天使用已保存的自定义 API，只在手机内收发，参考人设、世界书和主楼近况。切换不搬动旧记录，也不会补发旧消息。图片识别需要支持图片的模型，AI发图沿用智绘姬。';root.append(select,description);
-  if(thread.pendingHostActions?.length){const note=doc.createElement('p');note.className='rp-feature-note';note.textContent='尚有主楼待确认项，切换后保留，可取消；独立模式不会重试这些项。';root.append(note);}
-  api.dialog('聊天方式',root,[{label:'取消'},{label:'配置自定义 API',run:()=>{if(live(thread,owner,slot)&&displayed(thread)){api.closeDialog();api.openApi();}return false;}},{label:'保存',primary:true,run:()=>live(thread,owner,slot)&&displayed(thread)&&setMode(thread,select.value)?undefined:false}]);
+ function openMode(){
+  const owner=api.account(),slot=api.slot(),token=api.runtime().task(),view=api.state().currentView,threadId=api.state().currentThread;
+  const current=()=>token.valid()&&api.account()===owner&&api.slot()===slot&&api.state().currentView===view&&(view!=='thread'||api.state().currentThread===threadId);
+  const root=doc.createElement('div'),description=doc.createElement('p'),select=doc.createElement('select');select.className='rp-tools-select';select.setAttribute('aria-label','聊天方式');
+  for(const[value,label]of[['sync','同步主楼'],['independent','手机内独立聊天']]){const option=doc.createElement('option');option.value=value;option.textContent=label;select.append(option);}select.value=independent()?'independent':'sync';
+  description.className='rp-feature-note';description.textContent='统一用于所有私聊和群聊，包括之后新建的聊天。同步主楼沿用当前方式；独立聊天使用已保存的自定义 API，只在手机内收发，参考人设、世界书和主楼近况。切换保留旧记录，不会补发旧消息。图片识别需要支持图片的模型，AI发图沿用智绘姬。';root.append(select,description);
+  if(Object.values(api.state().threads||{}).some(t=>t.pendingHostActions?.length)){const note=doc.createElement('p');note.className='rp-feature-note';note.textContent='尚有主楼待确认项，切换后保留，可取消；独立模式不会重试这些项。';root.append(note);}
+  api.dialog('聊天方式',root,[{label:'取消'},{label:'配置自定义 API',run:()=>{if(current()){api.closeDialog();api.openApi();}return false;}},{label:'保存',primary:true,run:()=>current()&&setMode(select.value)?undefined:false}]);
  }
  function send(thread,messages,{alreadyStored=false}={}){
   install();if(!independent(thread)||api.state().threads[thread.id]!==thread||!Array.isArray(messages)||!messages.length)return false;
@@ -129,5 +133,5 @@ export function createPhoneChat(api){
   for(const item of items){const b=doc.createElement('button');b.type='button';const image=doc.createElement('img');image.src=api.stickerImage(item);image.alt='';b.append(image,doc.createTextNode(item.name||'表情包'));b.onclick=()=>{if(!token.valid()||!live(thread,owner,slot)||!displayed(thread)||!independent(thread))return;const current=api.stickerItems().find(i=>i.id===item.id);if(!current){api.notify('表情包已变化，请重新打开。');return;}if(send(thread,[{from:'user',type:'sticker',time:api.time(),text:'[表情包] '+current.name,sticker:{id:current.id,format:current.format,name:current.name,owner}}]))api.closeDialog();};grid.append(b);}
   if(!items.length){const p=doc.createElement('p');p.className='rp-feature-note';p.textContent='还没有个人表情包，可以先去表情库上传。';root.append(p);}root.append(grid);api.dialog('发送表情包',root,[{label:'关闭'},{label:'管理表情包',run:()=>{if(live(thread,owner,slot)&&displayed(thread)){api.closeDialog();api.manageStickers();}return false;}}]);
  }
- return{isIndependent:independent,send,retry:run,stop,reset,render,setMode,openMode,openStickers,busy:()=>jobs.size>0,job:thread=>jobs.get(thread.id)};
+ return{isIndependent:independent,send,retry:run,stop,reset,render,setMode,openMode,openStickers,synchronize,busy:()=>jobs.size>0,job:thread=>jobs.get(thread.id)};
 }

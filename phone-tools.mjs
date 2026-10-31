@@ -329,7 +329,6 @@ export function createPhoneTools(api) {
     const box=node('div','rp-thread-popover').attr({id:'rp-thread-popover',role:'menu','aria-label':'聊天操作'});
     const item=(label,run)=>box.append(node('button','',label).attr({type:'button',role:'menuitem'}).on('click',()=>{const valid=live();closeThreadMenu();if(valid)run();}));
     item('搜索聊天记录',()=>conversation.openSearch(thread.id));
-    if(api.openChatMode)item('聊天方式 · '+(api.chatMode?.(thread)?'独立聊天':'同步主楼'),()=>api.openChatMode(thread));
     if(thread.type==='group'||thread.id.startsWith('grp_'))item('修改群名',()=>openRenameGroup(thread));
     item(thread.phonePinned?'取消置顶':'置顶聊天',()=>{thread.phonePinned=!thread.phonePinned;thread.phonePrefsAt=Date.now();api.renderThreads();api.save();});
     item(thread.phoneMuted?'关闭免打扰':'开启免打扰',()=>{thread.phoneMuted=!thread.phoneMuted;thread.phonePrefsAt=Date.now();api.hideBanner();api.renderThreads();api.save();});
