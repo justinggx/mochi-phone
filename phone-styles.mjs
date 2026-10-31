@@ -594,6 +594,11 @@ export const RP_PRIVATE_AVATAR_CSS = `
 #rp-phone #rp-screen #rp-view-thread .rp-message-meta .rp-btn-row{flex:0 0 auto;gap:0}
 #rp-phone #rp-screen #rp-view-thread .rp-message-meta :is(.rp-edit-btn,.rp-del-btn){width:30px;min-width:30px;height:30px;min-height:30px}
 #rp-phone #rp-screen #rp-view-thread .rp-message-meta>.rp-translation-btn{flex:0 0 auto;min-width:0;color:var(--rp-v-muted);margin:0 0 0 auto;padding:3px 2px;white-space:nowrap}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta{align-items:center;min-height:30px;}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta .rp-bts{display:inline-flex;align-items:center;box-sizing:border-box;height:30px;line-height:1.4;}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta .rp-btn-row{align-items:center;align-self:center;margin-top:0;margin-bottom:0;}
+#rp-phone #rp-screen #rp-view-thread .rp-message-meta :is(.rp-edit-btn,.rp-del-btn,.rp-message-more,.rp-translation-btn){display:inline-flex!important;align-items:center;justify-content:center;box-sizing:border-box;height:30px!important;min-height:30px!important;line-height:1!important;padding-top:0!important;padding-bottom:0!important;margin-top:0!important;margin-bottom:0!important;vertical-align:middle;}
+
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-bwrap>.rp-message-translation{width:72%;max-width:72%;align-self:flex-start}
 #rp-phone #rp-screen #rp-view-thread #rp-bubbles>.rp-out>.rp-message-translation{align-self:flex-end}
 #rp-phone #rp-screen :is(.rp-translation-control,.rp-translation-btn)[hidden]{display:none!important}

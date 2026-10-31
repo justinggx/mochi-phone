@@ -1,4 +1,4 @@
-import { createPhoneChat } from './phone-chat.mjs?v=20261031-chat-mode-dialog-192';
+import { createPhoneChat } from './phone-chat.mjs?v=20261031-message-polish-193';
 import { createEchoAccent } from './echo-accent.mjs?v=20261030-thread-feedback-188';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
@@ -6,7 +6,7 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261031-global-mess
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261030-render-175';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-global-message-mode-191';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-message-polish-193';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -438,6 +438,7 @@ function rpResetChatTasks() {
   rpStickerJobs.clear();
   rpStickerGeneration = null;
   rpIndependentChat?.reset();
+  rpLatestButtonStates=new WeakMap();
   rpPhoneTools?.conversation.reset();
   clearTimeout(rpReadingTimer); rpReadingTimer=null;
   rpFinishUndo(); rpXhsFavoritesOnly=false;
@@ -4432,9 +4433,24 @@ function rpRestoreReadingPosition() {
   if(context)rpRestoreSnapshot(context,STATE.readingPositions?.[context.key]);
   rpUpdateLatestButton();
 }
+let rpLatestButtonStates=new WeakMap();
+function rpLatestButtonState(thread,away){
+  const incoming=(thread.messages||[]).filter(m=>m&&m.from!=='user').map(m=>m.id??m);
+  let state=rpLatestButtonStates.get(thread);
+  if(!state){state={seen:new Set(incoming),dismissed:false};rpLatestButtonStates.set(thread,state);}
+  else{if(away&&incoming.some(key=>!state.seen.has(key)))state.dismissed=false;state.seen=new Set(incoming);}
+  return state;
+}
 function rpUpdateLatestButton() {
-  const el=document.getElementById('rp-bubbles');
-  $('#rp-go-latest').toggle(!!(STATE.currentView==='thread'&&el?.clientHeight&&el.scrollHeight-el.scrollTop-el.clientHeight>30));
+  const el=document.getElementById('rp-bubbles'),thread=STATE.threads[STATE.currentThread];
+  const away=!!(STATE.currentView==='thread'&&el?.clientHeight&&el.scrollHeight-el.scrollTop-el.clientHeight>30);
+  const state=thread?rpLatestButtonState(thread,away):null;
+  $('#rp-go-latest').toggle(!!(state&&away&&!state.dismissed));
+}
+function rpGoLatest(){
+  const el=document.getElementById('rp-bubbles'),thread=STATE.threads[STATE.currentThread];if(!el||!thread)return;
+  rpLatestButtonState(thread,false).dismissed=true;el.scrollTop=el.scrollHeight;
+  rpRememberReading();saveState();rpUpdateLatestButton();
 }
 function rpInstallReadingListener() {
   rpRuntime.listenDOM(document,'scroll',event=>{
@@ -4623,7 +4639,7 @@ function bindUI() {
   });
   rpInstallReadingListener();
   $(document).on('click.mochiPhone','#rp-local-search,#rp-thread-search',rpOpenLocalSearch);
-  $(document).on('click.mochiPhone','#rp-go-latest',()=>{const el=document.getElementById('rp-bubbles');el.scrollTop=el.scrollHeight;rpRememberReading();saveState();rpUpdateLatestButton();});
+  $(document).on('click.mochiPhone','#rp-go-latest',rpGoLatest);
   $(document).on('click.mochiPhone', '#rp-xhs-more', function() {
     rpSetXhsMenu(this.getAttribute('aria-expanded') !== 'true', true);
   });
@@ -6772,8 +6788,11 @@ async function rpTogglePhoneTranslation(target, options = {}) {
 }
 
 function rpAttachPrivateAvatar(wrap, thread, message) {
-  if (!message || thread.type === 'group' || String(thread.id || '').startsWith('grp_') || wrap.hasClass('rp-grp') || wrap.children('.rp-private-body').length) return;
+  if (!message || wrap.children('.rp-private-body').length) return;
   const isUser = message.from === 'user';
+  // Group incoming rows already own their sender avatar; user rows share the
+  // same avatar/body layout across private and group conversations.
+  if (!isUser && (rpIsGroupThread(thread) || wrap.hasClass('rp-grp'))) return;
   const key = isUser ? 'user' : thread.name;
   const label = isUser ? '我' : String(thread.name || thread.initials || '联系人');
   const initials = isUser ? '我' : String(thread.initials || label.slice(0,2));

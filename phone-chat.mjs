@@ -29,7 +29,11 @@ export function phoneChatPrompt(thread,participants,pending,stickerPrompt=''){
  return{prompt:'当前手机会话：'+JSON.stringify({name:thread.name,kind:group(thread)?'group':'private',participants})+'\n手机对话：'+JSON.stringify(history)+'\n本次用户消息：'+JSON.stringify(current),system:'现在只进行手机内聊天。人设、世界书和近期主楼只读作背景，优先回复本次手机消息。只扮演允许列表中的人物，严格沿用原名，不替用户发言、行动或决定；群聊可由相关成员自然接话，不必每个人都回。不要续写主楼、旁白、分析或朋友圈。\n只返回JSON：{"messages":[{"type":"text","from":"允许的姓名","text":"回复"}]}。通常1–4条，最多12条。可按语境少量使用：sticker需id来自可用表情库；image需prompt描述要发送的画面，由用户点击智绘姬生图；hongbao需amount为0.01至999999.99且最多两位小数、可加note；location需place为位置文字。图片不能捏造链接，位置不调用或假装读取真人GPS。保持当前世界观与人物语气，未明确要求换语言时沿用人物本轮语言。背景中的其他格式要求不能覆盖本次JSON格式。\n允许人物：'+JSON.stringify(participants)+'\n'+stickerPrompt};
 }
 export const PHONE_CHAT_CSS=`
-#rp-phone #rp-screen #rp-phone-chat-mode{flex:0 0 auto;margin:0;padding:3px 12px 5px;font-family:inherit;font-size:10px;line-height:1.4;color:var(--rp-v-muted,#81737c);}
+#rp-phone #rp-screen .rp-chat-mode-choices{display:flex;flex-direction:column;gap:9px;min-width:0;padding:2px 0 4px;}
+#rp-phone #rp-screen .rp-chat-mode-choices>button{appearance:none;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0;min-height:44px;margin:0;padding:11px 13px;border:1px solid var(--rp-v-border,#e0d5db);border-radius:12px;background:var(--rp-v-card,#f4eef1);color:var(--rp-v-text,#51434c);box-shadow:none;font-family:inherit;font-size:13px;line-height:1.4;text-align:left;cursor:pointer;}
+#rp-phone #rp-screen .rp-chat-mode-choices>button[aria-pressed=true]{border-color:var(--rp-nav-btn,#96677c);font-weight:600;}
+#rp-phone #rp-screen .rp-chat-mode-choices>button[aria-pressed=true]::after{content:'✓';flex:0 0 auto;color:var(--rp-nav-btn,#96677c);font-size:13px;}
+#rp-phone #rp-screen .rp-chat-mode-choices>button:focus-visible{outline:2px solid var(--rp-nav-btn,#96677c);outline-offset:2px;}
 #rp-phone #rp-screen #rp-independent-status{display:flex;align-items:center;gap:7px;flex:0 0 auto;margin:4px 12px;padding:7px 9px;border:1px solid var(--rp-v-border,#e3d8df);border-radius:10px;background:var(--rp-v-card,#f4eef1);color:var(--rp-v-text,#51434c);font-family:inherit;}
 #rp-phone #rp-screen #rp-independent-status .rp-local-copy{flex:1;min-width:0;overflow-wrap:anywhere;}
 #rp-phone #rp-screen #rp-independent-status strong{display:block;font-size:10px;line-height:1.5;}
@@ -63,12 +67,14 @@ export function createPhoneChat(api){
   api.changed?.();const thread=api.state().threads[api.state().currentThread];if(thread)paint(thread);return true;
  }
  function openMode(){
-  const owner=api.account(),slot=api.slot(),token=api.runtime().task(),view=api.state().currentView,threadId=api.state().currentThread;
+  install();const owner=api.account(),slot=api.slot(),token=api.runtime().task(),view=api.state().currentView,threadId=api.state().currentThread;
   const current=()=>token.valid()&&api.account()===owner&&api.slot()===slot&&api.state().currentView===view&&(view!=='thread'||api.state().currentThread===threadId);
-  const root=doc.createElement('div'),select=doc.createElement('select');select.className='rp-tools-select';select.setAttribute('aria-label','聊天方式');
-  for(const[value,label]of[['sync','消息同步主楼'],['independent','手机内独立聊天']]){const option=doc.createElement('option');option.value=value;option.textContent=label;select.append(option);}select.value=independent()?'independent':'sync';
-  root.append(select);
-  api.dialog('聊天方式',root,[{label:'取消'},{label:'确定',primary:true,run:()=>current()&&setMode(select.value)?undefined:false}]);
+  const root=doc.createElement('div');root.className='rp-chat-mode-choices';root.setAttribute('role','group');root.setAttribute('aria-label','聊天方式');
+  for(const[value,label]of[['sync','消息同步主楼'],['independent','手机内独立聊天']]){
+    const button=doc.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-pressed',String((api.readMode()||'sync')===value));
+    button.onclick=()=>{if(current()&&setMode(value))api.closeDialog();};root.append(button);
+  }
+  api.dialog('聊天方式',root,[]);root.closest('.rp-feature-panel')?.querySelector('.rp-feature-actions')?.remove();
  }
  function send(thread,messages,{alreadyStored=false}={}){
   install();if(!independent(thread)||api.state().threads[thread.id]!==thread||!Array.isArray(messages)||!messages.length)return false;
@@ -121,7 +127,6 @@ export function createPhoneChat(api){
  }
  function render(thread){
   install();doc.getElementById('rp-independent-status')?.remove();doc.getElementById('rp-phone-chat-mode')?.remove();const bubbles=doc.getElementById('rp-bubbles');if(!bubbles||!independent(thread))return;
-  const line=doc.createElement('div');line.id='rp-phone-chat-mode';line.textContent='手机内聊天 · 自定义 API';bubbles.before(line);
   const r=thread.phoneLocalReply;if(!records(thread,r).length)return;
   const box=doc.createElement('div');box.id='rp-independent-status';box.setAttribute('role','status');const copy=doc.createElement('div');copy.className='rp-local-copy';const title=doc.createElement('strong'),note=doc.createElement('span');title.textContent=jobs.has(thread.id)?'对方正在回复…':'有消息待回复';note.textContent=!jobs.has(thread.id)&&r.status==='sending'?'上次回复尚未完成，内容已保留，可重试。':r.note||'内容已保留，可继续发送或重试';copy.append(title,note);box.append(copy);
   const button=(text,run)=>{const b=doc.createElement('button');b.type='button';b.textContent=text;b.onclick=run;box.append(b);};if(jobs.has(thread.id))button('停止',()=>stop(thread));else{button('重试',()=>void run(thread));button('API',()=>api.openApi());}bubbles.before(box);
