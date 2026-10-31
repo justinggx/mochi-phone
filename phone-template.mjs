@@ -164,7 +164,7 @@ const HTML = `
             <span class="rp-nav-title">API 设置</span>
           </div>
           <div class="rp-api-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px 10px;display:flex;flex-direction:column;gap:0">
-            <div class="rp-api-mode-switch"><label class="rp-api-opt"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 酒馆 API</label><label class="rp-api-opt"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 自定义 API</label></div>
+            <div class="rp-api-mode-switch"><label class="rp-api-opt"><input type="radio" name="rp-api-mode-v" value="st" id="rp-api-mode-st-v" checked> 酒馆主楼 API</label><label class="rp-api-opt"><input type="radio" name="rp-api-mode-v" value="custom" id="rp-api-mode-custom-v"> 自定义 API</label></div>
             <div id="rp-api-custom-fields-v" style="display:none;flex-direction:column;gap:8px">
               ${rpApiProfileControlsHtml('-v')}
 
@@ -682,7 +682,7 @@ const HTML = `
             <div id="rp-api-box">
               <div class="rp-api-title">API 设置</div>
               <div class="rp-api-desc">选择已存配置，或新增一套接口。</div>
-              <div class="rp-api-mode-switch"><label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="st" id="rp-api-mode-st" checked> 酒馆 API</label><label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="custom" id="rp-api-mode-custom"> 自定义 API</label></div>
+              <div class="rp-api-mode-switch"><label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="st" id="rp-api-mode-st" checked> 酒馆主楼 API</label><label class="rp-api-opt"><input type="radio" name="rp-api-mode" value="custom" id="rp-api-mode-custom"> 自定义 API</label></div>
               <div id="rp-api-custom-fields" style="display:none">
                 ${rpApiProfileControlsHtml('')}
 
