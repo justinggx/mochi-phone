@@ -49,7 +49,7 @@ function rpApiProfileNotice(message, suffix) {
 }
 
 function rpWriteApiSettingsStore(cfg) {
-  try { phoneHost.localStorage.setItem('rp_ludo_api',JSON.stringify(cfg));return true; }
+  try { const previous=rpReadApiSettingsStore();phoneHost.localStorage.setItem('rp_ludo_api',JSON.stringify(cfg));phoneHost.changed?.(cfg,previous);return true; }
   catch {
     rpApiProfileNotice('设置未保存：本机存储不可用，输入已保留，请检查空间后重试。');
     phoneHost.toastr.warning('API设置保存失败，输入已保留，请检查浏览器存储后重试。');return false;
@@ -58,20 +58,23 @@ function rpWriteApiSettingsStore(cfg) {
 
 function rpSaveCustomApiConfig(cfg) {
   const {store,profiles,activeId}=rpReadApiProfiles();
+  // legacy-current was a display-only placeholder shared by unrelated browsers.
+  // Give every saved entry a durable ID before it enters the synchronized library.
+  const remap=new Map();for(const p of profiles)if(/^legacy-current(?:-old)*$/.test(p.id)){const old=p.id;p.id='api-'+(phoneHost.window.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));remap.set(old,p.id);}
   const next={...store,mode:cfg.mode==='custom'?'custom':'st',profiles,profilesVersion:1};
   if(next.mode==='custom'){
     const connection={url:String(cfg.url||'').trim(),key:String(cfg.key||'').trim(),model:String(cfg.model||'').trim()};
     if(!connection.url||!connection.key){rpApiProfileNotice('请填写 API 地址和 Key');return false;}
     try{(0,phoneHost.buildCustomApiEndpoint)(connection.url,'chat/completions');connection.model=(0,phoneHost.rpResolveCustomApiModel)(connection);}catch(e){rpApiProfileNotice(e.message);return false;}
     const explicit=Object.prototype.hasOwnProperty.call(cfg,'profileId');
-    let profile=explicit?profiles.find(p=>p.id===cfg.profileId):profiles.find(p=>p.url===connection.url&&p.key===connection.key&&p.model===connection.model);
+    let profile=explicit?profiles.find(p=>p.id===(remap.get(cfg.profileId)||cfg.profileId)):profiles.find(p=>p.url===connection.url&&p.key===connection.key&&p.model===connection.model);
     if(explicit&&cfg.profileId&&!profile){rpApiProfileNotice('该配置已变化，请重新选择后保存。');return false;}
     const name=String(cfg.profileName||'').trim()||profile?.name||rpNextApiProfileName(profiles);
     if(name.length>60){rpApiProfileNotice('配置名称请控制在60字以内。');return false;}
     if(profiles.some(p=>p!==profile&&p.name===name)){rpApiProfileNotice('已有同名配置，请使用其他名称。');return false;}
     if(!profile){profile={id:'api-'+(phoneHost.window.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2))};profiles.push(profile);}
     Object.assign(profile,connection,{name});Object.assign(next,connection,{profileId:profile.id});
-  }else next.profileId=activeId||store.profileId||'';
+  }else next.profileId=remap.get(activeId)||activeId||store.profileId||'';
   return rpWriteApiSettingsStore(next);
 }
 

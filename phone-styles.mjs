@@ -1,5 +1,5 @@
 import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-global-message-mode-191';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261101-mobile-cloud-203';
 import { THEATRE_CSS } from './theatre.mjs?v=20261029-optimization-173';
 
 export const RP_ART_CSS = `
@@ -4735,6 +4735,8 @@ ${XHS_COVER_CSS}
 #rp-phone .rp-api-profile-picker button{flex:0 0 auto;white-space:nowrap;padding-inline:9px}
 #rp-phone .rp-api-secondary{border:1px solid var(--rp-v-border,rgba(168,85,247,.2));border-radius:10px;font-size:12px;min-width:0}
 #rp-phone .rp-api-secondary summary{padding:8px 10px;cursor:pointer;color:var(--rp-v-text,#7c3aed);font-weight:500;line-height:1.4}
+#rp-phone #rp-screen input[id^="rp-api-profile-name"]{pointer-events:auto!important;-webkit-user-select:text!important;user-select:text!important;touch-action:manipulation;min-height:40px}
+@media (hover:none) and (pointer:coarse){#rp-phone #rp-screen input[id^="rp-api-profile-name"]{font-size:16px!important}}
 #rp-phone .rp-api-secondary-body{display:flex;flex-direction:column;gap:7px;padding:2px 10px 10px;min-width:0}
 #rp-phone #rp-api-custom-fields-v{gap:6px!important}
 #rp-phone #rp-screen #rp-view-api-settings .rp-api-scroll{padding-top:8px!important;padding-bottom:8px!important}

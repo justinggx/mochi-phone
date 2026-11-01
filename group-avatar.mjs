@@ -1,4 +1,4 @@
-import { avatarCropView, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
+import { avatarCropView, squareAvatar } from './avatar-studio.mjs?v=20261101-mobile-cloud-203';
 
 const imageSource = src => typeof src === 'string' && src.length <= 1000000 && /^(?:data:image\/(?:png|jpe?g|webp|gif);base64,|https?:\/\/|\/(?!\/))/i.test(src);
 export function normalizeGroupAvatar(value) {

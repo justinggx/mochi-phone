@@ -69,6 +69,9 @@ export function squareAvatar(src, { document: doc, signal, crop, outputSize = 12
 }
 
 export const AVATAR_STUDIO_CSS = `
+#rp-avatar-studio #rp-as-scope{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:400;color:var(--rp-v-muted,#887781);margin:6px 0 0}
+#rp-avatar-studio #rp-as-scope-select{width:auto;min-width:0;padding:5px 9px;border:1px solid var(--rp-v-border,#dfd4db);border-radius:9px;background:var(--rp-v-card,#f4eef1);color:var(--rp-v-text,#51434b);font:inherit;touch-action:manipulation}
+
 #rp-phone #rp-screen #rp-avatar-studio{position:absolute!important;inset:0!important;z-index:300!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:10px!important;background:rgba(30,25,30,.32)!important;color:var(--rp-v-text,#45383d)!important;font-family:inherit;font-size:12px;line-height:1.55;box-sizing:border-box!important;}
 #rp-phone #rp-screen #rp-avatar-studio *{box-sizing:border-box;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-panel{display:flex;flex-direction:column;background:var(--rp-v-surface,#faf7f3);border:1px solid var(--rp-v-border,#ded5d7);border-radius:18px;padding:14px;width:100%;max-height:100%;overflow:hidden;box-shadow:0 12px 36px #0002;}
@@ -185,8 +188,8 @@ export function openAvatarStudio(deps) {
   const candidates = [];
   let translation = null, translating = false, translationNoteSource = '';
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
-  root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><p id="rp-as-scope"></p></div><p id="rp-as-generation-status" role="status" aria-live="polite" hidden></p><div id="rp-as-tabs" class="rp-as-tabs" role="tablist" aria-label="头像制作步骤" hidden><button id="rp-as-tab-requirements" role="tab" aria-controls="rp-as-requirements" aria-selected="true">人设与要求</button><button id="rp-as-tab-adjust" role="tab" aria-controls="rp-as-adjust" aria-selected="false" tabindex="-1" disabled>头像调整</button><button id="rp-as-tab-tags" role="tab" aria-controls="rp-as-tag-area" aria-selected="false" tabindex="-1" disabled>绘图 tag</button></div><div class="rp-as-body">
-    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button><button id="rp-as-view-large" aria-controls="rp-as-large">查看大图</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
+  root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><label id="rp-as-scope">应用范围 <select id="rp-as-scope-select" aria-label="头像应用范围"><option value="local">仅当前聊天</option><option value="shared">共用头像</option></select></label></div><p id="rp-as-generation-status" role="status" aria-live="polite" hidden></p><div id="rp-as-tabs" class="rp-as-tabs" role="tablist" aria-label="头像制作步骤" hidden><button id="rp-as-tab-requirements" role="tab" aria-controls="rp-as-requirements" aria-selected="true">人设与要求</button><button id="rp-as-tab-adjust" role="tab" aria-controls="rp-as-adjust" aria-selected="false" tabindex="-1" disabled>头像调整</button><button id="rp-as-tab-tags" role="tab" aria-controls="rp-as-tag-area" aria-selected="false" tabindex="-1" disabled>绘图 tag</button></div><div class="rp-as-body">
+    <div id="rp-as-choice"><div class="rp-as-options"><button id="rp-as-upload">上传图片</button><button id="rp-as-ai">智绘姬生图</button><button id="rp-as-view-large" aria-controls="rp-as-large">查看大图</button><button id="rp-as-use-current" hidden>使用当前头像</button></div><div id="rp-as-install" class="rp-as-install" hidden><p id="rp-as-install-message" role="status" aria-live="polite"></p><p><a id="rp-as-install-link" target="_blank" rel="noopener noreferrer">dc社区类脑 · 智绘姬扩展</a></p><textarea id="rp-as-install-url" readonly aria-label="智绘姬扩展社区地址"></textarea><button id="rp-as-copy-link" class="rp-as-primary">复制链接</button><p id="rp-as-copy-status" role="status" aria-live="polite"></p></div><button id="rp-as-dismiss">取消</button></div>
     <div id="rp-as-editor" hidden>
       <section id="rp-as-requirements" role="tabpanel" aria-labelledby="rp-as-tab-requirements"><p class="rp-as-guide">先确认人设并补充要求，生成后再调整头像。</p><label for="rp-as-extra">补充人设／头像要求（非必填）<span id="rp-as-extra-hint">选填 · 点击输入</span></label><textarea id="rp-as-extra" aria-describedby="rp-as-extra-hint" maxlength="4000" placeholder="点击这里输入补充要求…&#10;例如：银色短发、绿色眼睛、白衬衫。"></textarea>
         <div class="rp-as-profile-section"><p id="rp-as-sources" hidden></p><div class="rp-as-field-heading"><label for="rp-as-profile">人物资料（可直接修改）</label><button id="rp-as-profile-expand" aria-label="放大编辑人物资料" aria-controls="rp-as-expanded" disabled>放大编辑</button></div><textarea id="rp-as-profile" maxlength="15500" aria-describedby="rp-as-profile-note" placeholder="点击这里修改读错的资料，或补充缺少的人设。"></textarea><p id="rp-as-profile-note">仅用于本次头像生成，不修改角色卡或世界书。</p><button id="rp-as-restore" disabled>恢复读取原文</button></div><button id="rp-as-reload" hidden>重读人物资料</button><p id="rp-as-regenerate-note" class="rp-as-guide">首次生成会先编写 tag，再生成头像。</p>
@@ -203,9 +206,12 @@ export function openAvatarStudio(deps) {
   const $ = id => root.querySelector('#rp-as-' + id);
   root.querySelectorAll('button').forEach(button => { button.type = 'button'; });
   $('title').textContent = '更换' + target.name + '的头像';
-  $('scope').textContent = scope === 'local' ? '应用范围：仅当前聊天' : '应用范围：共用头像';
+  $('scope-select').value=scope==='local'?'local':'shared';
+  $('scope-select').querySelector('[value=shared]').disabled=deps.canShare===false;
+  $('scope-select').onchange=()=>{if(valid()&&!busy)deps.changeScope?.($('scope-select').value);};
   $('install-link').href = AVATAR_EXTENSION_LINK; $('install-url').value = AVATAR_EXTENSION_LINK;
   host.appendChild(root);
+  $('use-current').hidden=!deps.currentPreview?.();
   const valid = () => !closed && !signal?.aborted && deps.isCurrent() !== false;
   const check = () => { if (!valid()) throw cancelled(); };
   function fitLargeImage() {
@@ -349,7 +355,9 @@ export function openAvatarStudio(deps) {
     }
   };
   const paint = () => {
+    $('scope-select').disabled=busy;
     $('ai').disabled = busy;
+    $('use-current').disabled=busy;
     $('view-large').disabled = busy || copying;
     for (const id of ['generate', 'reload']) $(id).disabled = busy || !profile;
     $('reload').disabled = busy;
@@ -579,6 +587,7 @@ export function openAvatarStudio(deps) {
     } finally { copying = false; if (valid()) $('copy-link').disabled = false; }
   };
   $('reload').onclick = () => { void read(); };
+  $('use-current').onclick=()=>operation(async()=>{const preview=deps.currentPreview?.();if(!preview)throw new Error('当前没有可用头像');const largeSrc=await deps.currentAvatar?.();check();const saved=await deps.commit(preview,{existing:true,largeSrc});check();if(!saved)throw new Error('头像未能保存');close();});
   $('upload').onclick = () => { if (!valid()) return; close(); deps.upload(); };
   $('dismiss').onclick = $('back').onclick = close;
   root.onkeydown = event => {

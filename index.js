@@ -1,14 +1,15 @@
+import { createApiSync } from './api-sync.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneChat } from './phone-chat.mjs?v=20261031-chat-mode-compact-195';
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 import { createPhoneTemplate } from './phone-template.mjs?v=20261031-thin-frame-199';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
-import { createPhoneApiConfig } from './api-config.mjs?v=20261029-optimization-173';
+import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261031-phone-residue-201';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261031-thin-frame-199';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261101-mobile-cloud-203';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
-import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261028-refine-160';
+import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261101-mobile-cloud-203';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261031-independent-chat-190';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
@@ -17,8 +18,8 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261031-inline-sticker-202';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261031-global-message-mode-191';
-import { createGroupAvatars } from './group-avatar.mjs?v=20261031-all-functions-189';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261101-mobile-cloud-203';
+import { createGroupAvatars } from './group-avatar.mjs?v=20261101-mobile-cloud-203';
 import { createThemeStudio } from './theme-studio.mjs?v=20261031-thin-frame-199';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
@@ -564,9 +565,11 @@ function rpUpdateViewport() {
 let _rp_ext_settings = null;
 let _rp_save_fn = null;
 let _rp_script_mod = null;
+let rpPersonaModule = null;
 let rpTheatrePresetManagers = null;
 const rpModulesReady = (async function _rpLoadModules() {
   try { rpTheatrePresetManagers = await import('../../../preset-manager.js'); } catch {}
+  try { rpPersonaModule = await import('../../../personas.js'); } catch {}
   try {
     const ext = await import('../../../extensions.js');
     if (ext && ext.extension_settings) {
@@ -1782,7 +1785,7 @@ let rpSharedAvatarCache = null;
 function rpAvatarIdentity(key, ctx = getContext()) {
   if (!rpArchiveAccountHandle || !ctx) return null;
   if (key === 'user') {
-    const persona = ctx.user_avatar;
+    const persona = ctx.user_avatar || rpPersonaModule?.user_avatar;
     return typeof persona === 'string' && persona ? JSON.stringify(['persona', persona]) : null;
   }
   if (ctx.groupId != null) return null; // Group membership cannot establish an NPC's owning card.
@@ -2004,7 +2007,8 @@ function rpChooseAvatar(key) {
   const who = String(key || ''), host = document.getElementById('rp-screen');
   if (!who || !host) return;
   const task = rpRuntime.task(), ctx = getContext();
-  const slot = STATE.chatId, account = rpArchiveAccountHandle, identity = rpAvatarIdentity(who), scope = rpAvatarUploadScope();
+  const slot = STATE.chatId, account = rpArchiveAccountHandle, identity = rpAvatarIdentity(who);
+  let scope = rpAvatarUploadScope();
   const ticket = Symbol('avatar-studio'); rpAvatarEdits.set(who, ticket);
   const current = () => task.valid() && rpAvatarEdits.get(who) === ticket && STATE.chatId === slot && account === rpArchiveAccountHandle && getPhoneChatSlotKey(getContext()) === slot && rpAvatarIdentity(who) === identity;
   if (!current()) return;
@@ -2014,7 +2018,9 @@ function rpChooseAvatar(key) {
   const target = avatarTarget(who, ctx);
   let instance;
   instance = openAvatarStudio({ host, target, scope: scope === 'shared' && identity ? 'shared' : 'local', signal: task.signal, isCurrent: current,
+    canShare:!!identity, changeScope:value=>{if(current()){scope=value==='shared'&&identity?'shared':'local';$('#rp-avatar-scope').val(scope);try{localStorage.setItem('rp-avatar-upload-scope-v1',scope);}catch{}}},
     currentAvatar: () => current() ? rpAvatarViewSource(who) : null,
+    currentPreview:()=>current()?getAvatar(who):null,
     translateTag: rpTranslateAvatarTag,
     readProfile: check => readAvatarProfile(target, ctx, { check }),
     bridge: () => Promise.resolve(window.__chatu8MochiPhoneBridge),
@@ -2022,8 +2028,8 @@ function rpChooseAvatar(key) {
     upload: () => { if (task.valid() && STATE.chatId === slot && account === rpArchiveAccountHandle && rpAvatarIdentity(who) === identity) rpChooseAvatarFile(who, scope); },
     commit: async (data, image) => {
       if (!current()) return false;
-      setAvatar(who, data, ticket, scope); saveGlobalAvatars(); saveState({immediate:true,activity:false}); rpRefreshEditableAvatars(who);
-      if(image?.src)void rpSaveAvatarLargeInBackground(who,data,image.src,image.crop,scope);
+      setAvatar(who, data, ticket, scope, image?.existing?image.largeSrc:null); saveGlobalAvatars(); saveState({immediate:true,activity:false}); rpRefreshEditableAvatars(who);
+      if(!image?.existing&&image?.src)void rpSaveAvatarLargeInBackground(who,data,image.src,image.crop,scope);
       if (scope === 'shared' && !identity) toastr.info('无法确认所属角色卡或用户身份，头像已仅用于当前聊天');
       return true;
     },
@@ -3272,6 +3278,7 @@ async function init() {
   rpInitPromise = (async () => {
     await rpModulesReady;
     if (instance.stats().destroyed) return;
+    void rpApiCloud().sync();
     await rpInitBody();
     if (instance.stats().destroyed) return;
     rpInitialized = true;
@@ -4527,17 +4534,19 @@ function rpInstallBackSwipe() {
     const current = action();
     return current?.root === g.root && current.control === g.control;
   }
-  function move(touch, event) {
+  function move(touch, event, ending = false) {
     const g = gesture;
     if (!g) return;
     if (!valid(g)) { reset(); return; }
     g.dx = touch.clientX - g.x; g.dy = touch.clientY - g.y;
     if (!g.claimed) {
-      if (Math.max(Math.abs(g.dx), Math.abs(g.dy)) < 8) return;
-      if (g.dx <= 0 || Math.abs(g.dy) >= g.dx / 1.4) { reset(); return; }
+      const ax=Math.abs(g.dx),ay=Math.abs(g.dy);
+      if (Math.max(ax,ay)<12) return;
+      if(ay>16&&ay>ax*1.25){reset();return;}
+      if(ax<ay*1.25)return;
       g.claimed = true;
     }
-    if (!event.cancelable) { reset(); return; }
+    if (!event.cancelable) { if(!ending)reset();return; }
     event.preventDefault();
   }
   runtime.listenDOM(screen, 'touchstart', event => {
@@ -4550,7 +4559,7 @@ function rpInstallBackSwipe() {
     const current = action(), rect = screen.getBoundingClientRect(), touch = event.touches[0];
     if (!current || !(rect.width > 0 && rect.height > 0) || touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) return;
     const token = runtime.task();
-    gesture = {...current,token,id:touch.identifier,x:touch.clientX,y:touch.clientY,dx:0,dy:0,view:STATE.currentView,time:Date.now(),threshold:Math.max(36,Math.min(90,rect.width * .18)),claimed:false};
+    gesture = {...current,token,id:touch.identifier,x:touch.clientX,y:touch.clientY,dx:0,dy:0,view:STATE.currentView,time:Date.now(),threshold:Math.max(32,Math.min(72,rect.width * .14)),claimed:false};
     token.signal.addEventListener('abort', reset, {once:true});
     window._rpSwipeLocked = true;
   }, {passive:true,capture:true});
@@ -4561,17 +4570,17 @@ function rpInstallBackSwipe() {
     const touch = [...event.touches].find(t => t.identifier === gesture.id);
     if (touch) move(touch,event); else reset();
   }, {passive:false,capture:true});
-  runtime.listenDOM(screen, 'touchend', event => {
+  runtime.listenDOM(document, 'touchend', event => {
     const g = gesture;
     if (!g) return;
     const touch = [...event.changedTouches].find(t => t.identifier === g.id);
     if (!touch) return;
     if (event.touches.length) { reset(); return; }
-    move(touch,event);
+    move(touch,event,true);
     if (gesture !== g) return;
     const rect = screen.getBoundingClientRect();
-    const accepted = g.claimed && g.dx >= g.threshold && g.dx > Math.abs(g.dy) * 1.4
-      && touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom && valid(g,true);
+    const accepted = g.claimed && Math.abs(g.dx) >= g.threshold && Math.abs(g.dx) > Math.abs(g.dy) * 1.25
+      && touch.clientX >= rect.left-32 && touch.clientX <= rect.right+32 && touch.clientY >= rect.top-16 && touch.clientY <= rect.bottom+16 && valid(g,true);
     if (g.claimed) { if (event.cancelable) event.preventDefault(); event.stopPropagation(); }
     reset();
     if (accepted) {
@@ -4592,6 +4601,8 @@ function rpInstallBackSwipe() {
 
 function bindUI() {
   rpInstallBackSwipe();
+  rpRuntime.listenDOM(window,'focus',()=>{void rpApiCloud().sync();});
+  rpRuntime.listenDOM(document,'visibilitychange',()=>{if(!document.hidden)void rpApiCloud().sync();});
   rpTheatreApp().mount();
   rpRefreshPhoneLanguageSettings();rpRefreshPhoneChatMode();
   $(document).on('click.mochiPhone','#rp-messages-chat-mode,#rp-settings-chat-mode',function(){rpSetMessagesMenu(false);rpIndependentApp().openMode();});
@@ -5037,7 +5048,8 @@ function bindUI() {
   $(document).on('click.mochiPhone','[data-api-profile-new]',function(){if(rpApiProfileFormCurrent(this.getAttribute('data-api-profile-new')))rpSelectApiProfile(this.getAttribute('data-api-profile-new'),'');});
   $(document).on('click.mochiPhone','[data-api-profile-delete]',function(){rpDeleteApiProfile(this.getAttribute('data-api-profile-delete'));});
   $(document).on('click.mochiPhone','#rp-api-save-v',function(){rpSaveApiProfileForm('-v');});
-  $(document).on('click.mochiPhone','#rp-api-btn',function(){rpFillApiProfileForm('');rpSetSurfaceOpen('#rp-api-panel',true);});
+  $(document).on('input.mochiPhone change.mochiPhone','#rp-api-panel input,#rp-api-panel select,#rp-view-api-settings input,#rp-view-api-settings select',function(){const host=this.closest('#rp-api-panel,#rp-view-api-settings');if(host)host.dataset.rpApiDirty='true';});
+  $(document).on('click.mochiPhone','#rp-api-btn',function(){rpFillApiProfileForm('');void rpApiCloud().sync();rpSetSurfaceOpen('#rp-api-panel',true);});
   $(document).on("change.mochiPhone", 'input[name="rp-api-mode"]', function() {
     if ($(this).val() === 'custom') $('#rp-api-custom-fields').show();
     else $('#rp-api-custom-fields').hide();
@@ -5715,14 +5727,24 @@ const { rpReadApiSettingsStore, readCustomApiConfig, rpReadApiProfiles, rpReadSa
   get buildCustomApiEndpoint() { return buildCustomApiEndpoint; },
   get rpResolveCustomApiModel() { return rpResolveCustomApiModel; },
   get window() { return window; },
+  changed:(next,previous)=>{try{rpApiCloud().record(next,previous);}catch{rpApiProfileNotice('已存本机，云端同步未完成；打开设置会重试。');}},
 });
 
+let rpApiSync = null;
+function rpApiCloud() {
+  if(!rpApiSync){rpApiSync=createApiSync({account:()=>rpArchiveAccountHandle,alive:()=>!rpRuntime.stats().destroyed,storage:localStorage,read:rpReadApiSettingsStore,
+    fetch:(...args)=>fetch(...args),headers:()=>getContext()?.getRequestHeaders?.()||_rp_script_mod?.getRequestHeaders?.()||{'Content-Type':'application/json'},
+    AbortController:window.AbortController,setTimer:window.setTimeout.bind(window),clearTimer:window.clearTimeout.bind(window),uuid:()=>window.crypto?.randomUUID?.()||'client-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),
+    base64:bytes=>{let str='';for(let i=0;i<bytes.length;i+=8192)str+=String.fromCharCode(...bytes.subarray(i,i+8192));return window.btoa(str);},
+    changed:()=>{for(const suffix of['-v','']){const host=document.getElementById(suffix==='-v'?'rp-view-api-settings':'rp-api-panel');if(host?.dataset.rpApiAccount===rpAccountStoragePrefix()&&host.dataset.rpApiDirty!=='true')rpFillApiProfileForm(suffix);}},
+    status:text=>{if(STATE.currentView==='api-settings'||document.getElementById('rp-api-panel')?.style.display!=='none')rpApiProfileNotice(text);}
+  });const instance=rpApiSync;rpRuntime.own(()=>{instance.close();if(rpApiSync===instance)rpApiSync=null;});}
+  return rpApiSync;
+}
 function rpApiProfileControlsHtml(suffix, part = 'picker') {
   if(part==='manage')return `<details class="rp-api-secondary rp-api-profile-manager" id="rp-api-profile-manager${suffix}">
-    <summary>配置管理（名称 / 删除）</summary>
+    <summary>配置管理</summary>
     <div class="rp-api-secondary-body">
-      <label class="rp-api-field-label" for="rp-api-profile-name${suffix}">配置名称</label>
-      <input class="rp-api-input" id="rp-api-profile-name${suffix}" maxlength="60" placeholder="例如 DeepSeek 日常、配置1" autocomplete="off">
       <button type="button" class="rp-api-profile-action" id="rp-api-profile-delete${suffix}" data-api-profile-delete="${suffix}">删除此配置</button>
       <div class="rp-api-profile-hint">名称可在这里修改；保存会更新当前所选配置。</div>
       <div class="rp-api-profile-status" id="rp-api-profile-status${suffix}" role="status" aria-live="polite"></div>
@@ -5731,6 +5753,8 @@ function rpApiProfileControlsHtml(suffix, part = 'picker') {
   return `<div class="rp-api-profiles">
     <label class="rp-api-field-label" for="rp-api-profile${suffix}">我的配置</label>
     <div class="rp-api-profile-picker"><select class="rp-api-input" id="rp-api-profile${suffix}" aria-label="已保存的API配置"><option value="">新建配置</option></select><button type="button" class="rp-api-profile-action" data-api-profile-new="${suffix}">＋ 新增</button></div>
+    <label class="rp-api-field-label" for="rp-api-profile-name${suffix}">配置名称</label>
+    <input type="text" class="rp-api-input" id="rp-api-profile-name${suffix}" maxlength="60" placeholder="例如 DeepSeek 日常" autocomplete="off" autocapitalize="off" spellcheck="false">
   </div>`;
 }
 
@@ -5750,9 +5774,10 @@ function rpRenderApiProfileOptions(suffix, profiles, selectedId) {
 }
 
 function rpFillApiProfileForm(suffix, selectedId, newDraft = false) {
+  if(selectedId===undefined&&!newDraft)void rpApiCloud().sync();
   const {store,profiles,activeId}=rpReadApiProfiles(),id=newDraft?'':(selectedId??(activeId||profiles[0]?.id||''));
   const profile=profiles.find(p=>p.id===id),host=document.getElementById(suffix==='-v'?'rp-view-api-settings':'rp-api-panel');
-  if(host)host.dataset.rpApiAccount=rpAccountStoragePrefix()||'';
+  if(host){host.dataset.rpApiAccount=rpAccountStoragePrefix()||'';host.dataset.rpApiDirty='false';}
   rpResetApiTest();rpResetModelRequest();rpRenderApiProfileOptions(suffix,profiles,profile?.id||'');
   const mode=newDraft||selectedId!==undefined?'custom':store.mode==='custom'?'custom':'st';
   $('input[name="rp-api-mode'+suffix+'"][value="'+mode+'"]').prop('checked',true);
@@ -12658,6 +12683,21 @@ function _isNeg(val) {
   return false;
 }
 
+function rpBankNumber(raw) {
+  if(typeof raw==='number')return Number.isFinite(raw)?raw:null;
+  if(typeof raw!=='string')return null;
+  const text=raw.trim().replace(/[,，\s￥¥€$£]/g,'').replace(/^−/,'-'),match=/^([+-]?\d+(?:\.\d+)?)(万|亿|千)?$/.exec(text);
+  if(!match)return null;const n=Number(match[1])*({'万':1e4,'亿':1e8,'千':1e3}[match[2]]||1);return Number.isFinite(n)?n:null;
+}
+function rpBankTotals(data) {
+  const assets=Array.isArray(data.assets)?data.assets.filter(v=>v&&typeof v==='object'):[],values=assets.map(v=>rpBankNumber(v.amount));
+  if(!assets.length||values.some(v=>v===null))return{total:data.totalAssets??'—',liquid:data.liquidAssets,debt:data.totalDebt,reconciled:false};
+  let gross=0,loans=0,cash=0,hasLoans=false,hasCash=false;
+  assets.forEach((v,i)=>{const n=values[i];if(v.type==='loan'||n<0){loans+=Math.abs(n);hasLoans=true;}else{gross+=n;if(v.type==='cash'){cash+=n;hasCash=true;}}});
+  const declared=rpBankNumber(data.totalDebt),debt=hasLoans?loans:declared===null?0:Math.abs(declared),round=v=>Math.round((v+Number.EPSILON)*100)/100;
+  return{total:round(gross-debt),liquid:hasCash?round(cash):data.liquidAssets,debt:round(debt),reconciled:true};
+}
+
 /** 将 AI 返回的数据渲染到 #rp-bank-body (v2 重构) */
 function _paintBankBody(data) {
   const body = document.getElementById('rp-bank-body');
@@ -12665,9 +12705,10 @@ function _paintBankBody(data) {
 
   const assets   = Array.isArray(data.assets) ? data.assets.filter(item => item && typeof item === 'object') : [];
   const txns     = Array.isArray(data.transactions) ? data.transactions.filter(item => item && typeof item === 'object') : [];
-  const total    = data.totalAssets ?? '—';
-  const liquid   = data.liquidAssets == null || data.liquidAssets === '' ? null : String(data.liquidAssets);  // 流动资金，0也是有效值
-  const debt     = data.totalDebt == null || data.totalDebt === '' ? null : String(data.totalDebt);  // 总负债
+  const totals=rpBankTotals(data);
+  const total    = totals.total;
+  const liquid   = totals.liquid == null || totals.liquid === '' ? null : String(totals.liquid);  // 流动资金，0也是有效值
+  const debt     = totals.debt == null || totals.debt === '' ? null : String(totals.debt);  // 总负债
   const charName = data.charName     || 'TA';
   const currency = data.currency     || '¥';
   const safeCurrency = escHtml(currency);
@@ -12698,7 +12739,7 @@ function _paintBankBody(data) {
       </div>
       <div class="rp-bank-hero-label">净资产估算</div>
       <div class="rp-bank-hero-amount"><span class="rp-bank-hero-unit">${safeCurrency}</span>${escHtml(_fmtMoney(total))}</div>
-      <div class="rp-bank-hero-sub">含负债综合估算</div>
+      <div class="rp-bank-hero-sub">${totals.reconciled?'资产项目合计，已扣除负债':'模型估算，部分项目金额待核对'}</div>
       ${statsHtml}
     </div>`;
 
@@ -12940,6 +12981,7 @@ async function generateBankData(force) {
 - 货币单位根据角色世界观决定（现代中国¥，欧美£/$，古代两/铜钱，奇幻金币等）
 - 资产项目必须包含：现金/流动资金、房产/土地、金融资产（基金/股票/信托）、贷款/债务（如有）
 - 消费记录至少6条，需结合最近剧情（花了什么钱、赚了什么钱），如无剧情则根据人设自由发挥
+- 每项amount必须为同一currency下的纯数字，项目互不重叠；现金type=cash，负债type=loan，负债金额写正数。totalAssets必须等于全部非负债项目合计减全部负债；liquidAssets为cash项目合计。不得为了沿用旧总额而使明细和合计不一致。
 - totalAssets、liquidAssets、totalDebt 均为纯数字（不含单位，由前端格式化），currency 是货币符号
 - 只返回 JSON，不要任何解释文字
 JSON 格式：
