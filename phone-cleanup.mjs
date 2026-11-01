@@ -44,7 +44,7 @@ function normalizePhoneCompareText(s) {
     .replace(/[？]/g, '?')
     .replace(/[（]/g, '(')
     .replace(/[）]/g, ')')
-    .replace(/(?:\.{3,}|…|⋯|·{3,}|•{3,}|。{3,})/g, '...')
+    .replace(/(?:\.{3,}|[…⋯]+|·{3,}|•{3,}|。{3,})/g, '...')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -67,7 +67,7 @@ function buildLoosePhoneFragmentRegex(fragment) {
   };
   const parts = normalized.split(/("|'|\.{3}|\s+)/).filter(Boolean).map(function(part) {
     if (/^\s+$/.test(part)) return '\\s+';
-    if (part === '...') return '(?:\\.\\.\\.|…|⋯|·{3,}|•{3,}|。{3,})';
+    if (part === '...') return '(?:\\.{3,}|[…⋯]+|·{3,}|•{3,}|。{3,})';
     if (part === '"') return '(?:"|&quot;|&#34;|“|”|„|‟|＂)';
     if (part === "'") return "(?:'|&#39;|&apos;|‘|’|‛|＇)";
     return looseLiteral(part);
@@ -91,7 +91,7 @@ function normalizePhoneCleanupText(s) {
     .replace(/[？]/g, '?')
     .replace(/[（]/g, '(')
     .replace(/[）]/g, ')')
-    .replace(/(?:\.{3,}|…|⋯|·{3,}|•{3,}|。{3,})/g, '...')
+    .replace(/(?:\.{3,}|[…⋯]+|·{3,}|•{3,}|。{3,})/g, '...')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -235,6 +235,13 @@ function markPhoneCleanupSourceHtml(html, meta = {}) {
       if(!left)continue;
       available.set(tag,left-1);edits.push({start:offset,end:offset+match.length});
     }
+    // Retain the actual native formatter's outside source for a later renderer
+    // that drops DOM markers. Only a complete, ordered set of proven protocol
+    // ranges may supply this fallback; the raw message/object remains the key.
+    if(html.length<=200000&&edits.length===sourceParts.length&&edits.length){
+      const tagOf=text=>(0,phoneHost.normalizePhoneMarkup)(text).match(/^<([a-z]+)\b/i)?.[1]?.toUpperCase();
+      if(edits.every((edit,index)=>tagOf(html.slice(edit.start,edit.end))===tagOf(sourceParts[index].text)))record.renderedSource=html;
+    }
     let out='',cursor=0;
     for(const edit of edits){out+=html.slice(cursor,edit.start)+'<div data-rp-phone-source="'+record.token+'">'+html.slice(edit.start,edit.end)+'</div>';cursor=edit.end;}
     return out+html.slice(cursor);
@@ -336,8 +343,12 @@ function phoneCleanupNarrativeChunks(raw, opaqueIslands = [], corpus = '') {
   return text.split(/\n+/).map(s => normalizePhoneCompareText(s.replace(/(?:\*\*|__|~~|`)/g,'').replace(/\*([^*\n]+)\*/g,'$1').replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+)/,''))).filter(Boolean);
 }
 
-function createPhoneCleanupScope(root, raw) {
-  const parts = phoneCleanupSourceParts(raw), records = [], tokens = [], segments = [], opaqueIslands = [];
+function createPhoneCleanupScope(root, raw, useRenderedAnchors = false) {
+  const id=root?.closest?.('.mes')?.getAttribute('mesid'),message=/^\d+$/.test(id||'')?(0,phoneHost.getContext)()?.chat?.[Number(id)]:null;
+  const candidate=message&&installPhoneCleanupSourceMarkers.records?.get(message);
+  const sourceRecord=candidate&&candidate.raw===message.mes&&phoneCleanupSourceMatches(root,raw)?candidate:null;
+  const renderedSource=useRenderedAnchors&&sourceRecord?.renderedSource;
+  const parts = phoneCleanupSourceParts(renderedSource||raw), records = [], tokens = [], segments = [], opaqueIslands = [];
   const visibleCache=new Map();
   const visible=value=>{const text=String(value||'');if(visibleCache.has(text))return visibleCache.get(text);const decoder=phoneHost.document.createElement('textarea');decoder.innerHTML=text;const result=normalizePhoneCompareText(decoder.value);visibleCache.set(text,result);return result;};
   let corpus = '', disabled = String(raw || '').length > 200000;
@@ -363,6 +374,19 @@ function createPhoneCleanupScope(root, raw) {
     if (!part.phone) {phoneCleanupNarrativeChunks(part.text,opaqueIslands,corpus).forEach(text=>tokens.push({kind:'outside',part:index,text}));return;}
     for(const tag of part.text.matchAll(/<([a-z]+)\b/gi))protocolTags.add(tag[1].toUpperCase());
     part.items=collectPhoneCleanupItems(part.text);records.push(part);
+    if(renderedSource){
+      const template=phoneHost.document.createElement('template');template.innerHTML=part.text;
+      const visibleBody=node=>{
+        if(node.nodeType===3)return node.nodeValue||'';
+        if(node.nodeType!==1)return '';
+        if(isPhoneCleanupProtectedNode(node)||/^(SCRIPT|STYLE|BUTTON|INPUT|SELECT|TEXTAREA|IFRAME|CANVAS|SVG|VIDEO|AUDIO|PRE|CODE)$/.test(node.tagName))return '\0';
+        const block=/^(P|DIV|BR|HR|BLOCKQUOTE|UL|OL|LI)$/.test(node.tagName),value=Array.from(node.childNodes).map(visibleBody).join('');
+        return block?'\n'+value+'\n':value;
+      };
+      // Summaries intentionally omit raw image prompts and formatting. This
+      // exact formatter-owned body also accounts for those leftover characters.
+      part.renderedBodies=Array.from(template.content.querySelectorAll('sms,gmsg,gvoice,simg,voice,moments,comment,mochilocation,mochiloc')).map(visibleBody).filter(text=>text.trim()&&!text.includes('\0'));
+    }
     const re=/<(SMS|GMSG|GVOICE|SIMG|NOTIFY|CALL|VOICE|MOMENTS|COMMENT|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:SIMG|NOTIFY|CALL|SYNC|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?>/gi;
     let m;while((m=re.exec(part.text)))for(const item of collectPhoneCleanupItems(m[0])) {
       if(item.from)tokens.push({kind:'author',part:index,text:visible(item.from)});
@@ -408,6 +432,7 @@ function createPhoneCleanupScope(root, raw) {
         while((m=regex.exec(slice))){if(!m[0].length)break;if(!m[0].includes('\0'))proposed.push({start:start+m.index,end:start+m.index+m[0].length,kind});}
       }
       for(const item of part.items){for(const v of item.variants||[])if(v)propose(v,'body');if(item.from)propose(item.from,'author');}
+      for(const body of part.renderedBodies||[])propose(body,'body');
       const literal=/<phone\b[^>]*>(?:(?!\0)[\s\S])*?<\/phone\s*>|&lt;phone\b(?:(?!\0)[\s\S])*?&lt;\/phone&gt;/gi;
       let m;while((m=literal.exec(slice))){
         const text=visible((0,phoneHost.normalizePhoneMarkup)(m[0]));
@@ -456,6 +481,10 @@ function createPhoneCleanupScope(root, raw) {
       return changed;
     }
   };
+  // Card/global regexes can replace or hide raw auxiliary sections. A later
+  // unmarked render must align against their already-captured native output,
+  // never authorize deletion from equal text or an unrelated/stale message.
+  if(!aligned&&!useRenderedAnchors&&sourceRecord?.renderedSource&&!scope.protocolNodes().length)return createPhoneCleanupScope(root,raw,true);
   return scope;
 }
 

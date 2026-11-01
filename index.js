@@ -6,7 +6,7 @@ import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-sli
 import { createPhoneTemplate } from './phone-template.mjs?v=20261031-thin-frame-199';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
-import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261031-phone-residue-201';
+import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
 import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261101-mobile-cloud-203';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261101-mobile-cloud-203';
@@ -7338,7 +7338,9 @@ function rpMessageNeedsPhoneEchoRepair(mesId) {
     if (!msg || msg.is_user || !msg.mes) return false;
     const normalized = normalizePhoneMarkup(String(msg.mes || '').replace(/<think>[\s\S]*?<\/think>/gi, ''));
     if (!/<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalized)) return false;
-    return !rpMesHasRenderedPhoneUi(mesId);
+    if(!rpMesHasRenderedPhoneUi(mesId))return true;
+    const root=document.querySelector('.mes[mesid="'+mesId+'"] .mes_text');
+    return !!root&&(hasPhoneCleanupProtocolResidue(root,normalized)||hasPhoneEchoResidualText(root,normalized));
   } catch(e) {
     return false;
   }
