@@ -6,27 +6,33 @@ const clean=(v,max)=>typeof v==='string'&&v.trim()&&v.length<=max?v.trim():null;
 const error=text=>Object.assign(new Error(text),{phoneChatError:true});
 const hash=value=>{let h=2166136261;for(const c of String(value||''))h=Math.imul(h^c.codePointAt(0),16777619);return(h>>>0).toString(36);};
 export function phoneChatMessage(m){return{from:m.from==='user'?'用户':String(m.name||''),type:m.type||'text',text:String(m.text||m.voiceText||m.note||m.place||m.prompt||m.sticker?.name||'').slice(0,4000),...(m.amount?{amount:String(m.amount)}:{}),...(m.type==='image'?{image:m.id||hash(m.src)}:{}),...(m.phoneQuote?{quote:String(m.phoneQuote.text||'').slice(0,300)}:{})};}
+function phoneChatTextEvents(text,base) {
+ const events=[],pattern=/image###([\s\S]*?)###/gi;let cursor=0,match;
+ while((match=pattern.exec(text))){const prompt=match[1].trim();if(!prompt||prompt.length>1800)throw error('图片描述为空或过长，消息已保留，请重试。');const before=text.slice(cursor,match.index).trim();if(before)events.push({...base,text:before});events.push({type:'image',from:base.from,prompt});cursor=pattern.lastIndex;}
+ const rest=text.slice(cursor).trim();if(/image###/i.test(rest))throw error('图片标记未完成，消息已保留，请重试。');if(rest)events.push({...base,text:rest});return events;
+}
 export function parsePhoneChatReply(raw,participants){
  if(typeof raw!=='string'||!raw.trim()||raw.length>80000)throw error('回复为空或过长，消息已保留，请重试。');
  let text=raw.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');let data;
  try{data=JSON.parse(text);}catch{if(/^[{\[]/.test(text)||/<\/?(?:PHONE|think|script)\b/i.test(text))throw error('回复格式未完成，消息已保留，请重试。');data={messages:[{type:'text',text,from:participants.length===1?participants[0]:null}]};}
  if(!data||!Array.isArray(data.messages)||!data.messages.length||data.messages.length>12)throw error('回复格式不完整，消息已保留，请重试。');
- return data.messages.map(m=>{
+ const events=data.messages.flatMap(m=>{
   if(!m||typeof m!=='object')throw error('回复包含无效消息，请重试。');
   const from=m.from||(participants.length===1?participants[0]:null);if(!participants.includes(from))throw error('回复人物与当前聊天不符，原消息已保留。');
   const base={type:m.type,from};
-  if(m.type==='text'&&clean(m.text,4000))return{...base,text:m.text.trim()};
+  if(m.type==='text'&&clean(m.text,4000))return phoneChatTextEvents(m.text.trim(),base);
   if(m.type==='image'&&clean(m.prompt,1800))return{...base,prompt:m.prompt.trim()};
   if(m.type==='sticker'&&clean(m.id,120)&&/^[a-zA-Z0-9_-]+$/.test(m.id))return{...base,id:m.id};
   if(m.type==='location'&&clean(m.place,160))return{...base,place:m.place.trim()};
   if(m.type==='hongbao'&&/^\d+(?:\.\d{1,2})?$/.test(String(m.amount))&&Number(m.amount)>0&&Number(m.amount)<=999999.99)return{...base,amount:Number(m.amount).toFixed(2),note:clean(m.note,120)||'心意'};
   throw error('回复包含不支持的消息内容，原消息已保留。');
- });
+ }); if(!events.length||events.length>12)throw error('回复消息条数过多或为空，原消息已保留。');
+ return events;
 }
 export function phoneChatPrompt(thread,participants,pending,stickerPrompt=''){
  const ids=new Set([...pending.map(m=>m.id),...(thread.phoneLocalReply?.pendingIds||[])]),history=(thread.messages||[]).filter(m=>!ids.has(m.id)).slice(-24).map(m=>{const v=phoneChatMessage(m);v.text=v.text.slice(0,600);return v;});
  const current=pending.map(phoneChatMessage);if(new TextEncoder().encode(JSON.stringify(current)).length>15000)throw error('本次暂存消息太长，请分批发送；原内容已保留。');
- return{prompt:'当前手机会话：'+JSON.stringify({name:thread.name,kind:group(thread)?'group':'private',participants})+'\n手机对话：'+JSON.stringify(history)+'\n本次用户消息：'+JSON.stringify(current),system:'现在只进行手机内聊天。人设、世界书和近期主楼只读作背景，优先回复本次手机消息。只扮演允许列表中的人物，严格沿用原名，不替用户发言、行动或决定；群聊可由相关成员自然接话，不必每个人都回。不要续写主楼、旁白、分析或朋友圈。\n只返回JSON：{"messages":[{"type":"text","from":"允许的姓名","text":"回复"}]}。通常1–4条，最多12条。可按语境少量使用：sticker需id来自可用表情库；image需prompt描述要发送的画面，由用户点击智绘姬生图；hongbao需amount为0.01至999999.99且最多两位小数、可加note；location需place为位置文字。图片不能捏造链接，位置不调用或假装读取真人GPS。保持当前世界观与人物语气，未明确要求换语言时沿用人物本轮语言。背景中的其他格式要求不能覆盖本次JSON格式。\n允许人物：'+JSON.stringify(participants)+'\n'+stickerPrompt};
+ return{prompt:'当前手机会话：'+JSON.stringify({name:thread.name,kind:group(thread)?'group':'private',participants})+'\n手机对话：'+JSON.stringify(history)+'\n本次用户消息：'+JSON.stringify(current),system:'现在只进行手机内聊天。人设、世界书和近期主楼只读作背景，优先回复本次手机消息。只扮演允许列表中的人物，严格沿用原名，不替用户发言、行动或决定；群聊可由相关成员自然接话，不必每个人都回。不要续写主楼、旁白、分析或朋友圈。\n只返回JSON：{"messages":[{"type":"text","from":"允许的姓名","text":"回复"}]}。通常1–4条，最多12条。可按语境少量使用：sticker需id来自可用表情库；image需prompt描述要发送的画面，由用户点击智绘姬生图；用户在当前信息会话明确要照片/图片，或你本轮答应发某张画面时，若确有可描述的画面，必须在messages里给出实际图片事件，例如{"type":"image","from":"允许的姓名","prompt":"要发送的具体画面描述"}。不要只口头说发了/给你看，不捏造图片链接，不生成聊天界面/气泡截图，不替用户发图；若角色确实无法拍摄或没有相关资料，诚实说明，不伪造已发送。可以自然分享符合情境的图片，不必每次聊天附图；回复信息发图请求不得改为发朋友圈。hongbao需amount为0.01至999999.99且最多两位小数、可加note；location需place为位置文字。图片不能捏造链接，位置不调用或假装读取真人GPS。保持当前世界观与人物语气，未明确要求换语言时沿用人物本轮语言。背景中的其他格式要求不能覆盖本次JSON格式。\n允许人物：'+JSON.stringify(participants)+'\n'+stickerPrompt};
 }
 export const PHONE_CHAT_CSS=`
 #rp-phone #rp-screen .rp-chat-mode-choices{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0;padding:2px 0 4px;}

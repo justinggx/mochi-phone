@@ -1,5 +1,5 @@
 import { createApiSync } from './api-sync.mjs?v=20261101-mobile-cloud-203';
-import { createPhoneChat } from './phone-chat.mjs?v=20261031-chat-mode-compact-195';
+import { createPhoneChat } from './phone-chat.mjs?v=20261101-message-images-204';
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
@@ -907,6 +907,17 @@ function rpPhoneGroupNamingRule() {
   ].join('\n')+'\n';
 }
 
+function rpPhoneImageRule() {
+  return [
+    '[手机信息发图] 小手机的信息私聊和群聊均支持图片，图片消息与朋友圈配图是两个独立渠道。先遵守联系时机、发送者与知识边界，不替{{user}}发言或发图。',
+    '当用户明确在信息会话中要照片/图片，或角色本轮答应把某张照片、自拍、物品/地点画面发给用户或群聊时，在具备该画面信息的前提下输出实际图片消息，不要只口头说“发了/给你看/见图片”却不提供图片标记。明确不能拍摄或没有该资料时如实回复，不伪造已发送。',
+    '信息发图必须落在目标SMS/GMSG正文中，使用 image###要发送的画面描述###。私聊例：<SMS FROM="实际发送者" TO="{{user}}" TIME="HH:MM">image###画面描述###</SMS>；群聊例：<GMSG FROM="实际发送者" GROUP="既有群名" TIME="HH:MM">image###画面描述###</GMSG>。也兼容单独SIMG标签，FROM和目标GROUP必须明确。文字与图片可在同条正文中共存。',
+    '图片描述写这一张实际要发送的画面、必要人物与场景，不写聊天窗口/气泡/手机截图，不捏造图片URL，不写[图片]等空占位。小手机收到完整标记才会显示“点击生图”，之后由用户点击交给智绘姬按当前预设整理并生成；你不要假称图片已经生成。',
+    '回复当前信息会话的发图请求，不能用朋友圈配图代替，也不要把消息图片搬到MOMENTS。只有明确发布朋友圈或自然独立的动态才使用MOMENTS配图；同一张图不要为了覆盖两个渠道重复发。',
+    '剧情自然需要分享画面时可主动在符合联系条件的既有私聊/群聊发图，数量服从用户要求，不凑图、不为发图新建联系人/群。不要每楼强制发图；普通文字聊天不必附图。'
+  ].join('\n')+'\n';
+}
+
 function refreshMochiPrompt() {
   // 优先用加载期捕获的全局;缺失时运行时从 getContext() 兜底(与 Prism 同源,修复旧版捕获失败静默失效)
   let sep = (typeof setExtensionPrompt === 'function') ? setExtensionPrompt : null;
@@ -924,7 +935,7 @@ function refreshMochiPrompt() {
     if (isMochiPhoneEnabled()) {
       sep(
         'mochi-phone-gmsg',
-        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneWorldContextRule() + rpPhoneContactRule() + rpPhoneGroupNamingRule() + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
+        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneWorldContextRule() + rpPhoneContactRule() + rpPhoneGroupNamingRule() + rpPhoneImageRule() + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
         promptPosition,
         0
       );
