@@ -4086,7 +4086,7 @@ function rpWritePhoneChatMode(mode){
 function rpRefreshPhoneChatMode(){
   const independent=rpReadPhoneChatMode()==='independent';
   const menu=document.getElementById('rp-messages-chat-mode');if(menu)menu.textContent='聊天方式 · '+(independent?'独立聊天':'同步主楼');
-  const hint=document.getElementById('rp-settings-chat-mode-hint');if(hint)hint.textContent=independent?'所有消息仅在手机内聊天':'所有消息同步主楼';
+  const hint=document.getElementById('rp-settings-chat-mode-hint');if(hint)hint.textContent=independent?'手机发送使用自定义 API':'手机发送同步主楼';
 }
 
 let rpIndependentChat=null;
@@ -4112,9 +4112,6 @@ function rpSendIndependentText(thread){
   if(!rpIndependentApp().send(thread,messages))return false;
   thread.pendingMessages=(thread.pendingMessages||queued).slice(queued.length);thread.pendingQuotes=rpTools().quotes(thread).slice(queued.length);if(thread.draft===current)thread.draft='';if(thread.draftQuote===quote)thread.draftQuote=null;
   STATE.pendingMessages=thread.pendingMessages;if(String($('#rp-input').val()||'').trim()===current)$('#rp-input').val('');renderPendingQueue();renderBubbles(thread.id);saveState();return true;
-}
-function rpHostPhoneSuppressed(kind){
-  return ['SMS','GMSG','VOICE','GVOICE','SIMG','HONGBAO','GHONGBAO','CALL','mochiLOCATION','mochiLOC'].includes(kind)&&rpIndependentApp().isIndependent();
 }
 
 let rpPhoneTools = null;
@@ -9031,7 +9028,7 @@ function rpPhoneMessageAlreadyReceived(thread, source, matches, resolvedTime) {
   // Upgrade old history only during a replay, not when a genuinely new floor arrives.
   // Claim one legacy record per source occurrence; never remove existing repetitions.
   if (source.legacyReplay) {
-    const legacy = thread.messages.find(m => !m.phoneSource && matches(m) && (!source.time || m.time === resolvedTime));
+    const legacy = thread.messages.find(m => !m.phoneSource && !m.phoneLocal && matches(m) && (!source.time || m.time === resolvedTime));
     if (legacy) { legacy.phoneSource = { key: source.key, signature: source.signature }; saveState(); return true; }
   }
   return false;
@@ -9056,7 +9053,7 @@ function rpParsePhoneOrdered(block, source = {}) {
       if (kind === 'SYNC') { total++; continue; }
       const ordinal = counters[kind] || 0; counters[kind] = ordinal + 1;
       const attrs = getTagAttrs(atom.match(/^<\w+\b([^>]*)>/)?.[1] || '');
-      if(rpHostPhoneSuppressed(kind,attrs))continue;
+      // Incoming host PHONE events are always received; chat mode only routes phone sends.
       const deleted = STATE.deletedContacts?.[normalizePhonePersonName(resolveCanonicalPhoneName(attrs.FROM || ''))];
       const groupDeleted = STATE.deletedContacts?.['group:' + normalizePhonePersonName(attrs.GROUP || '')];
       if ([deleted, groupDeleted].some(record=>record && !(Number.isInteger(source.messageIndex) && source.messageIndex > record.through))) continue;
