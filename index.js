@@ -5762,7 +5762,14 @@ function rpApiCloud() {
     AbortController:window.AbortController,setTimer:window.setTimeout.bind(window),clearTimer:window.clearTimeout.bind(window),uuid:()=>window.crypto?.randomUUID?.()||'client-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),
     base64:bytes=>{let str='';for(let i=0;i<bytes.length;i+=8192)str+=String.fromCharCode(...bytes.subarray(i,i+8192));return window.btoa(str);},
     changed:()=>{for(const suffix of['-v','']){const host=document.getElementById(suffix==='-v'?'rp-view-api-settings':'rp-api-panel');if(host?.dataset.rpApiAccount===rpAccountStoragePrefix()&&host.dataset.rpApiDirty!=='true')rpFillApiProfileForm(suffix);}},
-    status:text=>{if(STATE.currentView==='api-settings'||document.getElementById('rp-api-panel')?.style.display!=='none')rpApiProfileNotice(text);}
+    status:text=>{for(const suffix of['-v','']){
+      const host=document.getElementById(suffix==='-v'?'rp-view-api-settings':'rp-api-panel');
+      if(!host||host.dataset.rpApiAccount!==rpAccountStoragePrefix()||(suffix==='-v'?STATE.currentView!=='api-settings':!rpSurfaceIsOpen(host)))continue;
+      const status=document.getElementById('rp-api-status'+suffix),detail=document.getElementById('rp-api-profile-status'+suffix);
+      if(detail)detail.textContent=text;
+      // Background completion must not erase model help or an actionable form error.
+      if(status&&(!status.textContent||status.textContent===status.dataset.rpApiCloudStatus)){status.textContent=text;status.dataset.rpApiCloudStatus=text;}
+    }}
   });const instance=rpApiSync;rpRuntime.own(()=>{instance.close();if(rpApiSync===instance)rpApiSync=null;});}
   return rpApiSync;
 }
@@ -6321,6 +6328,9 @@ function renderThreadList() {
 //  NAVIGATION
 // ================================================================
 function go(view) {
+  // Old/corrupt saved routes must recover before hiding every mounted screen.
+  if (view === 'ludo') view = 'game';
+  if (view !== 'darkmode' && !document.getElementById('rp-view-' + view)) view = 'home';
   if(STATE.currentView==='theme-studio'&&view!=='theme-studio')rpThemeStudio.leave();
   rpBackSwipeCancel?.();
   const previousView = STATE.currentView;
@@ -12833,12 +12843,18 @@ function rpBankNumber(raw) {
   const text=raw.trim().replace(/[,，\s￥¥€$£]/g,'').replace(/^−/,'-'),match=/^([+-]?\d+(?:\.\d+)?)(万|亿|千)?$/.exec(text);
   if(!match)return null;const n=Number(match[1])*({'万':1e4,'亿':1e8,'千':1e3}[match[2]]||1);return Number.isFinite(n)?n:null;
 }
+function rpBankAssetIsDebt(item) {
+  const amount=rpBankNumber(item.amount);
+  return item.type==='loan'||item.type==='debt'||(amount!==null&&amount<0);
+}
 function rpBankTotals(data) {
   const assets=Array.isArray(data.assets)?data.assets.filter(v=>v&&typeof v==='object'):[],values=assets.map(v=>rpBankNumber(v.amount));
   if(!assets.length||values.some(v=>v===null))return{total:data.totalAssets??'—',liquid:data.liquidAssets,debt:data.totalDebt,reconciled:false};
   let gross=0,loans=0,cash=0,hasLoans=false,hasCash=false;
-  assets.forEach((v,i)=>{const n=values[i];if(v.type==='loan'||n<0){loans+=Math.abs(n);hasLoans=true;}else{gross+=n;if(v.type==='cash'){cash+=n;hasCash=true;}}});
-  const declared=rpBankNumber(data.totalDebt),debt=hasLoans?loans:declared===null?0:Math.abs(declared),round=v=>Math.round((v+Number.EPSILON)*100)/100;
+  assets.forEach((v,i)=>{const n=values[i];if(rpBankAssetIsDebt(v)){loans+=Math.abs(n);hasLoans=true;}else{gross+=n;if(v.type==='cash'){cash+=n;hasCash=true;}}});
+  const declared=rpBankNumber(data.totalDebt);
+  if(!hasLoans&&declared===null&&data.totalDebt!=null&&String(data.totalDebt).trim()!=='')return{total:data.totalAssets??'—',liquid:data.liquidAssets,debt:data.totalDebt,reconciled:false};
+  const debt=hasLoans?loans:declared===null?0:Math.abs(declared),round=v=>Math.round((v+Number.EPSILON)*100)/100;
   return{total:round(gross-debt),liquid:hasCash?round(cash):data.liquidAssets,debt:round(debt),reconciled:true};
 }
 
@@ -12891,8 +12907,7 @@ function _paintBankBody(data) {
   if (assets.length > 0) {
     html += `<div class="rp-bank-card"><div class="rp-bank-section-title">资产构成</div><div class="rp-asset-list">`;
     assets.forEach(item => {
-      const neg = _isNeg(item.amount) || item.type === 'loan' || item.type === 'debt'
-                  || String(item.label || '').includes('贷') || String(item.label || '').includes('债');
+      const neg = rpBankAssetIsDebt(item);
       const amtStr = `${safeCurrency}${escHtml(_fmtMoney(item.amount))}`;
       html += `
         <div class="rp-asset-item">
