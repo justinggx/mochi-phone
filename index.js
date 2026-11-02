@@ -8374,7 +8374,7 @@ function extractCommentSummaries(block) {
       .replace(/<[^>]+>/g, '')
       .trim();
     if (!text) continue;
-    out.push({ from, text, replyTo: replyTo || null });
+    out.push({ from, text, replyTo: replyTo || null, ...((attrs.MOMENT_ID || '').trim() ? { momentId: attrs.MOMENT_ID.trim() } : {}) });
   }
   return out;
 }
@@ -8568,6 +8568,28 @@ const { phoneCleanupProtocolView, normalizePhoneCompareText, buildLoosePhoneFrag
   get cleanupPhoneResidualNoise() { return cleanupPhoneResidualNoise; },
 });
 
+function resolvePhoneEchoCommentAuthor(momentId, momentsList) {
+  const id = String(momentId || '').trim();
+  if (!id) return '';
+  const key = normNameKey(id);
+  // parsePhone resolves aliases from the current block before looking at stored IDs.
+  const current = (momentsList || []).find(item => key && normNameKey(item.from) === key);
+  if (current) return current.from || '';
+  const stored = Array.isArray(STATE.moments) ? STATE.moments : [];
+  const exact = stored.find(item => item && item.id === id);
+  if (exact) return exact.name || exact.from || '';
+  if (id.length >= 8) {
+    const candidates = stored.filter(item => typeof item?.id === 'string' && item.id && (item.id.includes(id) || id.includes(item.id)));
+    if (candidates.length === 1) return candidates[0].name || candidates[0].from || '';
+  }
+  const authorKey = normNameKey(id.replace(/_\d{10,}$/, '').replace(/_\d{3,4}$/, '').replace(/_/g, ' '));
+  if (!authorKey) return '';
+  const sourceAuthor = (momentsList || []).find(item => normNameKey(item.from) === authorKey);
+  if (sourceAuthor) return sourceAuthor.from || '';
+  const previous = [...stored].reverse().find(item => item && (normNameKey(item.name) === authorKey || normNameKey(item.from) === authorKey));
+  return previous ? previous.name || previous.from || '' : '';
+}
+
 function buildPhoneEchoContainer(block, smsList, commentList, groupList, momentsList, directPhoneList) {
   const wrap = document.createElement('div');
   wrap.className = 'rp-phone-echo-container';
@@ -8621,7 +8643,11 @@ function buildPhoneEchoContainer(block, smsList, commentList, groupList, moments
     appendBlock(`${nameHtml}${escHtml(item.text)}`);
   });
 
-  const visibleEchoComments = getVisibleMomentComments(commentList.map(function(item) {
+  const visibleEchoComments = getVisibleMomentComments(commentList.filter(function(item) {
+    if (item.replyTo) return true;
+    const author = resolvePhoneEchoCommentAuthor(item.momentId, momentsList);
+    return !author || normNameKey(item.from) !== normNameKey(author);
+  }).map(function(item) {
     return { name: item.from || '', from: item.from || '', text: item.text || '', replyTo: item.replyTo || null };
   }), _ctx);
 
