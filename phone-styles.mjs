@@ -1,5 +1,5 @@
 import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261101-mobile-cloud-203';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-moments-208';
 import { THEATRE_CSS } from './theatre.mjs?v=20261029-optimization-173';
 
 export const RP_ART_CSS = `
@@ -645,6 +645,19 @@ export const RP_READING_CSS = `
 `;
 
 export const RP_XHS_COMPOSE_CSS = `
+#rp-phone #rp-screen #rp-compose-photo-area {margin-top:12px;min-width:0;}
+#rp-phone #rp-screen .rp-compose-photo-actions {display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#rp-phone #rp-screen #rp-compose-photo-choose,#rp-phone #rp-screen #rp-compose-photo-remove {appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;max-width:100%;margin:0;padding:6px 11px;border:1px solid var(--rp-v-border,#e3d8df);border-radius:10px;background:var(--rp-v-card,#f4eef1);color:var(--rp-v-text,#51434c);font:inherit;font-size:12px;line-height:1.4;box-shadow:none;cursor:pointer;}
+#rp-phone #rp-screen #rp-compose-photo-choose svg {width:16px;height:16px;flex:0 0 auto;}
+#rp-phone #rp-screen #rp-compose-photo-remove {padding-inline:9px;background:transparent;color:var(--rp-v-muted,#81737c);}
+#rp-phone #rp-screen #rp-compose-photo-preview {display:flex;justify-content:flex-start;align-items:center;max-width:100%;margin-top:10px;overflow:hidden;border-radius:12px;background:var(--rp-v-card,#f4eef1);}
+#rp-phone #rp-screen #rp-compose-photo-preview img {display:block;width:auto;max-width:100%;max-height:180px;object-fit:contain;border-radius:12px;}
+#rp-phone #rp-screen #rp-compose-photo-status {margin-top:5px;color:var(--rp-v-muted,#81737c);font-family:inherit;font-size:11px;line-height:1.5;overflow-wrap:anywhere;}
+#rp-phone #rp-screen #rp-compose-photo-status:empty {display:none;}
+#rp-phone #rp-screen #rp-compose-photo-preview[hidden],#rp-phone #rp-screen #rp-compose-photo-remove[hidden],#rp-phone #rp-screen #rp-compose-photo-file {display:none!important;}
+#rp-phone #rp-screen #rp-compose-photo-choose:focus-visible,#rp-phone #rp-screen #rp-compose-photo-remove:focus-visible {outline:2px solid var(--rp-nav-btn,#96677c);outline-offset:2px;}
+#rp-phone #rp-screen #rp-compose-post:disabled {opacity:.5;cursor:default;}
+
 /* C cream stationery: one final composer layer, after the shared theme rules. */
 #rp-wrapper #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery.rp-view {
   --rp-compose-bg:#f2ede3; --rp-compose-paper:#fffbf3; --rp-compose-ink:#392f26;

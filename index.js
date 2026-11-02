@@ -3,11 +3,11 @@ import { createPhoneChat } from './phone-chat.mjs?v=20261101-message-images-204'
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261031-thin-frame-199';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261102-moments-208';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261101-mobile-cloud-203';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261102-moments-208';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261101-mobile-cloud-203';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -18,7 +18,7 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261031-inline-sticker-202';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261101-mobile-cloud-203';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-moments-208';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261101-mobile-cloud-203';
 import { createThemeStudio } from './theme-studio.mjs?v=20261031-thin-frame-199';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -73,7 +73,7 @@ async function rpClaimLegacyStorage() {
     if (key.startsWith('rp-phone-v1-')) {
       let data; try { data = JSON.parse(value); } catch (_) { continue; }
       const slot = key.slice('rp-phone-v1-'.length), current = _extSettings()?.[EXT_KEY]?.[slot];
-      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.phoneChatMode === 'independent' || t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.theatre?.stories?.length || s.theatre?.draft?.idea || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title || s.sudoku?.round
+      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.phoneChatMode === 'independent' || t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.theatre?.stories?.length || s.theatre?.draft?.idea || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.composeImageDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title || s.sudoku?.round
         || ['ludo','g2048','gm','gword'].some(key=>s.gameState?.[key]?.round || s.gameState?.[key]?.chatLog?.length) || s.gameState?.partner?.name || Object.keys(s.gameState?.towers || {}).length);
       if (hasContent(current)) continue; // Never replace current non-empty account data.
       if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
@@ -449,6 +449,8 @@ function rpResetChatTasks() {
   rpResetApiTest(); rpResetModelRequest(); rpHideBanner();
   rpRuntime.advance();
   rpCloseChatOverlays();
+  rpCancelComposeImage();
+  $('#rp-compose-photo-preview').empty();
   $('#rp-compose-text,#rp-ts-input,#rp-input').val('');
   $('#rp-diary-list,#rp-ts-bubbles').empty();
   rpDiaryStatus('');
@@ -935,7 +937,7 @@ function refreshMochiPrompt() {
     if (isMochiPhoneEnabled()) {
       sep(
         'mochi-phone-gmsg',
-        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneWorldContextRule() + rpPhoneContactRule() + rpPhoneGroupNamingRule() + rpPhoneImageRule() + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
+        '[手机硬规则] PHONE内SMS/VOICE/HONGBAO必须写FROM和TO;TO={{user}}是私聊;TO非{{user}}会自动拉群。禁替{{user}}发言。\n' + rpPhoneWorldContextRule() + rpPhoneContactRule() + rpPhoneGroupNamingRule() + rpPhoneImageRule() + rpMomentLikeRule() + rpPhoneSpeechLanguageRule() + (rpStickers?.prompt() || ''),
         promptPosition,
         0
       );
@@ -1259,6 +1261,7 @@ function buildStatePayload() {
     sudoku: STATE.sudoku ? JSON.parse(JSON.stringify(STATE.sudoku)) : null,
     themeStudioMessages: Array.isArray(STATE.themeStudioMessages) ? STATE.themeStudioMessages.slice() : [],
     composeDraft: STATE.composeDraft || '',
+    composeImageDraft: STATE.composeImageDraft || null,
     themeStudioDraft: STATE.themeStudioDraft || '',
     diaryDraft: STATE.diaryDraft || '',
     xhsPostDraft: Object.assign({ title: '', body: '' }, STATE.xhsPostDraft),
@@ -1479,6 +1482,7 @@ const STATE = {
   themeSettings: null,
   themeStudioMessages: [],
   composeDraft: '',
+  composeImageDraft: null,
   themeStudioDraft: '',
   diaryDraft: '',
   xhsPostDraft: { title: '', body: '' },
@@ -2265,6 +2269,7 @@ function restorePhoneChatState(saved) {
   STATE.darkMode = !!s.darkMode;
   STATE.themeSettings = s.themeSettings || null;
   STATE.composeDraft = typeof s.composeDraft === 'string' ? s.composeDraft : '';
+  STATE.composeImageDraft = rpValidComposeImage(s.composeImageDraft) ? s.composeImageDraft : null;
   STATE.themeStudioDraft = typeof s.themeStudioDraft === 'string' ? s.themeStudioDraft : '';
   STATE.diaryDraft = typeof s.diaryDraft === 'string' ? s.diaryDraft : '';
   STATE.theatre = s.theatre ? JSON.parse(JSON.stringify(s.theatre)) : theatreDefaults();
@@ -5434,6 +5439,9 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#rp-gen-moments', () => {rpSetMomentsMenu(false,true);void generateAIMoments();});
   $(document).on("click.mochiPhone", '#rp-compose-cancel, #rp-compose-modal .rp-back', closeCompose);
   $(document).on("click.mochiPhone", '#rp-compose-post', postUserMoment);
+  $(document).on('click.mochiPhone','#rp-compose-photo-choose',function(e){e.preventDefault();e.stopPropagation();document.getElementById('rp-compose-photo-file').click();});
+  $(document).on('change.mochiPhone','#rp-compose-photo-file',function(){const file=this.files?.[0];this.value='';void rpReadComposeImage(file);});
+  $(document).on('click.mochiPhone','#rp-compose-photo-remove',function(e){e.preventDefault();e.stopPropagation();rpRemoveComposeImage();});
 
   // 来电:接听 / 拒绝(事件委托)
   // Dark mode is handled via data-app='darkmode' in the app grid
@@ -9350,6 +9358,10 @@ function rpParsePhoneAtom(block, source = {}) {
       _parsedMomentAuthors.push(fromName);
       // 记录 FROM名 → momentId，同一作者多条动态时保留最后一条（与 COMMENT 解析顺序一致）
       _parsedMomentFromMap[normNameKey(fromName)] = momentId;
+      if (Object.hasOwn(mAttrs,'LIKES')) {
+        const moment=STATE.moments.find(item=>item.id===momentId), message=ctx?.chat?.[source.messageIndex];
+        void rpApplyMomentLikes(moment,mAttrs.LIKES,message?{index:source.messageIndex,message,raw:message.mes}:undefined);
+      }
     }
 
     // 同步写 _pendingMomentImgs，供 Observer/MESSAGE_UPDATED 回填
@@ -9924,12 +9936,118 @@ function makeDraggable() {
 // ================================================================
 //  COMPOSE MOMENT
 // ================================================================
+let rpComposeImageJob = null;
+function rpValidComposeImage(src) {
+  return typeof src === 'string' && src.length <= 1200000 && /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=\r\n]+$/i.test(src);
+}
+function rpCancelComposeImage() {
+  const job = rpComposeImageJob; rpComposeImageJob = null;
+  if (job?.reader?.readyState === 1) job.reader.abort();
+}
+function rpRenderComposeImage(message = '') {
+  const preview = document.getElementById('rp-compose-photo-preview'), choose = document.getElementById('rp-compose-photo-choose');
+  if (!preview || !choose) return;
+  const src = STATE.composeImageDraft, busy = !!rpComposeImageJob, hasImage = rpValidComposeImage(src);
+  preview.replaceChildren(); preview.hidden = !hasImage;
+  if (hasImage) { const image = document.createElement('img'); image.src = src; image.alt = '待发布的图片'; preview.append(image); }
+  document.getElementById('rp-compose-photo-label').textContent = hasImage ? '更换图片' : '添加图片';
+  document.getElementById('rp-compose-photo-remove').hidden = !hasImage && !busy;
+  document.getElementById('rp-compose-photo-status').textContent = message || (busy ? '正在准备图片…' : '');
+  document.getElementById('rp-compose-photo-area').setAttribute('aria-busy',String(busy));
+  document.getElementById('rp-compose-post').disabled = busy;
+}
+function rpDecodeComposeImage(src) {
+  return new Promise((resolve,reject)=>{
+    const image = new Image();
+    image.onerror = () => reject(new Error('图片无法读取，请换成 JPG、PNG 或 WebP。'));
+    image.onload = () => {
+      try {
+        const width = image.naturalWidth || image.width, height = image.naturalHeight || image.height;
+        if (!(width > 0 && height > 0) || width * height > 50000000) throw Error('图片尺寸过大，请选择较小的图片。');
+        const ratio = Math.min(1,1280 / Math.max(width,height)), canvas = document.createElement('canvas');
+        canvas.width = Math.max(1,Math.round(width * ratio)); canvas.height = Math.max(1,Math.round(height * ratio));
+        const context = canvas.getContext('2d'); if (!context) throw Error('图片暂时无法处理，请重新选择。');
+        context.fillStyle = '#fff'; context.fillRect(0,0,canvas.width,canvas.height); context.drawImage(image,0,0,canvas.width,canvas.height);
+        const result = canvas.toDataURL('image/jpeg',0.8);
+        if (!rpValidComposeImage(result)) throw Error('图片较大，请选择较小的图片。');
+        resolve(result);
+      } catch (error) { reject(error); }
+    };
+    image.src = src;
+  });
+}
+async function rpReadComposeImage(file) {
+  if (!file) return;
+  rpCancelComposeImage();
+  if (!file.type?.startsWith('image/') || file.size > 16 * 1024 * 1024) { rpRenderComposeImage('请选择16MB以内的图片。'); return; }
+  const task = rpRuntime.task(), owner = rpArchiveAccountHandle, slot = STATE.chatId;
+  const job = {reader:new FileReader(),task}; rpComposeImageJob = job;
+  const current = () => rpComposeImageJob === job && task.valid() && owner === rpArchiveAccountHandle && slot === STATE.chatId && slot === getPhoneChatSlotKey(getContext());
+  const cancel = () => { if (rpComposeImageJob === job) rpCancelComposeImage(); };
+  task.signal.addEventListener('abort',cancel,{once:true}); rpRenderComposeImage();
+  try {
+    const raw = await rpGuardAwait(new Promise((resolve,reject)=>{
+      job.reader.onload = event => resolve(event.target.result);
+      job.reader.onerror = () => reject(Error('图片读取失败，请重新选择。'));
+      job.reader.onabort = () => reject(Object.assign(Error('Cancelled'),{name:'AbortError'}));
+      job.reader.readAsDataURL(file);
+    }),task,20000);
+    if (!current()) return;
+    const src = await rpGuardAwait(rpDecodeComposeImage(raw),task,20000);
+    if (!current()) return;
+    STATE.composeImageDraft = src; saveState(); rpComposeImageJob = null; rpRenderComposeImage();
+  } catch (error) {
+    if (current()) { rpComposeImageJob = null; rpRenderComposeImage(error.name==='AbortError' ? '' : /^图片/.test(error.message) ? error.message : '图片准备失败，请重新选择。'); }
+  } finally { task.signal.removeEventListener('abort',cancel); if (rpComposeImageJob===job) { rpComposeImageJob=null; rpRenderComposeImage(); } }
+}
+function rpRemoveComposeImage() {
+  rpCancelComposeImage(); STATE.composeImageDraft = null; saveState(); rpRenderComposeImage();
+  const input = document.getElementById('rp-compose-photo-file'); if (input) input.value = '';
+}
+
+function rpMomentLikeRule() {
+  return '\n[朋友圈点赞] 每条MOMENTS可加LIKES属性，竖线分隔本卡真实人物全名，例如<MOMENTS FROM="发帖人" TIME="12:00" LIKES="点赞者甲|点赞者乙">动态正文</MOMENTS>。点赞者只能是本卡char/NPC，不能是规则标题、群名、陌生路人或发帖者本人；不得替{{user}}点赞。按人设、关系和可见范围决定0–3人点赞，熟人日常可以适量点赞，敌对/疏远时可以无人赞，不必每条强制点赞。评论仍由COMMENT正常输出。\n';
+}
+const rpMomentLikeJobs = new WeakMap();
+function rpApplyMomentLikes(moment, raw, origin) {
+  if (!moment || moment.from === 'user') return Promise.resolve(false);
+  const names = Array.isArray(raw) ? raw : typeof raw === 'string' && raw.length <= 1600 ? raw.split('|') : [];
+  if (names.length > 24 || names.some(n=>typeof n!=='string' || n.length>80)) return Promise.resolve(false);
+  const source = () => JSON.stringify([moment.id,moment.from,moment.name,moment.time,moment.text]);
+  const key = JSON.stringify(names), old = rpMomentLikeJobs.get(moment), sourceKey = source();
+  if (old?.key===key && old.sourceKey===sourceKey && old.task.valid()) return old.promise;
+  const task=rpRuntime.task(), owner=rpArchiveAccountHandle, slot=STATE.chatId, job={key,sourceKey,task}; rpMomentLikeJobs.set(moment,job);
+  const current = () => task.valid() && owner===rpArchiveAccountHandle && slot===STATE.chatId && slot===getPhoneChatSlotKey(getContext()) && (!origin || getContext()?.chat?.[origin.index]===origin.message && origin.message.mes===origin.raw) && rpMomentLikeJobs.get(moment)===job && STATE.moments.includes(moment) && source()===sourceKey;
+  job.promise=(async()=>{
+    try {
+      const context = await rpGuardAwait(getMomentsCtx(),task); if (!current()) return false;
+      const allowed = new Map();
+      for (const name of [context.charName,...(context.npcs || []),...Object.values(context.npcDisplayNames || {})]) {
+        const canonical=resolveCanonicalPhoneName(name)||name, k=normNameKey(canonical);
+        if (!name || isPhoneUserName(name,getContext()) || isForbiddenPhoneContactName(name,getContext()) || isPhoneBlocked(name) || STATE.deletedContacts?.[normalizePhonePersonName(canonical)]) continue;
+        allowed.set(k,canonical);
+      }
+      const self=normNameKey(resolveCanonicalPhoneName(moment.name)||moment.name), existing=new Set((moment.likes || []).map(n=>normNameKey(resolveCanonicalPhoneName(n)||n))), additions=[];
+      for (const name of names) {
+        const person=allowed.get(normNameKey(resolveCanonicalPhoneName(name.trim())||name.trim()));
+        if (!person || normNameKey(person)===self || existing.has(normNameKey(person))) continue;
+        additions.push(person); existing.add(normNameKey(person));
+      }
+      if (!current() || !additions.length) return false;
+      moment.likes=Array.isArray(moment.likes)?moment.likes:[]; moment.likes.push(...additions); saveState();
+      if (STATE.currentView==='moments') renderMoments(); return true;
+    } catch (error) { if (current()) console.warn('[Phone] moment likes unavailable',rpErrorInfo(error)); return false; }
+  })(); return job.promise;
+}
+
 function openCompose() {
+  rpCancelComposeImage(); rpRenderComposeImage();
   rpSetSurfaceOpen('#rp-compose-modal',true,{display:'flex'});
   $('#rp-compose-text').val(STATE.composeDraft || '').focus();
 }
 
 function closeCompose() {
+  rpCancelComposeImage(); rpRenderComposeImage();
   rpSetSurfaceOpen('#rp-compose-modal',false);
 }
 
@@ -10154,11 +10272,12 @@ async function postUserMoment() {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
-  const text = $('#rp-compose-text').val().trim();
-  if (!text) return;
+  const text = String($('#rp-compose-text').val() || '').trim();
+  const photo = rpValidComposeImage(STATE.composeImageDraft) ? STATE.composeImageDraft : null;
+  if (rpComposeImageJob || (!text && !photo)) return;
   const now = new Date();
   const ts = resolvePhoneTime();
-  const momentId = `user_${now.getTime()}`;
+  const momentId = rpUniqueMomentId(`user_${now.getTime()}`, STATE.moments || []);
   STATE.diary = STATE.diary || [];
   STATE.moments = STATE.moments || [];
   STATE.moments.push({
@@ -10169,12 +10288,12 @@ async function postUserMoment() {
     avatarBg: 'linear-gradient(145deg,#64748b,#475569)',
     time: ts,
     text,
-    img: null,
+    img: photo,
     likes: [],
     comments: [],
   });
+  STATE.composeDraft = ''; STATE.composeImageDraft = null; $('#rp-compose-text').val('');
   closeCompose();
-  STATE.composeDraft = '';
   go('moments');
   $('#rp-moments-list').scrollTop(0);
   saveState();
@@ -11971,7 +12090,9 @@ async function generateAIMoments() {
     const prompt = '近期剧情(主楼层最新对话):\n' + recentChat
       + '\n\n请为以下角色各写1条朋友圈(每人1条,不重复,与剧情相关):'
       + charList
-      + '\n格式:[{"from":"角色名","text":"内容"},...]';
+      + '\n点赞者只能从这些本卡人物中选择：' + JSON.stringify([charName,...npcs])
+      + '\n按人设、关系和可见范围给每条动态选择0–3位点赞者；不替用户点赞，不给自己点赞，敌对或疏远时可以无人赞。'
+      + '\n格式:[{"from":"角色名","text":"内容","likes":["点赞者全名"]},...]';
     const resp = await rpGuardAwait(rpCallSocialAPI(prompt, 600, sysMsg, rpTask), rpTask);
     if (!resp) throw new Error('API无响应');
     const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
@@ -11980,13 +12101,14 @@ async function generateAIMoments() {
     const generatedMomentIds = [];
     const now = new Date();
     posts.forEach((post, i) => {
-      if (!post.from || !post.text) return;
+      if (!post || typeof post.from!=='string' || typeof post.text!=='string' || !post.text.trim()) return;
+      const author=allChars.find(name=>normNameKey(name)===normNameKey(post.from)); if(!author) return;
       const d = new Date(now.getTime() + i * 60000);
       const ts = formatPhoneTimeFromDate(d);
       // 生成按钮这批动态不要只依赖 incomingMoment 内部的通用自动互动；
       // 这里显式收集 id，稍后用本批 allChars 作为评论候选触发，避免缓存/联系人时序导致无评论。
-      const momentId = incomingMoment(post.from.trim(), ts, post.text.trim(), post.img || null, null, null, true);
-      if (momentId) generatedMomentIds.push(momentId);
+      const momentId = incomingMoment(author, ts, post.text.trim(), post.img || null, null, null, true);
+      if (momentId) { generatedMomentIds.push(momentId); void rpApplyMomentLikes(STATE.moments.find(item=>item.id===momentId),post.likes); }
     });
     if (STATE.currentView === 'moments') renderMoments();
     if (generatedMomentIds.length) {
@@ -12040,6 +12162,7 @@ async function charRespondToUserMoment(momentId) {
     + '近期对话参考(帮助判断关系和语境):\n' + (_rc ? _rc.slice(-300) : '无') + '\n'
     + '简短1-2句,符合角色性格,只返回评论正文,不加引号或任何前缀。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
   const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
+    + (moment.img ? '\n附有一张图片；当前请求没有提供图片画面，请根据配文与人设自然回应，不编造画面细节。\n' : '')
     + charName + '的评论(必须写,不允许只点赞):';
   try {
     const resp = await rpGuardAwait(rpCallSocialAPI(prompt, 150, sysMsg, rpTask), rpTask);

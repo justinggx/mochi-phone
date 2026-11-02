@@ -405,6 +405,15 @@ const HTML = `
               <span class="rp-xhs-paper-tape" aria-hidden="true"></span>
               <label class="rp-xhs-field-label" for="rp-compose-text">朋友圈正文</label>
               <textarea id="rp-compose-text" placeholder="写下此刻的心情，&#10;或一件想记住的小事。" rows="10"></textarea>
+              <div id="rp-compose-photo-area" aria-busy="false">
+                <div class="rp-compose-photo-actions">
+                  <button id="rp-compose-photo-choose" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg><span id="rp-compose-photo-label">添加图片</span></button>
+                  <button id="rp-compose-photo-remove" type="button" hidden>移除图片</button>
+                </div>
+                <input id="rp-compose-photo-file" type="file" accept="image/*" hidden aria-label="选择朋友圈图片">
+                <div id="rp-compose-photo-preview" hidden></div>
+                <div id="rp-compose-photo-status" role="status" aria-live="polite"></div>
+              </div>
               <span class="rp-xhs-paper-signature" aria-hidden="true">a little moment</span>
             </div>
           </div>

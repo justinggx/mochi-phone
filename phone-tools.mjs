@@ -97,7 +97,7 @@ export const PHONE_TOOLS_CSS = [
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const forbidden = new Set(['__proto__','prototype','constructor']);
 const secret = /^(?:api[_-]?key|access[_-]?token|authorization|cookie|password|rp_ludo_api)$/i;
-const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','avatarLocalOnly','avatarOwners','avatarLarge','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
+const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','avatarLocalOnly','avatarOwners','avatarLarge','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','composeImageDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
 const clone = value => JSON.parse(JSON.stringify(value));
 const uid = () => 'pt_' + Date.now() + '_' + Math.random().toString(36).slice(2,11);
 function clean(value, depth = 0) {
@@ -522,7 +522,11 @@ export function createPhoneTools(api) {
     for(const [key,large]of Object.entries(source.avatarLarge||{}))if(!result.avatarLarge?.[key]&&source.avatars?.[key]===result.avatars?.[key]&&large.preview===result.avatars[key]){
       result.avatarLarge ||= {};Object.defineProperty(result.avatarLarge,key,{value:clone(large),enumerable:true,writable:true,configurable:true});
     }
-    for(const field of ['composeDraft','diaryDraft','themeStudioDraft'])if(!result[field]&&typeof source[field]==='string')result[field]=source[field];
+    if (!result.composeDraft && !result.composeImageDraft) {
+      if (typeof source.composeDraft==='string') result.composeDraft=source.composeDraft;
+      if (typeof source.composeImageDraft==='string') result.composeImageDraft=source.composeImageDraft;
+    }
+    for(const field of ['diaryDraft','themeStudioDraft'])if(!result[field]&&typeof source[field]==='string')result[field]=source[field];
     result.themeStudioMessages ||= [];mergeList(result.themeStudioMessages,source.themeStudioMessages||[],stats,'themeMessages');
     result.commentDrafts ||= {};
     for(const kind of ['moments','xhs']){
