@@ -11547,6 +11547,57 @@ function normNameKey(s) {
   return String(s || '').toLowerCase().replace(/[\s·•・\-_]+/g, '');
 }
 
+function rpMomentWorldPeople(texts, knownPeople = []) {
+  const known = new Set(knownPeople.map(normNameKey)), people = new Map();
+  const cleanName = raw => String(raw || '').replace(/\s+#.*$/, '').trim()
+    .replace(/^["'“‘]|["'”’]$/g, '').split(/[(（【\[,，]/)[0].trim();
+  const nameFields = text => [...String(text).matchAll(/^[ \t]*(?:[-*][ \t]+)?(?:name|full_name|full name|姓名|名字)[ \t]*[:：][ \t]*([^\n\r]+)/gmi)];
+  const fieldIndent = line => line.match(/^[ \t]*/)[0].length + (/^[ \t]*[-*][ \t]+/.test(line) ? 2 : 0);
+  const personFields = (text, indent) => new Set([...String(text).matchAll(/^[ \t]*(?:[-*][ \t]+)?(age|gender|sex|species|occupation|profession|personality|disposition|relations|relationships?|性别|年龄|职业|身份|性格|关系|种族)[ \t]*[:：][ \t]*\S+/gmi)].filter(m=>indent===undefined || fieldIndent(m[0])===indent).map(m=>m[1].toLowerCase()));
+  const characterParent = (text, field) => {
+    const indent = fieldIndent(field[0]);
+    for (const line of text.slice(0,field.index).split('\n').reverse()) {
+      if (/^\s*(?:#{1,6}\s|<\/|[-*_]{3,}\s*$)/.test(line)) return false;
+      const parent = line.match(/^([ \t]*)([^:\n]+?)[ \t]*[:：][ \t]*$/);
+      if (parent && parent[1].length < indent) return /^(?:character|person|npc|人物|角色)$/i.test(parent[2].trim());
+    }
+    return false;
+  };
+  const remember = (raw, body) => {
+    const name = cleanName(raw);
+    if (!name || name.length > 80 || /[<>\[\]{}\r\n]/.test(name) || /^(?:null|none|undefined|n\/a)$/i.test(name)) return;
+    const key = normNameKey(name), persona = String(body || '').replace(/<[^>]+>/g, '').replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 600);
+    if (!key || !persona) return;
+    if (!people.has(key)) people.set(key, {name, persona});
+  };
+  const scanNames = (text, characterBlock = false) => {
+    const fields = nameFields(text);
+    fields.forEach((field, i) => {
+      const body = text.slice(field.index, fields[i+1]?.index ?? text.length).split(/\n(?=[ \t]*#{1,6}[ \t]+)/)[0];
+      const name = cleanName(field[1]);
+      // A generic object's name/description is not a declaration of a person.
+      if (characterBlock || known.has(normNameKey(name)) || personFields(body,fieldIndent(field[0])).size || characterParent(text,field)) remember(name,body);
+    });
+  };
+  const source = texts.filter(t=>typeof t==='string');
+  for (const text of source) {
+    for (const block of text.matchAll(/<character(?:[_-][^>]*)?\s*>([\s\S]*?)<\/character(?:[_-][^>]*)?\s*>/gi)) scanNames(block[1],true);
+  }
+  for (const text of source) scanNames(text);
+  for (const text of source) {
+    const headings = [...text.matchAll(/^[ \t]*(?:#{1,6}[ \t]+([^\n\r]+)|\[([^\]\n\r]+)\])[ \t]*$/gm)];
+    headings.forEach((heading,i)=>{
+      const title = String(heading[1] || heading[2]).replace(/[*_`]/g,'').replace(/[ \t]+#+[ \t]*$/,'').trim();
+      const name = cleanName(title.split(/\s+[—–-]\s+|[|／/]/)[0]), key = normNameKey(name);
+      const body = text.slice(heading.index,headings[i+1]?.index ?? text.length), fields = nameFields(body);
+      // Headings can supply a known person's background. New people need an
+      // actual biography, never a bare setting/rule/location heading.
+      if (known.has(key) || people.has(key) || !fields.length && personFields(body,0).size >= 2) remember(name,body);
+    });
+  }
+  return [...people.values()];
+}
+
 function resolveNpcPersonaByName(name, npcPersonaMap) {
   if (!name || !npcPersonaMap) return '';
   const k = normNameKey(name);
@@ -11745,7 +11796,7 @@ async function _doGetMomentsCtx(chatIdHint) {
         const wiData = await rpGuardAwait(ctx.loadWorldInfo(wiName), rpTask);
         if (wiData?.entries) {
           Object.values(wiData.entries).forEach(e => {
-            if (!e || e.disable === true || e.disable === 'true' || e.disabled === true || e.enabled === false) return;
+            if (!e || [e.disable,e.disabled].some(v=>v===true || v==='true') || e.enabled===false || e.enabled==='false') return;
             const content = e?.content || e?.text || '';
             if (content) wiTexts.push(content);
           });
@@ -11753,7 +11804,7 @@ async function _doGetMomentsCtx(chatIdHint) {
       }
       if (!bound) {
         const embedded = charObj?.data?.character_book || charObj?.character_book;
-        for (const e of Object.values(embedded?.entries || {})) if (e && e.enabled !== false && !e.disable && !e.disabled && (e.content || e.text)) wiTexts.push(e.content || e.text);
+        for (const e of Object.values(embedded?.entries || {})) if (e && ![e.disable,e.disabled].some(v=>v===true || v==='true') && e.enabled!==false && e.enabled!=='false' && (e.content || e.text)) wiTexts.push(e.content || e.text);
       }
     } catch(e) {
     if (!rpTask.valid()) return;
@@ -11762,112 +11813,15 @@ async function _doGetMomentsCtx(chatIdHint) {
     // Unscoped world-info/extension-prompts can still belong to a previously open card.
     // Only explicit current bindings and embedded current-card lore are candidates.
 
-    const totalLen = wiTexts.reduce((s,t) => s + t.length, 0);
-
-    const allWIText = wiTexts.join('\n');
-    if (allWIText) {
-      // 解析 <character_xxx>...</character_xxx> 块
-      const blockRe = /<character(?:[_\-][^>]*)?>([\s\S]*?)<\/character(?:[_\-][^>]*)?>/gi;
-      let bm;
-      while ((bm = blockRe.exec(allWIText)) !== null) {
-        const block = bm[1];
-        const nameMatch = block.match(/^\s*name\s*[::]\s*(.+)/mi);
-        if (!nameMatch) continue;
-        const wName = nameMatch[1].trim().replace(/[<>]/g, '').split(/[\s,,]/)[0];
-        if (!wName || normNameKey(wName) === normNameKey(charName)) continue;
-        // 直接取词条全文,不做字段正则拆分(避免字段缺失/误匹配导致OOC)
-        const fullText = block.replace(/<[^>]+>/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-        if (fullText.length > 20) {
-          npcPersonaMap[normNameKey(wName)] = fullText.slice(0, 500);
-          rememberNpcPersonaName(wName);
-        }
-      }
-
-      // 兼容:按世界书词条逐个解析,支持 [角色名 - 标题] 格式
-      // 先把 allWIText 按词条边界切分(每个词条之间通常有明显空行或分隔符)
-      // 策略:遍历每个词条文本,找到 [Name ...] 或 ## Name 或 name: Name 等标题行提取名字
-      const wiEntries = wiTexts; // 每个 wiTexts 元素对应一条世界书词条内容
-      wiEntries.forEach(entryText => {
-        if (!entryText || entryText.length < 10) return;
-        // 尝试多种标题格式提取角色名
-        let extractedName = '';
-
-        // 格式1: [Gaspard de Valois - 标题] 或 [Name]
-        const bracketMatch = entryText.match(/^\s*\[([^\]|\/\\-]+?)(?:[-|\/\\][^\]]*?)?\]/m);
-        if (bracketMatch) {
-          extractedName = bracketMatch[1].trim();
-        }
-        // 格式2: ## Name 或 # Name
-        if (!extractedName) {
-          const mdMatch = entryText.match(/^\s*#{1,3}\s*([^\n#\--]+)/m);
-          if (mdMatch) extractedName = mdMatch[1].trim().replace(/[*_`]/g, '');
-        }
-        // 格式3: name: Xxx
-        if (!extractedName) {
-          const nameColonMatch = entryText.match(/^\s*name\s*[::]\s*([^\n]+)/mi);
-          if (nameColonMatch) extractedName = nameColonMatch[1].trim().split(/[((,,\s]/)[0];
-        }
-
-        if (!extractedName || extractedName.length < 2) return;
-        // 取姓名主体(去掉括号/破折号后面的描述词)
-        const nameCore = extractedName.split(/[((【\[,,]/)[0].trim();
-        if (!nameCore || nameCore.length < 2) return;
-        if (normNameKey(nameCore) === normNameKey(charName)) return;
-
-        const k = normNameKey(nameCore);
-        if (npcPersonaMap[k]) return; // 已有精确匹配,不覆盖
-
-        // 取词条全文作为人设(去掉HTML标签,截断到600字)
-        const fullText = entryText.replace(/<[^>]+>/g, '').replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-        if (fullText.length > 30) {
-          npcPersonaMap[k] = fullText.slice(0, 600);
-          rememberNpcPersonaName(nameCore);
-        }
-      });
-
-      // 兼容:一个词条里塞多个 NPC(按空行/特殊分隔符分段,每段尝试找名字)
-      const segments = allWIText.split(/\n{2,}/);
-      segments.forEach(seg => {
-        const nm = seg.match(/^\s*name\s*[::]\s*(.+)/mi) || seg.match(/^\s*#{1,3}\s*(.+)/m);
-        if (!nm) return;
-        const segName = nm[1].trim().replace(/[<>#*]/g, '').split(/[((,,\s]/)[0].trim();
-        if (!segName || segName.length < 2 || normNameKey(segName) === normNameKey(charName)) return;
-        const k = normNameKey(segName);
-        if (npcPersonaMap[k]) return; // 已有精确条目,不覆盖
-        const bodyLines = seg.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-        if (bodyLines.length > 20) {
-          npcPersonaMap[k] = bodyLines.slice(0, 350);
-          rememberNpcPersonaName(segName);
-        }
-      });
-
-      // 额外:解析 friends_circle 块(格式:name: X\n disposition: Y)作为兜底
-      // 即使个人词条未触发,friends_circle 汇总词条通常是常驻的
-      const fcMatch = allWIText.match(/friends_circle\s*:[\s\S]*?(?=<character_|<\/|$)/i) || allWIText.match(/friends_circle\s*:[\s\S]{0,2000}/i);
-      if (fcMatch) {
-        const fcText = fcMatch[0];
-        const fcEntries = fcText.split(/(?=\n\s{1,4}\w+_\w+:)/);
-        fcEntries.forEach(entry => {
-          const nameM = entry.match(/name\s*[::]\s*([^\n]+)/i);
-          const dispM = entry.match(/disposition\s*[::]\s*([^\n]+)/i);
-          const relM  = entry.match(/relations\s*[::]\s*([^\n]+)/i);
-          if (!nameM) return;
-          const fcName = nameM[1].trim().split(/[((,,\s]/)[0].trim();
-          if (!fcName || fcName.length < 2 || normNameKey(fcName) === normNameKey(charName)) return;
-          const fk = normNameKey(fcName);
-          if (npcPersonaMap[fk]) return; // 已有更详细的,不覆盖
-          const persona = [
-            dispM ? '性格:' + dispM[1].trim() : '',
-            relM  ? '关系:' + relM[1].trim().slice(0, 100) : ''
-          ].filter(Boolean).join(';');
-          if (persona) {
-            npcPersonaMap[fk] = persona;
-            rememberNpcPersonaName(fcName);
-          }
-        });
-      }
-
+    const knownPeople = [...chatNpcKeys, ...Object.values(npcPersonaDisplayNames), ...Object.values(STATE.threads || {})
+      .filter(t => t?.name && t.type !== 'group' && !t.id?.startsWith('grp_') && !(t.members?.length > 1) && (t.messages?.length || t.unread > 0)).map(t => t.name)];
+    for (const person of rpMomentWorldPeople(wiTexts, knownPeople)) {
+      if (normNameKey(person.name) === normNameKey(charName) || isPhoneUserName(person.name, {name1:userName}) || isForbiddenPhoneContactName(person.name, ctx)) continue;
+      const k = normNameKey(person.name);
+      if (!npcPersonaMap[k]) npcPersonaMap[k] = person.persona;
+      rememberNpcPersonaName(person.name);
     }
+
   } catch(e) {
     if (!rpTask.valid()) return;
  /* ignore */ }
