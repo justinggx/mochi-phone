@@ -146,7 +146,7 @@ export const XHS_COVER_CSS = String.raw`
 #rp-phone.rp-theme-star #rp-view-xhs,#rp-phone.rp-dark #rp-view-xhs{--rp-xhs-bg:#17151d;--rp-xhs-card:#24212b;--rp-xhs-text:#f4f0f7;--rp-xhs-text-soft:#b8b1c2}
 #rp-phone #rp-view-xhs .rp-nav-bar{background:var(--rp-xhs-card)!important;border:0!important;height:92px;min-height:92px;padding:46px 7px 0!important;display:grid;grid-template-columns:65px minmax(0,1fr) 65px}
 #rp-phone #rp-view-xhs .rp-back{justify-self:start}
-#rp-phone #rp-view-xhs .rp-nav-title{font-size:15px!important;font-weight:700!important;color:var(--rp-xhs-text)!important;position:relative;left:auto;right:auto;height:40px;display:flex;align-items:center;justify-content:center}
+#rp-phone #rp-view-xhs .rp-nav-title{font-size:17px!important;font-weight:600!important;color:var(--rp-xhs-text)!important;position:relative;left:auto;right:auto;height:40px;display:flex;align-items:center;justify-content:center}
 #rp-phone #rp-view-xhs .rp-nav-title::after{content:"";position:absolute;bottom:3px;left:50%;width:25px;height:3px;transform:translateX(-50%);border-radius:4px;background:#ff2442}
 #rp-phone #rp-view-xhs .rp-back,#rp-phone #rp-view-xhs #rp-xhs-refresh{color:var(--rp-xhs-text)!important}
 #rp-phone #rp-xhs-list.rp-xhs-waterfall{display:flex!important;align-items:flex-start!important;gap:6px!important;padding:6px 6px 12px!important;background:var(--rp-xhs-bg)!important;position:relative;box-sizing:border-box}

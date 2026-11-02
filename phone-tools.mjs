@@ -1,5 +1,5 @@
 import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261102-safearea-210';
-import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261029-optimization-173';
+import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261102-native-ui-214';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
 '#rp-phone #rp-screen #rp-lock-notifs{box-sizing:border-box;min-width:0;min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:70px}',
@@ -831,7 +831,7 @@ export function createConversationFeatures(api) {
     exportCleanup?.();const url=win.URL.createObjectURL(result.blob),content=node('div').append(node('img','rp-long-image-preview').attr({src:url,alt:'聊天长图预览'}),note(result.width+' × '+result.height+(result.missing?' · '+result.missing+' 张图片或头像无法读取，已保留文字或占位。':'')),note('手机浏览器也可长按预览图片保存。'));
     let released=false,downloaded=false;const cleanup=()=>{if(released)return;released=true;observer.disconnect();if(downloaded)win.setTimeout(()=>win.URL.revokeObjectURL(url),30000);else win.URL.revokeObjectURL(url);if(exportCleanup===cleanup)exportCleanup=null;};
     const observer=new win.MutationObserver(()=>{if(!content[0].isConnected)cleanup();});
-    api.dialog('长图预览',content,[{label:'返回选择',run:()=>{back();return false;}},{label:'保存图片',primary:true,run:()=>{const a=doc.createElement('a');a.href=url;a.download='MochiPhone-chat-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';doc.body.append(a);try{downloaded=true;a.click();}catch(_){info('请长按预览图片，选择保存。');}finally{a.remove();}return false;}}]);observer.observe(doc.documentElement,{childList:true,subtree:true});exportCleanup=cleanup;
+    api.dialog('长图预览',content,[{label:'返回选择',run:()=>{back();return false;}},{label:'保存图片',primary:true,run:()=>{const a=doc.createElement('a');a.addEventListener('click',event=>event.stopPropagation());a.href=url;a.download='MochiPhone-chat-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';doc.body.append(a);try{downloaded=true;a.click();}catch(_){info('请长按预览图片，选择保存。');}finally{a.remove();}return false;}}]);observer.observe(doc.documentElement,{childList:true,subtree:true});exportCleanup=cleanup;
   }
   function mergeContacts(keep,drop) {
     const a=keep.phoneAutoTranslate,b=drop.phoneAutoTranslate;

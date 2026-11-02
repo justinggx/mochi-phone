@@ -7,23 +7,23 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261102-photo-entry-211';
-import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261102-native-ui-214';
+import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261102-native-ui-214';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261102-safearea-210';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261031-independent-chat-190';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
-import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261029-optimization-173';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261102-native-ui-214';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createStickers } from './stickers.mjs?v=20261031-inline-sticker-202';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-safearea-210';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-native-ui-214';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261102-safearea-210';
 import { createThemeStudio } from './theme-studio.mjs?v=20261031-thin-frame-199';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
-import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
+import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261102-native-ui-214';
 
 // Temporarily unlisted; keep the game sources and account saves for a future return.
 const RP_SHOP_AVAILABLE = false;
@@ -4898,6 +4898,7 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#rp-game-partner-cancel', function(e) { e.preventDefault(); gameClosePartnerModal(); });
   $(document).on("click.mochiPhone", '#rp-game-partner-save', function(e) { e.preventDefault(); gameSavePartnerFromModal(); });
   $(document).on("click.mochiPhone", '#rp-game-partner-modal', function(e) { if (e.target === this) gameClosePartnerModal(); });
+  $(document).on('input.mochiPhone', '#rp-game-partner-name-input', () => gamePartnerNameFeedback());
   $(document).on("keydown.mochiPhone", '#rp-game-partner-name-input,#rp-game-partner-note-input', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); gameSavePartnerFromModal(); }
     if (e.key === 'Escape') { e.preventDefault(); gameClosePartnerModal(); }
@@ -7094,6 +7095,7 @@ function renderBubbles(threadId, options = {}) {
           </div>
         </div>
       `);
+      if (!msg.opened) hongbaoEl.addClass('rp-hongbao-openable').data('threadid',threadId).data('msgid',msg.id || '').attr('data-threadid',threadId).attr('data-msgid',msg.id || '');
       const btnRowGH = $('<div>').addClass('rp-btn-row');
       btnRowGH.append($(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`));
       appendGroupSenderBody(wrap, msg, hongbaoEl, btnRowGH, msg.time);
@@ -7179,7 +7181,8 @@ function renderBubbles(threadId, options = {}) {
         <div class="rp-bts">${escHtml(msg.time)}</div>
       `);
       const delBtn = $(`<button class="rp-del-btn" title="删除" data-msgidx="${msgIdx}" data-threadid="${escHtml(threadId)}">${DEL_SVG_EARLY}</button>`);
-      wrap.append(delBtn);
+      if (rpIsGroupThread(thread) && !isUser) { const card=wrap.children('.rp-loc-card').detach();wrap.empty();appendGroupSenderBody(wrap,msg,card,delBtn,msg.time); }
+      else wrap.append(delBtn);
       area.append(wrap); return;
     }
     // ── 普通消息 ──
@@ -7376,7 +7379,7 @@ function rpMessageNeedsPhoneEchoRepair(mesId) {
     const msg = ctx?.chat?.[mesId];
     if (!msg || msg.is_user || !msg.mes) return false;
     const normalized = normalizePhoneMarkup(String(msg.mes || '').replace(/<think>[\s\S]*?<\/think>/gi, ''));
-    if (!/<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalized)) return false;
+    if (!/<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b|<mochiLOCATION\b|<mochiLOC\b/i.test(normalized)) return false;
     if(!rpMesHasRenderedPhoneUi(mesId))return true;
     const root=document.querySelector('.mes[mesid="'+mesId+'"] .mes_text');
     return !!root&&(hasPhoneCleanupProtocolResidue(root,normalized)||hasPhoneEchoResidualText(root,normalized));
@@ -8163,7 +8166,7 @@ function onAIMessage(_retryCount) {
     const targetTextEl = document.querySelector(`.mes[mesid="${lastAiIdx}"]:not([is_user="true"]) .mes_text`);
     const hasRenderedPhoneUi = !!targetTextEl?.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     const normalizedPreview = normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi, ''));
-    const mightContainPhone = /<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalizedPreview);
+    const mightContainPhone = /<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b|<mochiLOCATION\b|<mochiLOC\b/i.test(normalizedPreview);
     if (fp === STATE._lastAiFingerprint && (!mightContainPhone || hasRenderedPhoneUi)) {
       const scope=mightContainPhone&&targetTextEl?createPhoneCleanupScope(targetTextEl,normalizedPreview):null;
       if(!scope||!scope.protocolNodes().length&&!scope.has())return;
@@ -8809,7 +8812,7 @@ function scheduleFinalPhoneParseSweep(reason) {
           if (rpShouldHardSkipNativeMainChatu8Mes(lastAiIdx)) return;
           const raw = String(chat[lastAiIdx]?.mes || '');
           const normalized = normalizePhoneMarkup(raw.replace(/<think>[\s\S]*?<\/think>/gi, ''));
-          if (!/<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b/i.test(normalized)) return;
+          if (!/<PHONE\b|<SMS\b|<GMSG\b|<GVOICE\b|<GHONGBAO\b|<SIMG\b|<NOTIFY\b|<MOMENTS\b|<COMMENT\b|<SYNC\b|<CALL\b|<VOICE\b|<HONGBAO\b|<mochiLOCATION\b|<mochiLOC\b/i.test(normalized)) return;
           // 旧楼层已证明 rewriteAllHistoryPhoneBlocks 能正确渲染；新楼层生成结束后也走同一路径。
           // 这不是 repair/DOM observer，只是对 ctx.chat 中真实 PHONE 标签做一次有限历史渲染。
           STATE._lastAiFingerprint = null;
@@ -9085,12 +9088,13 @@ function rpParsePhoneOrdered(block, source = {}) {
   try {
     const context = source._parseContext || { ids: [], authors: [], byAuthor: {} };
     const counters = {};
-    const tags = /<(SMS|GMSG|VOICE|GVOICE|MOMENTS|COMMENT|SIMG)\b[^>]*\/>|<(SMS|GMSG|VOICE|GVOICE|MOMENTS|COMMENT|SIMG)\b[^>]*>[\s\S]*?<\/\2\s*>|<(NOTIFY|SYNC|CALL|HONGBAO|GHONGBAO)\b[^>]*\/?\s*>/gi;
+    const tags = /<(SMS|GMSG|VOICE|GVOICE|MOMENTS|COMMENT|SIMG|mochiLOCATION|mochiLOC)\b[^>]*\/>|<(SMS|GMSG|VOICE|GVOICE|MOMENTS|COMMENT|SIMG|mochiLOCATION|mochiLOC)\b[^>]*>[\s\S]*?<\/\2\s*>|<(NOTIFY|SYNC|CALL|HONGBAO|GHONGBAO|mochiLOCATION|mochiLOC)\b[^>]*\/?\s*>/gi;
     const rawBlock=String(block || ''), view=phoneCleanupProtocolView(rawBlock);
     let token, total = 0;
     while ((token = tags.exec(view)) !== null) {
       const atom=rawBlock.slice(token.index,tags.lastIndex);
-      const kind = (token[1] || token[2] || token[3]).toUpperCase();
+      const rawKind = (token[1] || token[2] || token[3]).toUpperCase();
+      const kind = rawKind === 'MOCHILOC' || rawKind === 'MOCHILOCATION' ? 'LOCATION' : rawKind;
       // Hide legacy output without updating stage, progress or status.
       if (kind === 'SYNC') { total++; continue; }
       const ordinal = counters[kind] || 0; counters[kind] = ordinal + 1;
@@ -9525,6 +9529,16 @@ function rpParsePhoneAtom(block, source = {}) {
     const voiceSource = messageSource('VOICE', 0, voiceFrom, vTime, duration + '|' + voiceText);
     if (isPhoneToNonUser(toRaw, ctx)) incomingAutoGroupVoice(voiceFrom, toRaw, vTime, duration, voiceText, makeAutoGroupName(voiceFrom,normalizeAutoGroupTargetName(toRaw,ctx),voiceText,vAttrs.GROUP), voiceSource);
     else incomingVoice(voiceFrom, vTime, duration, voiceText, voiceSource);
+    parsedCount++;
+  }
+  // Existing location protocol was rendered in host echoes but never received by the phone.
+  const locationRe = /<(?:mochiLOCATION|mochiLOC)\b([^>]*)\/?\s*>(?:([\s\S]*?)<\/(?:mochiLOCATION|mochiLOC)\s*>)?/gi;
+  while ((m = locationRe.exec(block)) !== null) {
+    const attrs = getTagAttrs(m[1]), from = (attrs.FROM || '').trim(), time = (attrs.TIME || '').trim(), to = (attrs.TO || '').trim();
+    const place = sanitizeSmsText(String(attrs.PLACE || attrs.TEXT || attrs.NAME || m[2] || '').replace(/<[^>]+>/g,'').trim());
+    if (!from || !place || isPhoneUserName(from,ctx) || _isUserFrom(from)) { parsedCount++;continue; }
+    const group = (attrs.GROUP || '').trim() || (isPhoneToNonUser(to,ctx) ? makeAutoGroupName(from,normalizeAutoGroupTargetName(to,ctx),place) : '');
+    incomingLocation(from,place,time,messageSource('LOCATION',0,from,time,place),group,to);
     parsedCount++;
   }
   // ── GROUP MSG ──
@@ -10565,6 +10579,31 @@ function incomingVoice(fromRaw, time, duration, text, source) {
   if (STATE.currentThread === thread.id) renderBubbles(thread.id);
   showBanner(thread.name, `🎤 语音消息 ${duration}`, undefined, thread.id);
   showLiveChat(thread.name, thread.avatarBg, STATE.avatars?.[thread.name] || null, `🎤 ${duration}`);
+  saveState();
+}
+
+function incomingLocation(fromRaw, place, time, source, groupName = '', toRaw = '') {
+  const groupId = groupName ? rpGroupThreadId(groupName) : null;
+  if (groupId && !rpCanReceiveGroup(groupId,groupName)) return;
+  const sender = findOrCreateThread(fromRaw);
+  if (!sender) return;
+  let thread = sender;
+  if (groupId) {
+    if (!STATE.threads[groupId]) {
+      const i = Object.keys(STATE.threads).length % GROUP_COLORS.length;
+      STATE.threads[groupId] = {id:groupId,name:groupName,initials:groupName.slice(0,2),avatarBg:`linear-gradient(145deg,${GROUP_COLORS[i]},${GROUP_COLORS[(i+1)%GROUP_COLORS.length]})`,type:'group',messages:[],unread:0,members:['user']};
+    }
+    thread = STATE.threads[groupId];thread.members ||= ['user'];
+    if (!thread.members.includes(sender.id)) thread.members.push(sender.id);
+    if (toRaw) ensureGroupTargetMember(groupName,normalizeAutoGroupTargetName(toRaw,getContext()),getContext());
+  }
+  const ts = resolvePhoneTime(time), matches = m => m.type === 'location' && m.name === sender.name && m.place === place;
+  if (source ? rpPhoneMessageAlreadyReceived(thread,source,matches,ts) : thread.messages.slice(-8).some(m=>matches(m)&&m.time===ts)) return;
+  thread.messages.push({id:`loc_${Date.now()}_${Math.random().toString(36).slice(2,9)}`,from:'incoming',type:'location',name:sender.name,place,time:ts,initials:sender.initials,avatarBg:sender.avatarBg,...(source?{phoneSource:{key:source.key,signature:source.signature}}:{})});
+  if (!rpIsReadingThread(thread.id)) thread.unread = (thread.unread || 0) + 1;
+  refreshBadges();renderThreadList();
+  if (STATE.currentThread === thread.id) renderBubbles(thread.id);
+  showBanner(thread.name,`${groupId?sender.name+': ':''}📍 ${place}`,undefined,thread.id);
   saveState();
 }
 
@@ -12873,6 +12912,13 @@ function rpBankTotals(data) {
   return{total:round(gross-debt),liquid:hasCash?round(cash):data.liquidAssets,debt:round(debt),reconciled:true};
 }
 
+function rpBankTargetName(ctx = (typeof getContext === 'function' ? getContext() : {})) {
+  return String(ctx?.name2 || ctx?.characters?.[ctx?.characterId]?.name || 'TA').trim();
+}
+function rpBankIdentity(name) {
+  return String(name || '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+}
+
 /** 将 AI 返回的数据渲染到 #rp-bank-body (v2 重构) */
 function _paintBankBody(data) {
   const body = document.getElementById('rp-bank-body');
@@ -12977,7 +13023,8 @@ function _paintBankBody(data) {
       </div>`;
   }
 
-  body.innerHTML = html;
+  const wrongSubject = data.charName && rpBankIdentity(data.charName) !== rpBankIdentity(rpBankTargetName());
+  body.innerHTML = (wrongSubject ? '<p class="rp-bank-empty" role="status">这份缓存的角色与当前角色不一致；原记录已保留，可刷新重新生成。</p>' : '') + html;
 
   // 等浏览器完成 layout 后再检测截断，否则 scrollHeight/clientHeight 可能为 0
   requestAnimationFrame(function() {
@@ -13131,7 +13178,7 @@ async function generateBankData(force) {
   try {
     // ── 读取上下文 ──
     const rawCtx = (typeof getContext === 'function') ? getContext() : {};
-    const charName = rawCtx?.name2 || rawCtx?.characters?.[rawCtx?.characterId]?.name || 'TA';
+    const charName = rpBankTargetName(rawCtx);
     const userName = rawCtx?.name1 || '用户';
 
     // Keep finance facts from the selected card and its explicit worldbook bindings.
@@ -13147,6 +13194,7 @@ async function generateBankData(force) {
     const sysMsg = `你是专业的角色财务顾问，擅长根据小说/剧本人设推断角色的真实资产状况。
 请严格按照角色设定还原资产规模，生成一份可信、细节丰富的财务报告。
 【核心原则】
+- 本次唯一报告主体是 ${JSON.stringify(charName)}。JSON 的 charName 必须逐字填写该角色名。用户名仅用于理解对话，不能把用户或其他人物当成报告主体；正文也必须属于该角色。
 - 资产规模必须严格匹配人设身份，双向约束：
   · 明确的个人净资产、身家、持股与信托权益优先于职业刻板估算；不得因CEO等头衔设固定财富下限或擅自压低明确财富设定
   · 普通打工人/学生/平民/底层角色：资产应在合理范围内（数千至数十万），切勿虚高
@@ -13203,6 +13251,8 @@ ${chatMsgs}
     }
 
     if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.assets)) throw new Error('数据结构不完整');
+    if (parsed.charName && rpBankIdentity(parsed.charName) !== rpBankIdentity(charName)) throw new Error('报告角色与当前角色不一致，请重试');
+    parsed.charName = charName;
 
     // 存入 STATE 并持久化（记录 chatId，防止切换角色后误用缓存）
     parsed._cacheForChatId = STATE.chatId;
@@ -14468,11 +14518,25 @@ function gameApplyPartnerToGames(partner) {
   } catch(e) {}
 }
 
+function gamePartnerNameFeedback(message = '') {
+  const input = document.getElementById('rp-game-partner-name-input');
+  if (!input) return;
+  let error = document.getElementById('rp-game-partner-error');
+  if (!error) {
+    error = document.createElement('p');error.id = 'rp-game-partner-error';error.className = 'rp-game-partner-help';error.setAttribute('role','alert');
+    input.after(error);
+  }
+  error.textContent = message;error.hidden = !message;
+  if (message) { input.setAttribute('aria-invalid','true');input.setAttribute('aria-errormessage',error.id); }
+  else { input.removeAttribute('aria-invalid');input.removeAttribute('aria-errormessage'); }
+}
+
 function gameOpenPartnerModal() {
   var ctx = (typeof getContext === 'function') ? getContext() : {};
   var cur = gameGetCurrentPartner(ctx);
   $('#rp-game-partner-name-input').val(cur.name || gameGetCardName(ctx) || '');
   $('#rp-game-partner-note-input').val(cur.note || '');
+  gamePartnerNameFeedback();
   rpSetSurfaceOpen('#rp-game-partner-modal',true,{display:'flex'});
   setTimeout(function(){ try { document.getElementById('rp-game-partner-name-input').focus(); } catch(e) {} }, 0);
 }
@@ -14485,7 +14549,8 @@ function gameSavePartnerFromModal() {
   var ctx = (typeof getContext === 'function') ? getContext() : {};
   var name = gameCleanPartnerName($('#rp-game-partner-name-input').val());
   var note = String($('#rp-game-partner-note-input').val() || '').replace(/[<>\r\t]/g, ' ').trim().slice(0, 600);
-  if (!name) return;
+  if (!name) { gamePartnerNameFeedback('请填写搭子名称。');document.getElementById('rp-game-partner-name-input')?.focus();return; }
+  gamePartnerNameFeedback();
   const previous = gameGetCurrentPartner(ctx);
   if (name !== previous.name || note !== previous.note) {
     rpGameStatsFinish('gm','abandoned');
@@ -17534,7 +17599,8 @@ function rpTheatreApp() {
       download:(title,text)=>{
         const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),link=document.createElement('a');
         link.href=url;link.download=String(title).replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,80)+'.txt';
-        document.body.append(link);link.click();link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+        link.style.display='none';link.addEventListener('click',event=>event.stopPropagation());document.body.append(link);
+        try { link.click(); } finally { link.remove();rpRuntime.timer(()=>URL.revokeObjectURL(url),30000,false,[],'lifetime'); }
       },
       error:error=>rpClassifyPhoneApiError(error).message,
       background:async (pack,recipe,token,maxTokens)=>{

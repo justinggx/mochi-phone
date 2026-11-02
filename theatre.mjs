@@ -59,8 +59,8 @@ export const THEATRE_CSS = `
  padding-right:12px;z-index:2;
 }
 #rp-phone #rp-screen #rp-view-theatre>.rp-nav-bar .rp-nav-title{
- color:var(--rp-theatre-ink)!important;font-family:var(--rp-theatre-serif)!important;
- font-size:15px;font-weight:400!important;letter-spacing:.08em;
+ color:var(--rp-theatre-ink)!important;font-family:var(--rp-ui-font,sans-serif)!important;
+ font-size:17px!important;font-weight:600!important;letter-spacing:normal;
 }
 #rp-phone #rp-screen #rp-view-theatre>.rp-nav-bar .rp-back{
  color:var(--rp-theatre-ink)!important;min-width:44px;min-height:44px;
@@ -199,7 +199,7 @@ export const THEATRE_CSS = `
 
 
 /* Stable inner-page type; the existing display scale is still applied once. */
-#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read)>.rp-nav-bar .rp-nav-title{font-size:15px}
+#rp-phone #rp-screen :is(#rp-view-theatre,#rp-view-theatre-write,#rp-view-theatre-read)>.rp-nav-bar .rp-nav-title{font-family:var(--rp-ui-font,sans-serif)!important;font-size:17px!important;font-weight:600!important;letter-spacing:normal}
 #rp-phone #rp-theatre-random-idea{height:108px;min-height:96px}
 #rp-phone .rp-theatre-mode{min-width:0}
 #rp-phone .rp-theatre-input{font-family:inherit}

@@ -1,6 +1,6 @@
-import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-safearea-210';
-import { THEATRE_CSS } from './theatre.mjs?v=20261029-optimization-173';
+import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261102-native-ui-214';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-native-ui-214';
+import { THEATRE_CSS } from './theatre.mjs?v=20261102-native-ui-214';
 
 export const RP_ART_CSS = `
 #rp-phone {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}
@@ -698,10 +698,10 @@ export const RP_XHS_COMPOSE_CSS = `
   background:var(--rp-compose-bg)!important;
 }
 #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery>.rp-nav-bar {
-  display:grid!important; grid-template-columns:30px minmax(0,1fr) max(64px,calc(64px * var(--mochi-phone-font-scale,1)))!important;
+  display:grid!important; grid-template-columns:max(64px,calc(64px * var(--mochi-phone-font-scale,1))) minmax(0,1fr) max(64px,calc(64px * var(--mochi-phone-font-scale,1)))!important;
   column-gap:8px!important; align-items:center!important; position:relative!important;
   box-sizing:border-box!important; height:96px!important; min-height:96px!important;
-  padding:56px 14px 8px 12px!important; margin:0!important;
+  padding:56px 14px 8px!important; margin:0!important;
   background:transparent!important; border:0!important; box-shadow:none!important;
 }
 #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery>.rp-nav-bar>.rp-back {
@@ -712,11 +712,11 @@ export const RP_XHS_COMPOSE_CSS = `
   color:var(--rp-compose-accent)!important; font-size:22px!important; font-weight:300!important;
 }
 #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery>.rp-nav-bar>.rp-nav-title {
-  position:static!important; inset:auto!important; grid-column:2!important; justify-self:start!important;
+  position:static!important; inset:auto!important; grid-column:2!important; justify-self:stretch!important;
   width:auto!important; min-width:0!important; max-width:100%!important; margin:0!important; padding:0!important;
-  transform:none!important; text-align:left!important; overflow:hidden!important; text-overflow:ellipsis!important;
-  white-space:nowrap!important; font-family:var(--rp-compose-serif)!important; font-size:11px!important;
-  font-weight:400!important; line-height:1.4!important; letter-spacing:.08em!important; color:var(--rp-compose-accent)!important;
+  transform:none!important; text-align:center!important; overflow:hidden!important; text-overflow:ellipsis!important;
+  white-space:nowrap!important; font-family:var(--rp-ui-font,sans-serif)!important; font-size:17px!important;
+  font-weight:600!important; line-height:1.4!important; letter-spacing:normal!important; color:var(--rp-nav-title,var(--rp-compose-ink))!important;
 }
 #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-btn,#rp-compose-post) {
   position:static!important; inset:auto!important; grid-column:3!important; justify-self:stretch!important;
@@ -809,7 +809,7 @@ export const RP_XHS_COMPOSE_CSS = `
 `;
 
 export const RP_PHONE_CSS = `/* ── wrapper ── */
-#rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:9998; }
+#rp-wrapper { position:fixed; right:20px; bottom:20px; z-index:2147483647; }
 
 /* ── FAB ── */
 #rp-fab {
@@ -1073,7 +1073,8 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
   background-position:center;
   border-radius:31px; overflow:hidden;
   position:relative;
-  font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;
+  --rp-ui-font:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;
+  font-family:var(--rp-ui-font);
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
@@ -1455,7 +1456,7 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
   border-bottom:1px solid transparent;
 }
 
-.rp-nav-title {position:absolute;left:0;right:0;text-align:center;pointer-events:none;font-size:16px;font-weight:600;color:var(--rp-nav-title);}
+.rp-nav-title {position:absolute;left:0;right:0;text-align:center;pointer-events:none;font-family:var(--rp-ui-font,sans-serif);font-size:17px;font-weight:600;color:var(--rp-nav-title);}
 .rp-back {
   background:none !important; border:none !important;
   color:var(--rp-nav-btn) !important; font-size:30px !important;
