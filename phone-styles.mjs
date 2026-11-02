@@ -1,5 +1,5 @@
 import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261011-header1';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-moments-209';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-safearea-210';
 import { THEATRE_CSS } from './theatre.mjs?v=20261029-optimization-173';
 
 export const RP_ART_CSS = `
@@ -645,9 +645,8 @@ export const RP_READING_CSS = `
 `;
 
 export const RP_XHS_COMPOSE_CSS = `
-#rp-wrapper #rp-phone #rp-screen #rp-compose-modal.rp-compose-publish {inset:0!important;top:0!important;height:100%!important;z-index:198!important;display:flex;flex-direction:column;isolation:isolate;background:var(--rp-v-surface,#faf8f5)!important;color:var(--rp-v-text,#44353d);animation:none!important;}
+#rp-wrapper #rp-phone #rp-screen #rp-compose-modal.rp-compose-publish {inset:56px 0 0!important;top:56px!important;bottom:0!important;height:auto!important;z-index:198!important;display:flex;flex-direction:column;isolation:isolate;background:var(--rp-v-surface,#faf8f5)!important;color:var(--rp-v-text,#44353d);animation:none!important;}
 #rp-wrapper #rp-phone #rp-screen #rp-compose-modal.rp-compose-publish::before,#rp-wrapper #rp-phone #rp-screen #rp-compose-modal.rp-compose-publish::after {content:none!important;display:none!important;}
-#rp-phone #rp-screen #rp-compose-modal>.rp-nav-bar {height:auto!important;min-height:96px;box-sizing:border-box;padding:54px 16px 10px!important;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;background:transparent!important;border:0!important;}
 #rp-phone #rp-screen #rp-compose-modal #rp-compose-cancel {width:auto!important;min-width:44px;min-height:34px;padding:5px 0!important;font-size:14px!important;color:var(--rp-v-text)!important;}
 #rp-phone #rp-screen #rp-compose-modal #rp-compose-post {--rp-publish-bg:#956174;appearance:none;min-height:32px;width:auto;min-width:54px;padding:5px 13px!important;border:0!important;border-radius:6px!important;background:var(--rp-publish-bg)!important;color:#fff!important;font-family:inherit;font-size:13px!important;font-weight:600;line-height:1.5;box-shadow:none!important;text-shadow:none!important;}
 #rp-phone.rp-theme-star #rp-screen #rp-compose-modal #rp-compose-post {--rp-publish-bg:#76629c;}

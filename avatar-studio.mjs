@@ -72,7 +72,7 @@ export const AVATAR_STUDIO_CSS = `
 #rp-avatar-studio #rp-as-scope{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:400;color:var(--rp-v-muted,#887781);margin:6px 0 0}
 #rp-avatar-studio #rp-as-scope-select{width:auto;min-width:0;padding:5px 9px;border:1px solid var(--rp-v-border,#dfd4db);border-radius:9px;background:var(--rp-v-card,#f4eef1);color:var(--rp-v-text,#51434b);font:inherit;touch-action:manipulation}
 
-#rp-phone #rp-screen #rp-avatar-studio{position:absolute!important;inset:0!important;z-index:300!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:10px!important;background:rgba(30,25,30,.32)!important;color:var(--rp-v-text,#45383d)!important;font-family:inherit;font-size:12px;line-height:1.55;box-sizing:border-box!important;}
+#rp-phone #rp-screen #rp-avatar-studio{position:absolute!important;inset:56px 0 0!important;top:56px!important;bottom:0!important;z-index:198!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:10px!important;background:rgba(30,25,30,.32)!important;color:var(--rp-v-text,#45383d)!important;font-family:inherit;font-size:12px;line-height:1.55;box-sizing:border-box!important;}
 #rp-phone #rp-screen #rp-avatar-studio *{box-sizing:border-box;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-panel{display:flex;flex-direction:column;background:var(--rp-v-surface,#faf7f3);border:1px solid var(--rp-v-border,#ded5d7);border-radius:18px;padding:14px;width:100%;max-height:100%;overflow:hidden;box-shadow:0 12px 36px #0002;}
 #rp-phone #rp-screen #rp-avatar-studio .rp-as-heading{flex:0 0 auto;}

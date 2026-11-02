@@ -1,4 +1,4 @@
-import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261101-mobile-cloud-203';
+import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261102-safearea-210';
 import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261029-optimization-173';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
@@ -86,6 +86,9 @@ export const PHONE_TOOLS_CSS = [
 "#rp-phone #rp-screen :is(#rp-compose-modal,#rp-del-picker)>.rp-nav-bar{--rp-nav-control-top:2px;--rp-nav-control-center:22px;height:44px!important;min-height:44px!important;padding:0 6px!important}",
 "#rp-phone #rp-screen .rp-nav-bar>:is(#rp-compose-cancel,#rp-del-cancel){width:64px!important;min-width:64px!important;max-width:64px!important}",
 "#rp-phone #rp-screen :is(#rp-compose-modal,#rp-del-picker)>.rp-nav-bar>.rp-nav-title{max-width:calc(100% - 152px)}",
+// The publish surface already clears the status bar; keep its two actions in normal flow.
+"#rp-phone #rp-screen #rp-compose-modal>.rp-nav-bar {position:relative!important;height:auto!important;min-height:54px!important;box-sizing:border-box;padding:10px 16px!important;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;background:transparent!important;border:0!important;}",
+"#rp-phone #rp-screen #rp-compose-modal>.rp-nav-bar>button {position:static!important;inset:auto!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;margin:0!important;transform:none!important;flex:0 0 auto!important;}",
 "#rp-phone #rp-screen .rp-feature-header{align-items:flex-start}",
 "#rp-phone #rp-screen .rp-feature-header>strong{flex:1;min-width:0;overflow-wrap:anywhere}",
 "#rp-phone #rp-screen .rp-feature-close{flex:0 0 40px;width:40px;min-width:40px;max-width:40px;height:40px;min-height:40px;max-height:40px;padding:0;line-height:40px;box-sizing:border-box}",
