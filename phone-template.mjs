@@ -403,7 +403,7 @@ const HTML = `
             <textarea id="rp-compose-text" placeholder="这一刻的想法…" rows="4" aria-label="朋友圈正文"></textarea>
             <div id="rp-compose-photo-area" aria-busy="false">
               <div id="rp-compose-photo-preview">
-                <button id="rp-compose-photo-choose" type="button" aria-label="添加图片，最多9张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M12 3v18M3 12h18"/></svg></button>
+                <button id="rp-compose-photo-choose" type="button" aria-label="添加图片，最多9张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M12 3v18M3 12h18"/></svg><span class="rp-compose-photo-label">添加图片</span></button>
               </div>
               <input id="rp-compose-photo-file" type="file" accept="image/*" multiple hidden aria-label="选择朋友圈图片，最多9张">
               <div id="rp-compose-photo-status" role="status" aria-live="polite"></div>
