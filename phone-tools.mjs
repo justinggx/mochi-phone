@@ -222,7 +222,7 @@ export function createPhoneTools(api) {
     for(const el of candidates)if(el.closest(fontOwners)&&el.style)scaleDeclaration(el.style,el.id==='rp-phone');
   }
   function refreshTypography() {
-    for(const id of ['rp-phone-css','rp-custom-theme-style','rp-gomoku-css','rp-sudoku-css','rp-stickers-css','rp-shop-css'])scaleSheet(doc.getElementById(id));
+    for(const id of ['rp-phone-css','rp-custom-theme-style','rp-gomoku-css','rp-sudoku-css','rp-stickers-css','rp-shop-css','rp-game-stats-css'])scaleSheet(doc.getElementById(id));
     for(const root of doc.querySelectorAll(fontOwners))scaleInline(root);
   }
   function installTypography() {
@@ -244,9 +244,9 @@ export function createPhoneTools(api) {
           if(value&&!value.includes(fontVariable)&&el.closest(fontOwners))nodes.add(el);
         }else{
           const style=change.target.nodeType===1?change.target:change.target.parentElement;
-          if(style?.matches?.('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-stickers-css,#rp-shop-css'))sheets.add(style);
+          if(style?.matches?.('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-stickers-css,#rp-shop-css,#rp-game-stats-css'))sheets.add(style);
           for(const node of change.addedNodes)if(node.nodeType===1){
-            if(node.matches('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-stickers-css,#rp-shop-css'))sheets.add(node);
+            if(node.matches('#rp-phone-css,#rp-custom-theme-style,#rp-gomoku-css,#rp-sudoku-css,#rp-stickers-css,#rp-shop-css,#rp-game-stats-css'))sheets.add(node);
             if(node.matches(fontOwners)||node.closest(fontOwners))nodes.add(node);
           }
         }

@@ -1,5 +1,5 @@
 import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261102-native-ui-214';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-native-ui-214';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-native-theme-215';
 import { THEATRE_CSS } from './theatre.mjs?v=20261102-native-ui-214';
 
 export const RP_ART_CSS = `
@@ -301,7 +301,8 @@ export const RP_REFINED_CSS = `
 #rp-phone #rp-screen #rp-view-xhs-compose .rp-nav-bar {position:relative;}
 #rp-phone #rp-screen #rp-view-xhs-compose .rp-nav-title {position:absolute!important;left:50%!important;right:auto!important;top:69px!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100% - 140px);pointer-events:none;white-space:nowrap;}
 #rp-phone #rp-screen #rp-view-xhs-compose #rp-xhs-post-btn {grid-column:3!important;justify-self:end!important;}
-#rp-phone #rp-screen .rp-game-resume {position:absolute;inset:0;z-index:130;background:var(--rp-v-surface);color:var(--rp-v-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+#rp-phone #rp-screen .rp-game-resume {position:absolute;inset:88px 0 0;z-index:130;background:var(--rp-v-surface);color:var(--rp-v-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+#rp-phone.rp-compact #rp-screen .rp-game-resume {top:80px;}
 #rp-phone #rp-screen .rp-game-resume button {min-height:40px;padding:10px 22px;border-radius:12px;border:1px solid var(--rp-v-border);background:var(--rp-v-card);color:var(--rp-v-text);cursor:pointer;font-family:inherit;}
 #rp-phone.rp-art-icons #rp-screen .rp-game-resume-primary {background:var(--rp-r-accent);color:var(--rp-r-on-accent);}
 /* Fit the rendered canvas, not its simulation coordinates. */
@@ -692,7 +693,7 @@ export const RP_XHS_COMPOSE_CSS = `
   background:radial-gradient(ellipse at 18% 4%,rgba(255,255,255,.48),transparent 72%),var(--rp-compose-bg)!important;
   color:var(--rp-compose-ink)!important;
 }
-#rp-wrapper #rp-phone:where(:not(.rp-theme-custom)).rp-dark #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery.rp-view {
+#rp-wrapper #rp-phone:where(:not(.rp-theme-custom)):is(.rp-dark,.rp-theme-star) #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery.rp-view {
   --rp-compose-bg:#24231f; --rp-compose-paper:#302e27; --rp-compose-ink:#f1e8d9;
   --rp-compose-muted:#c1b7a6; --rp-compose-accent:#c2c99f; --rp-compose-line:#777961; --rp-compose-tape:#b7846c;
   background:var(--rp-compose-bg)!important;
@@ -716,7 +717,7 @@ export const RP_XHS_COMPOSE_CSS = `
   width:auto!important; min-width:0!important; max-width:100%!important; margin:0!important; padding:0!important;
   transform:none!important; text-align:center!important; overflow:hidden!important; text-overflow:ellipsis!important;
   white-space:nowrap!important; font-family:var(--rp-ui-font,sans-serif)!important; font-size:17px!important;
-  font-weight:600!important; line-height:1.4!important; letter-spacing:normal!important; color:var(--rp-nav-title,var(--rp-compose-ink))!important;
+  font-weight:600!important; line-height:1.4!important; letter-spacing:normal!important; color:var(--rp-compose-ink)!important;
 }
 #rp-phone #rp-screen :is(#rp-view-xhs-compose,#rp-compose-modal).rp-xhs-stationery :is(#rp-xhs-post-btn,#rp-compose-post) {
   position:static!important; inset:auto!important; grid-column:3!important; justify-self:stretch!important;
