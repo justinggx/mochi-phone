@@ -101,9 +101,9 @@ export const STICKER_CSS=`
 #rp-phone #rp-view-stickers *{box-sizing:border-box;}
 #rp-phone #rp-view-stickers button{font-family:inherit;cursor:pointer;margin:0;color:inherit;box-shadow:none;min-width:0;}
 #rp-phone #rp-view-stickers button:disabled{opacity:.45;cursor:default;}
-#rp-phone #rp-view-stickers .stk-nav{display:flex;align-items:center;flex:0 0 82px;min-height:82px;padding:42px 12px 0;gap:4px;}
+#rp-phone #rp-view-stickers .stk-nav{display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;flex:0 0 96px;height:96px;min-height:96px;padding:56px 14px 0;gap:8px;}
 #rp-phone #rp-view-stickers .stk-back{display:grid;place-items:center;flex:0 0 36px;height:40px;max-height:40px;min-height:40px;line-height:1;border:0;background:transparent;padding:0;font-size:28px;}
-#rp-phone #rp-view-stickers .stk-title{flex:1;text-align:center;font-size:16px;}
+#rp-phone #rp-view-stickers .stk-title{min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--rp-ui-font,sans-serif);font-size:17px;font-weight:600;line-height:1.4;}
 #rp-phone #rp-view-stickers .stk-refresh{height:40px;flex:0 0 42px;font-size:12px;border:0;background:transparent;padding:0;}
 #rp-phone #rp-view-stickers .stk-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px 16px 24px;}
 #rp-phone #rp-view-stickers .stk-note{font-size:11px;line-height:1.8;color:var(--rp-v-muted);margin:0 0 12px;overflow-wrap:anywhere;}

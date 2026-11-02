@@ -15,7 +15,7 @@ import { createRoleContext, roleContextRef, roleContextWindow } from './role-con
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261102-native-ui-214';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
-import { createStickers } from './stickers.mjs?v=20261031-inline-sticker-202';
+import { createStickers } from './stickers.mjs?v=20261102-sticker-header-216';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-native-theme-215';
