@@ -452,7 +452,7 @@ function rpResetChatTasks() {
   rpCancelComposeImage();
   $('#rp-compose-photo-preview').children('.rp-compose-photo-cell').remove();
   $('#rp-compose-text,#rp-ts-input,#rp-input').val('');
-  $('#rp-diary-list,#rp-ts-bubbles').empty();
+  $('#rp-diary-list,#rp-ts-draft').empty();
   rpDiaryStatus('');
   rpAvatarEdits.clear(); rpWallpaperEdit = null;
   rpHostActionCallbacks.clear();
