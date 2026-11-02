@@ -3,11 +3,11 @@ import { createPhoneChat } from './phone-chat.mjs?v=20261101-message-images-204'
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261102-moments-208';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261102-moments-209';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261102-moments-208';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261102-moments-209';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261028-nav-fix-165';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261101-mobile-cloud-203';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -18,7 +18,7 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261031-inline-sticker-202';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-moments-208';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-moments-209';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261101-mobile-cloud-203';
 import { createThemeStudio } from './theme-studio.mjs?v=20261031-thin-frame-199';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -73,7 +73,7 @@ async function rpClaimLegacyStorage() {
     if (key.startsWith('rp-phone-v1-')) {
       let data; try { data = JSON.parse(value); } catch (_) { continue; }
       const slot = key.slice('rp-phone-v1-'.length), current = _extSettings()?.[EXT_KEY]?.[slot];
-      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.phoneChatMode === 'independent' || t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.theatre?.stories?.length || s.theatre?.draft?.idea || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.composeImageDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title || s.sudoku?.round
+      const hasContent = s => s && (Object.values(s.threads || {}).some(t => t?.phoneChatMode === 'independent' || t?.messages?.length || t?.draft || t?.pendingMessages?.length || t?.pendingHostActions?.length) || s.theatre?.stories?.length || s.theatre?.draft?.idea || s.moments?.length || s.diary?.length || s.xhsFeed?.length || s.diaryDraft || s.composeDraft || s.composeImageDraft || s.composeImagesDraft?.length || s.composeLocationDraft || s.themeStudioDraft || s.xhsPostDraft?.body || s.xhsPostDraft?.title || s.sudoku?.round
         || ['ludo','g2048','gm','gword'].some(key=>s.gameState?.[key]?.round || s.gameState?.[key]?.chatLog?.length) || s.gameState?.partner?.name || Object.keys(s.gameState?.towers || {}).length);
       if (hasContent(current)) continue; // Never replace current non-empty account data.
       if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
@@ -1227,6 +1227,8 @@ function buildStatePayload() {
       sticker: m.sticker ? { ...m.sticker } : undefined,
       phoneTranslation: rpPhoneTranslationSnapshot(m, rpSocialText(m.text)),
       img: m.img || null,
+      imgs: Array.isArray(m.imgs) ? m.imgs.slice() : undefined,
+      location: m.location,
       pendingImg: m.pendingImg || null,
       pendingImgType: m.pendingImgType || null,
       likes: Array.isArray(m.likes) ? m.likes.slice() : [],
@@ -1262,6 +1264,8 @@ function buildStatePayload() {
     themeStudioMessages: Array.isArray(STATE.themeStudioMessages) ? STATE.themeStudioMessages.slice() : [],
     composeDraft: STATE.composeDraft || '',
     composeImageDraft: STATE.composeImageDraft || null,
+    composeImagesDraft: rpComposePhotos(),
+    composeLocationDraft: rpComposeLocation(STATE.composeLocationDraft),
     themeStudioDraft: STATE.themeStudioDraft || '',
     diaryDraft: STATE.diaryDraft || '',
     xhsPostDraft: Object.assign({ title: '', body: '' }, STATE.xhsPostDraft),
@@ -1483,6 +1487,8 @@ const STATE = {
   themeStudioMessages: [],
   composeDraft: '',
   composeImageDraft: null,
+  composeImagesDraft: null,
+  composeLocationDraft: '',
   themeStudioDraft: '',
   diaryDraft: '',
   xhsPostDraft: { title: '', body: '' },
@@ -2270,6 +2276,8 @@ function restorePhoneChatState(saved) {
   STATE.themeSettings = s.themeSettings || null;
   STATE.composeDraft = typeof s.composeDraft === 'string' ? s.composeDraft : '';
   STATE.composeImageDraft = rpValidComposeImage(s.composeImageDraft) ? s.composeImageDraft : null;
+  STATE.composeImagesDraft = Array.isArray(s.composeImagesDraft) ? s.composeImagesDraft.filter(rpValidComposeImage).slice(0,9) : null;
+  STATE.composeLocationDraft = rpComposeLocation(s.composeLocationDraft);
   STATE.themeStudioDraft = typeof s.themeStudioDraft === 'string' ? s.themeStudioDraft : '';
   STATE.diaryDraft = typeof s.diaryDraft === 'string' ? s.diaryDraft : '';
   STATE.theatre = s.theatre ? JSON.parse(JSON.stringify(s.theatre)) : theatreDefaults();
@@ -2879,7 +2887,7 @@ async function compressPhoneImagesForPersistence() {
       }
     }
     for (const moment of (STATE.moments || [])) {
-      if (!moment || !isCompressiblePhoneImageSrc(moment.img)) continue;
+      if (!moment || moment.imgs?.length || !isCompressiblePhoneImageSrc(moment.img)) continue;
       const oldImg = moment.img;
       const compressed = await rpGuardAwait(compressPhoneContentImage(oldImg), rpTask);
       if (STATE.moments.includes(moment) && moment.img === oldImg && compressed && compressed.startsWith('data:image/') && compressed.length < oldImg.length) {
@@ -5440,8 +5448,9 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#rp-compose-cancel, #rp-compose-modal .rp-back', closeCompose);
   $(document).on("click.mochiPhone", '#rp-compose-post', postUserMoment);
   $(document).on('click.mochiPhone','#rp-compose-photo-choose',function(e){e.preventDefault();e.stopPropagation();document.getElementById('rp-compose-photo-file').click();});
-  $(document).on('change.mochiPhone','#rp-compose-photo-file',function(){const file=this.files?.[0];this.value='';void rpReadComposeImage(file);});
-  $(document).on('click.mochiPhone','#rp-compose-photo-remove',function(e){e.preventDefault();e.stopPropagation();rpRemoveComposeImage();});
+  $(document).on('change.mochiPhone','#rp-compose-photo-file',function(){const files=Array.from(this.files||[]);this.value='';void rpReadComposeImage(files);});
+  $(document).on('click.mochiPhone','#rp-compose-location',function(e){e.preventDefault();e.stopPropagation();rpEditComposeLocation();});
+  $(document).on('click.mochiPhone','.rp-moment-photo-open',function(){const moment=STATE.moments.find(m=>m.id===this.dataset.mid);if(moment)rpViewMomentPhoto(rpMomentPhotoSources(moment),Number(this.dataset.photo));});
 
   // 来电:接听 / 拒绝(事件委托)
   // Dark mode is handled via data-app='darkmode' in the app grid
@@ -9944,18 +9953,91 @@ function rpCancelComposeImage() {
   const job = rpComposeImageJob; rpComposeImageJob = null;
   if (job?.reader?.readyState === 1) job.reader.abort();
 }
+function rpComposePhotos() {
+  if (Array.isArray(STATE.composeImagesDraft)) return STATE.composeImagesDraft.filter(rpValidComposeImage).slice(0,9);
+  return rpValidComposeImage(STATE.composeImageDraft) ? [STATE.composeImageDraft] : [];
+}
+function rpStoreComposePhotos(photos) {
+  STATE.composeImagesDraft = photos.filter(rpValidComposeImage).slice(0,9);
+  STATE.composeImageDraft = STATE.composeImagesDraft[0] || null;
+}
+function rpComposeLocation(value) {
+  return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,80) : '';
+}
 function rpRenderComposeImage(message = '') {
   const preview = document.getElementById('rp-compose-photo-preview'), choose = document.getElementById('rp-compose-photo-choose');
   if (!preview || !choose) return;
-  const src = STATE.composeImageDraft, busy = !!rpComposeImageJob, hasImage = rpValidComposeImage(src);
-  preview.replaceChildren(); preview.hidden = !hasImage;
-  if (hasImage) { const image = document.createElement('img'); image.src = src; image.alt = '待发布的图片'; preview.append(image); }
-  document.getElementById('rp-compose-photo-label').textContent = hasImage ? '更换图片' : '添加图片';
-  document.getElementById('rp-compose-photo-remove').hidden = !hasImage && !busy;
-  document.getElementById('rp-compose-photo-status').textContent = message || (busy ? '正在准备图片…' : '');
+  const photos = rpComposePhotos(), busy = !!rpComposeImageJob;
+  preview.replaceChildren(); preview.hidden = false;
+  photos.forEach((src,index)=>{
+    const cell=document.createElement('div');cell.className='rp-compose-photo-cell';
+    const view=document.createElement('button');view.type='button';view.className='rp-compose-photo-view';view.setAttribute('aria-label','查看第'+(index+1)+'张图片');
+    const image=document.createElement('img');image.src=src;image.alt='待发表图片 '+(index+1);view.append(image);view.onclick=()=>rpViewMomentPhoto(photos,index);
+    const remove=document.createElement('button');remove.type='button';remove.className='rp-compose-photo-delete';remove.setAttribute('aria-label','移除第'+(index+1)+'张图片');remove.textContent='×';remove.onclick=()=>rpRemoveComposeImage(index);
+    cell.append(view,remove);preview.append(cell);
+  });
+  choose.hidden=photos.length>=9;preview.append(choose);
+  document.getElementById('rp-compose-photo-status').textContent=message || (busy ? '正在准备图片…' : '');
   document.getElementById('rp-compose-photo-area').setAttribute('aria-busy',String(busy));
-  document.getElementById('rp-compose-post').disabled = busy;
+  document.getElementById('rp-compose-post').disabled=busy;
+  document.getElementById('rp-compose-location-value').textContent=rpComposeLocation(STATE.composeLocationDraft);
 }
+async function rpReadComposeImage(files) {
+  const selected=Array.isArray(files)?files:files?[files]:[];
+  if (!selected.length) return;
+  rpCancelComposeImage();
+  const room=9-rpComposePhotos().length;if(room<=0){rpRenderComposeImage('最多添加9张图片。');return;}
+  const chosen=selected.slice(0,room), task=rpRuntime.task(),owner=rpArchiveAccountHandle,slot=STATE.chatId,job={reader:null,task};rpComposeImageJob=job;
+  const current=()=>rpComposeImageJob===job&&task.valid()&&owner===rpArchiveAccountHandle&&slot===STATE.chatId&&slot===getPhoneChatSlotKey(getContext());
+  const cancel=()=>{if(rpComposeImageJob===job)rpCancelComposeImage();};task.signal.addEventListener('abort',cancel,{once:true});rpRenderComposeImage();
+  let failed=0;
+  try {
+    for (const file of chosen) {
+      if(!current())return;
+      if(!file.type?.startsWith('image/')||file.size>16*1024*1024){failed++;continue;}
+      try {
+        job.reader=new FileReader();
+        const raw=await rpGuardAwait(new Promise((resolve,reject)=>{
+          job.reader.onload=e=>resolve(e.target.result);job.reader.onerror=()=>reject(Error('图片读取失败'));job.reader.onabort=()=>reject(Object.assign(Error('Cancelled'),{name:'AbortError'}));job.reader.readAsDataURL(file);
+        }),task,20000);
+        if(!current())return;
+        const src=await rpGuardAwait(rpDecodeComposeImage(raw),task,20000);if(!current())return;
+        const photos=rpComposePhotos();if(photos.length<9){photos.push(src);rpStoreComposePhotos(photos);saveState();rpRenderComposeImage();}
+      } catch(error){if(!current())return;failed++;}
+    }
+  } finally {
+    task.signal.removeEventListener('abort',cancel);
+    if(rpComposeImageJob===job){rpComposeImageJob=null;rpRenderComposeImage(failed?'部分图片无法添加，请选择16MB以内的 JPG、PNG 或 WebP。':selected.length>room?'最多添加9张图片。':'');}
+  }
+}
+function rpRemoveComposeImage(index) {
+  rpCancelComposeImage();const photos=rpComposePhotos();
+  if(Number.isInteger(index)&&index>=0&&index<photos.length)photos.splice(index,1);else photos.length=0;
+  rpStoreComposePhotos(photos);saveState();rpRenderComposeImage();
+  const input=document.getElementById('rp-compose-photo-file');if(input)input.value='';
+}
+function rpEditComposeLocation() {
+  const task=rpRuntime.task(),owner=rpArchiveAccountHandle,slot=STATE.chatId;
+  const box=$('<div class="rp-compose-location-editor">'),input=$('<input id="rp-compose-location-input" class="rp-feature-input" type="text" maxlength="80" placeholder="输入位置，可留空" aria-label="所在位置">').val(rpComposeLocation(STATE.composeLocationDraft));box.append(input);
+  rpFeatureDialog('所在位置',box,[{label:'取消'},{label:'完成',primary:true,run:()=>{
+    if(!task.valid()||owner!==rpArchiveAccountHandle||slot!==STATE.chatId||slot!==getPhoneChatSlotKey(getContext()))return;
+    STATE.composeLocationDraft=rpComposeLocation(input.val());saveState();rpRenderComposeImage();
+  }}]);
+}
+function rpMomentPhotoSources(moment) {
+  return Array.isArray(moment.imgs)&&moment.imgs.length?moment.imgs.filter(s=>typeof s==='string'&&s&&s!=='__img_expired__').slice(0,9):[];
+}
+function rpMomentPhotoGrid(moment) {
+  const photos=rpMomentPhotoSources(moment);
+  if(!photos.length)return '';
+  return '<div class="rp-moment-photo-grid" data-count="'+photos.length+'">'+photos.map((src,i)=>'<button type="button" class="rp-moment-photo-open" data-mid="'+escHtml(moment.id)+'" data-photo="'+i+'" aria-label="查看第'+(i+1)+'张图片"><img class="rp-moment-img" src="'+escHtml(src)+'" alt="动态图片 '+(i+1)+'" loading="lazy"></button>').join('')+'</div>';
+}
+function rpViewMomentPhoto(photos,index=0) {
+  if(!Array.isArray(photos)||!photos[index])return;
+  const image=$('<img class="rp-moment-photo-large" alt="动态图片">').attr('src',photos[index]);
+  rpFeatureDialog(photos.length>1?(index+1)+' / '+photos.length:'图片',image,[...(index>0?[{label:'上一张',run:()=>{rpViewMomentPhoto(photos,index-1);return false;}}]:[]),...(index<photos.length-1?[{label:'下一张',run:()=>{rpViewMomentPhoto(photos,index+1);return false;}}]:[])]);
+}
+
 function rpDecodeComposeImage(src) {
   return new Promise((resolve,reject)=>{
     const image = new Image();
@@ -9968,43 +10050,15 @@ function rpDecodeComposeImage(src) {
         canvas.width = Math.max(1,Math.round(width * ratio)); canvas.height = Math.max(1,Math.round(height * ratio));
         const context = canvas.getContext('2d'); if (!context) throw Error('图片暂时无法处理，请重新选择。');
         context.fillStyle = '#fff'; context.fillRect(0,0,canvas.width,canvas.height); context.drawImage(image,0,0,canvas.width,canvas.height);
-        const result = canvas.toDataURL('image/jpeg',0.8);
-        if (!rpValidComposeImage(result)) throw Error('图片较大，请选择较小的图片。');
+        let result = canvas.toDataURL('image/jpeg',0.8);
+        for(const quality of [0.65,0.5,0.4])if(result.length>650000)result=canvas.toDataURL('image/jpeg',quality);
+        if (!rpValidComposeImage(result) || result.length>650000) throw Error('图片较大，请选择较小的图片。');
         resolve(result);
       } catch (error) { reject(error); }
     };
     image.src = src;
   });
 }
-async function rpReadComposeImage(file) {
-  if (!file) return;
-  rpCancelComposeImage();
-  if (!file.type?.startsWith('image/') || file.size > 16 * 1024 * 1024) { rpRenderComposeImage('请选择16MB以内的图片。'); return; }
-  const task = rpRuntime.task(), owner = rpArchiveAccountHandle, slot = STATE.chatId;
-  const job = {reader:new FileReader(),task}; rpComposeImageJob = job;
-  const current = () => rpComposeImageJob === job && task.valid() && owner === rpArchiveAccountHandle && slot === STATE.chatId && slot === getPhoneChatSlotKey(getContext());
-  const cancel = () => { if (rpComposeImageJob === job) rpCancelComposeImage(); };
-  task.signal.addEventListener('abort',cancel,{once:true}); rpRenderComposeImage();
-  try {
-    const raw = await rpGuardAwait(new Promise((resolve,reject)=>{
-      job.reader.onload = event => resolve(event.target.result);
-      job.reader.onerror = () => reject(Error('图片读取失败，请重新选择。'));
-      job.reader.onabort = () => reject(Object.assign(Error('Cancelled'),{name:'AbortError'}));
-      job.reader.readAsDataURL(file);
-    }),task,20000);
-    if (!current()) return;
-    const src = await rpGuardAwait(rpDecodeComposeImage(raw),task,20000);
-    if (!current()) return;
-    STATE.composeImageDraft = src; saveState(); rpComposeImageJob = null; rpRenderComposeImage();
-  } catch (error) {
-    if (current()) { rpComposeImageJob = null; rpRenderComposeImage(error.name==='AbortError' ? '' : /^图片/.test(error.message) ? error.message : '图片准备失败，请重新选择。'); }
-  } finally { task.signal.removeEventListener('abort',cancel); if (rpComposeImageJob===job) { rpComposeImageJob=null; rpRenderComposeImage(); } }
-}
-function rpRemoveComposeImage() {
-  rpCancelComposeImage(); STATE.composeImageDraft = null; saveState(); rpRenderComposeImage();
-  const input = document.getElementById('rp-compose-photo-file'); if (input) input.value = '';
-}
-
 function rpMomentLikeRule() {
   return '\n[朋友圈点赞] 每条MOMENTS可加LIKES属性，竖线分隔本卡真实人物全名，例如<MOMENTS FROM="发帖人" TIME="12:00" LIKES="点赞者甲|点赞者乙">动态正文</MOMENTS>。点赞者只能是本卡char/NPC，不能是规则标题、群名、陌生路人或发帖者本人；不得替{{user}}点赞。按人设、关系和可见范围决定0–3人点赞，熟人日常可以适量点赞，敌对/疏远时可以无人赞，不必每条强制点赞。评论仍由COMMENT正常输出。\n';
 }
@@ -10273,8 +10327,8 @@ async function postUserMoment() {
   /* rp-cancel-boundary */ try {
 
   const text = String($('#rp-compose-text').val() || '').trim();
-  const photo = rpValidComposeImage(STATE.composeImageDraft) ? STATE.composeImageDraft : null;
-  if (rpComposeImageJob || (!text && !photo)) return;
+  const photos = rpComposePhotos(), location = rpComposeLocation(STATE.composeLocationDraft);
+  if (rpComposeImageJob || (!text && !photos.length)) return;
   const now = new Date();
   const ts = resolvePhoneTime();
   const momentId = rpUniqueMomentId(`user_${now.getTime()}`, STATE.moments || []);
@@ -10288,11 +10342,13 @@ async function postUserMoment() {
     avatarBg: 'linear-gradient(145deg,#64748b,#475569)',
     time: ts,
     text,
-    img: photo,
+    img: photos[0] || null,
+    imgs: photos.slice(),
+    location,
     likes: [],
     comments: [],
   });
-  STATE.composeDraft = ''; STATE.composeImageDraft = null; $('#rp-compose-text').val('');
+  STATE.composeDraft = ''; rpStoreComposePhotos([]); STATE.composeLocationDraft = ''; $('#rp-compose-text').val('');
   closeCompose();
   go('moments');
   $('#rp-moments-list').scrollTop(0);
@@ -12130,7 +12186,7 @@ async function generateAIMoments() {
 }
 
 function rpSocialSourceKey(item) {
-  return JSON.stringify([item?.id,item?.from,item?.name,item?.user,item?.title,item?.body,item?.text,item?.img,item?.pendingImg,item?.replyTo]);
+  return JSON.stringify([item?.id,item?.from,item?.name,item?.user,item?.title,item?.body,item?.text,item?.img,item?.imgs,item?.location,item?.pendingImg,item?.replyTo]);
 }
 
 async function charRespondToUserMoment(momentId) {
@@ -12162,7 +12218,8 @@ async function charRespondToUserMoment(momentId) {
     + '近期对话参考(帮助判断关系和语境):\n' + (_rc ? _rc.slice(-300) : '无') + '\n'
     + '简短1-2句,符合角色性格,只返回评论正文,不加引号或任何前缀。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
   const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
-    + (moment.img ? '\n附有一张图片；当前请求没有提供图片画面，请根据配文与人设自然回应，不编造画面细节。\n' : '')
+    + (rpComposeLocation(moment.location) ? '\n用户手动填写的位置：'+rpComposeLocation(moment.location)+'\n' : '')
+    + (moment.img ? '\n附有图片；当前请求没有提供图片画面，请根据配文与人设自然回应，不编造画面细节。\n' : '')
     + charName + '的评论(必须写,不允许只点赞):';
   try {
     const resp = await rpGuardAwait(rpCallSocialAPI(prompt, 150, sysMsg, rpTask), rpTask);
@@ -12489,7 +12546,7 @@ function renderMoments() {
         </div>
         <div class="rp-moment-text">${escHtml(rpSocialText(moment.text))}</div>
         <div class="rp-moment-sticker"></div>
-        ${moment.img === '__img_expired__'
+        ${rpMomentPhotoSources(moment).length ? rpMomentPhotoGrid(moment) : moment.img === '__img_expired__'
           ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;font-size:12px;opacity:.7">图片已过期</div>`
           : moment.img
             ? `<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${escHtml(moment.img)}" alt=""/></div>`
@@ -12500,7 +12557,7 @@ function renderMoments() {
             : ''
         }
         <div class="rp-moment-bar">
-          <span class="rp-moment-time">${escHtml(moment.time)}</span>
+          ${rpComposeLocation(moment.location) ? `<span class="rp-moment-location">${escHtml(rpComposeLocation(moment.location))}</span>` : ''}
           <div class="rp-moment-foot-actions">
           <details class="rp-moment-menu"><summary aria-label="动态操作">⋯</summary><div class="rp-moment-menu-items">
           <button class="rp-moment-act rp-like-btn${liked ? ' rp-liked' : ''}" data-moment="${escHtml(moment.id)}">${liked ? '❤️' : '🤍'} ${likeCount > 0 ? likeCount : '点赞'}</button>

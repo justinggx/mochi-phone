@@ -393,29 +393,22 @@ const HTML = `
           </div>
         </div>
 
-        <!-- 发朋友圈：与笔记共用纸张样式，仅正文 -->
-        <div id="rp-compose-modal" class="rp-view rp-xhs-stationery" style="display:none">
+        <!-- 发朋友圈 -->
+        <div id="rp-compose-modal" class="rp-view rp-compose-publish" style="display:none">
           <div class="rp-nav-bar">
-            <button class="rp-back rp-compose-cancel" id="rp-compose-cancel" type="button" aria-label="关闭朋友圈发布">×</button>
-            <span class="rp-nav-title">写动态</span>
-            <button class="rp-compose-post-btn" id="rp-compose-post" type="button" aria-label="发布朋友圈">发布</button>
+            <button class="rp-back rp-compose-cancel" id="rp-compose-cancel" type="button" aria-label="取消发表朋友圈">取消</button>
+            <button class="rp-compose-post-btn" id="rp-compose-post" type="button" aria-label="发表朋友圈">发表</button>
           </div>
-          <div class="rp-xhs-compose-body">
-            <div class="rp-xhs-idea-card">
-              <span class="rp-xhs-paper-tape" aria-hidden="true"></span>
-              <label class="rp-xhs-field-label" for="rp-compose-text">朋友圈正文</label>
-              <textarea id="rp-compose-text" placeholder="写下此刻的心情，&#10;或一件想记住的小事。" rows="10"></textarea>
-              <div id="rp-compose-photo-area" aria-busy="false">
-                <div class="rp-compose-photo-actions">
-                  <button id="rp-compose-photo-choose" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg><span id="rp-compose-photo-label">添加图片</span></button>
-                  <button id="rp-compose-photo-remove" type="button" hidden>移除图片</button>
-                </div>
-                <input id="rp-compose-photo-file" type="file" accept="image/*" hidden aria-label="选择朋友圈图片">
-                <div id="rp-compose-photo-preview" hidden></div>
-                <div id="rp-compose-photo-status" role="status" aria-live="polite"></div>
+          <div class="rp-compose-body">
+            <textarea id="rp-compose-text" placeholder="这一刻的想法…" rows="4" aria-label="朋友圈正文"></textarea>
+            <div id="rp-compose-photo-area" aria-busy="false">
+              <div id="rp-compose-photo-preview">
+                <button id="rp-compose-photo-choose" type="button" aria-label="添加图片，最多9张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M12 3v18M3 12h18"/></svg></button>
               </div>
-              <span class="rp-xhs-paper-signature" aria-hidden="true">a little moment</span>
+              <input id="rp-compose-photo-file" type="file" accept="image/*" multiple hidden aria-label="选择朋友圈图片，最多9张">
+              <div id="rp-compose-photo-status" role="status" aria-live="polite"></div>
             </div>
+            <button id="rp-compose-location" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>所在位置</span><span id="rp-compose-location-value"></span><span class="rp-compose-chevron" aria-hidden="true">›</span></button>
           </div>
         </div>
 
