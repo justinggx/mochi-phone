@@ -6922,6 +6922,20 @@ function rpPaintInlineStickers(wrap, message, thread) {
   }).catch(()=>{ /* Keep the readable fallback if this row becomes unavailable. */ });
 }
 
+function rpBindChatPhoto(image, thread, message) {
+  if (!image || !message.src || message.src === '__img_expired__') return;
+  const source = message.src, slot = STATE.chatId;
+  image.setAttribute('role', 'button'); image.tabIndex = 0;
+  image.setAttribute('aria-label', '查看聊天图片'); image.style.cursor = 'zoom-in';
+  const open = event => {
+    if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+    if (event.type === 'keydown') event.preventDefault();
+    if (STATE.chatId !== slot || STATE.threads[thread.id] !== thread || STATE.currentThread !== thread.id || STATE.currentView !== 'thread' || !thread.messages.includes(message) || message.type !== 'image' || message.src !== source) return;
+    rpViewMomentPhoto([source]);
+  };
+  image.addEventListener('click', open); image.addEventListener('keydown', open);
+}
+
 function renderBubbles(threadId, options = {}) {
   rpMessageUI.install();
   if (rpDeferUi("bubbles:" + threadId, () => renderBubbles(threadId, options))) return;
@@ -7144,6 +7158,7 @@ function renderBubbles(threadId, options = {}) {
         ? $(`<div class="rp-img-bbl" style="min-width:90px;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:12px 18px;font-size:12px;opacity:.7">图片已过期</div>`)
         : $(`<div class="rp-img-bbl"><img src="${escHtml(imgSrc)}" alt="图片"/></div>`);
       if (['pending','cancelled'].includes(msg.delivery)) imgEl.append($('<div>').css({fontSize:'11px',padding:'4px',color:'var(--rp-v-muted)'}).text(msg.delivery==='cancelled'?'已取消重试 · 原图已保留':'待酒馆确认'));
+      imgEl.find('img').each((_, image) => rpBindChatPhoto(image, thread, msg));
       imgEl.find('img').on('load', function() {
         if (this.closest('#rp-bubbles') === el) settleScroll();
       });
