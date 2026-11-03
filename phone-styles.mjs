@@ -4353,6 +4353,10 @@ ${XHS_COVER_CSS}
 .rp-add-choice-box{background:#fff;border-radius:16px;overflow:hidden;width:80%;max-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-add-choice-box{background:#1c1c38}
 .rp-add-choice-item{padding:16px 20px;font-size:15px;font-weight:600;color:#222;cursor:pointer;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(0,0,0,.06)}
+#rp-add-choice .rp-add-choice-item{width:100%;border:0;border-bottom:1px solid rgba(0,0,0,.06);background:transparent!important;box-shadow:none;border-radius:0;font-family:inherit;text-align:start}
+#rp-grp-create .rp-grp-pick-item{position:relative}
+#rp-grp-create .rp-grp-pick-item>input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+#rp-grp-create .rp-grp-pick-item:has(input:focus-visible){outline:2px solid var(--rp-nav-btn);outline-offset:-2px}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-add-choice-item{color:#e0e4ff;border-bottom-color:rgba(255,255,255,.06)}
 .rp-add-choice-item:last-child{border-bottom:none}
 .rp-add-choice-item:active{background:rgba(0,0,0,.04)}

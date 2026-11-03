@@ -7,7 +7,7 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261104-blocklist-keyboard-226';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261104-contact-group-227';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261102-native-ui-214';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261102-safearea-210';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -4872,7 +4872,21 @@ function bindUI() {
   });
   $(document).on('click.mochiPhone','#rp-gm-change-avatar',function(e){e.preventDefault();e.stopPropagation();rpGroupAvatars.open(this.dataset.thread);});
   $(document).on("click.mochiPhone", '#rp-group-members-modal, #rp-gm-close', function(e) {
-    if (e.target === this || e.currentTarget.id === 'rp-gm-close') rpSetSurfaceOpen('#rp-group-members-modal',false);
+    if (e.target !== this && e.currentTarget.id !== 'rp-gm-close') return;
+    rpSetSurfaceOpen('#rp-group-members-modal',false);
+    if (STATE.currentView === 'thread' && document.getElementById('rp-gm-change-avatar')?.dataset.thread === STATE.currentThread) {
+      document.querySelector('#rp-hd-av.rp-group-members-trigger')?.focus();
+    }
+  });
+  $(document).on('keydown.mochiPhone','#rp-group-members-modal',function(e) {
+    if (e.key === 'Escape' && !rpIsComposing(e)) {
+      e.preventDefault(); e.stopPropagation(); this.querySelector('#rp-gm-close').click();
+    } else if (e.key === 'Tab') {
+      const controls = this.querySelectorAll('button:enabled,[tabindex="0"]');
+      const first = controls[0], last = controls[controls.length - 1];
+      if (e.shiftKey && e.target === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && e.target === last) { e.preventDefault(); first.focus(); }
+    }
   });
 
 
@@ -5664,9 +5678,10 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#rp-add-choice .rp-add-choice-cancel', (e) => {
     e.stopPropagation();
     rpSetSurfaceOpen('#rp-add-choice',false,{remove:true});
+    document.getElementById('rp-messages-more')?.focus();
   });
   $(document).on("click.mochiPhone", '#rp-add-choice', function(e) {
-    if (e.target === this) rpSetSurfaceOpen('#rp-add-choice',false,{remove:true});
+    if (e.target === this) this.querySelector('.rp-add-choice-cancel').click();
   });
 
   // ── Delete picker: toggle + confirm ──
@@ -5687,15 +5702,29 @@ function bindUI() {
   });
 
   // ── Group picker: toggle selection ──
-  $(document).on("click.mochiPhone", '#rp-grp-pick-list .rp-grp-pick-item', function(e) {
-    e.stopPropagation();
-    $(this).toggleClass('selected');
+  $(document).on("change.mochiPhone", '#rp-grp-pick-list input[type="checkbox"]', function() {
+    this.closest('.rp-grp-pick-item').classList.toggle('selected', this.checked);
   });
-  $(document).on("click.mochiPhone", '[data-action="grp-cancel"]', (e) => { e.stopPropagation(); rpSetSurfaceOpen('#rp-grp-create',false,{remove:true}); });
+  $(document).on("click.mochiPhone", '[data-action="grp-cancel"]', (e) => {
+    e.stopPropagation();
+    rpSetSurfaceOpen('#rp-grp-create',false,{remove:true});
+    document.getElementById('rp-messages-more')?.focus();
+  });
   $(document).on("click.mochiPhone", '[data-action="grp-confirm"]', (e) => { e.stopPropagation(); confirmCreateGroup(); });
   $(document).on("click.mochiPhone", '#rp-grp-create', function(e) {
     e.stopPropagation();
-    if (e.target === this) rpSetSurfaceOpen(this,false,{remove:true});
+    if (e.target === this) this.querySelector('[data-action="grp-cancel"]').click();
+  });
+  $(document).on("keydown.mochiPhone", '#rp-add-choice,#rp-grp-create', function(e) {
+    if (e.key === 'Escape' && !rpIsComposing(e)) {
+      e.preventDefault(); e.stopPropagation();
+      this.querySelector('.rp-add-choice-cancel,[data-action="grp-cancel"]').click();
+    } else if (e.key === 'Tab') {
+      const controls = this.querySelectorAll('button:enabled,input:enabled');
+      const first = controls[0], last = controls[controls.length - 1];
+      if (e.shiftKey && e.target === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && e.target === last) { e.preventDefault(); first.focus(); }
+    }
   });
 
   // ── Wallpaper upload / reset ──
@@ -6318,7 +6347,9 @@ function getThreadListActivityKey(thread, originalIndex) {
 function renderThreadList() {
   if (rpDeferUi("renderThreadList", () => renderThreadList())) return;
   rpStampThreadActivity();
-  const container = $('#rp-thread-list').empty();
+  const container = $('#rp-thread-list');
+  const focusedAvatar = container[0]?.contains(document.activeElement) && document.activeElement.dataset.rpAvatarKey;
+  container.empty();
 
   Object.values(STATE.threads)
     .map(function(th, idx) { return { th, idx }; })
@@ -6362,6 +6393,9 @@ function renderThreadList() {
     `);
   });
   rpTools().decorateThreads();
+  if (focusedAvatar) {
+    container.find('[data-rp-avatar-key]').get().find(avatar => avatar.dataset.rpAvatarKey === focusedAvatar)?.focus({ preventScroll: true });
+  }
 }
 
 // ================================================================
@@ -6490,7 +6524,7 @@ function showGroupMembersModal(threadId) {
     return `<div class="rp-gm-row">${av}<div class="rp-gm-name">${escHtml(m.name)}</div><div class="rp-gm-role">${escHtml(m.role || '成员')}</div></div>`;
   }).join('');
   $('#rp-group-members-modal').html(`
-    <div class="rp-gm-sheet">
+    <div class="rp-gm-sheet" role="dialog" aria-modal="true" aria-label="${escHtml(thread.name)} 的群成员">
       <div class="rp-gm-head">
         <div class="rp-gm-identity">${rpGroupAvatars.html(thread,'rp-gm-cover')}<div class="rp-gm-title">${escHtml(thread.name)}<div class="rp-gm-sub">${escHtml(members.length)} 位群成员</div><button type="button" id="rp-gm-change-avatar" class="rp-gm-change" data-thread="${escHtml(thread.id)}">更换群头像</button></div></div>
         <button id="rp-gm-close" class="rp-gm-close" type="button" aria-label="关闭">×</button>
@@ -6499,6 +6533,7 @@ function showGroupMembersModal(threadId) {
     </div>
   `);
   rpSetSurfaceOpen('#rp-group-members-modal',true);
+  document.getElementById('rp-gm-close')?.focus();
 }
 
 function openThread(threadId) {
@@ -9985,6 +10020,10 @@ function refreshBadges() {
 }
 
 function updatePreviews() {
+  if (STATE.currentView === 'messages' && rpPhoneIsOpen()) {
+    renderThreadList();
+    return;
+  }
   if (rpDeferUi("updatePreviews", () => updatePreviews())) return;
   Object.values(STATE.threads).forEach(th => {
     const last = th.messages.at(-1);
@@ -10898,16 +10937,17 @@ function showDeletePicker() {
 function showAddChoice() {
   rpSetSurfaceOpen('#rp-add-choice',false,{remove:true,immediate:true});
   $('#rp-screen').append(`
-    <div class="rp-add-choice" id="rp-add-choice">
+    <div class="rp-add-choice" id="rp-add-choice" role="dialog" aria-modal="true" aria-label="添加或管理联系人">
       <div class="rp-add-choice-box">
-        <div class="rp-add-choice-item" data-action="contact">👤 添加联系人</div>
-        <div class="rp-add-choice-item" data-action="group">👥 创建群聊</div>
-        <div class="rp-add-choice-item rp-add-choice-delete" data-action="delete">🗑️ 删除好友</div>
+        <button type="button" class="rp-add-choice-item" data-action="contact">👤 添加联系人</button>
+        <button type="button" class="rp-add-choice-item" data-action="group">👥 创建群聊</button>
+        <button type="button" class="rp-add-choice-item rp-add-choice-delete" data-action="delete">🗑️ 删除好友</button>
       </div>
-      <div class="rp-add-choice-cancel" data-action="cancel">取消</div>
+      <button type="button" class="rp-add-choice-cancel" data-action="cancel">取消</button>
     </div>
   `);
   rpSetSurfaceOpen('#rp-add-choice',true);
+  document.querySelector('#rp-add-choice .rp-add-choice-item')?.focus();
 }
 
 
@@ -10916,16 +10956,16 @@ function showGroupPicker() {
   rpSetSurfaceOpen('#rp-grp-create',false,{remove:true,immediate:true});
   const contacts = Object.values(STATE.threads).filter(t => !rpIsGroupThread(t));
   const items = contacts.map(t => {
-    const img = STATE.avatars?.[t.name];
+    const img = getAvatar(t.name);
     const avHtml = img
-      ? `<div class="rp-grp-pick-av rp-av-img" style="overflow:hidden"><img src="${escHtml(img)}" style="width:100%;height:100%;object-fit:cover"/></div>`
-      : `<div class="rp-grp-pick-av" style="background:${escHtml(t.avatarBg)}">${escHtml(t.initials)}</div>`;
-    return `<div class="rp-grp-pick-item" data-tid="${escHtml(t.id)}">${avHtml}<span class="rp-grp-pick-name">${escHtml(t.name)}</span><div class="rp-grp-pick-chk">✓</div></div>`;
+      ? rpGroupAvatars.memberHtml(t.name,t.name,'rp-grp-pick-av rp-av-img',' aria-hidden="true"',img)
+      : `<span class="rp-grp-pick-av" aria-hidden="true" style="background:${escHtml(t.avatarBg)}">${escHtml(t.initials)}</span>`;
+    return `<label class="rp-grp-pick-item" data-tid="${escHtml(t.id)}"><input type="checkbox">${avHtml}<span class="rp-grp-pick-name">${escHtml(t.name)}</span><span class="rp-grp-pick-chk" aria-hidden="true">✓</span></label>`;
   }).join('');
   $('#rp-screen').append(`
     <div class="rp-add-choice" id="rp-grp-create">
-      <div class="rp-grp-modal">
-        <div class="rp-grp-modal-hd">选择群聊成员</div>
+      <div class="rp-grp-modal" role="dialog" aria-modal="true" aria-labelledby="rp-grp-create-title">
+        <div class="rp-grp-modal-hd" id="rp-grp-create-title">选择群聊成员</div>
         <div id="rp-grp-pick-list" style="max-height:220px;overflow-y:auto">
           ${items || '<div class="rp-grp-empty">暂无联系人</div>'}
         </div>
@@ -10939,12 +10979,12 @@ function showGroupPicker() {
       </div>
     </div>
   `);
-  setTimeout(() => $('#rp-grp-name-inp').focus(), 80);
   rpSetSurfaceOpen('#rp-grp-create',true);
+  document.querySelector('#rp-grp-create input')?.focus();
 }
 
 function confirmCreateGroup() {
-  const selected = $('#rp-grp-pick-list .rp-grp-pick-item.selected');
+  const selected = $('#rp-grp-pick-list input:checked').closest('.rp-grp-pick-item');
   if (!selected.length) return;
   const memberIds = selected.map((_, el) => $(el).data('tid')).get();
   let name = $('#rp-grp-name-inp').val().trim();
