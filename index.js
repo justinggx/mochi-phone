@@ -5310,6 +5310,7 @@ function bindUI() {
     g2048Init();
   });
   $(document).on("click.mochiPhone", '#g2048-continue', function() {
+    if (LG2048.active || !LG2048.won || !rpSurfaceIsOpen('#g2048-over') || !g2048HasMoves()) return;
     rpSetSurfaceOpen('#g2048-over',false);
     LG2048.active = true;
     LG2048.processing = false;
@@ -16217,7 +16218,8 @@ async function rpResumeSavedGame(key) {
   gameApplyPartnerToGames({name:game.charName});
   if (key === 'g2048') {
     renderPhoneGameHistory(key); g2048Render();
-    if (game.turn === 'char') rpGameTimer(key, g2048CharTurn, 500);
+    if (!g2048HasMoves()) g2048GameOver();
+    else if (game.turn === 'char') rpGameTimer(key, g2048CharTurn, 500);
   } else if (key === 'gword') {
     rpSetWordModeSelection(false);
     gwordBindOnce(); renderPhoneGameHistory(key);
@@ -16561,7 +16563,7 @@ function g2048UserMove(dir) {
     $('#g2048-over-emoji').text('\ud83c\udf89');
     $('#g2048-over-title').text('\u8fbe\u62102048\uff01');
     $('#g2048-over-sub').text('\u4f60\u4eec\u5408\u529b\u5b8c\u6210\u4e86\uff01');
-    rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
+    g2048ShowEnd(true);
     var persona = g2048GetPersona();
     var wp = (persona ? persona + '\n' : '') + '[2048游戏场景]我们在一起玩2048数字拼盘游戏中合力达成了2048！\n请以' + LG2048.charName + '的身份用中文口语说一句庆祝的话，20字以内，纯对话台词，不带括号、*号、动作描写、省略号。';
     lgCallAPI(wp, 150).then(rpGameRuntime('g2048').guard(function(r) {
@@ -16603,7 +16605,7 @@ function g2048CharTurn() {
     $('#g2048-over-emoji').text('\ud83c\udf89');
     $('#g2048-over-title').text('\u8fbe\u62102048\uff01');
     $('#g2048-over-sub').text('\u5927\u5bb6\u4e00\u8d77\u5b8c\u6210\u4e86\uff01');
-    rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
+    g2048ShowEnd(true);
     LG2048.active = false;
     LG2048.processing = false;
     saveState();
@@ -16621,6 +16623,12 @@ function g2048CharTurn() {
 }
 
 // ── Game over ─────────────────────────────────────────────────
+function g2048ShowEnd(won) {
+  const canContinue = won && g2048HasMoves();
+  $('#g2048-continue').prop('disabled',!canContinue).toggle(canContinue);
+  rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
+}
+
 function g2048GameOver() {
   if(LG2048.active)rpGameStatsFinish('g2048','loss');
   LG2048.active = false;
@@ -16629,7 +16637,7 @@ function g2048GameOver() {
   $('#g2048-over-emoji').text('\ud83d\ude05');
   $('#g2048-over-title').text('\u6e38\u620f\u7ed3\u675f');
   $('#g2048-over-sub').text('\u6700\u7ec8\u5f97\u5206\uff1a' + LG2048.score + '\uff0c\u4e0b\u6b21\u52a0\u6cb9\uff01');
-  rpSetSurfaceOpen('#g2048-over',true,{display:'flex'});
+  g2048ShowEnd(false);
 }
 
 // ── In-game chat ──────────────────────────────────────────────
