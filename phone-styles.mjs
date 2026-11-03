@@ -1522,6 +1522,14 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark:where(:not(.rp-theme-custom)) .rp-gm-sub,.rp-dark:where(:not(.rp-theme-custom)) .rp-gm-role { color:rgba(255,255,255,.42); }
 .rp-dark:where(:not(.rp-theme-custom)) .rp-gm-close { background:rgba(255,255,255,.08) !important; color:#ddd !important; }
 
+/* Structured custom schemes use the same day/night surface tokens in the member sheet. */
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen .rp-gm-sheet {background:var(--rp-v-surface)!important;color:var(--rp-v-text)!important;border-color:var(--rp-v-border)!important;}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen .rp-gm-head {border-bottom-color:var(--rp-v-border)!important;}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen :is(.rp-gm-title,.rp-gm-name) {color:var(--rp-v-text)!important;}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen :is(.rp-gm-sub,.rp-gm-role) {color:var(--rp-v-muted)!important;}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen .rp-gm-change {color:var(--rp-v-accent)!important;}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen .rp-gm-close {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;}
+
 /* ── ADD CONTACT MODAL ── */
 /* ✅ FIX3: modal 已移至 #rp-screen 内部,position:absolute; inset:0 现在正确覆盖手机屏幕 */
 #rp-add-modal {
