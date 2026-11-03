@@ -4378,6 +4378,7 @@ ${XHS_COVER_CSS}
 #rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-empty{color:var(--rp-v-muted);}
 #rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-name-inp::placeholder{color:var(--rp-input-color);opacity:.75;}
 #rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-ft-ok{color:var(--rp-v-accent);}
+:where(#rp-phone.rp-theme-custom[data-rp-theme-design]) #rp-grp-create .rp-grp-ft-btn{background:var(--rp-v-surface)!important;}
 .rp-grp-name-field{padding:10px 14px;border-top:1px solid rgba(0,0,0,.06);}
 .rp-grp-empty{padding:16px;color:rgba(0,0,0,.4);text-align:center;font-size:13px;}
 /* ── CHAT BUBBLE INSET ── */
