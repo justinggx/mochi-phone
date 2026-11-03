@@ -4136,12 +4136,13 @@ function rpIndependentApp(){
   });return rpIndependentChat;
 }
 function rpSendIndependentText(thread){
-  const current=String($('#rp-input').val()||'').trim(),queued=STATE.pendingMessages.slice(),all=[...queued,...(current?[current]:[])];if(!all.length)return false;
+  const submittedInput=String($('#rp-input').val()||'');
+  const current=submittedInput.trim(),queued=STATE.pendingMessages.slice(),all=[...queued,...(current?[current]:[])];if(!all.length)return false;
   const quote=thread.draftQuote||null,quotes=[...rpTools().quotes(thread).slice(0,queued.length),...(current?[quote]:[])];
   const messages=all.map((text,i)=>({from:'user',type:'text',text,time:resolvePhoneTime(),...(quotes[i]?{phoneQuote:quotes[i]}:{})}));
   if(!rpIndependentApp().send(thread,messages))return false;
-  thread.pendingMessages=(thread.pendingMessages||queued).slice(queued.length);thread.pendingQuotes=rpTools().quotes(thread).slice(queued.length);if(thread.draft===current)thread.draft='';if(thread.draftQuote===quote)thread.draftQuote=null;
-  STATE.pendingMessages=thread.pendingMessages;if(String($('#rp-input').val()||'').trim()===current)$('#rp-input').val('');renderPendingQueue();renderBubbles(thread.id);saveState();return true;
+  thread.pendingMessages=(thread.pendingMessages||queued).slice(queued.length);thread.pendingQuotes=rpTools().quotes(thread).slice(queued.length);if(thread.draft===submittedInput)thread.draft='';if(thread.draftQuote===quote)thread.draftQuote=null;
+  STATE.pendingMessages=thread.pendingMessages;if(String($('#rp-input').val()||'')===submittedInput)$('#rp-input').val('');renderPendingQueue();renderBubbles(thread.id);saveState();return true;
 }
 
 let rpPhoneTools = null;
@@ -4968,7 +4969,6 @@ function bindUI() {
   // 小红书 - 发帖按钮
   $(document).on("click.mochiPhone", '#rp-xhs-compose', function() {
     rpSetXhsMenu(false); rpSetMomentsMenu(false); rpSetMessagesMenu(false); rpPhoneTools?.closeThreadMenu();
-    if (rpXhsFavoritesOnly) rpSetFavoritesOnly(false);
     go('xhs-compose');
   });
 
@@ -7925,7 +7925,8 @@ function sendSMS() {
   const localThread=STATE.threads[STATE.currentThread];if(localThread&&rpIndependentApp().isIndependent()){rpSendIndependentText(localThread);return;}
   if (rpHostSubmission) { toastr.warning('酒馆正在确认上一条发送，请稍后再试。'); return; }
   // FIX3: 先把输入框当前内容并入队列
-  const currentText = $('#rp-input').val().trim();
+  const submittedInput = $('#rp-input').val();
+  const currentText = submittedInput.trim();
   if (!STATE.currentThread || (!STATE.pendingMessages.length && !currentText)) return;
 
   const th  = STATE.threads[STATE.currentThread];
@@ -8030,11 +8031,11 @@ ${smsLine}
     const remaining = (Array.isArray(th.pendingMessages) ? th.pendingMessages : submittedQueue).slice(queuedCount);
     th.pendingQuotes = rpTools().quotes(th).slice(queuedCount);
     th.pendingMessages = remaining;
-    if (th.draft === currentText) th.draft = '';
+    if (th.draft === submittedInput) th.draft = '';
     if (currentText && th.draftQuote === submittedDraftQuote) th.draftQuote = null;
     if (STATE.currentThread === th.id) {
       STATE.pendingMessages = remaining;
-      if ($('#rp-input').val().trim() === currentText) $('#rp-input').val('');
+      if ($('#rp-input').val() === submittedInput) $('#rp-input').val('');
       renderPendingQueue(); renderBubbles(th.id);
     }
     STATE._pendingPhoneReply = {threadId:th.id, fromName:th.name, sentAt:Date.now()};
@@ -13706,8 +13707,10 @@ function postUserXHS() {
   // 清空表单
   $('#rp-xhs-post-title').val('');
   $('#rp-xhs-post-body').val('');
+  rpXhsFavoritesOnly = false;
   go('xhs');
-  renderXHSFeed(false);
+  $('#rp-xhs-list').scrollTop(0);
+  rpRememberReading();
   // 延迟触发AI追加评论(API可用时)
   setTimeout(() => generateXHSStrangerComments(post.id), 2000);
 }
