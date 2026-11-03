@@ -7,7 +7,7 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261103-group-footer-225';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261104-blocklist-keyboard-226';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261102-native-ui-214';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261102-safearea-210';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -5468,7 +5468,23 @@ function bindUI() {
   $(document).on('click.mochiPhone','#rp-compose-photo-choose',function(e){e.preventDefault();e.stopPropagation();document.getElementById('rp-compose-photo-file').click();});
   $(document).on('change.mochiPhone','#rp-compose-photo-file',function(){const files=Array.from(this.files||[]);this.value='';void rpReadComposeImage(files);});
   $(document).on('click.mochiPhone','#rp-compose-location',function(e){e.preventDefault();e.stopPropagation();rpEditComposeLocation();});
-  $(document).on('click.mochiPhone','.rp-moment-photo-open',function(){const moment=STATE.moments.find(m=>m.id===this.dataset.mid);if(moment)rpViewMomentPhoto(rpMomentPhotoSources(moment),Number(this.dataset.photo));});
+  $(document).on('click.mochiPhone', '.rp-moment-photo-open, .rp-moment-single-open', function(){
+    const moment = STATE.moments.find(m => String(m.id) === this.dataset.mid);
+    if (!moment) return;
+    const photos = rpMomentPhotoSources(moment);
+    if (this.classList.contains('rp-moment-single-open')) {
+      const src = rpMomentImageSource(moment.img);
+      if (!photos.length && src && src === this.getAttribute('src')) rpViewMomentPhoto([src]);
+      return;
+    }
+    const index = Number(this.dataset.photo);
+    if (photos[index] === this.querySelector('img')?.getAttribute('src')) rpViewMomentPhoto(photos, index);
+  });
+  $(document).on('keydown.mochiPhone', '.rp-moment-single-open', function(event){
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    if (!event.originalEvent?.repeat) this.click();
+  });
 
   // 来电:接听 / 拒绝(事件委托)
   // Dark mode is handled via data-app='darkmode' in the app grid
@@ -5741,7 +5757,12 @@ function bindUI() {
   $(document).on("click.mochiPhone", '.rp-block-x', function() {
     const name = String($(this).attr('data-name') || '');
     if (name && removePhoneBlock(name)) {
+      const focusedIndex = document.activeElement === this ? $(this).closest('.rp-blocklist-tag').index() : -1;
       renderBlocklist();
+      if (focusedIndex >= 0) {
+        const controls = document.querySelectorAll('#rp-block-list .rp-block-x');
+        (controls[focusedIndex] || controls[focusedIndex - 1] || document.getElementById('rp-block-input'))?.focus();
+      }
     }
   });
 
@@ -6164,7 +6185,7 @@ function renderBlocklist() {
   (STATE.blocklist || []).forEach(name => {
     const safe = $('<span>').text(name).html().replace(/"/g, '&quot;');
     $list.append(
-      `<span class="rp-blocklist-tag">${safe}<span class="rp-block-x" data-name="${safe}">×</span></span>`
+      `<span class="rp-blocklist-tag">${safe}<button type="button" class="rp-block-x" data-name="${safe}" aria-label="将「${safe}」移出黑名单">×</button></span>`
     );
   });
 }
@@ -10107,11 +10128,20 @@ function rpEditComposeLocation() {
     STATE.composeLocationDraft=rpComposeLocation(input.val());saveState();rpRenderComposeImage();
   }}]);
 }
-function rpMomentPhotoSources(moment) {
-  return Array.isArray(moment.imgs)&&moment.imgs.length?moment.imgs.filter(s=>typeof s==='string'&&s&&s!=='__img_expired__').slice(0,9):[];
+function rpMomentImageSource(value) {
+  if (typeof value !== 'string') return '';
+  const src = value.trim();
+  if (!src || src === '__img_expired__' || /[\x00-\x1f\x7f]/.test(src)) return '';
+  if (/^data:/i.test(src)) return /^data:image\/(?:png|jpe?g|gif|webp|avif|bmp|x-icon)[;,]/i.test(src) ? src : '';
+  try {
+    const protocol = new URL(src, document.baseURI).protocol;
+    return ['http:', 'https:', 'blob:'].includes(protocol) ? src : '';
+  } catch { return ''; }
 }
-function rpMomentPhotoGrid(moment) {
-  const photos=rpMomentPhotoSources(moment);
+function rpMomentPhotoSources(moment) {
+  return Array.isArray(moment.imgs) ? moment.imgs.map(rpMomentImageSource).filter(Boolean).slice(0,9) : [];
+}
+function rpMomentPhotoGrid(moment, photos) {
   if(!photos.length)return '';
   return '<div class="rp-moment-photo-grid" data-count="'+photos.length+'">'+photos.map((src,i)=>'<button type="button" class="rp-moment-photo-open" data-mid="'+escHtml(moment.id)+'" data-photo="'+i+'" aria-label="查看第'+(i+1)+'张图片"><img class="rp-moment-img" src="'+escHtml(src)+'" alt="动态图片 '+(i+1)+'" loading="lazy"></button>').join('')+'</div>';
 }
@@ -12623,6 +12653,8 @@ function renderMoments() {
   const _ctx = getContext();
   const _uname = _ctx?.name1 || '我';
   [...STATE.moments].reverse().forEach(moment => {
+    const photos = rpMomentPhotoSources(moment);
+    const singlePhoto = photos.length ? '' : rpMomentImageSource(moment.img);
     const liked = moment.likes.includes('user');
     const likeNames = moment.likes.map(l => l === 'user' ? _uname : l);
     const likeCount = likeNames.length;
@@ -12654,10 +12686,10 @@ function renderMoments() {
         </div>
         <div class="rp-moment-text">${escHtml(rpSocialText(moment.text))}</div>
         <div class="rp-moment-sticker"></div>
-        ${rpMomentPhotoSources(moment).length ? rpMomentPhotoGrid(moment) : moment.img === '__img_expired__'
-          ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;font-size:12px;opacity:.7">图片已过期</div>`
-          : moment.img
-            ? `<div class="rp-moment-img-wrap"><img class="rp-moment-img" src="${escHtml(moment.img)}" alt=""/></div>`
+        ${photos.length ? rpMomentPhotoGrid(moment, photos) : moment.img && !singlePhoto
+          ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;font-size:12px;opacity:.7">${moment.img === '__img_expired__' ? '图片已过期' : '图片不可用'}</div>`
+          : singlePhoto
+            ? `<div class="rp-moment-img-wrap"><img class="rp-moment-img rp-moment-single-open" role="button" tabindex="0" aria-label="查看动态图片" data-mid="${escHtml(moment.id)}" style="cursor:zoom-in" src="${escHtml(singlePhoto)}" alt="动态图片"/></div>`
           : moment.pendingImg
             ? moment.pendingImgType === 'comfy'
               ? `<div class="rp-moment-img-wrap" style="min-width:90px;display:inline-flex;align-items:center;justify-content:center;background:rgba(128,128,128,0.13);border-radius:12px;padding:10px 16px;gap:6px;"><span style="font-size:16px;">⏳</span><span style="font-size:12px;opacity:0.7;">生成中…</span></div>`

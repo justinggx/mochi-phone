@@ -1,8 +1,8 @@
 {
   "display_name": "mochiphone",
   "author": "justinggx",
-  "version": "4.6.1-audit.20261103.225",
+  "version": "4.6.1-audit.20261104.226",
   "loading_order": 1,
   "requires": [],
-  "js": "index.js?v=20261103-group-footer-225"
+  "js": "index.js?v=20261104-blocklist-keyboard-226"
 }

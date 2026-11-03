@@ -2426,7 +2426,7 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 }
 #rp-phone.rp-theme-star #rp-view-settings input::placeholder { color: rgba(180,165,255,.4) !important; }
 /* All buttons in settings */
-#rp-phone.rp-theme-star #rp-view-settings button,
+#rp-phone.rp-theme-star #rp-view-settings button:where(:not(.rp-block-x)),
 #rp-phone.rp-theme-star #rp-view-settings .rp-btn-outline,
 #rp-phone.rp-theme-star #rp-view-settings [class*="btn"] {
   background: rgba(60,30,120,.55) !important;
@@ -2993,6 +2993,7 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-view-api-settings{background:transparent;display:flex;flex-direction:column}
 .rp-dark:where(:not(.rp-theme-custom)) #rp-view-settings{background:transparent}
 .rp-set-section{background:#fff;border-radius:12px;margin:10px 12px 0;padding:0 14px;overflow:hidden}
+:where(#rp-phone.rp-theme-custom.rp-dark[data-rp-theme-design]:not(.rp-art-icons) #rp-view-settings) .rp-set-section{background-color:var(--rp-v-surface)}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-set-section{background:rgba(255,255,255,.04)}
 .rp-set-section-title{font-size:12px;font-weight:600;color:#8a8a9a;text-transform:uppercase;letter-spacing:.05em;margin:16px 12px 5px;padding:0}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-set-section-title{color:#6a6a7a}
@@ -3011,7 +3012,10 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark:where(:not(.rp-theme-custom)) .rp-set-upload-btn{background:rgba(255,255,255,.08);color:#c8cce8}
 .rp-wall-reset-btn{background:rgba(0,0,0,.05)!important;color:#666!important}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-wall-reset-btn{background:rgba(255,255,255,.06)!important;color:rgba(200,190,255,.6)!important}
-.rp-blocklist-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:12px;background:rgba(239,68,68,.08);color:#b91c1c;cursor:default}.rp-blocklist-tag .rp-block-x{cursor:pointer;font-size:14px;font-weight:700;opacity:.6;margin-left:2px}.rp-blocklist-tag .rp-block-x:hover{opacity:1}
+.rp-blocklist-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:12px;background:rgba(239,68,68,.08);color:#b91c1c;cursor:default}
+#rp-phone .rp-block-x{display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:24px;margin:0 0 0 2px;padding:0;border:0;border-radius:50%;background:transparent!important;box-shadow:none;color:inherit!important;font-family:inherit;font-size:14px;font-weight:700;line-height:1;cursor:pointer}
+#rp-phone.rp-theme-custom[data-rp-theme-design] .rp-blocklist-tag{background:var(--rp-v-surface);color:var(--rp-v-text)}
+#rp-phone.rp-theme-misty.rp-dark #rp-block-list :is(.rp-blocklist-tag,.rp-block-x){color:var(--rp-v-text)!important}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-blocklist-tag{background:rgba(239,68,68,.15);color:#fca5a5}
 .rp-dark:where(:not(.rp-theme-custom)) #rp-block-input{background:rgba(255,255,255,.08)!important;color:#e0e4ff!important;border-color:rgba(255,255,255,.1)!important}
 .rp-set-avatar-preview{width:38px;height:38px;border-radius:19px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff}
