@@ -18115,7 +18115,7 @@ jQuery(async () => {
 function rpInlineEdit(bubbleEl, threadId, msg, msgIdx, restored = null) {
   const thread = STATE.threads[threadId], task = rpRuntime.task();
   if (!thread?.messages.includes(msg)) return;
-  if (bubbleEl.querySelector('.rp-inline-edit-wrap')) return; // 防重入
+  if (bubbleEl.querySelector('.rp-inline-edit-wrap') || [...(bubbleEl.parentElement?.children || [])].some(node => node.classList.contains('rp-inline-edit-wrap') && node._rpMessageEdit?.message === msg)) return; // 编辑区与气泡同级；同条消息只保留一个编辑器
   const origText = restored ? restored.originalText : msg.text;
   const wrap = document.createElement('div');
   wrap.className = 'rp-inline-edit-wrap';
@@ -18159,9 +18159,12 @@ function rpInlineEdit(bubbleEl, threadId, msg, msgIdx, restored = null) {
       if (!task.valid() || STATE.threads[threadId] !== thread || !thread.messages.includes(msg) || msg.text !== origText) {
         toastr.info('该信息已变化，请重新打开编辑。'); return;
       }
+      // Do not preserve this committed editor as an unsaved draft during repaint.
+      wrap.remove();
+      bubbleEl.style.display = '';
       msg.text = newText;
       saveState();
-      renderBubbles(threadId);
+      renderBubbles(threadId, {preserveScroll:true});
     } else {
       wrap.remove(); bubbleEl.style.display = '';
     }
