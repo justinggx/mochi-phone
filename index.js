@@ -1688,7 +1688,7 @@ function isPhoneBlocked(nameRaw) {
 }
 function addPhoneBlock(nameRaw) {
   const name = (nameRaw || '').trim();
-  if (!name) return false;
+  if (!normalizePhonePersonName(name)) return false;
   if (isPhoneBlocked(name)) return false;
   if (!STATE.blocklist) STATE.blocklist = [];
   STATE.blocklist.push(name);
@@ -1717,18 +1717,34 @@ function _purgeBlockedContact(nameRaw) {
   }
   // 清理朋友圈中该联系人发的动态、点赞、评论
   if (Array.isArray(STATE.moments)) {
-    STATE.moments = STATE.moments.filter(m => normalizePhonePersonName(m.name || '') !== norm);
+    if (STATE.moments.some(m => normalizePhonePersonName(m.name) === norm)) {
+      STATE.moments = STATE.moments.filter(m => normalizePhonePersonName(m.name) !== norm);
+    }
     STATE.moments.forEach(m => {
-      if (Array.isArray(m.likes)) m.likes = m.likes.filter(l => normalizePhonePersonName(l) !== norm);
-      if (Array.isArray(m.comments)) {
-        const remap = new Map();
-        m.comments = m.comments.filter((c, i) => {
-          if (normalizePhonePersonName(c.name || '') === norm) return false;
-          remap.set(i, remap.size);
-          return true;
-        }).map(c => Object.assign({}, c, {
-          replyTo: Number.isInteger(c.replyTo) ? (remap.get(c.replyTo) ?? null) : null,
-        }));
+      if (Array.isArray(m.likes) && m.likes.some(l => normalizePhonePersonName(l) === norm)) {
+        m.likes = m.likes.filter(l => normalizePhonePersonName(l) !== norm);
+      }
+      if (!Array.isArray(m.comments)) return;
+      const original = m.comments, positions = new Map();
+      const kept = original.filter((comment, i) => {
+        if (normalizePhonePersonName(comment?.name) === norm) return false;
+        positions.set(i, positions.size);
+        return true;
+      });
+      if (kept.length === original.length) return;
+      m.comments = kept;
+      for (const comment of kept) {
+        const target = comment?.replyTo;
+        // Older saves may encode the displayed array index as a string.
+        const stringIndex = typeof target === 'string' && /^(0|[1-9]\d*)$/.test(target);
+        const index = stringIndex ? Number(target) : target;
+        if (Number.isInteger(index) && index >= 0 && index < original.length) {
+          const next = positions.get(index);
+          if (next === undefined) comment.replyTo = null;
+          else if (next !== index) comment.replyTo = stringIndex ? String(next) : next;
+        } else if (typeof target === 'string' && normalizePhonePersonName(target) === norm) {
+          comment.replyTo = null;
+        }
       }
     });
   }
@@ -5706,16 +5722,17 @@ function bindUI() {
   $(document).on("click.mochiPhone", '#rp-block-add-btn', function() {
     const input = $('#rp-block-input');
     const name = input.val().trim();
-    if (!name) return;
-    if (addPhoneBlock(name)) {
-      input.val('');
-      renderBlocklist();
-      renderThreadList();
-      refreshBadges();
-    } else {
-      // 已在黑名单
-      input.val('');
-    }
+    if (!normalizePhonePersonName(name)) return;
+    if (isPhoneBlocked(name)) { input.val(''); return; }
+    const note = $('<p>').text('将停止接收「'+name+'」的互动，并清理本聊天中该角色的私聊记录、朋友圈动态、点赞和评论。移出黑名单后，已清理的记录不会恢复。');
+    rpFeatureDialog('确认拉黑角色', note, [{label:'取消'}, {label:'确认拉黑',danger:true,run:()=>{
+      if (addPhoneBlock(name)) {
+        input.val('');
+        renderBlocklist();
+        renderThreadList();
+        refreshBadges();
+      }
+    }}]);
   });
   $(document).on("keydown.mochiPhone", '#rp-block-input', function(e) {
     if (rpIsComposing(e)) return;
