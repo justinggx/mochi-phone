@@ -724,8 +724,9 @@ function rpSetPhoneOpen(open) {
         phone.show();
         openThread(_rt);
       } else {
-        go(_rv);
+        // Restored readers need a visible layout before applying saved scroll.
         phone.show();
+        go(_rv);
       }
     } else {
       go('lock');
