@@ -1,5 +1,5 @@
 import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261102-native-ui-214';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-native-theme-215';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261103-audit-223';
 import { THEATRE_CSS } from './theatre.mjs?v=20261102-native-ui-214';
 
 export const RP_ART_CSS = `
@@ -4338,6 +4338,8 @@ ${XHS_COVER_CSS}
 .rp-loc-ico{font-size:22px;flex-shrink:0}
 .rp-loc-txt{font-size:13px;color:#333;font-weight:500}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-loc-txt{color:#c8cce8}
+#rp-phone:is(.rp-art-icons,.rp-theme-custom[data-rp-theme-design]) #rp-screen .rp-loc-card{background:var(--rp-v-surface);max-width:min(220px,100%);box-sizing:border-box;}
+#rp-phone:is(.rp-art-icons,.rp-theme-custom[data-rp-theme-design]) #rp-screen .rp-loc-txt{color:var(--rp-v-text);min-width:0;overflow-wrap:anywhere;}
 .rp-img-bbl{max-width:180px;border-radius:12px;overflow:hidden}
 .rp-img-bbl img{width:100%;display:block}
 .rp-pending-img{position:relative;z-index:3;pointer-events:auto !important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -4365,6 +4367,19 @@ ${XHS_COVER_CSS}
 .rp-grp-ft-cancel{color:rgba(0,0,0,.35);border-right:1px solid rgba(0,0,0,.06)}
 .rp-grp-ft-ok{color:#2563eb}
 .rp-dark:where(:not(.rp-theme-custom)) .rp-grp-ft-cancel{color:rgba(255,255,255,.25);border-right-color:rgba(255,255,255,.06)}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-modal{background:var(--rp-v-surface);color:var(--rp-v-text);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create :is(.rp-grp-modal-hd,.rp-grp-pick-name,.rp-grp-ft-cancel){color:var(--rp-v-text);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create :is(.rp-grp-modal-hd,.rp-grp-pick-item,.rp-grp-modal-ft,.rp-grp-name-field,.rp-grp-ft-cancel){border-color:var(--rp-v-border);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-pick-item.selected{background:var(--rp-input-bg);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-pick-item.selected .rp-grp-pick-name{color:var(--rp-input-color);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-pick-chk{border-color:var(--rp-v-muted);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .selected .rp-grp-pick-chk{background:var(--rp-send-bg);border-color:var(--rp-send-bg);color:var(--rp-send-color);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-name-inp{background:var(--rp-input-bg);color:var(--rp-input-color);border-color:var(--rp-v-border);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-empty{color:var(--rp-v-muted);}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-name-inp::placeholder{color:var(--rp-input-color);opacity:.75;}
+#rp-phone.rp-theme-custom[data-rp-theme-design] #rp-grp-create .rp-grp-ft-ok{color:var(--rp-v-accent);}
+.rp-grp-name-field{padding:10px 14px;border-top:1px solid rgba(0,0,0,.06);}
+.rp-grp-empty{padding:16px;color:rgba(0,0,0,.4);text-align:center;font-size:13px;}
 /* ── CHAT BUBBLE INSET ── */
 .rp-cb{display:flex;align-items:flex-start;gap:8px;margin:8px 0;clear:both}
 .rp-cb-av{width:28px;height:28px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;overflow:hidden;margin-top:1px}
@@ -4645,7 +4660,9 @@ ${XHS_COVER_CSS}
 #ggold-chat-fs-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-shrink:0}
 #ggold-chat-fs-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:50%;color:#fff}
 #rp-phone .rp-game-chat-close{width:44px;height:44px;min-width:44px;min-height:44px;flex:0 0 44px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;cursor:pointer;touch-action:manipulation}
-#rp-phone .rp-game-chat-header>span{min-width:0;overflow-wrap:anywhere}
+#rp-phone #rp-screen .rp-game-chat-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;column-gap:4px;}
+#rp-phone #rp-screen .rp-game-chat-header>span{grid-column:2;min-width:0;overflow-wrap:anywhere;text-align:center;line-height:1.3;}
+#rp-phone #rp-screen .rp-game-chat-header>.rp-game-chat-close{grid-column:3;justify-self:end;box-sizing:border-box;}
 #rp-phone .rp-game-chat-body{min-height:0;overscroll-behavior:contain}
 #ggold-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;flex-shrink:0;gap:4px}
 .ggold-score-box{background:rgba(255,255,255,.82);border:1px solid rgba(0,0,0,.08);border-radius:7px;padding:3px 8px;text-align:center;min-width:60px;box-shadow:0 1px 4px rgba(0,0,0,.1)}

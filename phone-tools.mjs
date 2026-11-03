@@ -131,23 +131,61 @@ function normalizePrefs(value) {
   const scale=typeof value?.scale==='number'&&Number.isFinite(value.scale)?Math.max(75,Math.min(150,Math.round(value.scale/5)*5)):100;
   return {message:number('message',11.5),moments:number('moments',12),scale,density:value?.density==='compact'?'compact':'standard'};
 }
-function identity(item) {
+// Older synchronized sends have no ID until a message tool opens them. Omit
+// mutable local state, but retain sender, host floor, quoted message and media.
+function legacyMessageKey(message) {
+  const { id, phoneTranslation, receivedAt, opened, played, delivery, ...event } = message;
+  return JSON.stringify(event, (_key, value) => object(value)
+    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]]))
+    : value);
+}
+function identity(item, field) {
   if (item.phoneSource?.key) return 'source:' + item.phoneSource.key;
   if (item.id != null && String(item.id)) return 'id:' + String(item.id);
+  if (field === 'messages') return 'legacy:' + legacyMessageKey(item);
   return 'legacy:' + JSON.stringify(['from','name','user','author','role','type','text','title','body','time','date','hostIndex','amount','note','place','src','duration','voiceText'].map(k=>item[k]??null));
+}
+// Reserve exact matches first. Only a plain message and one carrying a message-tool
+// ID can bridge the two backup formats. Distinct IDs or host events stay separate.
+function matchUpgradedMessages(target, pending, matches) {
+  const plain = new Map(), upgraded = new Map(), used = new Set(matches.values());
+  function bucket(message) {
+    if (message.phoneSource?.key) return null;
+    if (message.id == null || message.id === '') return plain;
+    return /^pt_\d+_[a-z0-9]+$/.test(message.id) ? upgraded : null;
+  }
+  for (let i = target.length - 1; i >= 0; i--) {
+    const current = target[i], index = bucket(current);
+    if (!index || used.has(current)) continue;
+    const key = legacyMessageKey(current);
+    if (!index.has(key)) index.set(key, []);
+    index.get(key).push(current);
+  }
+  return pending.filter(({item, index}) => {
+    const source = bucket(item);
+    if (!source) return true;
+    const other = source === plain ? upgraded : plain;
+    if (!other.size) return true;
+    const found = other.get(legacyMessageKey(item))?.pop();
+    if (!found) return true;
+    if (source === upgraded) found.id = item.id; // Imported bookmarks reference this ID.
+    matches.set(index, found);
+    return false;
+  });
 }
 // Multiset matching keeps legitimate identical legacy messages; existing records always win.
 function mergeList(target, source, stats, field, nested = false) {
-  const available = new Map(), matches = new Map(), pending = [];
-  target.forEach(item => {const key=identity(item);if(!available.has(key))available.set(key,[]);available.get(key).push(item);});
+  const available = new Map(), matches = new Map(); let pending = [];
+  target.forEach(item => {const key=identity(item,field);if(!available.has(key))available.set(key,[]);available.get(key).push(item);});
   source.forEach((item,index) => {
     if (!object(item)) throw new Error('备份记录格式不完整。');
-    const list=available.get(identity(item)), found=list?.shift();
+    const list=available.get(identity(item,field)), found=list?.shift();
     if (found) {
       matches.set(index,found);
       if(nested && Array.isArray(found.comments) && Array.isArray(item.comments))mergeComments(found.comments,item.comments,stats);
     } else pending.push({item:clone(item),index});
   });
+  if (field === 'messages' && pending.length) pending = matchUpgradedMessages(target, pending, matches);
   const anchors=new Map(),before=new Map(),tail=[];let next=null;
   for(let i=source.length-1;i>=0;i--){anchors.set(i,next);if(matches.has(i))next=matches.get(i);}
   for(const entry of pending){

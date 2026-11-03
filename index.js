@@ -7,7 +7,7 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261103-builtin-controls-220';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261103-audit-223';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261102-native-ui-214';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261102-safearea-210';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
@@ -18,7 +18,7 @@ import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-ou
 import { createStickers } from './stickers.mjs?v=20261102-sticker-header-216';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261102-native-theme-215';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261103-audit-223';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261102-safearea-210';
 import { createThemeStudio } from './theme-studio.mjs?v=20261031-thin-frame-199';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -4158,7 +4158,7 @@ function rpTools() {
       return rpPhoneLegacySlotKeys(ctx).includes(slot) && !!saved?._slotMeta?.charName && rpPhoneStateOwnedBy(saved, ctx);
     },
     blockedPost: (post,current) => post.from !== 'user' && blocked({name:post.name || post.user || post.author || post.from || ''},current),
-    canRestore: () => !rpTheatre?.busy() && !rpStickers?.busy() && !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
+    canRestore: () => !rpIndependentChat?.busy() && !rpTheatre?.busy() && !rpStickers?.busy() && !rpSudoku?.busy() && !rpGomoku?.busy() && !rpHostSubmission && !rpSmsQueueLock && !rpAppJobs.size && !rpDiaryJobs.size
       && ![...Object.values(STATE.threads).flatMap(t=>t.messages||[]),...(STATE.moments||[]).flatMap(p=>[p,...(p.comments||[])]),...(STATE.xhsFeed||[]).flatMap(p=>[p,...(p.comments||[])])].some(item=>{const job=rpPhoneTranslationJobs.get(item);return job?.pending&&job.task.valid();})
       && !(window.rpImgWaitQueue || []).some(item => item?.source === 'mochi-phone') && !STATE._pendingCall,
     applyMerged: payload => { rpResetChatTasks(); restorePhoneChatState(payload); mergeGlobalAvatars(); applyWallpaper(); applyDarkModeState(); go('messages'); renderThreadList(); refreshLockNotifs(); saveState({immediate:true}); },
@@ -10880,9 +10880,9 @@ function showGroupPicker() {
       <div class="rp-grp-modal">
         <div class="rp-grp-modal-hd">选择群聊成员</div>
         <div id="rp-grp-pick-list" style="max-height:220px;overflow-y:auto">
-          ${items || '<div style="padding:16px;color:rgba(0,0,0,.4);text-align:center;font-size:13px">暂无联系人</div>'}
+          ${items || '<div class="rp-grp-empty">暂无联系人</div>'}
         </div>
-        <div style="padding:10px 14px;border-top:1px solid rgba(0,0,0,.06)">
+        <div class="rp-grp-name-field">
           <input id="rp-grp-name-inp" class="rp-grp-name-inp" type="text" placeholder="群聊名称(留空则自动生成)" maxlength="20"/>
         </div>
         <div class="rp-grp-modal-ft">
