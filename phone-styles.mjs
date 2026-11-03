@@ -1530,6 +1530,10 @@ export const RP_PHONE_CSS = `/* ── wrapper ── */
 #rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen .rp-gm-change {color:var(--rp-v-accent)!important;}
 #rp-phone.rp-theme-custom[data-rp-theme-design] #rp-screen .rp-gm-close {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;}
 
+/* Built-in sheets share their scheme accent and readable icon colors, including intrinsic star. */
+#rp-phone.rp-art-icons #rp-screen .rp-gm-change {color:var(--rp-r-accent)!important;}
+#rp-phone.rp-art-icons #rp-screen .rp-gm-close {background:var(--rp-v-card)!important;color:var(--rp-v-text)!important;}
+
 /* ── ADD CONTACT MODAL ── */
 /* ✅ FIX3: modal 已移至 #rp-screen 内部,position:absolute; inset:0 现在正确覆盖手机屏幕 */
 #rp-add-modal {
