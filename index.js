@@ -4197,6 +4197,7 @@ function rpCloseChatOverlays() {
   rpSetSurfaceOpen('#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create',false,{remove:true,immediate:true});
   rpSetGameFolderOpen(false,true);
   rpSetSurfaceOpen(RP_MOTION_SURFACES,false,{immediate:true});
+  $('#rp-attach-btn').attr('aria-expanded','false');
 }
 function rpFeatureDialog(title, content, actions = []) {
   rpCloseFeatureDialog(true);
@@ -4845,13 +4846,23 @@ function bindUI() {
   });
 
   // Attach panel (event delegation - button lives inside dynamically built HTML)
+  $('#rp-attach-btn').attr({'aria-label':'添加附件','aria-controls':'rp-attach-panel','aria-expanded':'false'});
+  $('#rp-attach-panel').attr({role:'group','aria-label':'聊天附件'});
   $(document).on("click.mochiPhone", '#rp-attach-btn', (e) => {
     e.stopPropagation();
     toggleAttachPanel();
   });
   $(document).on("click.mochiPhone", (e) => {
     if (!$(e.target).closest('#rp-attach-panel, #rp-attach-btn').length) {
-      rpSetSurfaceOpen('#rp-attach-panel',false);
+      rpCloseAttachPanel();
+    }
+  });
+  $(document).on('keydown.mochiPhone','#rp-composer',function(e) {
+    if (rpIsComposing(e) || !rpSurfaceIsOpen('#rp-attach-panel')) return;
+    const actions = this.querySelectorAll('#rp-attach-panel button:enabled');
+    const edge = e.shiftKey ? actions[0] : actions[actions.length - 1];
+    if (e.key === 'Escape' || (e.key === 'Tab' && e.target === edge)) {
+      e.preventDefault(); e.stopPropagation(); rpCloseAttachPanel(true);
     }
   });
 
@@ -4900,7 +4911,7 @@ function bindUI() {
   $(document).on('click.mochiPhone','[data-rp-motion-dismiss],[data-rp-motion-backdrop]',function(event) {
     if (this.hasAttribute('data-rp-motion-backdrop') && event.target!==this) return;
     const id=this.getAttribute('data-rp-motion-dismiss') || this.getAttribute('data-rp-motion-backdrop');
-    if (['rp-hb-modal','rp-loc-modal'].includes(id)) rpSetSurfaceOpen(document.getElementById(id),false,{remove:true});
+    if (['rp-hb-modal','rp-loc-modal'].includes(id)) rpCloseAttachmentSheet(id);
   });
   // ── Games Folder ─────────────────────────────────────────────
   $(document).on("click.mochiPhone", '[data-app="folder-games"]', function(e) {
@@ -5716,10 +5727,10 @@ function bindUI() {
     e.stopPropagation();
     if (e.target === this) this.querySelector('[data-action="grp-cancel"]').click();
   });
-  $(document).on("keydown.mochiPhone", '#rp-add-choice,#rp-grp-create', function(e) {
+  $(document).on("keydown.mochiPhone", '#rp-add-choice,#rp-grp-create,#rp-hb-modal,#rp-loc-modal', function(e) {
     if (e.key === 'Escape' && !rpIsComposing(e)) {
       e.preventDefault(); e.stopPropagation();
-      this.querySelector('.rp-add-choice-cancel,[data-action="grp-cancel"]').click();
+      this.querySelector('.rp-add-choice-cancel,[data-action="grp-cancel"],[data-rp-motion-dismiss]').click();
     } else if (e.key === 'Tab') {
       const controls = this.querySelectorAll('button:enabled,input:enabled');
       const first = controls[0], last = controls[controls.length - 1];
@@ -10781,9 +10792,19 @@ function incomingGroupMsg(fromRaw, groupName, time, text, source) {
 // ================================================================
 //  ATTACH MENU
 // ================================================================
+function rpCloseAttachPanel(returnFocus = false) {
+  rpSetSurfaceOpen('#rp-attach-panel',false);
+  const trigger = document.getElementById('rp-attach-btn');
+  if (trigger?.getAttribute('aria-expanded') === 'true') trigger.setAttribute('aria-expanded','false');
+  if (returnFocus) trigger?.focus({preventScroll:true});
+}
+function rpCloseAttachmentSheet(id) {
+  rpSetSurfaceOpen(document.getElementById(id),false,{remove:true});
+  if (STATE.currentView === 'thread' && rpPhoneIsOpen()) document.getElementById('rp-attach-btn')?.focus({preventScroll:true});
+}
 function toggleAttachPanel() {
   const p = $('#rp-attach-panel');
-  if (rpSurfaceIsOpen(p)) { rpSetSurfaceOpen(p,false); return; }
+  if (rpSurfaceIsOpen(p)) { rpCloseAttachPanel(true); return; }
   p.html(`
     <div class="rp-attach-row">
       <button type="button" class="rp-attach-item" onclick="showHongbaoSheet()">
@@ -10798,17 +10819,22 @@ function toggleAttachPanel() {
     </div>
   `);
   rpSetSurfaceOpen(p,true);
-  p.find('.rp-attach-row').append(rpStickerApp().attachment());
+  const sticker = rpStickerApp().attachment();
+  sticker.addEventListener('click',()=>rpCloseAttachPanel(true),{capture:true});
+  p.find('.rp-attach-row').append(sticker);
   const row=p[0].querySelector('.rp-attach-row');if(row)rpMessageUI.attachments(row);
+  $('#rp-attach-btn').attr('aria-expanded','true');
+  p[0].querySelector('button')?.focus({preventScroll:true});
 }
 
 function showHongbaoSheet() {
-  rpSetSurfaceOpen('#rp-attach-panel',false);
-  if ($('#rp-hb-modal').length) { $('#rp-hb-amount').trigger('focus'); return; }
+  rpCloseAttachPanel();
+  if (rpSurfaceIsOpen('#rp-hb-modal')) { $('#rp-hb-amount').trigger('focus'); return; }
+  rpSetSurfaceOpen('#rp-hb-modal',false,{remove:true,immediate:true});
   $('#rp-screen').append(`
-    <div class="rp-hb-modal" id="rp-hb-modal">
+    <div class="rp-hb-modal" id="rp-hb-modal" role="dialog" aria-modal="true" aria-labelledby="rp-hb-title">
       <div class="rp-hb-sheet">
-        <h3>发红包</h3>
+        <h3 id="rp-hb-title">发红包</h3>
         <input id="rp-hb-amount" type="number" placeholder="金额(¥)" min="1"/>
         <input id="rp-hb-note"   type="text"   placeholder="祝福语(选填)" maxlength="15"/>
         <button class="rp-hb-send-btn" onclick="sendUserHongbao()">发送红包</button>
@@ -10817,6 +10843,7 @@ function showHongbaoSheet() {
     </div>
   `);
   rpSetSurfaceOpen('#rp-hb-modal',true);
+  document.getElementById('rp-hb-amount')?.focus({preventScroll:true});
 }
 
 function sendUserHongbao() {
@@ -10826,7 +10853,7 @@ function sendUserHongbao() {
   const thread = STATE.threads[STATE.currentThread]; if (!thread) return;
   const message = {id:'uhb_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),from:'user',type:'hongbao',name:'我',time:resolvePhoneTime(),amount,note,opened:true};
   rpSubmitThreadAction(thread, '*{{user}}发给'+thread.name+'一个¥'+amount+'的红包,备注"'+note+'"*', message);
-  rpSetSurfaceOpen('#rp-hb-modal',false,{remove:true});
+  rpCloseAttachmentSheet('rp-hb-modal');
 }
 
 function triggerImagePick() {
@@ -10834,7 +10861,7 @@ function triggerImagePick() {
   const targetId = STATE.currentThread;
   const targetThread = STATE.threads[targetId];
   if (!targetThread || !task.valid()) return;
-  rpSetSurfaceOpen('#rp-attach-panel',false);
+  rpCloseAttachPanel(true);
   const fi = $('<input type="file" accept="image/*" style="display:none">');
   $('body').append(fi);
   fi.on('click', event=>event.stopPropagation()); // This phone-owned picker is not an outside click.
@@ -10846,19 +10873,26 @@ function triggerImagePick() {
     if (!file) { cleanup(); return; }
     if(!file.type.startsWith('image/')||file.size>16*1024*1024){cleanup();toastr.warning('请选择16MB以内的图片');return;}
     const reader = new FileReader();
-    reader.onload = rpRuntime.guard((e) => {
-      const thread = STATE.threads[targetId];
-      if (!task.valid() || thread !== targetThread) { cleanup(); return; }
-      const ts  = resolvePhoneTime();
-      const src = e.target.result;
-      const message = { id: `uimg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'user', type: 'image', time: ts, src, delivery:'pending' };
-      thread.messages.push(message);
-      if (STATE.currentThread === targetId && STATE.currentView === 'thread') renderBubbles(thread.id);
-      saveState();
-      cleanup();
-      sendImageMessage(thread, message.id);
-    });
-    reader.onerror = ()=>{cleanup();toastr.warning('图片读取失败，请重新选择');};reader.onabort=cleanup;
+    const current = () => task.valid() && STATE.threads[targetId] === targetThread;
+    const readFailed = () => { cleanup(); if (current()) toastr.warning('图片读取失败，请重新选择'); };
+    reader.onload = (event) => {
+      if (!current()) { cleanup(); return; }
+      const src = event.target.result;
+      const preview = new Image();
+      preview.onerror = readFailed;
+      preview.onload = () => {
+        if (!current()) { cleanup(); return; }
+        if (!preview.naturalWidth || !preview.naturalHeight) { readFailed(); return; }
+        const message = { id: `uimg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, from: 'user', type: 'image', time: resolvePhoneTime(), src, delivery:'pending' };
+        targetThread.messages.push(message);
+        if (STATE.currentThread === targetId && STATE.currentView === 'thread') renderBubbles(targetId);
+        saveState();
+        cleanup();
+        sendImageMessage(targetThread, message.id);
+      };
+      preview.src = src;
+    };
+    reader.onerror = readFailed; reader.onabort = cleanup;
     reader.readAsDataURL(file);
   });
   fi.trigger('click');
@@ -10879,21 +10913,21 @@ function sendImageMessage(thread, messageId) {
 }
 
 function showLocationInput() {
-  rpSetSurfaceOpen('#rp-attach-panel',false);
+  rpCloseAttachPanel();
   rpSetSurfaceOpen('#rp-loc-modal',false,{remove:true,immediate:true});
   const dark = $('#rp-phone').hasClass('rp-dark') ? 'rp-dark' : '';
   $('#rp-screen').append(`
-    <div class="rp-loc-modal ${dark}" id="rp-loc-modal" data-rp-motion-backdrop="rp-loc-modal">
+    <div class="rp-loc-modal ${dark}" id="rp-loc-modal" role="dialog" aria-modal="true" aria-labelledby="rp-loc-title" data-rp-motion-backdrop="rp-loc-modal">
       <div class="rp-loc-sheet">
-        <h3>发送位置</h3>
+        <h3 id="rp-loc-title">发送位置</h3>
         <input id="rp-loc-inp" type="text" placeholder="输入你的位置..."/>
         <button class="rp-loc-send-btn" onclick="sendLocation()">发送</button>
         <button class="rp-loc-cancel-btn" data-rp-motion-dismiss="rp-loc-modal">取消</button>
       </div>
     </div>
   `);
-  setTimeout(() => document.getElementById('rp-loc-inp')?.focus(), 60);
   rpSetSurfaceOpen('#rp-loc-modal',true);
+  document.getElementById('rp-loc-inp')?.focus({preventScroll:true});
 }
 
 function sendLocation() {
@@ -10901,7 +10935,7 @@ function sendLocation() {
   const thread = STATE.threads[STATE.currentThread]; if (!place || !thread) return;
   const message = {id:'uloc_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),from:'user',type:'location',time:resolvePhoneTime(),place};
   rpSubmitThreadAction(thread, '*{{user}}向'+thread.name+'共享了位置:'+place+'*', message);
-  rpSetSurfaceOpen('#rp-loc-modal',false,{remove:true}); rpSetSurfaceOpen('#rp-attach-panel',false);
+  rpCloseAttachmentSheet('rp-loc-modal');
 }
 
 
