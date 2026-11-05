@@ -39,9 +39,15 @@ function rpPhoneSaveConflictCopies(slot=phoneHost.STATE.chatId) {
     .sort((a,b)=>Number(b[1].at)-Number(a[1].at)).map(([key,value])=>({key,...value}));
 }
 
-function rpPhoneWarnSaveConflict(slot) {
-  if(rpPhoneSaveWarnings.has(slot))return;
-  rpPhoneSaveWarnings.add(slot);
+const rpPhoneSaveCopyNotices = new Set();
+function rpPhoneWarnSaveConflict(slot,{recoveryOnly=false}={}) {
+  const notices=recoveryOnly?rpPhoneSaveCopyNotices:rpPhoneSaveWarnings;
+  if(notices.has(slot))return;
+  notices.add(slot);
+  if(recoveryOnly){
+    phoneHost.toastr.warning('此聊天有待核对的恢复副本。请到设置「备份与恢复」导出核对；此提醒不表示本页已暂停保存。','发现恢复副本',{timeOut:0,extendedTimeOut:0});
+    return;
+  }
   phoneHost.toastr.warning('另一页面已更新此聊天，本页修改已保留为恢复副本，已暂停覆盖保存。请到设置「备份与恢复」导出副本，再重新打开聊天。','存档更新冲突',{timeOut:0,extendedTimeOut:0});
 }
 

@@ -4,7 +4,7 @@ import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194'
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
 import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry-211';
-import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261029-slim-174';
+import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261105-theme-recovery-231';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
 import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261104-contact-group-227';
@@ -20,7 +20,7 @@ import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
 import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261103-audit-223';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261102-safearea-210';
-import { createThemeStudio } from './theme-studio.mjs?v=20261031-thin-frame-199';
+import { createThemeStudio } from './theme-studio.mjs?v=20261105-theme-recovery-231';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
 import { normalizeXHSCover, renderXHSCover, XHS_COVER_CSS } from './xhs-cover.mjs?v=20261102-native-ui-214';
@@ -2331,7 +2331,7 @@ function switchPhoneChatSlot(newChatId) {
   rpResetChatTasks();
   STATE.chatId = newChatId;
   const recoveryTask=rpRuntime.task();
-  void Promise.resolve(rpPhoneArchive.loadPrefix?.(rpPhoneSaveCopyPrefix(newChatId))).then(()=>{if(recoveryTask.valid()&&STATE.chatId===newChatId&&rpPhoneSaveConflictCopies().length)rpPhoneWarnSaveConflict(newChatId);});
+  void Promise.resolve(rpPhoneArchive.loadPrefix?.(rpPhoneSaveCopyPrefix(newChatId))).then(()=>{if(recoveryTask.valid()&&STATE.chatId===newChatId&&rpPhoneSaveConflictCopies().length)rpPhoneWarnSaveConflict(newChatId,{recoveryOnly:true});});
   STATE.pendingMessages = [];
   const cached = CHAT_STORE[newChatId];
   const loaded = loadState(newChatId);
@@ -3956,7 +3956,7 @@ function rpInstallGameStats() {
 }
 rpRuntime.listenDOM(window,'storage',event=>{
   const ownPrefix=rpAccountStoragePrefix();
-  if(ownPrefix&&event.key===ownPrefix+'rp-phone-v1-'+STATE.chatId&&rpPhoneSaveConflictCopies().length)rpPhoneWarnSaveConflict(STATE.chatId);
+  if(ownPrefix&&event.key===ownPrefix+'rp-phone-v1-'+STATE.chatId&&rpPhoneSaveConflictCopies().length)rpPhoneWarnSaveConflict(STATE.chatId,{recoveryOnly:true});
 });
 rpRuntime.listenDOM(window,'storage',event=>{
   if(event.key!==rpAccountStoragePrefix()+RP_GAME_STATS_KEY||!rpArchiveAccountHandle)return;
@@ -5221,7 +5221,7 @@ function bindUI() {
   });
   // 主题页：点击已保存方案（应用）
   $(document).on("click.mochiPhone", '.rp-saved-card', function(e) {
-    if ($(e.target).closest('.rp-saved-card-act-btn').length) return;
+    if ($(e.target).closest('.rp-saved-card-act-btn,.rp-saved-card-name-input').length) return;
     const idx = parseInt($(this).data('idx'));
     lgApplySavedTheme(idx);
   });
