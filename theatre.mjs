@@ -548,8 +548,8 @@ export function createTheatre(h){
   r.idea=(pool.length?pool:fallback)[Math.floor(h.random()*(pool.length?pool.length:fallback.length))]||available[0];
   rememberDraft();save();by('rp-theatre-random-idea').value=r.idea;randomPreview();busyUI();
  }
- function cancel(message='已停止接收本次生成，已有作品保留。'){
-  stopReading();
+ function cancel(message='已停止接收本次生成，已有作品保留。',{keepReading=false}={}){
+  if(!keepReading)stopReading();
   finishDrag(false);
   const old=job;if(!old)return;job=null;old.controller.abort();old.parent.signal.removeEventListener('abort',old.abort);busyUI();say(message);
  }
@@ -564,7 +564,7 @@ export function createTheatre(h){
   const token={signal:controller.signal,valid:()=>parent.valid()&&!controller.signal.aborted&&h.owner()===owner&&h.state().theatre===slot};
   const current={id,controller,parent,abort:()=>cancel('生成已停止，已有作品保留。')};job=current;parent.signal.addEventListener('abort',current.abort,{once:true});
   const valid=()=>job===current&&token.valid();
-  const startedView=h.state().currentView,oldId=selected()?.id;
+  const startedView=h.state().currentView;
   busyUI();say(operation==='continue'?'正在续写，原稿会保留……':operation==='rewrite'?'正在重写，新版本不会覆盖原稿……':'正在写这一场故事，请稍候……');
   try{
    if(!token.valid())return false;
@@ -595,13 +595,14 @@ export function createTheatre(h){
    const addition=hasTitle?lines.slice(1).join('\n').trim():result.text;
    if(!addition.trim())throw Object.assign(new Error('empty'),{phoneApiCode:'empty'});
    const story={id:'theatre-'+Date.now().toString(36)+'-'+id+'-'+Math.floor(h.random()*0xffffff).toString(36),charName:originalEntry?.charName||h.shelf?.charName?.()||'',title,body:operation==='continue'?originalBody+'\n\n'+addition:addition,recipe:{...recipe},snapshot:{prompt:snapshot.prompt,system:snapshot.system,...(snapshot.preset?{preset:theatrePresetSnapshot(snapshot.preset)}:{}),outputRegex:snapshot.outputRegex},outputCleaned:!!profile.scripts?.length&&originalCleaned&&!outputWarning(clean),createdAt:Date.now(),complete:!!result.complete,reason:result.reason||'unconfirmed',favorite:false,parentId:original?.id||null,operation,readingTop:0};
+   const reveal=h.isOpen()&&h.state().currentView===startedView&&(operation==='new'||selection()?.key===originalEntry.key);
    if(originalEntry&&originalEntry.slot!==(h.shelf?.slot?.()||'')){
     if(!change(originalEntry,target=>target.stories.push(story)))throw new Error('作品保存失败，原稿保留。');
-    select({...originalEntry,id:story.id,story});
-   }else{slot.stories.push(story);slot.currentId=story.id;delete slot.readingRef;save();}
+    if(reveal)select({...originalEntry,id:story.id,story});
+   }else{slot.stories.push(story);if(reveal){slot.currentId=story.id;delete slot.readingRef;}save();}
    say(outputWarning(clean)||(story.complete?'新作品已保存。':'已保存已有正文，尚未完结，可以继续写。'));
    library();
-   if(h.isOpen()&&h.state().currentView===startedView&&(operation==='new'||oldId===original.id)){h.go('theatre-read');reader();}
+   if(reveal){h.go('theatre-read');reader();}
    return true;
   }catch(error){
    if(valid())say(h.error(error));
@@ -617,7 +618,7 @@ export function createTheatre(h){
   if(name==='appearance'){toggleAppearance();return;}
   if(name==='generate')return generate();
   if(name==='continue'||name==='rewrite')return generate(name);
-  if(name==='cancel')return cancel();
+  if(name==='cancel')return cancel(undefined,{keepReading:true});
   if(name==='filter'||name==='filter-all'){filter=name==='filter';library();return;}
   if(name==='directory'){closeMenu();const scroll=by('rp-view-theatre').querySelector('.rp-theatre-scroll'),heading=by('rp-theatre-library-title');scroll.scrollTo({top:Math.max(0,heading.offsetTop-12),behavior:doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});heading.focus({preventScroll:true});return;}
   if(name==='draw'){draw();return;}

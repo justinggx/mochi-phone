@@ -1,6 +1,6 @@
 import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261102-native-ui-214';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261103-audit-223';
-import { THEATRE_CSS } from './theatre.mjs?v=20261102-native-ui-214';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261105-reader-focus-232';
+import { THEATRE_CSS } from './theatre.mjs?v=20261105-reader-focus-232';
 
 export const RP_ART_CSS = `
 #rp-phone {--rp-art-metal:linear-gradient(120deg,#fffaf1,#cdbdaf 18%,#fbf6ed 38%,#e2d5c8 60%,#ad9e94 83%,#ede3d6);--rp-art-edge:rgba(255,255,255,.85);--rp-art-screen-edge:rgba(92,68,52,.23);--rp-art-button:#a79689;--rp-art-shadow:rgba(82,53,37,.2);}

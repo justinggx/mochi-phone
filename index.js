@@ -7,18 +7,18 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261105-theme-recovery-231';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261104-contact-group-227';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261105-reader-focus-232';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261102-native-ui-214';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261102-safearea-210';
 import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
 import { createRoleContext, roleContextRef, roleContextWindow } from './role-context.mjs?v=20261031-independent-chat-190';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
-import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261102-native-ui-214';
+import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261105-reader-focus-232';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createStickers } from './stickers.mjs?v=20261102-sticker-header-216';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261103-audit-223';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261105-reader-focus-232';
 import { createGroupAvatars } from './group-avatar.mjs?v=20261102-safearea-210';
 import { createThemeStudio } from './theme-studio.mjs?v=20261105-theme-recovery-231';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
@@ -5232,18 +5232,22 @@ function bindUI() {
     const idx = parseInt($btn.data('idx'));
     const $card = $btn.closest('.rp-saved-card');
     const $nameEl = $card.find('.rp-saved-card-name');
+    const finishRename = () => {
+      lgRenderSavedThemes();
+      document.querySelector('#rp-saved-cards .rp-saved-card[data-idx="' + idx + '"] .rp-saved-card-rename-btn')?.focus({ preventScroll: true });
+    };
     // 已在编辑中：当确认按钮用
     if ($btn.hasClass('rp-saved-card-confirm-btn')) {
       const $inp = $nameEl.find('input');
       const newName = $inp.val().trim();
-      if (!newName) { lgRenderSavedThemes(); return; }
+      if (!newName) { finishRename(); return; }
       const saved = (() => { try { return JSON.parse(readPhoneThemeValue('rp_saved_themes') || '[]'); } catch(e) { return []; } })();
       if (saved[idx]) {
         saved[idx].label = newName;
         writePhoneThemeValue('rp_saved_themes', JSON.stringify(saved));
         try { saveState(); } catch(e) {}
       }
-      lgRenderSavedThemes();
+      finishRename();
       return;
     }
     // 进入编辑模式
@@ -5256,7 +5260,7 @@ function bindUI() {
     // 回车确认
     $inp.on('keydown', function(ev) {
       if (ev.key === 'Enter') { ev.preventDefault(); $btn.trigger('click'); }
-      if (ev.key === 'Escape') { lgRenderSavedThemes(); }
+      if (ev.key === 'Escape') { ev.preventDefault(); finishRename(); }
     });
   });
   // 主题页：删除已保存方案
