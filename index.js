@@ -8798,6 +8798,7 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
   try {
     if (!textEl || hasUnclosedPhonePairedTag(normalizePhoneMarkup(block)) || !phoneCleanupSourceMatches(textEl,block)) return;
     const cleanupScope=createPhoneCleanupScope(textEl,block);
+    const hadClaimedPhoneSource=cleanupScope.protocolNodes().length>0||cleanupScope.has();
     const hasExistingPhoneUi = !!textEl.querySelector('.rp-phone-echo-container, .rp-phone-echo-block, .rp-phone-live-img-btns');
     if (fp && textEl.dataset.rpPhoneRewriteFp === fp && hasExistingPhoneUi && !cleanupScope.protocolNodes().length && !cleanupScope.has()) {
       return;
@@ -8860,12 +8861,88 @@ function applyPhoneCollapseToEl(textEl, block, fp) {
     if (fp) textEl.dataset.rpPhoneRewriteFp = fp;
     textEl.dataset.rpDone = '1';
     textEl.dataset.rpHistDone = '1';
+    if(hadClaimedPhoneSource)rpWatchLatePhoneResidue(textEl,block);
     // 不再从 mochi-phone 折叠链路主动广播 MESSAGE_UPDATED。
     // 主楼智绘姬按钮/图片回写必须完全交给 st-chatu8 自己；这里 emit 会再次触发
     // Prompt Template + placeholder/imageInserter 重处理，导致主楼按钮/图片回填链路被打断。
   } catch(e) {
     console.warn('[Raymond Phone] applyPhoneCollapseToEl:', rpErrorInfo(e));
   }
+}
+
+// Some renderers restore an earlier HTML snapshot after the generation events
+// and final sweeps, without emitting another rendered event. Observe only the
+// latest floor we actually cleaned. Reuse the existing source scope; never
+// reformat the message, infer ownership from its summary, or parse it again.
+let rpLatePhoneResidueWatch=null;
+function rpStopLatePhoneResidueWatch(record=rpLatePhoneResidueWatch,retain=false) {
+  if(!record)return;
+  record.stopped=true;
+  record.observer?.disconnect();
+  if(record.timer!==null){record.runtime.clearTimer(record.timer);record.timer=null;}
+  if(!retain){
+    record.task.signal.removeEventListener('abort',record.stop);
+    if(rpLatePhoneResidueWatch===record)rpLatePhoneResidueWatch=null;
+  }
+}
+function rpWatchLatePhoneResidue(textEl,source) {
+  try {
+    const ctx=getContext(),mes=textEl?.closest?.('.mes'),id=mes?.getAttribute('mesid');
+    if(!/^\d+$/.test(id||'')||!isMochiPhoneEnabled()||!rpPhoneContextReady(ctx)||!phoneCleanupSourceMatches(textEl,source))return;
+    const index=Number(id),message=ctx.chat?.[index],raw=message?.mes,slot=getPhoneChatSlotKey(ctx);
+    if(!message||message.is_user||message.is_system||typeof raw!=='string'||slot!==STATE.chatId||!mes.isConnected||!textEl.querySelector('.rp-phone-echo-container'))return;
+    const isLatest=chat=>{
+      for(let i=(chat?.length||0)-1;i>=0;i--)if(chat[i]&&!chat[i].is_user&&!chat[i].is_system)return i===index;
+      return false;
+    };
+    if(!isLatest(ctx.chat))return;
+    const previous=rpLatePhoneResidueWatch;
+    // Keep the repair budget, including a tripped breaker, for this binding.
+    if(previous?.mes===mes&&previous.message===message&&previous.raw===raw&&previous.slot===slot&&previous.task.valid())return;
+    rpStopLatePhoneResidueWatch(previous);
+    const record={mes,index,message,raw,slot,source,runtime:rpRuntime,task:rpRuntime.task(),observer:null,timer:null,repairs:0,stopped:false,stop:null};
+    record.stop=()=>rpStopLatePhoneResidueWatch(record);
+    const valid=()=>{
+      const live=getContext();
+      return record.runtime===rpRuntime&&record.task.valid()&&rpPhoneContextReady(live)&&getPhoneChatSlotKey(live)===slot&&STATE.chatId===slot&&live.chat?.[index]===message&&message.mes===raw&&mes.isConnected&&mes.getAttribute('mesid')===id&&document.querySelector('.mes[mesid="'+id+'"]')===mes&&isLatest(live.chat);
+    };
+    const run=()=>{
+      record.timer=null;
+      if(record.stopped)return;
+      if(!valid()){record.stop();return;}
+      if(rpMesHasChatu8Activity(index))return;
+      const root=mes.querySelector('.mes_text');
+      if(!root?.querySelector('.rp-phone-echo-container'))return;
+      const scope=createPhoneCleanupScope(root,source);
+      if(!scope.valid(root)||!scope.has())return;
+      // Text-only source cleanup preserves the existing summary and image
+      // mounts/listeners, and cannot create messages or write receiving state.
+      if(scope.remove(['literal','body','author','noise'])&&++record.repairs>=3)rpStopLatePhoneResidueWatch(record,true);
+    };
+    record.observer=new record.runtime.Observer(mutations=>{
+      try {
+        if(record.stopped)return;
+        if(!valid()){record.stop();return;}
+        const root=mes.querySelector('.mes_text');
+        if(!root)return;
+        const relevant=mutations.some(change=>{
+          if(Array.from(change.addedNodes||[]).some(node=>node===root||node.nodeType===1&&node.contains(root)))return true;
+          if(change.target!==root&&!root.contains(change.target))return false;
+          const target=change.target.nodeType===1?change.target:change.target.parentElement;
+          if(isPhoneCleanupProtectedNode(target)||target!==root&&isPhoneCleanupForeignNode(target,root))return false;
+          return true;
+        });
+        // Coalesce without postponing an already scheduled check. Unrelated
+        // component animation must neither starve it nor cause repeated scans.
+        if(!relevant||record.timer!==null)return;
+        record.timer=record.runtime.timer(()=>{try{run();}catch{record.stop();}},80,false);
+      } catch {record.stop();}
+    });
+    rpLatePhoneResidueWatch=record;
+    record.task.signal.addEventListener('abort',record.stop,{once:true});
+    record.observer.observe(mes,{childList:true,characterData:true,subtree:true});
+    if(!valid())record.stop();
+  } catch {}
 }
 
 function rewritePhoneEchoInChat(block, fp, targetMesId) {
