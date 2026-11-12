@@ -1,4 +1,5 @@
 // Avatar reference reading is explicit and read-only; it never runs a host WI scan.
+import { rolePartnerText, rolePersonEntryText, rolePersonPolicy } from './role-context.mjs?v=20261112-crossmodule-identity-236';
 const norm = value => String(value || '').normalize('NFKC').toLocaleLowerCase().trim();
 const on = value => value === true || value === 1 || value === 'true';
 const off = value => value === false || value === 0 || value === 'false';
@@ -21,10 +22,28 @@ function clean(value, charName, userName) {
 }
 function targetSections(raw, names) {
   const text = String(raw || '');
+  const named = value => typeof value === 'string' && names.some(name => norm(name) === norm(value.replace(/^["']|["']$/g, '').trim()));
+  try {
+    const data = JSON.parse(text), matches = [];
+    const visit = (value, depth = 0) => {
+      if (!value || typeof value !== 'object' || depth > 24) return;
+      if (Array.isArray(value)) { value.slice(0, 512).forEach(item => visit(item, depth + 1)); return; }
+      const fields = Object.entries(value), read = key => fields.find(([name]) => name.toLowerCase() === key)?.[1];
+      const identity = read('identity'), identityName = identity && typeof identity === 'object' ? Object.entries(identity).find(([key]) => /^(?:name|full_name|姓名)$/i.test(key))?.[1] : null;
+      const directName = fields.find(([key]) => /^(?:name|full_name|姓名)$/i.test(key))?.[1];
+      if (named(identityName) || named(directName)) { matches.push(JSON.stringify(value, null, 2)); return; }
+      for (const [, item] of fields) visit(item, depth + 1);
+    };
+    visit(data); return matches.join('\n\n');
+  } catch {}
   const xml = [...text.matchAll(/<character(?:[_-][^>]*)?[^>]*>([\s\S]*?)<\/character(?:[_-][^>]*)?>/gi)];
-  if (xml.length) return xml.filter(m => mentions(m[0].split('\n').slice(0, 6).join('\n'), names)).map(m => m[1]).join('\n\n');
+  if (xml.length) return xml.filter(m => {
+    const opening = m[0].slice(0, m[0].indexOf('>') + 1), attribute = opening.match(/\bname\s*=\s*["']([^"']+)["']/i);
+    const field = m[1].match(/^\s*(?:[-*]\s*)?(?:name|full_name|姓名)\s*[:：]\s*([^\r\n]+)/im);
+    return attribute || field ? named(attribute?.[1]) || named(field?.[1]) : mentions(m[1].split('\n').find(line => line.trim()) || '', names);
+  }).map(m => m[1]).join('\n\n');
   const parts = text.split(/\n(?=\s*(?:#{1,6}\s|(?:[-*]\s*)?name\s*[:：]|【|\[角色))/i);
-  if (parts.length > 1) return parts.filter(p => mentions(p.split('\n').slice(0, 2).join('\n'), names)).join('\n\n');
+  if (parts.length > 1) return parts.filter(p => mentions(p.split('\n').find(line => line.trim()) || '', names)).join('\n\n');
   return text.split(/\n\s*\n/).filter(p => mentions(p, names)).join('\n\n');
 }
 
@@ -37,6 +56,13 @@ export function avatarTarget(who, ctx = {}) {
   return { key, kind, name: kind === 'user' ? String(ctx.name1 || '我') : key,
     card: ctx.groupId == null ? card : null,
     names: kind === 'char' ? [...new Set([key, ...charNames, ...splitNames(card?.data?.extensions?.aliases)])] : [kind === 'user' ? String(ctx.name1 || '我') : key] };
+}
+
+// The image can still belong to a card; only this generation's person changes.
+export function avatarPersonTarget(target, subject, ctx = {}) {
+  if (!subject || subject.id === 'legacy-card') return target;
+  const person = avatarTarget(subject.name, ctx);
+  return { ...person, kind: 'npc', names: [...new Set([person.name, ...splitNames(subject.aliases)])], note: String(subject.note || '').slice(0, 3000) };
 }
 
 export async function readAvatarProfile(target, ctx = {}, { check = () => {} } = {}) {
@@ -56,12 +82,6 @@ export async function readAvatarProfile(target, ctx = {}, { check = () => {} } =
   if (target.kind === 'user') {
     add('当前用户设定', ctx.powerUserSettings?.persona_description || '', 8000);
     if (parts.length) sources.push('当前酒馆用户设定');
-  } else if (target.card) {
-    for (const [field, label, cap] of [['description', '人物设定', 6500], ['personality', '性格与气质', 1500], ['scenario', '背景', 1500]]) {
-      const raw = target.card[field] || target.card.data?.[field] || '';
-      const selected = target.kind === 'char' ? raw : targetSections(raw, target.names);
-      if (selected) { add(label, selected, cap); if (!sources.includes('角色卡')) sources.push('角色卡'); }
-    }
   }
   const books = [];
   if (target.kind !== 'user' && target.card) {
@@ -80,6 +100,15 @@ export async function readAvatarProfile(target, ctx = {}, { check = () => {} } =
     const embedded = target.card.data?.character_book;
     if (!names.length && embedded?.entries) books.push(['角色卡内嵌世界书', embedded]);
   }
+  const policy = target.kind === 'npc' ? rolePersonPolicy(target.card ? [target.card] : [], books)({name:target.name,aliases:target.names.filter(name=>norm(name)!==norm(target.name))}) : null;
+  if (target.kind !== 'user' && target.card) {
+    for (const [field, label, cap] of [['description', '人物设定', 6500], ['personality', '性格与气质', 1500], ['scenario', '背景', 1500]]) {
+      const raw = target.card[field] || target.card.data?.[field] || '';
+      const selected = target.kind === 'char' ? raw : rolePartnerText(raw, target.names, true, true, policy);
+      if (selected) { add(label, selected, cap); if (!sources.includes('角色卡')) sources.push('角色卡'); }
+    }
+  }
+  if (target.kind === 'npc' && target.note) { add('本次确认的人物补充', target.note, 3000); sources.push('本次选择的人物'); }
   const matches = [];
   for (const [bookName, book] of books) for (const entry of Object.values(book.entries || {})) {
     const e = { ...entry?.extensions, ...entry };
@@ -88,8 +117,7 @@ export async function readAvatarProfile(target, ctx = {}, { check = () => {} } =
     const heading = [e.comment, e.name, ...splitNames(e.key || e.keys)].filter(Boolean).join('\n');
     const direct = mentions(heading, target.names);
     if (!direct && !mentions(raw, target.names)) continue;
-    const structured = /<character(?:[_-][^>]*)?[^>]*>|\n\s*(?:#{1,6}\s|(?:[-*]\s*)?name\s*[:：]|【|\[角色)/i.test(raw);
-    const selected = structured ? targetSections(raw, target.names) : direct ? raw : targetSections(raw, target.names);
+    const selected = target.kind === 'npc' ? rolePersonEntryText(raw, heading, target.names, policy) : direct ? raw : targetSections(raw, target.names);
     if (selected) matches.push({ bookName, text: selected, direct, label: String(e.comment || e.name || '相关人物条目') });
   }
   matches.sort((a, b) => Number(b.direct) - Number(a.direct));

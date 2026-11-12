@@ -186,6 +186,7 @@ export function openAvatarStudio(deps) {
   const previousFocus = doc.activeElement;
   let closed = false, busy = false, job = null, profile = null, selected = null, sequence = 0, promptPrepared = false, drag = null, previewSequence = 0, copying = false, copyJob = null, expandedField = null, viewingLarge = false, largeTicket = 0, largeTimer = null, pane = 'requirements', focusPaneAfterOperation = false;
   const candidates = [];
+  let generationTarget = target, targetResolved = !deps.resolveTarget;
   let translation = null, translating = false, translationNoteSource = '';
   const root = doc.createElement('div'); root.id = 'rp-avatar-studio'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'rp-as-title');
   root.innerHTML = `<div class="rp-as-panel" id="rp-as-main"><div class="rp-as-heading"><h3 id="rp-as-title"></h3><label id="rp-as-scope">应用范围 <select id="rp-as-scope-select" aria-label="头像应用范围"><option value="local">仅当前聊天</option><option value="shared">共用头像</option></select></label></div><p id="rp-as-generation-status" role="status" aria-live="polite" hidden></p><div id="rp-as-tabs" class="rp-as-tabs" role="tablist" aria-label="头像制作步骤" hidden><button id="rp-as-tab-requirements" role="tab" aria-controls="rp-as-requirements" aria-selected="true">人设与要求</button><button id="rp-as-tab-adjust" role="tab" aria-controls="rp-as-adjust" aria-selected="false" tabindex="-1" disabled>头像调整</button><button id="rp-as-tab-tags" role="tab" aria-controls="rp-as-tag-area" aria-selected="false" tabindex="-1" disabled>绘图 tag</button></div><div class="rp-as-body">
@@ -359,7 +360,7 @@ export function openAvatarStudio(deps) {
     $('ai').disabled = busy;
     $('use-current').disabled=busy;
     $('view-large').disabled = busy || copying;
-    for (const id of ['generate', 'reload']) $(id).disabled = busy || !profile;
+    $('generate').disabled = busy || !profile; $('reload').disabled = busy;
     $('reload').disabled = busy;
     $('confirm').disabled = busy || !selected;
     $('extra').disabled = $('tag').disabled = busy;
@@ -488,17 +489,27 @@ export function openAvatarStudio(deps) {
   async function read() {
     if (busy || !valid()) return;
     profile = null; await operation(async () => {
-      status('正在读取人物资料…'); profile = await deps.readProfile(check); check();
+      status('正在读取人物资料…');
+      if (deps.resolveTarget) { const resolved = await deps.resolveTarget(check); check(); if (!resolved) throw cancelled(); generationTarget = resolved; targetResolved = true; }
+      profile = await deps.readProfile(check, generationTarget); check();
       $('profile').value = profile.body || '';
-      $('sources').textContent = profile.sources.length ? '来源：' + profile.sources.join('；') : '';
-      $('sources').hidden = !profile.sources.length;
+      $('sources').textContent = (generationTarget.name !== target.name ? '生成人物：' + generationTarget.name + '；应用到：' + target.name + '的头像。\n' : '') + (profile.sources.length ? '来源：' + profile.sources.join('；') : '');
+      $('sources').hidden = !$('sources').textContent;
       updateExtraHint();
-      $('reload').hidden = true; status(profile.warnings.join(' ') || '资料已读取，可补充外貌和画风后生成。');
+      promptPrepared = false;
+      $('reload').hidden = !deps.resolveTarget; if (deps.resolveTarget) $('reload').textContent = '重新选择生成人物';
+      status(profile.warnings.join(' ') || '资料已读取，可补充外貌和画风后生成。');
     });
-    if (valid() && !profile) $('reload').hidden = false;
+    if (valid() && !profile) {
+      $('reload').hidden = false;
+      if (!targetResolved) { $('reload').textContent = '重新选择生成人物'; status('尚未选择生成人物，请重新选择后再生成头像。'); }
+      $('reload').focus({preventScroll:true});
+    }
+    else if (valid() && !root.contains(doc.activeElement)) $('profile').focus({preventScroll:true});
   }
-  const profileInput = () => ['头像目标：' + target.name + '（' + ({ char: 'Char', user: 'User', npc: 'NPC' }[target.kind]) + '）', $('profile').value.trim(), '用户补充：' + $('extra').value.trim()].join('\n\n');
+  const profileInput = () => ['头像目标：' + generationTarget.name + '（' + ({ char: 'Char', user: 'User', npc: 'NPC' }[generationTarget.kind]) + '）', $('profile').value.trim(), '用户补充：' + $('extra').value.trim()].join('\n\n');
   async function prepare(client, requestSignal) {
+    if (!targetResolved) throw new Error('请先选择生成人物并读取资料，再生成头像');
     if (!$('profile').value.trim() && !$('extra').value.trim()) throw new Error('请先填写人物资料或补充外貌，再生成头像');
     const body = profileInput();
     const result = await client.prepareAvatar({ texts: [body], avatarProfile: body, signal: requestSignal, isCurrent: valid,

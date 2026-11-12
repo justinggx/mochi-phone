@@ -1,5 +1,5 @@
-import { normalizePeople, mergePeople, normalizeBankByPerson } from './people.mjs?v=20261112-people-diary-235';
-import { createPeopleUI, PEOPLE_CSS } from './people-ui.mjs?v=20261112-people-diary-235';
+import { normalizePeople, mergePeople, normalizeBankByPerson, subjectSnapshot } from './people.mjs?v=20261112-people-diary-235';
+import { createPeopleUI, PEOPLE_CSS } from './people-ui.mjs?v=20261112-crossmodule-identity-236';
 import { createApiSync } from './api-sync.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneChat } from './phone-chat.mjs?v=20261101-message-images-204';
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
@@ -9,19 +9,19 @@ import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261105-theme-recovery-231';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261112-people-diary-235';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261112-crossmodule-identity-236';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261102-native-ui-214';
-import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261102-safearea-210';
-import { avatarTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261027-avatar-144';
-import { createRoleContext, roleContextRef, roleContextWindow, rolePartnerText, rolePersonEntryText } from './role-context.mjs?v=20261112-people-234';
+import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261112-crossmodule-identity-236';
+import { avatarTarget, avatarPersonTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261112-crossmodule-identity-236';
+import { createRoleContext, roleContextRef, roleContextWindow, rolePartnerText, rolePersonEntryText } from './role-context.mjs?v=20261112-crossmodule-identity-236';
 import { readTheatrePreset, theatrePresetSnapshot, theatreRequestMessages } from './theatre-preset.mjs?v=20261024-context-home-128';
 import { createTheatre, theatreDefaults, theatreText, THEATRE_HTML, THEATRE_CSS, THEATRE_ICON } from './theatre.mjs?v=20261112-people-234';
 import { theatreOutputProfile, createTheatreOutputProcessor } from './theatre-output.mjs?v=20261024-theatre-reader-132';
 import { createStickers } from './stickers.mjs?v=20261102-sticker-header-216';
 import { createSudoku } from './sudoku.mjs?v=20261029-slim-174';
 import { createGomoku } from './gomoku.mjs?v=20261029-slim-174';
-import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261112-people-diary-235';
-import { createGroupAvatars } from './group-avatar.mjs?v=20261102-safearea-210';
+import { createPhoneTools, PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261112-crossmodule-identity-236';
+import { createGroupAvatars } from './group-avatar.mjs?v=20261112-crossmodule-identity-236';
 import { createThemeStudio } from './theme-studio.mjs?v=20261105-theme-recovery-231';
 import { createPhoneRuntime } from './runtime.mjs?v=20261015-loop37';
 import { createPhoneArchive } from './archive.mjs?v=20261029-optimization-173';
@@ -2069,7 +2069,12 @@ function rpChooseAvatar(key) {
     currentAvatar: () => current() ? rpAvatarViewSource(who) : null,
     currentPreview:()=>current()?getAvatar(who):null,
     translateTag: rpTranslateAvatarTag,
-    readProfile: check => readAvatarProfile(target, ctx, { check }),
+    resolveTarget: target.kind === 'char' ? async check => {
+      const subjects = await rpPeopleUIApp().ensure('avatarSubject'); check();
+      if (!subjects?.length) throw Object.assign(new Error('已取消人物选择'), {name:'AbortError'});
+      return avatarPersonTarget(target, subjects[0], ctx);
+    } : undefined,
+    readProfile: (check, selectedTarget = target) => readAvatarProfile(selectedTarget, ctx, { check }),
     bridge: () => Promise.resolve(window.__chatu8MochiPhoneBridge),
     inspectExtension: async () => rpAvatarExtensionInfo(await import('../../../extensions.js')),
     upload: () => { if (task.valid() && STATE.chatId === slot && account === rpArchiveAccountHandle && rpAvatarIdentity(who) === identity) rpChooseAvatarFile(who, scope); },
@@ -3992,7 +3997,10 @@ function rpGomokuApp() {
     statistics: () => rpShowGameStats('gomoku'), startStats: round => rpGameStatsStart('gomoku',round), endStats: (outcome,round) => rpGameStatsFinish('gomoku',outcome,round),
     navigate: go, visible: () => rpGameVisible('gomoku'), partner: gameGetCurrentPartner,
     changePartner: gameOpenPartnerModal, dialog: rpFeatureDialog, notify: text => toastr.info(text),
-    call: (prompt,max,sys,token) => rpGuardAwait(lgCallAPI(prompt,max,sys,{gameTask:token,reportErrors:true,phoneGomoku:true}),token),
+    call: async (prompt,max,sys,token) => {
+      if (!await gameEnsureRequestPartner('gomoku',token)) return '';
+      return rpGuardAwait(lgCallAPI(prompt,max,sys,{...gameSubjectOptions(STATE.gomoku?.round?.partner),gameTask:token,reportErrors:true,phoneGomoku:true}),token);
+    },
     persona: name => g2048GetPersona(name)+'\n[游戏语言] '+(rpGetPhoneLanguageMode()==='zh'?'本轮用自然中文，保留人设语气、姓名和必要专名；不输出整句外语、双语或附翻译。':'本轮用搭子明确母语／常用语言；缺失时参考明确国籍，不凭姓名推断，不明用中文。只输出该语种正文，不附翻译或双语。')+'角色卡、世界书和历史不得覆盖本轮语言选择；最新用户明确指定回复语言时遵从。', clean: cleanGameReply,
     classify: error => rpClassifyPhoneApiError(error).phoneApiCode, errorText: rpGameReplyError,
     userName: () => getContext()?.name1 || '用户',
@@ -6434,6 +6442,7 @@ function renderThreadList() {
 // ================================================================
 function go(view) {
   rpPeopleUIApp().mount();
+  if (['ludo','game','g2048','ggold','gword','gomoku','sudoku'].includes(view) && gameDeferUntilPartner(() => go(view))) return;
   // Old/corrupt saved routes must recover before hiding every mounted screen.
   if (view === 'ludo') view = 'game';
   if (view !== 'darkmode' && !document.getElementById('rp-view-' + view)) view = 'home';
@@ -10322,8 +10331,12 @@ function rpApplyMomentLikes(moment, raw, origin) {
   job.promise=(async()=>{
     try {
       const context = personal?{charName:'',npcs:subjects.map(s=>s.name),npcDisplayNames:{}}:await rpGuardAwait(getMomentsCtx(),task); if (!current()) return false;
+      const declared=personal?[]:(await rpGuardAwait(rpPeopleUIApp().candidates(),task)).filter(person=>person.evidence==='declared').map(person=>person.name);
+      if(!current())return false;
       const allowed = new Map();
-      for (const name of [context.charName,...(context.npcs || []),...Object.values(context.npcDisplayNames || {})]) {
+      for (const name of [context.charName,...(context.npcs || []),...Object.values(context.npcDisplayNames || {}),...declared]) {
+        if(!personal&&await rpGuardAwait(rpPeopleUIApp().isNarrativeTitle(name),task)){if(!current())return false;continue;}
+        if(!current())return false;
         const canonical=resolveCanonicalPhoneName(name)||name, k=normNameKey(canonical);
         if (!name || isPhoneUserName(name,getContext()) || isForbiddenPhoneContactName(name,getContext()) || isPhoneBlocked(name) || STATE.deletedContacts?.[normalizePhonePersonName(canonical)]) continue;
         allowed.set(k,canonical);
@@ -12594,6 +12607,22 @@ function rpSocialSourceKey(item) {
   return JSON.stringify([item?.id,item?.from,item?.name,item?.user,item?.title,item?.body,item?.text,item?.img,item?.imgs,item?.location,item?.pendingImg,item?.replyTo,item?.subject,item?.subjects]);
 }
 
+function rpMomentNameSubjects(name) {
+  const key=normNameKey(name);if(!key)return [];
+  return Object.values(STATE.people?.entities||{}).filter(person=>[person.name,...(person.aliases||[])].some(value=>normNameKey(value)===key))
+    .map(person=>(rpRefreshSubjects([{id:person.id}])||[])[0]).filter(Boolean);
+}
+function rpMomentConfirmedReplyActor(moment, actorComment) {
+  const comments=moment.comments||[];
+  for(const comment of [...comments].reverse()){
+    if(!comment.subject||comment.subject.id==='legacy-card'||!Number.isInteger(comment.replyTo))continue;
+    const user=comments[comment.replyTo];if(!user||!isPhoneUserName(user.name||user.from,getContext()))continue;
+    const source=Number.isInteger(user.replyTo)?comments[user.replyTo]:null;
+    if(actorComment?source===actorComment:!source)return comment.subject;
+  }
+  return null;
+}
+
 async function charRespondToUserMoment(momentId) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
   /* rp-cancel-boundary */ try {
@@ -12739,13 +12768,30 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     if (!target.id) target.id = 'mc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
     targetCommentId = target.id; targetComment = target; targetKey = rpSocialSourceKey(target);
   }
-  const recordedName = fromName || moment.name;
-  const recordedSubject=[...(moment.comments||[]).filter(c=>normNameKey(c.name)===normNameKey(recordedName)).map(c=>c.subject),moment.subject,...(moment.subjects||[])].find(s=>s&&normNameKey(s.name)===normNameKey(recordedName));
-  const subject=recordedSubject?(rpRefreshSubjects([recordedSubject])||[])[0]:null;
-  if(recordedSubject&&!subject)return;
+  const actorComment=opts.replyToActor;
+  if(actorComment&&!(moment.comments||[]).includes(actorComment))return;
+  const actorKey=actorComment?rpSocialSourceKey(actorComment):null;
+  const recordedName = actorComment?.name || fromName || moment.name;
+  const matchesName=s=>s&&[s.name,...(s.aliases||[])].some(name=>normNameKey(name)===normNameKey(recordedName));
+  let recordedSubject=actorComment?.subject||[moment.subject,...(moment.subjects||[]),...(moment.comments||[]).filter(c=>normNameKey(c.name)===normNameKey(recordedName)).map(c=>c.subject)].find(matchesName);
+  let subject=recordedSubject?(rpRefreshSubjects([recordedSubject])||[])[0]:null;
+  const sourceCurrent=()=>rpTask.valid()&&(STATE.moments||[]).includes(moment)&&rpSocialSourceKey(moment)===sourceKey
+    &&(!actorComment||(moment.comments||[]).includes(actorComment)&&rpSocialSourceKey(actorComment)===actorKey)
+    &&(!targetComment||(moment.comments||[]).includes(targetComment)&&rpSocialSourceKey(targetComment)===targetKey);
+  let narrative=false,postNarrative=false,ambiguousActor=false;
+  try{
+    if(!subject||subject.id==='legacy-card')narrative=await rpGuardAwait(rpPeopleUIApp().isNarrativeTitle(recordedName),rpTask);
+    if(!sourceCurrent())return;
+    if(!moment.subject||moment.subject.id==='legacy-card')postNarrative=await rpGuardAwait(rpPeopleUIApp().isNarrativeTitle(moment.name),rpTask);
+    if(!sourceCurrent())return;
+    if(narrative){const confirmed=rpMomentConfirmedReplyActor(moment,actorComment);subject=confirmed?(rpRefreshSubjects([confirmed])||[])[0]:null;}
+    else if(!recordedSubject){const choices=rpMomentNameSubjects(recordedName);if(choices.length===1)subject=choices[0];else if(choices.length>1)ambiguousActor=true;}
+    if((recordedSubject&&!subject)||(narrative||ambiguousActor)&&!subject){
+      const picked=await rpPeopleUIApp().request('momentActor');if(!picked?.[0]||!sourceCurrent())return;subject=JSON.parse(JSON.stringify(picked[0]));
+    }
+  }catch(error){if(sourceCurrent())toastr.warning('回复人物暂时无法确认，原动态和评论已保留，请稍后重试。');return;}
   const authorName=subject?.name||recordedName;
-  const current = () => rpTask.valid() && (STATE.moments || []).includes(moment) && rpSocialSourceKey(moment) === sourceKey
-    && (!subject||rpSubjectCurrent(subject)) && (!targetComment || (moment.comments || []).includes(targetComment) && rpSocialSourceKey(targetComment) === targetKey);
+  const current = () => sourceCurrent()&&(!subject||rpSubjectCurrent(subject));
   if(!current())return;
   const personal=subject&&subject.id!=='legacy-card';
   const { charName, charPersona, npcPersonaMap, recentChat } = personal?{charName:subject.name,charPersona:'',npcPersonaMap:{},recentChat:''}:await rpGuardAwait(getMomentsCtx(), rpTask);
@@ -12760,7 +12806,8 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     authorPersona = npcPersona;
     sysMsg3 = '你正在扮演 ' + authorName + ',' + (npcPersona ? ('其人设/世界书如下:\n' + npcPersona.slice(0, 700) + '\n') : '请根据其在故事中的言行推断语气。\n');
   }
-  if(subject&&recordedName!==authorName)sysMsg3+='旧记录署名 '+recordedName+' 与当前姓名 '+authorName+' 属于同一个已确认人物，不是新增第三人。\n';
+  if(subject&&recordedSubject?.id===subject.id&&recordedSubject.name!==authorName)sysMsg3+='旧记录署名 '+recordedSubject.name+' 与当前姓名 '+authorName+' 属于同一个已确认人物，不是新增第三人。\n';
+  if(narrative)sysMsg3+='旧版来源卡标题不能确认旧作者；本次仅以用户明确选择并确认的 '+authorName+' 回复，不据此改写旧动态署名。\n';
 
   const recentReplyChat = String(recentChat || '')
     .split('\n')
@@ -12787,7 +12834,7 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     ? ('\n用户是在回复 ' + opts.replyToName + ' 的评论。你当前扮演的是 ' + authorName + '，回复必须承接“被回复评论→用户这次评论”这条链，不能只围绕朋友圈主楼泛泛发挥。\n')
     : '\n用户是在朋友圈下直接评论。回复必须接住用户这句评论，不要只泛泛评价朋友圈主楼。\n';
   sysMsg3 += (recentReplyChat ? ('\n主楼最近5楼上下文:\n' + recentReplyChat + '\n') : '')
-    + '\n朋友圈主楼:\n作者:' + (moment.name || moment.from || '') + '\n内容:' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '\n'
+    + '\n朋友圈主楼:\n作者:' + (postNarrative?'旧版未确认人物（来源卡标题）':moment.name || moment.from || '') + '\n内容:' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '\n'
     + '\n当前朋友圈评论串（按时间顺序，必须读）：\n' + commentThread + '\n'
     + targetCommentLine
     + userReplyLine + '\n'
@@ -12806,7 +12853,7 @@ async function generateAIReply(momentId, userCommentText, fromName, opts) {
     + targetCommentLine
     + userReplyLine + '\n'
     + '请基于人设/世界书/最近5楼/朋友圈主楼/评论串，写出一句贴着这条评论链的回复:';
-  const resp = await rpGuardAwait(rpCallSocialAPI(prompt3, 120, sysMsg3, rpTask,subject?rpSubjectOptions([subject]):{}), rpTask);
+  const resp = await rpGuardAwait(rpCallSocialAPI((subject?'':roleContextRef(authorName))+prompt3, 120, sysMsg3, rpTask,subject?rpSubjectOptions([subject]):{}), rpTask);
   if (!resp || !current()) return;
   const targetIndex = targetCommentId ? moment.comments.findIndex(c => c.id === targetCommentId) : null;
   if (targetCommentId && targetIndex < 0) return;
@@ -14638,6 +14685,7 @@ async function sendMomentComment(momentId, text, replyToName) {
       : null;
     const responderName = targetName || moment.name;
     setTimeout(() => generateAIReply(momentId, userCommentText, responderName, {
+      replyToActor: targetName?targetComment:null,
       replyToName: targetName,
       replyToText: targetComment ? targetComment.text : '',
       replyToUser: true,
@@ -14832,7 +14880,7 @@ function gameCleanPartnerName(name) {
     .replace(/[<>\n\r\t]/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim()
-    .slice(0, 32);
+    .slice(0, 80);
 }
 
 function gameGetCardName(ctx) {
@@ -14868,6 +14916,76 @@ function gameGetCurrentPartner(ctx) {
     }
   } catch(e) {}
   return partner;
+}
+
+let rpGamePartnerChoice = null, rpGamePartnerChoosing = null, rpGamePartnerActionSerial = 0;
+function gamePartnerScope() {
+  const ctx = getContext() || {};
+  return JSON.stringify([rpArchiveAccountHandle, STATE.chatId, getPhoneChatSlotKey(ctx), ctx.groupId ?? null, ctx.characters?.[ctx.characterId]?.avatar || '']);
+}
+function gamePartnerSignature(partner = gameGetCurrentPartner()) {
+  return JSON.stringify([partner.name, partner.note || '', !!partner.manual]);
+}
+function gamePartnerReady() {
+  const partner = gameGetCurrentPartner();
+  // Existing explicit companions remain independent of the other apps' defaults.
+  if (partner.manual || partner.name && partner.name !== partner.cardName) return true;
+  return rpGamePartnerChoice?.scope === gamePartnerScope() && rpGamePartnerChoice.signature === gamePartnerSignature(partner)
+    && (rpGamePartnerChoice.subject?.id !== 'legacy-card' || STATE.people?.mode !== 'multi');
+}
+async function gameEnsurePartner() {
+  if (gamePartnerReady()) return gameGetCurrentPartner();
+  const scope = gamePartnerScope(), signature = gamePartnerSignature(), view = STATE.currentView;
+  if (rpGamePartnerChoosing?.scope === scope && rpGamePartnerChoosing.signature === signature) return rpGamePartnerChoosing.promise;
+  const token = rpRuntime.task(), entry = {scope, signature};
+  const current = () => token.valid() && gamePartnerScope() === scope && STATE.currentView === view && gamePartnerSignature() === signature;
+  entry.promise = (async () => {
+    const subjects = await rpPeopleUIApp().ensure('gamePartner');
+    if (!current() || !subjects?.length) return null;
+    const subject = subjects[0];
+    if (!subject.name || subject.name.length > 80 || gameCleanPartnerName(subject.name) !== subject.name) {
+      toastr.info('搭子姓名请保持完整，使用80字以内的有效人物姓名。'); return null;
+    }
+    if (subject.id !== 'legacy-card') gameSetCurrentPartner(subject.name, subject.note || '', getContext());
+    rpGamePartnerChoice = {scope, signature:gamePartnerSignature(), subject};
+    return gameGetCurrentPartner();
+  })().finally(() => { if (rpGamePartnerChoosing === entry) rpGamePartnerChoosing = null; });
+  rpGamePartnerChoosing = entry;
+  return entry.promise;
+}
+function gameDeferUntilPartner(action) {
+  if (gamePartnerReady()) return false;
+  const serial = ++rpGamePartnerActionSerial, scope = gamePartnerScope(), view = STATE.currentView;
+  void gameEnsurePartner().then(partner => {
+    if (partner && serial === rpGamePartnerActionSerial && scope === gamePartnerScope() && view === STATE.currentView) action();
+  }).catch(() => { if (scope === gamePartnerScope()) toastr.info('暂未选定游戏搭子，请重试或手动填写姓名。'); });
+  return true;
+}
+async function gameEnsureRequestPartner(key, token) {
+  const partner = await gameEnsurePartner();
+  if (!partner || !token.valid()) return false;
+  const round = key === 'gomoku' ? STATE.gomoku?.round : key === 'sudoku' ? STATE.sudoku?.round : getPhoneGameRecordSource(key);
+  const recordedName = round?.partner || round?.charName;
+  const name = recordedName || partner.name;
+  if (!gamePersonSubject(name) && Object.values(normalizePeople(STATE.people).entities).filter(person => person.name === name).length > 1) {
+    toastr.info('人物名单中有多个同名人物，请先明确区分姓名后再重试。原棋盘和历史已保留。'); return false;
+  }
+  if (recordedName && recordedName === gameGetCardName(getContext()) && rpGamePartnerChoice?.scope === gamePartnerScope()
+      && rpGamePartnerChoice.subject?.id !== 'legacy-card' && partner.name !== recordedName) {
+    toastr.info('本局保留着旧版卡名记录。请开始新局后再让选中的人物回复，原棋盘和历史已保留。'); return false;
+  }
+  return true;
+}
+function gamePersonSubject(name = gameGetCurrentPartner().name) {
+  const choice = rpGamePartnerChoice;
+  if (choice?.scope === gamePartnerScope() && choice.signature === gamePartnerSignature() && choice.subject?.id !== 'legacy-card' && choice.subject?.name === name) return choice.subject;
+  // A confirmed entity can be recovered after reload without a new selection field.
+  const matches = Object.values(normalizePeople(STATE.people).entities).filter(person => person.name === name);
+  return matches.length === 1 ? subjectSnapshot(matches[0],{cardKey:rpPeopleCardKey(),slotKey:STATE.chatId}) : null;
+}
+function gameSubjectOptions(name) {
+  const subject = gamePersonSubject(name);
+  return subject ? {phoneSubjects:[subject]} : {};
 }
 
 function gameSetCurrentPartner(name, note, ctx) {
@@ -14917,6 +15035,7 @@ function gamePartnerNameFeedback(message = '') {
 function gameOpenPartnerModal() {
   var ctx = (typeof getContext === 'function') ? getContext() : {};
   var cur = gameGetCurrentPartner(ctx);
+  const nameInput = document.getElementById('rp-game-partner-name-input'); if (nameInput) nameInput.maxLength = 80;
   $('#rp-game-partner-name-input').val(cur.name || gameGetCardName(ctx) || '');
   $('#rp-game-partner-note-input').val(cur.note || '');
   gamePartnerNameFeedback();
@@ -14967,7 +15086,8 @@ function gameSavePartnerFromModal() {
 // ── Clean persona for 2048 (strip system directives) ──────────────
 function g2048GetPersona(partnerName) {
   const partner = gameGetCurrentPartner(getContext() || {});
-  return roleContextRef(partnerName || partner.name, !partnerName || partnerName === partner.name ? partner.note || '' : '');
+  const name = partnerName || partner.name;
+  return roleContextRef(name, !partnerName || partnerName === partner.name ? partner.note || '' : '', gamePersonSubject(name) || undefined);
 }
 
 function g2048StripActions(text) {
@@ -15697,6 +15817,7 @@ function ggoldSetModeSelection(selecting) {
   rpRefreshGoldModeArt(selecting);
 }
 function ggoldOpen() {
+  if (gameDeferUntilPartner(ggoldOpen)) return;
   rpBeginGame('gm');
   const gameRuntime = rpGameRuntime('gm');
   const clearInterval = id => gameRuntime.clearTimer(id);
@@ -15724,6 +15845,7 @@ function ggoldOpen() {
 }
 
 function ggoldStartGame(mode) {
+  if (gameDeferUntilPartner(() => ggoldStartGame(mode))) return;
   rpBeginGame('gm');
 
   if (!['vs','coop'].includes(mode)) return;
@@ -15859,6 +15981,7 @@ function rpSetWordModeSelection(selecting) {
   rpRefreshWordModeArt(true);
 }
 function gwordOpen() {
+  if (gameDeferUntilPartner(gwordOpen)) return;
   rpBeginGame('gword');
 
   if (!_gwordBound) { gwordBindEvents(); _gwordBound = true; }
@@ -15886,6 +16009,7 @@ function gwordOpen() {
 }
 
 async function gwordStartGame(mode) {
+  if (gameDeferUntilPartner(() => gwordStartGame(mode))) return;
   rpBeginGame('gword');
 
   /* rp-task-scope */ const rpTask = rpGameRuntime('gword').task();
@@ -16358,9 +16482,10 @@ function rpResumeDeferredGameTimers() {
     for(const entry of entries)if(entry.token.valid())rpGameTimer(key,entry.fn,0,false,entry.args);
   }
 }
-function rpGameCallAPI(key, prompt, max, system, options = {}) {
+async function rpGameCallAPI(key, prompt, max, system, options = {}) {
   const token = rpGameRuntime(key).task();
-  return rpGuardAwait(lgCallAPI(prompt, Math.max(max || 150, 2048), system, { ...options, reportErrors:true, gameTask: token }), token)
+  if (!await gameEnsureRequestPartner(key, token)) return null;
+  return rpGuardAwait(lgCallAPI(prompt, Math.max(max || 150, 2048), system, { ...options, ...gameSubjectOptions(getPhoneGameRecordSource(key)?.charName), reportErrors:true, gameTask: token }), token)
     .catch(error => {
       if (!token.valid()) return null;
       if (options.reportErrors) throw rpClassifyPhoneApiError(error);
@@ -16780,6 +16905,7 @@ function ggoldBindOnce() { if (!_ggoldBound) { ggoldBindEvents(); _ggoldBound = 
 
 // ── Init new game ─────────────────────────────────────────────
 function g2048Init() {
+  if (gameDeferUntilPartner(g2048Init)) return;
   rpBeginGame('g2048');
 
   var ctx = getContext ? getContext() : {};
@@ -17436,6 +17562,7 @@ function rpSetLudoModeSelection(selecting) {
   rpRefreshLudoModeArt(selecting);
 }
 function lgInit() {
+  if (gameDeferUntilPartner(lgInit)) return;
   rpBeginGame('ludo');
   LG.active = false; LG.rolling = false;
 
@@ -17446,6 +17573,7 @@ function lgInit() {
 }
 
 function lgStartGame(spicyLevel) {
+  if (gameDeferUntilPartner(() => lgStartGame(spicyLevel))) return;
   rpBeginGame('ludo');
   const gameRuntime = rpGameRuntime('ludo');
   const requestAnimationFrame = fn => gameRuntime.frame(fn);
@@ -17999,6 +18127,7 @@ function rpTheatreApp() {
         const subjectPack={prompt:pack.prompt,system:pack.system.replace(/\{\{char\}\}/gi,()=>subject.name)};
         const cfg=readCustomApiConfig(),ctx=getContext()||{};
         const host=ctx.mainApi==='openai'?await rpGuardAwait(import('../../../openai.js').catch(()=>({})),token,10000):{};
+        const writingContext=subject.id==='legacy-card'?ctx:await rpGuardAwait(rpRoleBackgroundApp().subjectContext([subject],token),token,30000);
         const windowSize=roleContextWindow(ctx,cfg);
         const outputs=[...new Set([maxTokens,...(windowSize?[Math.min(maxTokens,Math.max(2048,Math.floor(windowSize*.35))),Math.min(maxTokens,2048)]:[])])];
         // Retries only repack local data. No model request until one package fits.
@@ -18011,7 +18140,7 @@ function rpTheatreApp() {
             if(!token.valid())throw Object.assign(new Error('Cancelled'),{name:'AbortError'});
             try{
               randomIndex=0;
-              const preset=readTheatrePreset(ctx,{manager:host.promptManager,au:recipe.world==='au',dataBudget,query:recipe.idea,random});
+              const preset=readTheatrePreset(writingContext,{manager:host.promptManager,au:recipe.world==='au',dataBudget,query:recipe.idea,random});
               const background=await rpGuardAwait(rpRoleBackgroundApp().build(subjectPack.prompt,subjectPack.system,{phoneTheatre:true,...rpSubjectOptions([subject]),theatreAU:recipe.world==='au',theatrePresetText:JSON.stringify(preset.messages)},token,cfg,output),token,30000);
               if(new TextEncoder().encode(JSON.stringify(theatreRequestMessages(background.prompt,background.system,preset))).length>2000000)throw Object.assign(new Error('创作资料超过请求体保护上限，草稿已保留。'),{phoneApiCode:'contextLimit',localPayloadLimit:true});
               if(!rpSubjectCurrent(subject))throw Object.assign(new Error('人物资料已变更，请重新创作；草稿保留。'),{name:'AbortError'});
@@ -18048,6 +18177,7 @@ let rpRoleBackground = null;
 function rpRoleBackgroundApp() {
   if (!rpRoleBackground) rpRoleBackground = createRoleContext({
     context: getContext,
+    people: () => Object.values(STATE.people?.entities || {}),
     publicPosts: () => (STATE.moments || []).filter(m => m && !isPhoneBlocked(m.name || m.from) && m.private !== true && m.visibility !== 'private').map(m => ({ name:m.name || getContext()?.name1, text:m.text })),
     owner: () => String(rpArchiveAccountHandle || '') + '|' + getPhoneChatSlotKey(getContext()),
     guard: (promise, token) => rpGuardAwait(promise, token, 20000),

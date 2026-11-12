@@ -11,7 +11,7 @@ export function roleContextWindow(ctx={},cfg={}){
  const positive=value=>Number.isFinite(Number(value))&&Number(value)>0?Math.floor(Number(value)):0;
  return (ctx.mainApi==='openai'?positive(ctx.chatCompletionSettings?.openai_max_context):0)||positive(ctx.maxContext);
 }
-export function roleContextRef(name,note=''){return '[MOCHI_ROLE:'+encodeURIComponent(JSON.stringify({name:String(name||''),note:String(note||'')}))+']';}
+export function roleContextRef(name,note='',subject){const ref={name:String(name||''),note:String(note||'')};if(subject!==undefined){const picked=subjectSnapshot([subject])[0];if(norm(picked.name)!==norm(ref.name))throw failure('background');ref.subject=picked;}return '[MOCHI_ROLE:'+encodeURIComponent(JSON.stringify(ref))+']';}
 function takeRef(text){const m=String(text||'').match(/^\[MOCHI_ROLE:([^\]\n]+)\]\s*/);if(!m)return{text:String(text||''),ref:null};try{return{text:String(text).slice(m[0].length),ref:JSON.parse(decodeURIComponent(m[1]))};}catch{return{text:String(text||''),ref:null};}}
 export function roleStoryText(raw){return String(raw||'')
  .replace(/<(think|thinking|analysis|script|style|PHONE|SMS|GMSG|STATUS|NEWSPAPER)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,' ')
@@ -22,8 +22,8 @@ function safe(text,name,user){return String(text||'').replace(/\{\{char\}\}/gi,n
 function paragraphs(raw){return String(raw||'').split(/\n\s*\n|(?<=[。！？.!?])\s*(?=[^\n])/).map(s=>s.trim()).filter(Boolean);}
 const namesOf=(card,name)=>[name,...String(card?.data?.extensions?.aliases||'').split(/[,，/|]/)].filter(Boolean);
 function contains(text,names){return names.some(n=>keyword(text,n,{matchWholeWords:/^[\x00-\x7f]+$/.test(n)}));}
-export function rolePartnerText(raw,names,manual,strict=false){
- if(strict&&manual)return subjectText(raw,names);
+export function rolePartnerText(raw,names,manual,strict=false,policy){
+ if(strict&&manual)return subjectText(raw,names,policy);
  const text=String(raw||'');if(!manual)return text;
  const xml=[...text.matchAll(/<character(?:[_-][^>]*)?[^>]*>([\s\S]*?)<\/character(?:[_-][^>]*)?>/gi)];
  if(xml.length)return xml.filter(m=>contains(m[1].split('\n').slice(0,5).join('\n'),names)).map(m=>m[1]).join('\n\n');
@@ -37,13 +37,17 @@ export function rolePartnerText(raw,names,manual,strict=false){
 }
 // A worldbook title may establish one person's ownership even when its body has
 // no name field. Only known label words may remain after exact person names.
-export function rolePersonEntryText(content,label,names){
- const text=String(content||''),people=(Array.isArray(names)?names:[]).filter(name=>typeof name==='string'&&norm(name)).map(norm).sort((a,b)=>b.length-a.length);
- const selected=rolePartnerText(text,people,true,true);if(selected)return selected;
+export function rolePersonEntryText(content,label,names,policy){
+ if(policy?.blocked)return '';
+ const text=personText(content),people=policy?.names||(Array.isArray(names)?names:[]).filter(name=>typeof name==='string'&&norm(name));
+ const selected=subjectText(text,people,policy);if(selected)return selected;
  // A title cannot override a contradictory, explicitly named body section.
- if(/<character(?:[_-][^\s<>/]+)?(?:\s[^>]*)?>|^\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]/im.test(text))return '';
+ if(namedSections(text).length||/<character(?:[_-][^\s<>/]+)?(?:\s[^>]*)?>|^\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]/im.test(text))return '';
+ return ownsLabel(label,people)?text:'';
+}
+function ownsLabel(label,names){
  let title=norm(label),matched=false;
- for(const person of people){const escaped=person.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ for(const person of [...names].map(norm).sort((a,b)=>b.length-a.length)){const escaped=person.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const pattern=/^[\x00-\x7f]+$/.test(person)?new RegExp('(^|[^a-z0-9_])'+escaped+'(?=$|[^a-z0-9_])','gu'):new RegExp(escaped,'gu');
   title=title.replace(pattern,(all,prefix)=>{matched=true;return /^[\x00-\x7f]+$/.test(person)?prefix:'';});
  }
@@ -52,23 +56,51 @@ export function rolePersonEntryText(content,label,names){
  title=title.replace(/(?:人物|角色|人设|设定|档案|资料|性格|背景|净资产|资产|财富|财产|财务|收入|负债|信息|状况|构成|明细|记录|概览|个人|基本|简要|补充|编号|的)/g,'')
   .replace(/\b(?:character|personality|profile|background|setting|records?|details?|information|info|assets?|wealth|property|finance|financial|income|debts?|liabilities|id|uid)\b/gi,'')
   .replace(/[\p{P}\p{S}\p{N}\s]/gu,'');
- return title?'':text;
+ return matched&&!title;
 }
-// Explicit people use identifiable sections only. Mentioning a person somewhere in
-// an unstructured card does not establish which traits belong to that person.
-function subjectText(raw,names){
- const text=String(raw||''),picked=[];
+const notPerson=key=>/^(?:company|companies|group|groups|corporation|business|organization|organisation|guild|location|locations|place|places|world|rules?|system|公司|组织|集团|地点|规则)(?:[_-].*)?$/i.test(String(key).trim());
+function personText(raw){
+ let text=String(raw||'').replace(/<(company|group|organization|organisation|corporation|location)(?:[_-][^\s<>/]*)?\b[^>]*>[\s\S]*?<\/\1(?:[_-][^\s<>/]*)?\s*>/gi,'');
+ const lines=text.split('\n'),out=[];let skip=null;
+ for(const line of lines){const indent=(line.match(/^[ \t]*/)||[''])[0].length;if(skip!==null){if(!line.trim()||indent>skip)continue;skip=null;}const field=line.match(/^[ \t]*(?:[-*][ \t]+)?([^:\n]+?)\s*[:：]/);if(field&&notPerson(field[1])){skip=indent;continue;}out.push(line);}
+ return out.join('\n').trim();
+}
+const ownerName=value=>String(value||'').replace(/\s+#.*$/,'').trim().replace(/^["'“‘]|["'”’]$/g,'').split(/[(（【\[,，]/)[0].trim();
+function namedSections(raw){
+ const text=personText(raw),out=[];
+ if(/^\s*[{[]/.test(text))try{
+  const clean=(value,record=false)=>Array.isArray(value)?value.map(v=>clean(v,record)):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([key])=>!notPerson(key)&&!(record&&/^(?:characters|people|persons|npcs)$/i.test(key))).map(([key,v])=>[key,clean(v,record)])):value;
+  const walk=(value,depth=0)=>{if(depth>24||!value||typeof value!=='object')return;if(Array.isArray(value)){value.forEach(v=>walk(v,depth+1));return;}const identity=value.identity&&typeof value.identity==='object'?value.identity:value,name=identity.name||identity.full_name||identity.姓名||identity.全名||identity.名字;if(typeof name==='string'&&ownerName(name)){out.push({owner:ownerName(name),kind:'name',body:JSON.stringify(clean(value,true))});return;}for(const[key,v]of Object.entries(value))if(!notPerson(key))walk(v,depth+1);};walk(JSON.parse(text));return out;
+ }catch{/* Non-JSON text uses the same explicit-section rules below. */}
  const xml=[...text.matchAll(/<(character(?:[_-][^\s<>/]+)?)(?:\s[^>]*)?>([\s\S]*?)<\/\1\s*>/gi)];
- if(xml.length){for(const m of xml){const tag=m[0].slice(0,m[0].indexOf('>')+1),identity=m[2].split('\n').slice(0,6).filter(line=>/^\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]/i.test(line)).join('\n');
-   if(contains(tag.replace(/[_-]/g,' '),names)||contains(identity,names))picked.push(m[2]);
-  }return picked.join('\n\n');}
+ if(xml.length){for(const m of xml){const body=personText(m[2]),tag=m[0].slice(0,m[0].indexOf('>')+1),field=body.match(/^\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]\s*([^\r\n]+)/im),attribute=tag.match(/\bname\s*=\s*["']([^"']+)["']/i),owner=ownerName(field?.[1]||attribute?.[1]||m[1].replace(/^character[_-]?/i,''));if(owner)out.push({owner,kind:'name',body});}return out;}
  const headings=[...text.matchAll(/^(\s*#{1,6}\s+|\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]|\s*【|\s*\[角色)([^\r\n]*)/gim)];
- for(let i=0;i<headings.length;i++){const h=headings[i];if(!contains(h[0],names))continue;
+ for(let i=0;i<headings.length;i++){const h=headings[i];
   const depth=(h[1].match(/#/g)||[]).length;let end=text.length;
   for(const next of headings.slice(i+1)){const nextDepth=(next[1].match(/#/g)||[]).length;if(!depth||!nextDepth||nextDepth<=depth){end=next.index;break;}}
-  picked.push(text.slice(h.index,end));
- }return picked.join('\n\n');
+  out.push({owner:ownerName(h[2].replace(/[】\]]+\s*$/,'')),kind:/name|姓名|全名|名字/i.test(h[1])?'name':'heading',body:text.slice(h.index,end)});
+ }return out;
 }
+const recordMatches=(record,names)=>record.kind==='name'?names.some(name=>norm(record.owner)===norm(name)):ownsLabel(record.owner,names);
+function preferredNames(records,names){
+ const own=names[0];if(!own)return[];if(records.some(record=>recordMatches(record,[own])))return[own];
+ const aliases=[...new Map(names.slice(1).filter(alias=>records.some(record=>recordMatches(record,[alias]))).map(alias=>[norm(alias),alias])).values()];
+ return aliases.length===1?[aliases[0]]:aliases.length>1?[own]:names;
+}
+function subjectText(raw,names,policy){
+ if(policy?.blocked)return'';const records=namedSections(raw),targets=preferredNames(records,policy?.names||names||[]);
+ return records.filter(record=>recordMatches(record,targets)).map(record=>record.body).join('\n\n');
+}
+const cardFields=['description','personality','scenario','mes_example','first_mes','system_prompt','post_history_instructions'];
+const cardField=(card,key)=>card?.[key]||card?.data?.[key]||'';
+function memberCards(ctx){const group=(ctx.groups||[]).find(g=>String(g.id)===String(ctx.groupId));return(ctx.characters||[]).filter(card=>card?.avatar&&(group?.members||[]).includes(card.avatar));}
+function sourceCards(ctx){return ctx.groupId!=null?memberCards(ctx):(ctx.characterId!=null?[ctx.characters?.[ctx.characterId]||(!ctx.characters?ctx.char:null)].filter(Boolean):[]);}
+function ownership(cards,books,group,known=[]){
+ const collections=cards.map(card=>cardFields.map(key=>namedSections(cardField(card,key)))),perCard=collections.map(items=>items.flat()),parts=collections.flat(),records=perCard.flat(),bookRecords=[];
+ for(const[,book]of books)for(const raw of Object.values(book?.entries||{})){const entry={...raw?.extensions,...raw},items=namedSections(entry.content||entry.text||'');parts.push(items);records.push(...items);bookRecords.push(...items);if(entry.comment||entry.name)records.push({owner:entry.comment||entry.name,kind:'heading',body:''});}
+ return person=>{const aliases=(person.aliases||[]).filter(alias=>!known.some(other=>other?.id!==person.id&&norm(other?.name)!==norm(person.name)&&norm(other?.name)===norm(alias))&&!(records.some(record=>recordMatches(record,[person.name]))&&bookRecords.some(record=>recordMatches(record,[alias])))&&!parts.some(items=>items.some(record=>recordMatches(record,[person.name]))&&items.some(record=>recordMatches(record,[alias]))));let names=[person.name,...aliases];const matched=aliases.filter(alias=>records.some(record=>recordMatches(record,[alias])));if(new Set(matched.map(norm)).size>1)names=[person.name];const matches=perCard.filter(items=>items.some(record=>recordMatches(record,names))).length;return{names,blocked:!!group&&matches>1};};
+}
+export function rolePersonPolicy(cards,books,group=false,known=[]){return ownership(cards,books,group,known);}
 function subjectSnapshot(raw){
  if(!Array.isArray(raw)||raw.length>16)throw failure('background');
  const label=value=>String(value||'').replace(/\{\{[\s\S]*?\}\}/g,'').replace(/[<>\r\n]/g,' ').trim().slice(0,100),seen=new Set();
@@ -102,19 +134,37 @@ export function roleWorldEntries(books,scan,query,publicOnly=false){
  const seen=new Set(),groups=new Set(),out=[];for(const p of pool){const gs=String(p.e.group||'').split(',').map(x=>x.trim()).filter(Boolean);if(gs.some(g=>groups.has(g))||seen.has(norm(p.text)))continue;gs.forEach(g=>groups.add(g));seen.add(norm(p.text));out.push(p);}return out;
 }
 function compactPrompt(raw){return String(raw).split('\n').map(line=>{const k=line.indexOf('：{');if(k<0||!/棋局事实/.test(line.slice(0,k)))return line;try{const value=JSON.parse(line.slice(k+1));if(Array.isArray(value.moves)){value.moveSequence=value.moves.map(m=>m.at+':'+(m.side==='user'?'u':'c')).join(' ');value.moveLegend='u=用户,c=搭子';delete value.moves;}return line.slice(0,k+1)+JSON.stringify(value);}catch{return line;}}).join('\n');}
-export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicPosts=()=>[]}={}){
+export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicPosts=()=>[],people=()=>[]}={}){
  const counts=new Map();let last=null;
+ async function boundBooks(ctx,cards,char,explicit,task,check){
+  const binding=card=>card?.data?.extensions?.world||card?.extensions?.world,chatBook=ctx.chatMetadata?.world_info;
+  const names=[...new Set([...(explicit?cards.map(binding):[binding(char)]),typeof chatBook==='string'?chatBook:null].filter(value=>typeof value==='string'&&value.trim()))];
+  let books=[];if(names.length){if(typeof ctx.loadWorldInfo!=='function')throw failure('background');try{books=await guard(Promise.all(names.map(async name=>{const book=await ctx.loadWorldInfo(name);if(!book?.entries)throw failure('background');return[name,book];})),task);}catch(error){check();throw failure('background');}}
+  else if(char?.data?.character_book?.entries)books=[['embedded-current-card',char.data.character_book]];
+  if(explicit)for(const[index,card]of cards.entries())if(!binding(card)&&(card.data?.character_book||card.character_book)?.entries&&!books.some(([,book])=>book===(card.data?.character_book||card.character_book)))books.push(['embedded-current-card-'+index,card.data?.character_book||card.character_book]);
+  check();return books;
+ }
+ async function subjectContext(raw,task){
+  const scope=String(owner()),ctx=context()||{},subjects=subjectSnapshot(raw),cards=sourceCards(ctx);
+  const check=()=>{if(!task?.valid()||String(owner())!==scope)throw Object.assign(new Error('Background cancelled'),{name:'AbortError'});};
+  check();if(!subjects.length||!cards.length)throw failure('background');
+  const books=await boundBooks(ctx,cards,cards[0],true,task,check),resolve=ownership(cards,books,ctx.groupId!=null,people()),user=String(ctx.name1||'用户'),scoped={name:subjects.map(person=>person.name).join('、')};
+  for(const field of cardFields)scoped[field]=subjects.map(person=>{const policy=resolve(person);return safe(cards.map(card=>rolePartnerText(cardField(card,field),[person.name,...person.aliases],true,true,policy)).filter(Boolean).join('\n\n'),'',user);}).filter(Boolean).join('\n\n');
+  scoped.data={...scoped};
+  const characters=Array.isArray(ctx.characters)?[]:{};if(ctx.characterId!=null)characters[ctx.characterId]=scoped;
+  const chat=(ctx.chat||[]).map(message=>{if(!message)return message;const speaker=String(message.name||ctx.name2||''),selected=subjects.some(person=>[person.name,...person.aliases].some(alias=>norm(alias)===norm(speaker))),cardSpeaker=!selected&&[ctx.name2,...cards.map(card=>card.name)].some(name=>name&&norm(name)===norm(speaker));return{...message,name:!message.is_user&&(cardSpeaker||!message.name)?'主楼叙述':message.name,mes:roleStoryText(message.mes)};});
+  check();return{...ctx,name2:scoped.name,characters,char:scoped,chat};
+ }
  async function build(prompt,system,options={},task,cfg,maxTokens){
   const p=takeRef(prompt),s=takeRef(system),ref=s.ref||p.ref;
-  const hasSubjects=Object.hasOwn(options,'phoneSubjects'),snapshot=hasSubjects?subjectSnapshot(options.phoneSubjects):null;
+  const hasOptionSubjects=Object.hasOwn(options,'phoneSubjects'),hasSubjects=hasOptionSubjects||ref?.subject!==undefined,snapshot=hasSubjects?subjectSnapshot(hasOptionSubjects?options.phoneSubjects:[ref.subject]):null;
   const explicit=hasSubjects&&(snapshot.length>0||!!options.phoneXhs),subjects=explicit?snapshot:null;
   const enabled=explicit||ref||options.phoneIndependent||options.phoneTheatre||options.phoneDiary||options.phoneBank||options.phoneXhs||options.gameTask&&!options.phoneShop||options.phoneWordHint;
   if(!enabled||options.phoneShop)return{prompt,system};
   const scope=String(owner()),ctx=context()||{};
-  const group=ctx.groupId!=null?(ctx.groups||[]).find(g=>String(g.id)===String(ctx.groupId)):null;
-  const sourceChars=explicit?(ctx.groupId!=null?(ctx.characters||[]).filter(c=>c?.avatar&&(group?.members||[]).includes(c.avatar)):(ctx.characterId!=null?[ctx.characters?.[ctx.characterId]||(!ctx.characters?ctx.char:null)].filter(Boolean):[])):[];
-  let char=explicit?sourceChars[0]:ctx.characters?.[ctx.characterId]||ctx.char;
-  if(!char&&ctx.groupId){const group=(ctx.groups||[]).find(g=>String(g.id)===String(ctx.groupId));const members=(ctx.characters||[]).filter(c=>(group?.members||[]).includes(c.avatar));char=members.find(c=>norm(c.name)===norm(ref?.name||ctx.name2));}
+  const allowed=ctx.groupId!=null?memberCards(ctx):null,sourceChars=explicit?sourceCards(ctx):[];
+  const matches=allowed?.filter(card=>norm(card.name)===norm(ref?.name||ctx.name2))||[];
+  const char=explicit?sourceChars[0]:allowed?(matches.length===1?matches[0]:null):ctx.characters?.[ctx.characterId]||ctx.char;
   const check=()=>{if(!task.valid()||String(owner())!==scope)throw Object.assign(new Error('Background cancelled'),{name:'AbortError'});};
   check();if(!char)throw failure('background');
   const label=s=>String(s).replace(/\{\{[\s\S]*?\}\}/g,'').replace(/[<>\r\n]/g,' ').trim();
@@ -171,6 +221,8 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   base=clean(base);
   const baseCost=await measure(base+'\n'+rules+(presetCost?'\n'+presetCost:''))+64;if(baseCost+(options.phoneTheatre?Math.min(4096,Math.floor(cap*.25)):160)>cap)throw failure('contextLimit');
   const room=cap-baseCost,profileBudget=Math.floor(room*(isFeed ? .15 : .32)),worldBudget=Math.floor(room*(isFeed ? .15 : .26)),storyBudget=room-profileBudget-worldBudget;
+  const rawChat=(options.phoneTheatre&&options.theatreAU?[]:ctx.chat||[]).filter(message=>message&&!message.is_system).slice(-12);
+  const books=await boundBooks(ctx,sourceChars,char,explicit,task,check),resolve=explicit?ownership(sourceChars,books,ctx.groupId!=null,people()):null;
   const selected=field=>safe(rolePartnerText(char[field]||char.data?.[field]||'',names,manual),name,user);
   let profile=options.phoneTheatre?'小说中的角色：'+name+'；玩家角色：'+user+'。本任务是独立成篇小说，允许描写双方台词、行动和心理；其他人物保持各自性格。':(isPublic?'相关人物：':'你只扮演：')+name+'；用户：'+user+'。其他人物仅作背景，不混用其性格，不替用户发言或决定动作。';
   if(options.phoneIndependent)profile='你扮演的手机聊天人物：'+names.join('、')+'；用户：'+user+'。人物各自保持性格和关系，不替用户发言或决定动作，主楼内容只读作背景，回复只属于本次手机会话。';
@@ -181,13 +233,14 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    if(options.phoneTheatre)profile+='\n这是独立成篇小说；叙述视角以本次任务明确指定的人物为准，允许描写小说人物与玩家的台词、行动和心理。';
    const perPerson=Math.floor(profileBudget/Math.max(1,subjects.length));
    for(const person of subjects){
-    const personNames=[person.name,...person.aliases],read=field=>clean(sourceChars.map(card=>rolePartnerText(card[field]||card.data?.[field]||'',personNames,true,true)).filter(Boolean).join('\n\n'));
+    const personNames=[person.name,...person.aliases],policy=resolve(person),read=field=>clean(sourceChars.map(card=>rolePartnerText(cardField(card,field),personNames,true,true,policy)).filter(Boolean).join('\n\n'));
     let details='';
     if(isPublic){
      const relation=/父亲|母亲|爸爸|妈妈|女儿|儿子|兄弟|姐妹|丈夫|妻子|男友|女友|father|mother|daughter|son\b|husband|wife|boyfriend|girlfriend/i,privateText=/秘密|私密|性欲|床上|卧室|只有.{0,12}知道|secret|private|sexual|bedroom/i;
      const known=paragraphs(read('scenario')+'\n\n'+read('description')+'\n\n'+clean(person.note)).filter(t=>!privateText.test(t)&&relation.test(base)&&relation.test(t)&&contains(t,[...personNames,user]));
      const facts=await fit(known.join('\n'),Math.floor(perPerson*.6),query);if(facts)details+='\n公开帖已提到称谓的关系校验（勿补充帖外经历）：'+facts;
     }else{
+      if(policy.blocked)details+='\n未找到可明确分离的该人物资料（存在同名的多个来源）；不合并其他来源，仅参考已确认补充。';
      for(const [field,title,share]of [['personality','性格',.18],['scenario',options.theatreAU?'原设背景与关系（AU 按本篇重设）':'背景与关系',.18],['mes_example','语气示例',.12],['description','人物设定',.32]]){const text=await fit(read(field),Math.floor(perPerson*share),query+' '+person.name);if(text)details+='\n'+title+'：'+text;}
      if(person.note){const raw=clean(person.note),budget=Math.floor(perPerson*.2);let note=await fit(raw,budget,query+' '+person.name);
       if(!note){const points=Array.from(raw);let lo=0,hi=points.length;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(await count(points.slice(0,mid).join('')+'…')<=budget)lo=mid;else hi=mid-1;}if(lo)note=points.slice(0,lo).join('')+'…';}
@@ -211,7 +264,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    for(const[label,text,share]of sections){const picked=await fit(text,Math.floor(profileBudget*share),query);if(picked)profile+='\n'+label+'：'+picked;}
    if(ref?.note)profile+='\n搭子补充：'+await fit(safe(ref.note,name,user),Math.floor(profileBudget*.2),query);
   }
-  const rawChat=(options.phoneTheatre && options.theatreAU ? [] : ctx.chat||[]).filter(m=>m&&!m.is_system).slice(-12),story=[];
+   const story=[];
   for(const m of rawChat){if(isPublic&&!isFeed&&!on(m.extra?.public)&&!on(m.is_public))continue;const text=roleStoryText(m.mes);if(!text)continue;
    const speaker=String(m.name||ctx.name2||(explicit?'主楼叙述':name)),selectedSpeaker=explicit&&subjects.some(person=>[person.name,...person.aliases].some(alias=>norm(alias)===norm(speaker)));
    const cardSpeaker=explicit&&!selectedSpeaker&&[ctx.name2,...sourceChars.map(card=>card.name)].some(cardName=>cardName&&norm(cardName)===norm(speaker));
@@ -230,17 +283,11 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    if(!text)continue;const n=await count(text+'\n');if(spent+n>budget)continue;recent=text+'\n'+recent;spent+=n;
   }};if(!isFeed)await packStory(storyBudget);
   // Only the selected card and explicit current-chat binding. Never scan global books.
-  const bound=char.data?.extensions?.world||char.extensions?.world,chatBook=ctx.chatMetadata?.world_info;
-  const bookNames=[...new Set([...(explicit?sourceChars.map(card=>card.data?.extensions?.world||card.extensions?.world):[bound]),typeof chatBook==='string'?chatBook:null].filter(x=>typeof x==='string'&&x.trim()))];
-  let books=[];if(bookNames.length){if(typeof ctx.loadWorldInfo!=='function')throw failure('background');try{books=await guard(Promise.all(bookNames.map(async n=>{const b=await ctx.loadWorldInfo(n);if(!b||!b.entries)throw failure('background');return[n,b];})),task);}catch(error){check();throw failure('background');}}
-  else if(char.data?.character_book?.entries)books=[['embedded-current-card',char.data.character_book]];
-  if(explicit)for(const [index,card]of sourceChars.entries())if(!(card.data?.extensions?.world||card.extensions?.world)&&(card.data?.character_book||card.character_book)?.entries&&!books.some(([,book])=>book===(card.data?.character_book||card.character_book)))books.push(['embedded-current-card-'+index,card.data?.character_book||card.character_book]);
-  check();
   const scan=[name,user,...(explicit?subjects.map(person=>person.note):[ref?.note||'']),...rawChat.map(m=>roleStoryText(m.mes)),base].join('\n');
   const entries=roleWorldEntries(books,scan,query+'\n'+name,isPublic);let world='',worldSpent=0;
   for(const p of entries){
    if(explicit){
-    const rows=subjects.length?subjects.map(person=>({name:person.name,text:rolePersonEntryText(p.text,p.e.comment||p.e.name||'',[person.name,...person.aliases])})):[{name:'公开设定',text:p.text}];
+    const rows=subjects.length?subjects.map(person=>({name:person.name,text:rolePersonEntryText(p.text,p.e.comment||p.e.name||'',[person.name,...person.aliases],resolve(person))})):[{name:'公开设定',text:p.text}];
     for(const row of rows){const text=clean(row.text);if(!text||norm(profile).includes(norm(text)))continue;const allowance=Math.min(worldBudget-worldSpent,subjects.length?Math.floor(worldBudget/subjects.length):worldBudget),picked=await fit(text,allowance-20-row.name.length*3,query+' '+row.name);if(picked){const part='\n【'+row.name+' 的世界书资料】\n'+picked;world+=part;worldSpent+=await count(part);}}
     continue;
    }
@@ -264,5 +311,5 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   last={kind:options.phoneIndependent?'phone-chat':options.phoneTheatre?'theatre':isPublic?'xhs':options.phoneDiary?'diary':options.phoneBank?'bank':automatic?'comment':'game',...(explicit?{subjectNames:subjects.map(person=>person.name)}:{}),inputTokens:total,inputCap:cap,bookCount:books.length,worldEntries:entries.length,storyFloors:story.length,countMethod:measured?'host-tokenizer':'conservative-utf8-bound'};
   return{prompt:base,system:sys};
  }
- return{build,diagnostics:()=>last};
+ return{build,subjectContext,diagnostics:()=>last};
 }

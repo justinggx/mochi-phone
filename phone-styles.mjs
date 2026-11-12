@@ -1,5 +1,5 @@
 import { XHS_COVER_CSS } from './xhs-cover.mjs?v=20261102-native-ui-214';
-import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261112-people-diary-235';
+import { PHONE_TOOLS_CSS } from './phone-tools.mjs?v=20261112-crossmodule-identity-236';
 import { THEATRE_CSS } from './theatre.mjs?v=20261112-people-234';
 
 export const RP_ART_CSS = `

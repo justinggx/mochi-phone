@@ -1,4 +1,4 @@
-import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261102-safearea-210';
+import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261112-crossmodule-identity-236';
 import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261112-people-234';
 import { PEOPLE_LIMITS, normalizePeople, mergePeople, normalizeBankByPerson, mergeBankByPerson } from './people.mjs?v=20261112-people-diary-235';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.

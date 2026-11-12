@@ -17,7 +17,8 @@ export const PEOPLE_CSS = `
 #rp-phone #rp-screen .rp-people-picker :is(input[type=text],textarea)::placeholder{color:inherit!important;opacity:1!important}
 #rp-phone .rp-people-picker textarea{resize:vertical;min-height:60px;max-height:130px}#rp-phone .rp-people-form{display:grid;gap:6px;margin-top:10px}#rp-phone .rp-people-foot{display:flex;gap:8px;justify-content:flex-end;padding-top:8px;flex-shrink:0}#rp-phone .rp-people-hint{font-size:calc(10px * var(--mochi-phone-font-scale,1));color:inherit;margin:5px 0;overflow-wrap:anywhere}#rp-phone .rp-people-error{color:var(--rp-v-text);font-size:calc(11px * var(--mochi-phone-font-scale,1));min-height:1.5em;margin:4px 0}
 `;
-const kinds={diaryAuthor:['diary','日记人物'],bank:['bank','资产主人'],xhs:['xhs','吃瓜范围'],moments:['moments','朋友圈人物'],theatre:['theatre','创作人物']};
+const kinds={diaryAuthor:['diary','日记人物'],bank:['bank','资产主人'],xhs:['xhs','吃瓜范围'],moments:['moments','朋友圈人物'],theatre:['theatre','创作人物'],gamePartner:['','游戏搭子'],avatarSubject:['','头像人物'],momentActor:['','动态人物']};
+const transientKinds=new Set(['gamePartner','avatarSubject','momentActor']);
 const canonicalKind=kind=>kind==='diaryReply'?'diaryAuthor':kind;
 const selectionFor=(people,kind)=>kind==='diaryAuthor'?people.selections.diaryAuthor||people.selections.diaryReply:people.selections[kind];
 const norm=s=>String(s||'').normalize('NFKC').toLowerCase().trim();
@@ -29,6 +30,21 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
  const legacy=()=>Object.freeze({id:'legacy-card',name:String(context()?.name2||context()?.characters?.[context()?.characterId]?.name||'TA').trim(),note:'',aliases:Object.freeze([]),cardKey:cardKey(),slotKey:state().chatId});
  function subjects(kind){kind=canonicalKind(kind);const m=model(),selection=selectionFor(m,kind),ids=Array.isArray(selection)?selection:selection?[selection]:[];return ids.map(id=>m.entities[id]).filter(Boolean).map(p=>subjectSnapshot(p,{cardKey:cardKey(),slotKey:state().chatId}));}
  async function candidates(){const own=scope();if(cache?.scope===own)return cache.promise;const promise=discoverPeople(context(),state(),{guard}).then(items=>scope()===own?items:[]);cache={scope:own,promise};try{return await promise;}catch(e){if(cache?.promise===promise)cache=null;throw e;}}
+ async function isNarrativeTitle(name){
+  const own=scope(),ctx=context()||{},key=norm(name);if(!key)return false;
+  let title=legacy().name,nativeMultiple=false;
+  if(ctx.groupId!=null){
+   const group=(Array.isArray(ctx.groups)?ctx.groups:[]).find(item=>String(item?.id)===String(ctx.groupId));
+   const members=new Set(Array.isArray(group?.members)?group.members:[]),cards=Array.isArray(ctx.characters)?ctx.characters:Object.values(ctx.characters||{});
+   title=String(group?.name||'');
+   if(cards.some(card=>members.has(card?.avatar)&&norm(card.name||card.data?.name)===norm(title)))return false;
+   nativeMultiple=hasMultipleGroupMembers(ctx);
+  }
+  if(key!==norm(title))return false;
+  const list=await candidates();if(closed||scope()!==own)return false;
+  if(list.some(person=>person.evidence==='declared'&&[person.name,...(person.aliases||[])].some(alias=>norm(alias)===key)))return false;
+  return nativeMultiple||requiresPersonChoice(list.filter(person=>person.evidence==='declared'&&person.sources?.includes('card')),title)||requiresPersonChoice(list.filter(person=>person.evidence==='declared'&&person.identityDeclared===true),title);
+ }
  async function ensure(kind){
   kind=canonicalKind(kind);
   if(closed||!kinds[kind])return null;
@@ -53,6 +69,8 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
   panel.innerHTML='<div class="rp-people-head"><strong></strong><button type="button" aria-label="关闭人物选择">关闭</button></div><p class="rp-people-hint"></p><div class="rp-people-scroll"><div class="rp-people-list"></div><div class="rp-people-form"><button type="button" data-use-card-name>单人卡：用卡名填写</button><p class="rp-people-hint" data-card-name-hint>仅在卡名就是人物姓名时使用；多人卡请在上方选择具体人物。</p><label>姓名<input type="text" maxlength="80" aria-label="人物姓名"></label><label>补充说明（可选）<textarea maxlength="600" aria-label="人物补充说明" placeholder="用于区分同名人物，或补充此人的设定"></textarea></label><button type="button" data-add>保存人物</button></div></div><p class="rp-people-error" role="status" aria-live="polite"></p><div class="rp-people-foot"><button type="button" data-cancel>取消</button><button type="button" data-apply>使用所选人物</button></div>';
   panel.querySelector('strong').textContent=kinds[kind][1];panel.querySelector('.rp-people-hint').textContent=kind==='xhs'?'可多选；不选人物时按本卡近期剧情吃瓜。每篇帖子会记住自己的讨论人物。':kind==='diaryAuthor'?'新日记和回复使用同一人物；其他板块的选择保持。可以填写名单中遗漏的人。':'选择本次人物，本板块会记住；其他板块的选择保持。可以填写名单中遗漏的人。';
   phone.append(panel);let draft=model(),selection=selectionFor(draft,kind),selected=new Set(Array.isArray(selection)?selection:selection?[selection]:[]),editId=null,discovered=[];
+  panel.dataset.peopleTaskKind=kind;if(kind==='avatarSubject')panel.style.zIndex='210';
+  if(transientKinds.has(kind))panel.querySelector('.rp-people-hint').textContent='选择本次操作的人物；其他板块的选择保持。可以填写名单中遗漏的人。';
   const multi=['xhs','moments'].includes(kind),list=panel.querySelector('.rp-people-list'),nameInput=panel.querySelector('input[type=text]'),noteInput=panel.querySelector('textarea'),error=panel.querySelector('.rp-people-error');
   panel.querySelector('[data-use-card-name]').addEventListener('click',()=>{if(scope()!==own){close();return;}nameInput.value=legacy().name;nameInput.focus();});
   const rows=()=>{
@@ -73,7 +91,7 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
    panel.querySelector('[data-apply]').onclick=()=>{
     if(scope()!==own){close();return;}if(!multi&&selected.size!==1||kind==='moments'&&!selected.size){error.textContent='请选择人物，或填写一个姓名。';return;}
     const ids=[];for(const id of selected){if(draft.entities[id]){ids.push(id);continue;}const c=discovered[Number(id.slice('candidate_'.length))];if(c){const fresh=uid();draft.entities[fresh]={id:fresh,name:c.name,note:c.note||'',aliases:c.aliases||[]};ids.push(fresh);}}
-    draft.selections[kind]=multi?ids:ids[0]||null;if(kind==='diaryAuthor')draft.selections.diaryReply=draft.selections.diaryAuthor;if(ids.some(id=>norm(draft.entities[id]?.name)!==norm(legacy().name))||ids.length>1)draft.mode='multi';state().people=normalizePeople(draft);save();const value=subjects(kind);close(value);mount();onChange(kind);if(focus?.isConnected)focus.focus();else document.querySelector('[data-people-kind="'+kind+'"]')?.focus();
+    if(!transientKinds.has(kind)){draft.selections[kind]=multi?ids:ids[0]||null;if(kind==='diaryAuthor')draft.selections.diaryReply=draft.selections.diaryAuthor;}if(ids.some(id=>norm(draft.entities[id]?.name)!==norm(legacy().name))||ids.length>1)draft.mode='multi';state().people=normalizePeople(draft);save();const value=transientKinds.has(kind)?ids.map(id=>subjectSnapshot(state().people.entities[id],{cardKey:cardKey(),slotKey:state().chatId})).filter(Boolean):subjects(kind);close(value);mount();onChange(kind);if(focus?.isConnected)focus.focus();else document.querySelector('[data-people-kind="'+kind+'"]')?.focus();
    };
   });
   rows();panel.querySelector('.rp-people-head button').focus();
@@ -111,5 +129,5 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
   }
  }
  function reset(){closed=true;epoch++;cache=null;for(const interrupt of discoveryWaiters)interrupt();discoveryWaiters.clear();close();}
- return {mount,subjects,ensure,request,confirm:confirmAction,reset,candidates,legacy};
+ return {mount,subjects,ensure,request,confirm:confirmAction,reset,candidates,isNarrativeTitle,legacy};
 }
