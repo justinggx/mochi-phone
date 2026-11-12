@@ -1,5 +1,6 @@
 import { normalizeGroupAvatar } from './group-avatar.mjs?v=20261102-safearea-210';
-import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261105-reader-focus-232';
+import { mergeTheatreArchives, validateTheatreArchive } from './theatre.mjs?v=20261112-people-234';
+import { PEOPLE_LIMITS, normalizePeople, mergePeople, normalizeBankByPerson, mergeBankByPerson } from './people.mjs?v=20261112-people-234';
 // Optional reading, contact and message tools. All state belongs to the active account/chat.
 export const PHONE_TOOLS_CSS = [
 '#rp-phone #rp-screen #rp-lock-notifs{box-sizing:border-box;min-width:0;min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:70px}',
@@ -100,7 +101,7 @@ export const PHONE_TOOLS_CSS = [
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const forbidden = new Set(['__proto__','prototype','constructor']);
 const secret = /^(?:api[_-]?key|access[_-]?token|authorization|cookie|password|rp_ludo_api)$/i;
-const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','avatarLocalOnly','avatarOwners','avatarLarge','wallpaper','bankData','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','composeImageDraft','composeImagesDraft','composeLocationDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
+const fields = ['threads','notifications','sync','moments','diary','xhsFeed','theatre','darkMode','themeSettings','nameAliases','avatars','avatarLocalOnly','avatarOwners','avatarLarge','wallpaper','bankData','people','bankByPerson','blocklist','gameState','gomoku','sudoku','themeStudioMessages','composeDraft','composeImageDraft','composeImagesDraft','composeLocationDraft','themeStudioDraft','diaryDraft','xhsPostDraft','commentDrafts','readingPositions','deletedContacts','recovery','phoneTools'];
 const clone = value => JSON.parse(JSON.stringify(value));
 const uid = () => 'pt_' + Date.now() + '_' + Math.random().toString(36).slice(2,11);
 function clean(value, depth = 0) {
@@ -125,6 +126,54 @@ function portable(value) {
   }
   delete result.recovery; // Recovery can contain arbitrary historical configuration fragments.
   return result;
+}
+// Historical snapshots are self-contained: their person may have since been removed.
+// Only active selections and bank buckets must resolve to the imported registry.
+const validPersonId = value => typeof value==='string' && value.length<=PEOPLE_LIMITS.id && /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(value) && !forbidden.has(value);
+const personSnapshotFields = new Set(['id','name','note','aliases','cardKey','slotKey']);
+function validateSubject(value) {
+  if(value==null)return;
+  const text=(v,limit)=>typeof v==='string'&&!!v.trim()&&v.length<=limit&&!/[<>{}\u0000-\u001f\u007f]/.test(v);
+  if(!object(value)||!validPersonId(value.id)||!text(value.name,PEOPLE_LIMITS.name)||Object.keys(value).some(k=>!personSnapshotFields.has(k)))throw new Error('备份人物署名格式不完整。');
+  if(value.note!==undefined&&(typeof value.note!=='string'||value.note.length>PEOPLE_LIMITS.note||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value.note)))throw new Error('备份人物补充格式不完整。');
+  if(value.aliases!==undefined&&(!Array.isArray(value.aliases)||value.aliases.length>PEOPLE_LIMITS.aliases||value.aliases.some(v=>!text(v,PEOPLE_LIMITS.name))))throw new Error('备份人物别名格式不完整。');
+  for(const key of ['cardKey','slotKey'])if(value[key]!==undefined&&(typeof value[key]!=='string'||value[key].length>(PEOPLE_LIMITS.scope||2048)||/[\u0000-\u001f\u007f]/.test(value[key])))throw new Error('备份人物来源格式不完整。');
+}
+function visitSubjects(value,visit,depth=0) {
+  if(depth>64)throw new Error('备份内容层级过深。');
+  if(Array.isArray(value)){for(const item of value)visitSubjects(item,visit,depth+1);return;}
+  if(!object(value))return;
+  for(const[key,item]of Object.entries(value)){
+    if(key==='subject'||key==='replySubject'){if(item!=null)visit(item);}
+    else if(key==='subjects'){
+      if(!Array.isArray(item)||item.length>PEOPLE_LIMITS.entities)throw new Error('备份讨论人物格式不完整。');
+      for(const subject of item){if(subject==null)throw new Error('备份讨论人物格式不完整。');visit(subject);}
+    }else visitSubjects(item,visit,depth+1);
+  }
+}
+function visitBackupSubjects(data,visit) {
+  for(const field of ['diary','moments','xhsFeed','theatre','bankData','bankByPerson'])visitSubjects(data[field],visit);
+}
+function validatePeopleBackup(data) {
+  if(data.people!==undefined)normalizePeople(data.people,{strict:true});
+  if(data.bankByPerson!==undefined)normalizeBankByPerson(data.bankByPerson,{strict:true,people:data.people||normalizePeople()});
+  visitBackupSubjects(data,validateSubject);
+  for(const[id,report]of Object.entries(data.bankByPerson||{}))if(report.subject&&report.subject.id!==id)throw new Error('备份资产报告署名与人物不一致。');
+}
+function remapBackupPeople(source,current) {
+  const merged=mergePeople(current.people,source.people),remap={...merged.remap},used=new Set(Object.keys(merged.people.entities));
+  const incoming=source.people?.entities||{};
+  // An orphan historical ID is not evidence that it names a current local person.
+  // Give colliding history a deterministic separate ID without inventing an entity.
+  visitBackupSubjects(source,subject=>{
+    const id=subject.id;if(id==='legacy-card'||Object.hasOwn(incoming,id)||Object.hasOwn(remap,id)||!used.has(id))return;
+    let hash=2166136261;for(const c of id)hash=Math.imul(hash^c.codePointAt(0),16777619);
+    const base=id.slice(0,88)+'_history_'+(hash>>>0).toString(36);let target=base,n=1;
+    while(used.has(target))target=base+'_'+n++;
+    Object.defineProperty(remap,id,{value:target,enumerable:true});used.add(target);
+  });
+  visitBackupSubjects(source,subject=>{if(Object.hasOwn(remap,subject.id))subject.id=remap[subject.id];});
+  return{people:merged.people,remap};
 }
 function normalizePrefs(value) {
   const number = (key,fallback) => typeof value?.[key] === 'number' && Number.isFinite(value[key]) ? Math.max(9,Math.min(18,Math.round(value[key]*2)/2)) : fallback;
@@ -508,11 +557,18 @@ export function createPhoneTools(api) {
     for(const t of Object.values(value.data.threads))if(t.phoneAutoTranslate!==undefined&&(!object(t.phoneAutoTranslate)||typeof t.phoneAutoTranslate.enabled!=='boolean'||!Array.isArray(t.phoneAutoTranslate.known)||t.phoneAutoTranslate.known.some(k=>typeof k!=='string')))throw new Error('备份自动翻译设置格式不完整。');
     if(value.data.sudoku!=null&&(!object(value.data.sudoku)||(value.data.sudoku.round!=null&&(!object(value.data.sudoku.round)||!['givens','values','notes','helped'].every(k=>Array.isArray(value.data.sudoku.round[k])&&value.data.sudoku.round[k].length===81)))))throw new Error('备份数独记录格式不完整。');
     if(value.data.gomoku!=null&&(!object(value.data.gomoku)||!Array.isArray(value.data.gomoku.log)||value.data.gomoku.log.some(m=>!object(m)||typeof m.text!=='string'||!['user','char','system'].includes(m.role))||(value.data.gomoku.round!=null&&(!object(value.data.gomoku.round)||!Array.isArray(value.data.gomoku.round.moves)))))throw new Error('备份五子棋记录格式不完整。');
-    value.data=portable(value.data);return value;
+    value.data=portable(value.data);validatePeopleBackup(value.data);return value;
   }
   function planMerge(backup, current=api.snapshot()) {
     if(backup.origin.account!==api.account()||!(backup.origin.slot===state().chatId||api.compatibleSlot?.(backup.origin.slot)))throw new Error('备份与当前账号或聊天不一致。');
-    const result=clone(current),source=backup.data,stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,themeMessages:0,theatre:0,skipped:0};
+    const result=clone(current),source=portable(backup.data),stats={contacts:0,messages:0,moments:0,diary:0,xhs:0,comments:0,bookmarks:0,themeMessages:0,theatre:0,people:0,bankReports:0,skipped:0};
+    validatePeopleBackup(source);
+    const previousPeople=Object.keys(normalizePeople(result.people).entities).length,previousBank=Object.keys(normalizeBankByPerson(result.bankByPerson)).length;
+    const mergedPeople=remapBackupPeople(source,result);
+    result.people=mergedPeople.people;
+    result.bankByPerson=mergeBankByPerson(result.bankByPerson,source.bankByPerson,mergedPeople.remap);
+    stats.people=Object.keys(result.people.entities).length-previousPeople;
+    stats.bankReports=Object.keys(result.bankByPerson).length-previousBank;
     result.threads ||= {};
     for(const[id,thread]of Object.entries(source.threads)){
       if(api.blocked(thread,current)){stats.skipped++;continue;}
@@ -631,7 +687,7 @@ export function createPhoneTools(api) {
   function previewBackup(backup) {
     const task=api.runtime().task(),origin=signature(),plan=planMerge(backup),s=plan.stats,content=node('div'),status=node('p','rp-feature-note');
     const token={valid:()=>task.valid()&&!!content[0]?.isConnected};
-    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏及'+s.themeMessages+' 条主题对话'+(s.theatre?'、'+s.theatre+' 篇小剧场':'')+(s.gomokuMessages?'、'+s.gomokuMessages+' 条五子棋对话':'')+(s.gomokuRound?'及缺失的五子棋棋局':'')+(s.sudokuRound?'及缺失的数独局面':'')+'。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
+    content.append(node('p','','将补充 '+s.contacts+' 个联系人、'+s.messages+' 条消息、'+s.moments+' 条朋友圈、'+s.diary+' 篇日记、'+s.xhs+' 条笔记、'+s.comments+' 条评论、'+s.bookmarks+' 条收藏及'+s.themeMessages+' 条主题对话'+(s.people?'、'+s.people+' 位人物':'')+(s.bankReports?'、'+s.bankReports+' 份人物资产':'')+(s.theatre?'、'+s.theatre+' 篇小剧场':'')+(s.gomokuMessages?'、'+s.gomokuMessages+' 条五子棋对话':'')+(s.gomokuRound?'及缺失的五子棋棋局':'')+(s.sudokuRound?'及缺失的数独局面':'')+'。缺少的草稿一并补充。'),node('p','rp-feature-note','同一记录保留当前内容；人物ID冲突时另存导入人物，历史署名保持原名。现有主题、设置、点赞、阅读位置及游戏进度保持。已删除或拉黑的联系人保持原状。不会重发历史待同步操作。'),node('p','rp-feature-note','跳过不适合当前存档的记录：'+s.skipped+'。恢复前会先自动保存一份可下载备份。'),status);
     let running=false;
     api.dialog('恢复预览',content,[{label:'取消'},{label:'合并恢复',primary:true,run:()=>{if(running)return false;running=true;status.text('正在备份并校验…');void restoreBackup(backup,origin,token).then(ok=>{if(ok)api.closeDialog();else if(token.valid()){running=false;status.text('未合并，请检查提示或重新选择备份。');}}).catch(()=>{if(token.valid()){running=false;status.text('恢复未完成，原存档与自动备份仍保留。');}});return false;}}]);
   }

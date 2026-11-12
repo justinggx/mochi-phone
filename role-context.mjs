@@ -22,7 +22,8 @@ function safe(text,name,user){return String(text||'').replace(/\{\{char\}\}/gi,n
 function paragraphs(raw){return String(raw||'').split(/\n\s*\n|(?<=[。！？.!?])\s*(?=[^\n])/).map(s=>s.trim()).filter(Boolean);}
 const namesOf=(card,name)=>[name,...String(card?.data?.extensions?.aliases||'').split(/[,，/|]/)].filter(Boolean);
 function contains(text,names){return names.some(n=>keyword(text,n,{matchWholeWords:/^[\x00-\x7f]+$/.test(n)}));}
-export function rolePartnerText(raw,names,manual){
+export function rolePartnerText(raw,names,manual,strict=false){
+ if(strict&&manual)return subjectText(raw,names);
  const text=String(raw||'');if(!manual)return text;
  const xml=[...text.matchAll(/<character(?:[_-][^>]*)?[^>]*>([\s\S]*?)<\/character(?:[_-][^>]*)?>/gi)];
  if(xml.length)return xml.filter(m=>contains(m[1].split('\n').slice(0,5).join('\n'),names)).map(m=>m[1]).join('\n\n');
@@ -33,6 +34,47 @@ export function rolePartnerText(raw,names,manual){
   if(looksNamed)selected=contains(heading,names);else if(contains(heading,names))selected=true;
   if(selected)out.push(p);
  }return out.join('\n\n');
+}
+// A worldbook title may establish one person's ownership even when its body has
+// no name field. Only known label words may remain after exact person names.
+export function rolePersonEntryText(content,label,names){
+ const text=String(content||''),people=(Array.isArray(names)?names:[]).filter(name=>typeof name==='string'&&norm(name)).map(norm).sort((a,b)=>b.length-a.length);
+ const selected=rolePartnerText(text,people,true,true);if(selected)return selected;
+ // A title cannot override a contradictory, explicitly named body section.
+ if(/<character(?:[_-][^\s<>/]+)?(?:\s[^>]*)?>|^\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]/im.test(text))return '';
+ let title=norm(label),matched=false;
+ for(const person of people){const escaped=person.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const pattern=/^[\x00-\x7f]+$/.test(person)?new RegExp('(^|[^a-z0-9_])'+escaped+'(?=$|[^a-z0-9_])','gu'):new RegExp(escaped,'gu');
+  title=title.replace(pattern,(all,prefix)=>{matched=true;return /^[\x00-\x7f]+$/.test(person)?prefix:'';});
+ }
+ if(!matched)return '';
+ title=title.replace(/第[零〇一二三四五六七八九十百千两\d]+(?:章|节|条|号|部分|卷)/g,'').replace(/^\s*[零〇一二三四五六七八九十百千两]+\s*[、.．)）]/,'');
+ title=title.replace(/(?:人物|角色|人设|设定|档案|资料|性格|背景|净资产|资产|财富|财产|财务|收入|负债|信息|状况|构成|明细|记录|概览|个人|基本|简要|补充|编号|的)/g,'')
+  .replace(/\b(?:character|personality|profile|background|setting|records?|details?|information|info|assets?|wealth|property|finance|financial|income|debts?|liabilities|id|uid)\b/gi,'')
+  .replace(/[\p{P}\p{S}\p{N}\s]/gu,'');
+ return title?'':text;
+}
+// Explicit people use identifiable sections only. Mentioning a person somewhere in
+// an unstructured card does not establish which traits belong to that person.
+function subjectText(raw,names){
+ const text=String(raw||''),picked=[];
+ const xml=[...text.matchAll(/<(character(?:[_-][^\s<>/]+)?)(?:\s[^>]*)?>([\s\S]*?)<\/\1\s*>/gi)];
+ if(xml.length){for(const m of xml){const tag=m[0].slice(0,m[0].indexOf('>')+1),identity=m[2].split('\n').slice(0,6).filter(line=>/^\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]/i.test(line)).join('\n');
+   if(contains(tag.replace(/[_-]/g,' '),names)||contains(identity,names))picked.push(m[2]);
+  }return picked.join('\n\n');}
+ const headings=[...text.matchAll(/^(\s*#{1,6}\s+|\s*(?:[-*]\s*)?(?:name|full_name|姓名|全名|名字)\s*[:：]|\s*【|\s*\[角色)([^\r\n]*)/gim)];
+ for(let i=0;i<headings.length;i++){const h=headings[i];if(!contains(h[0],names))continue;
+  const depth=(h[1].match(/#/g)||[]).length;let end=text.length;
+  for(const next of headings.slice(i+1)){const nextDepth=(next[1].match(/#/g)||[]).length;if(!depth||!nextDepth||nextDepth<=depth){end=next.index;break;}}
+  picked.push(text.slice(h.index,end));
+ }return picked.join('\n\n');
+}
+function subjectSnapshot(raw){
+ if(!Array.isArray(raw)||raw.length>16)throw failure('background');
+ const label=value=>String(value||'').replace(/\{\{[\s\S]*?\}\}/g,'').replace(/[<>\r\n]/g,' ').trim().slice(0,100),seen=new Set();
+ return raw.map((item,index)=>{if(!item||typeof item!=='object'||typeof item.name!=='string')throw failure('background');const name=label(item.name);if(!name||seen.has(norm(name)))throw failure('background');seen.add(norm(name));
+  return{id:label(item.id)||'subject-'+index,name,note:String(item.note||'').slice(0,1200),aliases:[...new Set((Array.isArray(item.aliases)?item.aliases:[]).filter(v=>typeof v==='string').map(label).filter(Boolean))].slice(0,12)};
+ });
 }
 function rank(text,query){const t=norm(text);let n=0;for(const w of new Set((norm(query).match(/[\p{L}\p{N}]{2,}/gu)||[]).flatMap(w=>/[\u3400-\u9fff]/.test(w)?[w,...Array.from({length:Math.max(0,w.length-1)},(_,i)=>w.slice(i,i+2))]:[w])))if(t.includes(w))n+=Math.min(w.length,6);return n;}
 function keyword(text,key,e){const s=String(key||'');if(!s)return false;if(s.startsWith('/'))return false;const sensitive=on(e.caseSensitive),input=sensitive?String(text):norm(text),needle=sensitive?s:norm(s);if(!on(e.matchWholeWords))return input.includes(needle);const escaped=needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return new RegExp('(?:^|[^\\p{L}\\p{N}_])'+escaped+'(?:$|[^\\p{L}\\p{N}_])','u').test(input);}
@@ -62,21 +104,28 @@ export function roleWorldEntries(books,scan,query,publicOnly=false){
 function compactPrompt(raw){return String(raw).split('\n').map(line=>{const k=line.indexOf('：{');if(k<0||!/棋局事实/.test(line.slice(0,k)))return line;try{const value=JSON.parse(line.slice(k+1));if(Array.isArray(value.moves)){value.moveSequence=value.moves.map(m=>m.at+':'+(m.side==='user'?'u':'c')).join(' ');value.moveLegend='u=用户,c=搭子';delete value.moves;}return line.slice(0,k+1)+JSON.stringify(value);}catch{return line;}}).join('\n');}
 export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicPosts=()=>[]}={}){
  const counts=new Map();let last=null;
- async function build(prompt,system,options,task,cfg,maxTokens){
+ async function build(prompt,system,options={},task,cfg,maxTokens){
   const p=takeRef(prompt),s=takeRef(system),ref=s.ref||p.ref;
-  const enabled=ref||options.phoneIndependent||options.phoneTheatre||options.phoneDiary||options.phoneXhs||options.gameTask&&!options.phoneShop||options.phoneWordHint;
+  const hasSubjects=Object.hasOwn(options,'phoneSubjects'),snapshot=hasSubjects?subjectSnapshot(options.phoneSubjects):null;
+  const explicit=hasSubjects&&(snapshot.length>0||!!options.phoneXhs),subjects=explicit?snapshot:null;
+  const enabled=explicit||ref||options.phoneIndependent||options.phoneTheatre||options.phoneDiary||options.phoneBank||options.phoneXhs||options.gameTask&&!options.phoneShop||options.phoneWordHint;
   if(!enabled||options.phoneShop)return{prompt,system};
   const scope=String(owner()),ctx=context()||{};
-  let char=ctx.characters?.[ctx.characterId]||ctx.char;
+  const group=ctx.groupId!=null?(ctx.groups||[]).find(g=>String(g.id)===String(ctx.groupId)):null;
+  const sourceChars=explicit?(ctx.groupId!=null?(ctx.characters||[]).filter(c=>c?.avatar&&(group?.members||[]).includes(c.avatar)):(ctx.characterId!=null?[ctx.characters?.[ctx.characterId]||(!ctx.characters?ctx.char:null)].filter(Boolean):[])):[];
+  let char=explicit?sourceChars[0]:ctx.characters?.[ctx.characterId]||ctx.char;
   if(!char&&ctx.groupId){const group=(ctx.groups||[]).find(g=>String(g.id)===String(ctx.groupId));const members=(ctx.characters||[]).filter(c=>(group?.members||[]).includes(c.avatar));char=members.find(c=>norm(c.name)===norm(ref?.name||ctx.name2));}
   const check=()=>{if(!task.valid()||String(owner())!==scope)throw Object.assign(new Error('Background cancelled'),{name:'AbortError'});};
   check();if(!char)throw failure('background');
   const label=s=>String(s).replace(/\{\{[\s\S]*?\}\}/g,'').replace(/[<>\r\n]/g,' ').trim();
-  const name=label(ref?.name||ctx.name2||char.name||'对方')||'对方',user=label(ctx.name1||'用户')||'用户',manual=norm(name)!==norm(char.name||ctx.name2),names=options.phoneIndependent&&Array.isArray(options.phoneParticipants)&&options.phoneParticipants.length?options.phoneParticipants:manual?[name]:namesOf(char,name);
+  const name=explicit?subjects.map(person=>person.name).join('、'):label(ref?.name||ctx.name2||char.name||'对方')||'对方',user=label(ctx.name1||'用户')||'用户',manual=explicit||norm(name)!==norm(char.name||ctx.name2),names=explicit?subjects.flatMap(person=>[person.name,...person.aliases]):options.phoneIndependent&&Array.isArray(options.phoneParticipants)&&options.phoneParticipants.length?options.phoneParticipants:manual?[name]:namesOf(char,name);
+  // {{char}} describes its source card. With explicit people it is ambiguous;
+  // remove it rather than relabeling every source person as the selected person.
+  const clean=text=>safe(text,explicit?'':name,user);
   const isPublic=!!options.phoneXhs,isFeed=isPublic&&options.phoneXhsFeed===true,automatic=/GameEventComment|GomokuEventComment/.test(p.text);
   const presetCost=options.phoneTheatre&&typeof options.theatrePresetText==='string'?options.theatrePresetText:'';
-  let cap=options.phoneIndependent?24000:options.phoneTheatre?(presetCost?64000:18000):isFeed?9000:isPublic?4000:automatic?(options.phoneGomoku?6000:2500):6000;
-  const windowLimit=options.phoneTheatre||options.phoneGomoku?roleContextWindow(ctx,cfg):cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
+  let cap=options.phoneIndependent?24000:options.phoneTheatre?(presetCost?64000:18000):options.phoneBank?18000:isFeed?9000:isPublic?4000:automatic?(options.phoneGomoku?6000:2500):6000;
+  const windowLimit=options.phoneTheatre||options.phoneGomoku||options.phoneBank?roleContextWindow(ctx,cfg):cfg.mode!=='custom'&&Number(ctx.maxContext)>0?Math.floor(ctx.maxContext):0;
   if(windowLimit)cap=Math.min(cap,windowLimit-maxTokens-(options.phoneTheatre?512:384));
   if(cap<512)throw failure('contextLimit');
   const count=async text=>{text=String(text);const k=hash(text),old=counts.get(k);if(old?.text===text)return old.n;check();const n=new TextEncoder().encode(text).length;
@@ -99,7 +148,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    const sentences=text.match(/[^。！？.!?\n]+[。！？.!?]?/g)||[];if(sentences.length>1){let result='';for(const v of sentences.map((t,i)=>({t,i,n:rank(t,query)})).sort((a,b)=>b.n-a.n||b.i-a.i))if(await count(result+v.t)<=budget)result+=v.t;return result;}
    return'';
   };
-  let base=compactPrompt(p.text),rules=safe(s.text,name,user),query=base.slice(-6000),history=[];
+  let base=compactPrompt(p.text),rules=clean(s.text),query=base.slice(-6000),history=[];
   base=base.split('\n').map(line=>{const idx=line.indexOf('[');if(idx<1||!/对话|评论/.test(line.slice(0,idx)))return line;try{const items=JSON.parse(line.slice(idx));if(!Array.isArray(items))return line;history.push({label:line.slice(0,idx),items});return'@@MOCHI_HISTORY_'+(history.length-1)+'@@';}catch{return line;}}).join('\n');
   const historyBudget=Math.floor(cap*.2/history.length)||0;
   for(let i=0;i<history.length;i++){
@@ -119,13 +168,37 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    }
    base=base.replace('@@MOCHI_HISTORY_'+i+'@@',history[i].label+JSON.stringify(out));
   }
-  base=safe(base,name,user);
+  base=clean(base);
   const baseCost=await measure(base+'\n'+rules+(presetCost?'\n'+presetCost:''))+64;if(baseCost+(options.phoneTheatre?Math.min(4096,Math.floor(cap*.25)):160)>cap)throw failure('contextLimit');
   const room=cap-baseCost,profileBudget=Math.floor(room*(isFeed ? .15 : .32)),worldBudget=Math.floor(room*(isFeed ? .15 : .26)),storyBudget=room-profileBudget-worldBudget;
   const selected=field=>safe(rolePartnerText(char[field]||char.data?.[field]||'',names,manual),name,user);
   let profile=options.phoneTheatre?'小说中的角色：'+name+'；玩家角色：'+user+'。本任务是独立成篇小说，允许描写双方台词、行动和心理；其他人物保持各自性格。':(isPublic?'相关人物：':'你只扮演：')+name+'；用户：'+user+'。其他人物仅作背景，不混用其性格，不替用户发言或决定动作。';
   if(options.phoneIndependent)profile='你扮演的手机聊天人物：'+names.join('、')+'；用户：'+user+'。人物各自保持性格和关系，不替用户发言或决定动作，主楼内容只读作背景，回复只属于本次手机会话。';
-  if(isPublic){
+  if(explicit){
+   profile=subjects.length?(options.phoneTheatre?'本篇明确人物：':isPublic?'本次讨论人物：':options.phoneBank?'本次资产报告人物：':'本次明确扮演人物：')+subjects.map(person=>person.name).join('、')+'；用户：'+user+'。以下各人的资料与补充分别归属本人，禁止把来源卡名当成另一个人或混用其他人的性格。':
+    '本次按帖子和近期剧情中实际出现的人物讨论，不把来源卡名作为一个人，不预设单一主角或人物关系。';
+   if(isPublic)profile+='\n你模拟的是公开帖的路人讨论，不是角色本人；不要补写未公开的私聊或内心，不凭姓名猜姓氏、国籍或关系。';
+   if(options.phoneTheatre)profile+='\n这是独立成篇小说；叙述视角以本次任务明确指定的人物为准，允许描写小说人物与玩家的台词、行动和心理。';
+   const perPerson=Math.floor(profileBudget/Math.max(1,subjects.length));
+   for(const person of subjects){
+    const personNames=[person.name,...person.aliases],read=field=>clean(sourceChars.map(card=>rolePartnerText(card[field]||card.data?.[field]||'',personNames,true,true)).filter(Boolean).join('\n\n'));
+    let details='';
+    if(isPublic){
+     const relation=/父亲|母亲|爸爸|妈妈|女儿|儿子|兄弟|姐妹|丈夫|妻子|男友|女友|father|mother|daughter|son\b|husband|wife|boyfriend|girlfriend/i,privateText=/秘密|私密|性欲|床上|卧室|只有.{0,12}知道|secret|private|sexual|bedroom/i;
+     const known=paragraphs(read('scenario')+'\n\n'+read('description')+'\n\n'+clean(person.note)).filter(t=>!privateText.test(t)&&relation.test(base)&&relation.test(t)&&contains(t,[...personNames,user]));
+     const facts=await fit(known.join('\n'),Math.floor(perPerson*.6),query);if(facts)details+='\n公开帖已提到称谓的关系校验（勿补充帖外经历）：'+facts;
+    }else{
+     for(const [field,title,share]of [['personality','性格',.18],['scenario',options.theatreAU?'原设背景与关系（AU 按本篇重设）':'背景与关系',.18],['mes_example','语气示例',.12],['description','人物设定',.32]]){const text=await fit(read(field),Math.floor(perPerson*share),query+' '+person.name);if(text)details+='\n'+title+'：'+text;}
+     if(person.note){const raw=clean(person.note),budget=Math.floor(perPerson*.2);let note=await fit(raw,budget,query+' '+person.name);
+      if(!note){const points=Array.from(raw);let lo=0,hi=points.length;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(await count(points.slice(0,mid).join('')+'…')<=budget)lo=mid;else hi=mid-1;}if(lo)note=points.slice(0,lo).join('')+'…';}
+      if(note)details+='\n仅 '+person.name+' 的补充：'+note;
+     }
+     if(!details)details='\n未找到可明确分离的该人物资料；不套用整张卡或其他人物的人设，也不凭姓名补造。';
+    }
+    profile+='\n【人物：'+person.name+'】'+details;
+   }
+   if(options.phoneTheatre||options.phoneIndependent){const persona=await fit(clean(ctx.powerUserSettings?.persona_description||''),Math.floor(profileBudget*.2),query);if(persona)profile+='\n玩家角色人设：'+persona;}
+  }else if(isPublic){
    profile+='\n你模拟的是公开帖的路人讨论，不是角色本人；不要补写未公开的私聊或内心。';
    const relation=/父亲|母亲|爸爸|妈妈|女儿|儿子|兄弟|姐妹|丈夫|妻子|男友|女友|father|mother|daughter|son\b|husband|wife|boyfriend|girlfriend/i;
    const privateText=/秘密|私密|性欲|床上|卧室|只有.{0,12}知道|secret|private|sexual|bedroom/i;
@@ -139,7 +212,11 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
    if(ref?.note)profile+='\n搭子补充：'+await fit(safe(ref.note,name,user),Math.floor(profileBudget*.2),query);
   }
   const rawChat=(options.phoneTheatre && options.theatreAU ? [] : ctx.chat||[]).filter(m=>m&&!m.is_system).slice(-12),story=[];
-  for(const m of rawChat){if(isPublic&&!isFeed&&!on(m.extra?.public)&&!on(m.is_public))continue;const text=roleStoryText(m.mes);if(text)story.push({who:m.is_user?user:(m.name||ctx.name2||name),text});}
+  for(const m of rawChat){if(isPublic&&!isFeed&&!on(m.extra?.public)&&!on(m.is_public))continue;const text=roleStoryText(m.mes);if(!text)continue;
+   const speaker=String(m.name||ctx.name2||(explicit?'主楼叙述':name)),selectedSpeaker=explicit&&subjects.some(person=>[person.name,...person.aliases].some(alias=>norm(alias)===norm(speaker)));
+   const cardSpeaker=explicit&&!selectedSpeaker&&[ctx.name2,...sourceChars.map(card=>card.name)].some(cardName=>cardName&&norm(cardName)===norm(speaker));
+   story.push({who:m.is_user?user:cardSpeaker?'主楼叙述':speaker,text});
+  }
   if(isPublic&&(!isFeed||!story.length))for(const m of publicPosts().slice(-8)){const text=roleStoryText(m.text);if(text)story.push({who:String(m.name||user)+'（已发布动态）',text});}
   // Feed context prefers the newest story, even when one floor has no sentence breaks.
   const feedExcerpt=async(who,text,budget)=>{
@@ -154,13 +231,20 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   }};if(!isFeed)await packStory(storyBudget);
   // Only the selected card and explicit current-chat binding. Never scan global books.
   const bound=char.data?.extensions?.world||char.extensions?.world,chatBook=ctx.chatMetadata?.world_info;
-  const bookNames=[...new Set([bound,typeof chatBook==='string'?chatBook:null].filter(x=>typeof x==='string'&&x.trim()))];
+  const bookNames=[...new Set([...(explicit?sourceChars.map(card=>card.data?.extensions?.world||card.extensions?.world):[bound]),typeof chatBook==='string'?chatBook:null].filter(x=>typeof x==='string'&&x.trim()))];
   let books=[];if(bookNames.length){if(typeof ctx.loadWorldInfo!=='function')throw failure('background');try{books=await guard(Promise.all(bookNames.map(async n=>{const b=await ctx.loadWorldInfo(n);if(!b||!b.entries)throw failure('background');return[n,b];})),task);}catch(error){check();throw failure('background');}}
   else if(char.data?.character_book?.entries)books=[['embedded-current-card',char.data.character_book]];
+  if(explicit)for(const [index,card]of sourceChars.entries())if(!(card.data?.extensions?.world||card.extensions?.world)&&(card.data?.character_book||card.character_book)?.entries&&!books.some(([,book])=>book===(card.data?.character_book||card.character_book)))books.push(['embedded-current-card-'+index,card.data?.character_book||card.character_book]);
   check();
-  const scan=[name,user,ref?.note||'',...rawChat.map(m=>roleStoryText(m.mes)),base].join('\n');
+  const scan=[name,user,...(explicit?subjects.map(person=>person.note):[ref?.note||'']),...rawChat.map(m=>roleStoryText(m.mes)),base].join('\n');
   const entries=roleWorldEntries(books,scan,query+'\n'+name,isPublic);let world='',worldSpent=0;
-  for(const p of entries){const pickedRole=rolePartnerText(p.text,names,manual);
+  for(const p of entries){
+   if(explicit){
+    const rows=subjects.length?subjects.map(person=>({name:person.name,text:rolePersonEntryText(p.text,p.e.comment||p.e.name||'',[person.name,...person.aliases])})):[{name:'公开设定',text:p.text}];
+    for(const row of rows){const text=clean(row.text);if(!text||norm(profile).includes(norm(text)))continue;const allowance=Math.min(worldBudget-worldSpent,subjects.length?Math.floor(worldBudget/subjects.length):worldBudget),picked=await fit(text,allowance-20-row.name.length*3,query+' '+row.name);if(picked){const part='\n【'+row.name+' 的世界书资料】\n'+picked;world+=part;worldSpent+=await count(part);}}
+    continue;
+   }
+   const pickedRole=rolePartnerText(p.text,names,manual);
    const generic=on(p.e.constant)&&!/<character|\bname\s*[:：]/i.test(p.text);
    const cleaned=safe(pickedRole||(generic?p.text:''),name,user);if(!cleaned||norm(profile).includes(norm(cleaned)))continue;
    const picked=await fit(cleaned,worldBudget-worldSpent,query+' '+name);if(picked){world+='\n'+picked;worldSpent+=await count(picked+'\n');}
@@ -177,7 +261,7 @@ export function createRoleContext({context,owner=()=>'',guard=async p=>p,publicP
   // Count the final package, including all headings and output-format instructions.
   while(total>cap&&recent){const lines=recent.trim().split('\n');lines.shift();recent=lines.join('\n');sys=wrap();total=await measure(base+'\n'+sys+(presetCost?'\n'+presetCost:''))+64;}
   if(total>cap||isFeed&&story.length&&!recent)throw failure('contextLimit');check();
-  last={kind:options.phoneIndependent?'phone-chat':options.phoneTheatre?'theatre':isPublic?'xhs':options.phoneDiary?'diary':automatic?'comment':'game',inputTokens:total,inputCap:cap,bookCount:books.length,worldEntries:entries.length,storyFloors:story.length,countMethod:measured?'host-tokenizer':'conservative-utf8-bound'};
+  last={kind:options.phoneIndependent?'phone-chat':options.phoneTheatre?'theatre':isPublic?'xhs':options.phoneDiary?'diary':options.phoneBank?'bank':automatic?'comment':'game',...(explicit?{subjectNames:subjects.map(person=>person.name)}:{}),inputTokens:total,inputCap:cap,bookCount:books.length,worldEntries:entries.length,storyFloors:story.length,countMethod:measured?'host-tokenizer':'conservative-utf8-bound'};
   return{prompt:base,system:sys};
  }
  return{build,diagnostics:()=>last};
