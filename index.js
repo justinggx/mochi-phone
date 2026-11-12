@@ -1,15 +1,15 @@
 import { normalizePeople, mergePeople, normalizeBankByPerson, subjectSnapshot, discoverPeople } from './people.mjs?v=20261112-people-diary-235';
-import { createPeopleUI, PEOPLE_CSS } from './people-ui.mjs?v=20261113-moments-open-237';
+import { createPeopleUI, PEOPLE_CSS } from './people-ui.mjs?v=20261113-people-menu-238';
 import { createApiSync } from './api-sync.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneChat } from './phone-chat.mjs?v=20261101-message-images-204';
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
 import { createMessageUI } from './message-ui.mjs?v=20261030-thread-feedback-188';
 import { productArtworkSources, loadArtwork } from './artwork.mjs?v=20261029-slim-174';
-import { createPhoneTemplate } from './phone-template.mjs?v=20261102-photo-entry-211';
+import { createPhoneTemplate } from './phone-template.mjs?v=20261113-people-menu-238';
 import { createPhoneSaveCoordinator } from './save-coordinator.mjs?v=20261105-theme-recovery-231';
 import { createPhoneApiConfig } from './api-config.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneCleanup } from './phone-cleanup.mjs?v=20261101-rendered-residue-205';
-import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261112-crossmodule-identity-236';
+import { RP_ART_CSS, RP_VISUAL_CSS, RP_REFINED_CSS, RP_IMPROVEMENT_CSS, RP_UI_FINISH_CSS, RP_MOMENT_TRANSLATE_CSS, RP_MESSAGE_ACTIONS_CSS, RP_PRIVATE_AVATAR_CSS, RP_SOCIAL_COMPACT_CSS, RP_READING_CSS, RP_XHS_COMPOSE_CSS, RP_PHONE_CSS } from './phone-styles.mjs?v=20261113-people-menu-238';
 import { GAME_STAT_NAMES, mergeGameStats, startGameStat, finishGameStat, resetGameStats, gameStatsPanel, GAME_STATS_CSS } from './game-stats.mjs?v=20261102-native-ui-214';
 import { openAvatarStudio, AVATAR_STUDIO_CSS, squareAvatar } from './avatar-studio.mjs?v=20261112-crossmodule-identity-236';
 import { avatarTarget, avatarPersonTarget, readAvatarProfile } from './avatar-profile.mjs?v=20261112-crossmodule-identity-236';
@@ -205,7 +205,7 @@ function rpClearPhoneMotion() {
   }
 }
 const rpAuxMotion = new Map();
-const RP_MOTION_SURFACES = '#rp-feature-layer,#rp-compose-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel,#rp-api-panel,#rp-model-list,#rp-messages-menu,#rp-moments-menu,#rp-xhs-menu,#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create,#rp-game-chat-fs,#g2048-chat-fs,#ggold-chat-fs,#gword-chat-fs';
+const RP_MOTION_SURFACES = '#rp-feature-layer,#rp-compose-modal,#rp-add-modal,#rp-group-members-modal,#rp-game-partner-modal,#rp-attach-panel,#rp-api-panel,#rp-model-list,#rp-messages-menu,#rp-moments-menu,#rp-xhs-menu,#rp-diary-menu,#rp-bank-menu,#rp-hb-modal,#rp-loc-modal,#rp-del-picker,#rp-add-choice,#rp-grp-create,#rp-game-chat-fs,#g2048-chat-fs,#ggold-chat-fs,#gword-chat-fs';
 function rpCancelAuxMotion(element, finish = false) {
   const previous = rpAuxMotion.get(element);
   rpAuxMotion.delete(element);
@@ -4425,15 +4425,19 @@ function rpConfirmDeleteContacts(ids) {
   rpFeatureDialog('确认删除好友',content,[{label:'取消'},{label:'确认删除',danger:true,run:()=>rpDeleteContacts(ids)}]);
 }
 
-function rpSetXhsMenu(open, focus = false) {
-  const menu = document.getElementById('rp-xhs-menu');
-  const trigger = document.getElementById('rp-xhs-more');
+function rpSetAppMenu(view, open, focus = false) {
+  if(!['diary','bank','xhs'].includes(view))return;
+  const menu = document.getElementById('rp-'+view+'-menu');
+  const trigger = document.getElementById('rp-'+view+'-more');
   if (!menu || !trigger) return;
-  open = !!open && STATE.currentView === 'xhs';
-  rpSetSurfaceOpen(menu,open,{hidden:true});
+  open = !!open && STATE.currentView === view;
+  if(open){rpPeopleUIApp().mount();for(const other of ['diary','bank','xhs'])if(other!==view)rpSetAppMenu(other,false);rpSyncAppMenuBusy();}
+  rpSetSurfaceOpen(menu,open,{hidden:true,immediate:!open});
   trigger.setAttribute('aria-expanded', String(open));
-  if (focus) (open ? menu.querySelector('button:not(:disabled)') : trigger)?.focus();
+  if (focus) (open ? [...menu.querySelectorAll('button')].find(button=>!button.disabled&&!button.hidden) : trigger)?.focus();
 }
+function rpSetXhsMenu(open, focus = false) {rpSetAppMenu('xhs',open,focus);if(!open){rpSetAppMenu('diary',false);rpSetAppMenu('bank',false);}}
+function rpSyncAppMenuBusy(){for(const[view,id]of [['diary','rp-gen-diary'],['bank','rp-bank-refresh'],['xhs','rp-xhs-refresh']]){const trigger=document.getElementById('rp-'+view+'-more'),button=document.getElementById(id);if(trigger)trigger.setAttribute('aria-busy',String(!!button?.disabled));}}
 
 let rpXhsFavoritesOnly = false;
 function rpSetFavoritesOnly(value) { rpRememberReading(); rpXhsFavoritesOnly=!!value; renderXHSFeed(false); rpRestoreReadingPosition(); }
@@ -4713,31 +4717,34 @@ function bindUI() {
   rpInstallReadingListener();
   $(document).on('click.mochiPhone','#rp-local-search,#rp-thread-search',rpOpenLocalSearch);
   $(document).on('click.mochiPhone','#rp-go-latest',rpGoLatest);
-  $(document).on('click.mochiPhone', '#rp-xhs-more', function() {
-    rpSetXhsMenu(this.getAttribute('aria-expanded') !== 'true', true);
+  $(document).on('click.mochiPhone', '#rp-diary-more,#rp-bank-more,#rp-xhs-more', function() {
+    rpSetAppMenu(this.closest('.rp-view').id.slice(8),this.getAttribute('aria-expanded') !== 'true',true);
   });
   $(document).on('click.mochiPhone', function(event) {
-    if (!$(event.target).closest('#rp-view-xhs .rp-xhs-nav-actions').length) rpSetXhsMenu(false);
+    for(const view of ['diary','bank','xhs'])if(!$(event.target).closest('#rp-view-'+view+' .rp-app-nav-actions').length)rpSetAppMenu(view,false);
   });
-  $(document).on('keydown.mochiPhone', '#rp-view-xhs .rp-xhs-nav-actions', function(event) {
-    const menu = document.getElementById('rp-xhs-menu');
+  $(document).on('keydown.mochiPhone', '#rp-view-diary .rp-app-nav-actions,#rp-view-bank .rp-app-nav-actions,#rp-view-xhs .rp-app-nav-actions', function(event) {
+    const view=this.closest('.rp-view').id.slice(8),menu=document.getElementById('rp-'+view+'-menu');
     if (event.key === 'Escape' && !menu.hidden) {
-      event.preventDefault(); event.stopPropagation(); rpSetXhsMenu(false, true); return;
+      event.preventDefault(); event.stopPropagation(); rpSetAppMenu(view,false,true); return;
     }
-    if (event.key === 'Tab') { if (!menu.hidden) rpSetXhsMenu(false, true); return; }
+    if (event.key === 'Tab') { if (!menu.hidden) rpSetAppMenu(view,false,true); return; }
     if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
     event.preventDefault();
     const wasHidden = menu.hidden;
-    rpSetXhsMenu(true);
-    const items = Array.from(menu.querySelectorAll('button:not(:disabled)'));
+    rpSetAppMenu(view,true);
+    const items = Array.from(menu.querySelectorAll('button')).filter(button=>!button.disabled&&!button.hidden);
     if (!items.length) return;
     const index = items.indexOf(document.activeElement);
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : wasHidden || index < 0 ? (event.key === 'ArrowUp' ? items.length - 1 : 0) : (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
     items[next].focus();
   });
   $(document).on('focusin.mochiPhone', function(event) {
-    if (!$(event.target).closest('#rp-view-xhs .rp-xhs-nav-actions').length) rpSetXhsMenu(false);
+    for(const view of ['diary','bank','xhs'])if(!$(event.target).closest('#rp-view-'+view+' .rp-app-nav-actions').length)rpSetAppMenu(view,false);
   });
+  $(document).on('click.mochiPhone','.rp-app-menu [data-people-kind]',function(){const view=this.closest('.rp-view').id.slice(8);rpSetAppMenu(view,false,true);void rpPeopleUIApp().request(this.dataset.peopleKind).catch(()=>toastr.warning('人物选择暂不可用，请重试。'));});
+  $(document).on('click.mochiPhone','#rp-bank-legacy',()=>{rpSetAppMenu('bank',false,true);if(STATE.bankData)_paintBankBody(STATE.bankData);});
+  $(document).on('click.mochiPhone','#rp-bank-bind-legacy',()=>{rpSetAppMenu('bank',false,true);void rpBindLegacyBank();});
   $(document).on("click.mochiPhone", "#rp-xhs-favorites", () => { rpSetXhsMenu(false, true); rpSetFavoritesOnly(!rpXhsFavoritesOnly); });
   $(document).on('click.mochiPhone', '.rp-diary-retry', function() { void rpRetryDiaryReply(this.dataset.diaryId, Number(this.dataset.diaryIndex)); });
   $(document).on("click.mochiPhone", ".rp-pending-item[data-queue-index]", function(){ rpOpenQueueEditor(Number(this.dataset.queueIndex)); });
@@ -4973,7 +4980,7 @@ function bindUI() {
   // ── API Settings VIEW (首页入口) ──
   // ── Diary app ──
 
-  $(document).on("click.mochiPhone", '#rp-gen-diary', generateAIDiary);
+  $(document).on("click.mochiPhone", '#rp-gen-diary', ()=>{rpSetAppMenu('diary',false,true);void generateAIDiary();});
   $(document).on('click.mochiPhone', '.rp-diary-bind-person', function(){rpBindDiaryPerson(String($(this).attr('data-diary-id')||''),Number($(this).attr('data-diary-index')),this.hasAttribute('data-bind-reply')).catch(()=>toastr.warning('归属未能保存，原日记已保留。'));});
   $(document).on("click.mochiPhone", '#rp-diary-send', postUserDiary);
   $(document).on("keydown.mochiPhone", '#rp-diary-input', function(e) {
@@ -4992,6 +4999,7 @@ function bindUI() {
 
   // 银行卡 - 刷新按钮
   $(document).on("click.mochiPhone", '#rp-bank-refresh', function() {
+    rpSetAppMenu('bank',false,true);
     generateBankData(true);
   });
 
@@ -10411,7 +10419,7 @@ function renderDiary() {
   var container = $('#rp-diary-list').empty();
   var entries = (STATE.diary || []).slice().reverse();
   if (!entries.length) {
-    container.append('<div class="rp-diary-empty">暂无日记，点击上方按钮生成，或自己写一篇。</div>');
+    container.append('<div class="rp-diary-empty">暂无日记，可从右上角菜单生成，或自己写一篇。</div>');
     return;
   }
   var _ctx = getContext();
@@ -10492,11 +10500,13 @@ function rpStartAppJob(kind, task, controls, cleanup = () => {}) {
     rpAppJobs.delete(kind);
     task.signal.removeEventListener('abort', job.finish);
     $(controls).prop('disabled', false).removeClass('rp-spinning');
+    rpSyncAppMenuBusy();
     cleanup();
   };
   rpAppJobs.set(kind, job);
   task.signal.addEventListener('abort', job.finish, { once: true });
   $(controls).prop('disabled', true);
+  rpSyncAppMenuBusy();
   return job;
 }
 
@@ -10515,6 +10525,7 @@ function rpStartDiaryJob(kind, task) {
     rpDiaryJobs.delete(kind);
     task.signal.removeEventListener('abort', job.abort);
     button.removeClass('rp-spinning').prop('disabled', false);
+    rpSyncAppMenuBusy();
   };
   job.finish = finish;
   job.abort = () => { finish(); rpDiaryStatus(''); };
@@ -10522,6 +10533,7 @@ function rpStartDiaryJob(kind, task) {
   task.signal.addEventListener('abort', job.abort, { once: true });
   button.prop('disabled', true);
   if (kind === 'generate') button.addClass('rp-spinning');
+  rpSyncAppMenuBusy();
   rpDiaryStatus(kind === 'generate' ? '正在生成日记…' : '日记已保存，正在等待角色回复…');
   return job;
 }
@@ -13129,10 +13141,10 @@ function renderBankView() {
   const body=document.getElementById('rp-bank-body');if(!body)return;
   rpPeopleUIApp().mount();
   const subject=rpSelectedBankSubject();
-  if(subject){const data=STATE.bankByPerson?.[subject.id];if(data){_paintBankBody(data);return;}body.innerHTML='<div class="rp-bank-empty">点击右上角刷新，生成所选人物的资产报告。</div>';return;}
+  if(subject){const data=STATE.bankByPerson?.[subject.id];if(data){_paintBankBody(data);return;}body.innerHTML='<div class="rp-bank-empty">在右上角菜单选择“刷新资产”，生成所选人物的资产报告。</div>';return;}
   if(STATE.people?.mode==='multi'){body.innerHTML='<div class="rp-bank-empty">请选择资产主人；旧版报告可通过上方入口查看。</div>';return;}
   if(STATE.bankData){_paintBankBody(STATE.bankData);return;}
-  body.innerHTML='<div class="rp-bank-empty">点击右上角刷新，读取资产信息。</div>';
+  body.innerHTML='<div class="rp-bank-empty">在右上角菜单选择“刷新资产”，读取资产信息。</div>';
 }
 
 /** 格式化金额：自动加单位（万/亿） */
@@ -13557,7 +13569,7 @@ ${chatMsgs}
 
     console.warn('[Bank] generateBankData error:', rpErrorInfo(err));
     if(!bankFrontMatches()){renderBankView();return;}
-    body.innerHTML = `<div class="rp-bank-empty">⚠️ 生成失败：${escHtml(err.message || '未知错误')}<br><span style="font-size:11px;opacity:.6">原有资产缓存仍保留；可点击右上角重试</span></div>`;
+    body.innerHTML = `<div class="rp-bank-empty">⚠️ 生成失败：${escHtml(err.message || '未知错误')}<br><span style="font-size:11px;opacity:.6">原有资产缓存仍保留；可在右上角菜单选择“刷新资产”重试</span></div>`;
   } finally {
     bankJob.finish();
   }

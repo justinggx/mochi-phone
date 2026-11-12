@@ -301,7 +301,13 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title">日记</span>
-            <button id="rp-gen-diary" title="AI生成今日日记" class="rp-diary-gen-btn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64"/><polyline points="16 8 21 3 21 8"/><polyline points="8 16 3 21 3 16"/></svg></button>
+            <div class="rp-app-nav-actions">
+              <button id="rp-diary-more" class="rp-app-more" type="button" aria-label="日记更多操作" aria-haspopup="menu" aria-controls="rp-diary-menu" aria-expanded="false">⋯</button>
+              <div id="rp-diary-menu" class="rp-app-menu" role="menu" aria-label="日记操作" hidden>
+                <button id="rp-diary-person" type="button" role="menuitem" data-people-kind="diaryAuthor"><span class="rp-people-menu-label">日记人物：选择人物</span></button>
+                <button id="rp-gen-diary" type="button" role="menuitem" title="AI生成今日日记" class="rp-diary-gen-btn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.36-2.64"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.36 2.64"/><polyline points="16 8 21 3 21 8"/><polyline points="8 16 3 21 3 16"/></svg><span>生成今日日记</span></button>
+              </div>
+            </div>
           </div>
           <div id="rp-diary-status" role="status" aria-live="polite" style="display:none;flex-shrink:0;padding:8px 14px;font-size:12px;line-height:1.5;overflow-wrap:anywhere;color:var(--rp-nav-btn,#c0306a)"></div>
           <div id="rp-diary-list" style="flex:1;overflow-y:auto;padding:12px 14px 8px"></div>
@@ -333,12 +339,21 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title">资产概览</span>
-            <button id="rp-bank-refresh" title="刷新资产">
+            <div class="rp-app-nav-actions">
+              <button id="rp-bank-more" class="rp-app-more" type="button" aria-label="银行卡更多操作" aria-haspopup="menu" aria-controls="rp-bank-menu" aria-expanded="false">⋯</button>
+              <div id="rp-bank-menu" class="rp-app-menu" role="menu" aria-label="银行卡操作" hidden>
+                <button id="rp-bank-person" type="button" role="menuitem" data-people-kind="bank"><span class="rp-people-menu-label">资产主人：选择人物</span></button>
+                <button id="rp-bank-refresh" type="button" role="menuitem" title="刷新资产">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-            </button>
+                  <span>刷新资产</span>
+                </button>
+                <button id="rp-bank-legacy" type="button" role="menuitem" hidden>查看旧版报告</button>
+                <button id="rp-bank-bind-legacy" type="button" role="menuitem" hidden>关联旧报告</button>
+              </div>
+            </div>
           </div>
           <div id="rp-bank-body">
-            <div class="rp-bank-empty">✦ 点击右上角刷新，读取 TA 的资产信息</div>
+            <div class="rp-bank-empty">✦ 在右上角菜单选择“刷新资产”，读取 TA 的资产信息</div>
           </div>
         </div>
 
@@ -347,9 +362,10 @@ const HTML = `
           <div class="rp-nav-bar">
             <button class="rp-back" data-to="home">‹</button>
             <span class="rp-nav-title" id="rp-xhs-feed-title">发现</span>
-            <div class="rp-xhs-nav-actions">
-              <button id="rp-xhs-more" type="button" aria-label="小红书更多操作" aria-haspopup="menu" aria-controls="rp-xhs-menu" aria-expanded="false">⋯</button>
-              <div id="rp-xhs-menu" role="menu" aria-label="小红书操作" hidden>
+            <div class="rp-xhs-nav-actions rp-app-nav-actions">
+              <button id="rp-xhs-more" class="rp-app-more" type="button" aria-label="小红书更多操作" aria-haspopup="menu" aria-controls="rp-xhs-menu" aria-expanded="false">⋯</button>
+              <div id="rp-xhs-menu" class="rp-app-menu" role="menu" aria-label="小红书操作" hidden>
+                <button id="rp-xhs-person" type="button" role="menuitem" data-people-kind="xhs"><span class="rp-people-menu-label">吃瓜范围：本卡剧情</span></button>
                 <button id="rp-xhs-favorites" type="button" role="menuitem">收藏</button>
                 <button id="rp-xhs-compose" type="button" role="menuitem">发布</button>
                 <button id="rp-xhs-refresh" type="button" role="menuitem">刷新</button>

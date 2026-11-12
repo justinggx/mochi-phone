@@ -121,14 +121,15 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
   });
   no.focus();return result;
  }
+ function label(kind){kind=canonicalKind(kind);if(!kinds[kind])return '';const names=subjects(kind).map(person=>person.name);return kinds[kind][1]+'：'+(names.join('、')||(kind==='xhs'?'本卡剧情':'选择人物'));}
  function mount(){
   closed=false;
-  document.getElementById('rp-view-moments')?.querySelectorAll(':scope > .rp-people-bar').forEach(bar=>bar.remove());
-  for(const view of ['diary','bank','xhs','theatre']){const root=document.getElementById('rp-view-'+view);if(!root)continue;let bar=root.querySelector(':scope > .rp-people-bar');if(!bar){bar=document.createElement('div');bar.className='rp-people-bar';const nav=root.querySelector('.rp-nav-bar');if(nav)nav.after(bar);else root.prepend(bar);}bar.replaceChildren();
-   for(const [kind,[target,label]]of Object.entries(kinds)){if(target!==view)continue;const b=document.createElement('button');b.type='button';b.dataset.peopleKind=kind;const names=subjects(kind).map(s=>s.name);b.textContent=label+'：'+(names.join('、')||(kind==='xhs'?'本卡剧情':'选择人物'))+' ▾';b.title=b.textContent;b.addEventListener('click',()=>{request(kind).catch(()=>{});});bar.append(b);}
-   if(view==='bank'&&state().bankData){const b=document.createElement('button');b.type='button';b.id='rp-bank-legacy';b.textContent='查看旧版报告';b.addEventListener('click',()=>onChange('bankLegacy'));bar.append(b);const bind=document.createElement('button');bind.type='button';bind.id='rp-bank-bind-legacy';bind.textContent='关联旧报告';bind.addEventListener('click',()=>onChange('bankBindLegacy'));bar.append(bind);}
-  }
+  for(const view of ['moments','diary','bank','xhs'])document.getElementById('rp-view-'+view)?.querySelectorAll(':scope > .rp-people-bar').forEach(bar=>bar.remove());
+  const root=document.getElementById('rp-view-theatre');
+  if(root){let bar=root.querySelector(':scope > .rp-people-bar');if(!bar){bar=document.createElement('div');bar.className='rp-people-bar';const nav=root.querySelector('.rp-nav-bar');if(nav)nav.after(bar);else root.prepend(bar);}bar.replaceChildren();const button=document.createElement('button');button.type='button';button.dataset.peopleKind='theatre';button.textContent=label('theatre')+' ▾';button.title=button.textContent;button.addEventListener('click',()=>{request('theatre').catch(()=>{});});bar.append(button);}
+  for(const button of document.querySelectorAll('.rp-app-menu [data-people-kind]')){const text=label(button.dataset.peopleKind);(button.querySelector('.rp-people-menu-label')||button).textContent=text;button.title=text;}
+  for(const id of ['rp-bank-legacy','rp-bank-bind-legacy']){const button=document.getElementById(id);if(button){button.hidden=!state().bankData;if(button.hidden&&document.activeElement===button)document.getElementById('rp-bank-more')?.focus();}}
  }
  function reset(){closed=true;epoch++;cache=null;for(const interrupt of discoveryWaiters)interrupt();discoveryWaiters.clear();close();}
- return {mount,subjects,ensure,request,confirm:confirmAction,reset,candidates,isNarrativeTitle,legacy};
+ return {mount,label,subjects,ensure,request,confirm:confirmAction,reset,candidates,isNarrativeTitle,legacy};
 }
