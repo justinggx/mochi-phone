@@ -1,5 +1,5 @@
-import { normalizePeople, mergePeople, normalizeBankByPerson, subjectSnapshot } from './people.mjs?v=20261112-people-diary-235';
-import { createPeopleUI, PEOPLE_CSS } from './people-ui.mjs?v=20261112-crossmodule-identity-236';
+import { normalizePeople, mergePeople, normalizeBankByPerson, subjectSnapshot, discoverPeople } from './people.mjs?v=20261112-people-diary-235';
+import { createPeopleUI, PEOPLE_CSS } from './people-ui.mjs?v=20261113-moments-open-237';
 import { createApiSync } from './api-sync.mjs?v=20261101-mobile-cloud-203';
 import { createPhoneChat } from './phone-chat.mjs?v=20261101-message-images-204';
 import { createEchoAccent } from './echo-accent.mjs?v=20261031-echo-surface-194';
@@ -10322,32 +10322,23 @@ function rpApplyMomentLikes(moment, raw, origin) {
   if (!moment || moment.from === 'user') return Promise.resolve(false);
   const names = Array.isArray(raw) ? raw : typeof raw === 'string' && raw.length <= 1600 ? raw.split('|') : [];
   if (names.length > 24 || names.some(n=>typeof n!=='string' || n.length>80)) return Promise.resolve(false);
-  const subjects=JSON.parse(JSON.stringify(Array.isArray(moment.subjects)?moment.subjects:[])),personal=subjects.some(s=>s.id!=='legacy-card');
   const source = () => JSON.stringify([moment.id,moment.from,moment.name,moment.time,moment.text,moment.subject,moment.subjects]);
   const key = JSON.stringify(names), old = rpMomentLikeJobs.get(moment), sourceKey = source();
   if (old?.key===key && old.sourceKey===sourceKey && old.task.valid()) return old.promise;
   const task=rpRuntime.task(), owner=rpArchiveAccountHandle, slot=STATE.chatId, job={key,sourceKey,task}; rpMomentLikeJobs.set(moment,job);
-  const current = () => task.valid() && owner===rpArchiveAccountHandle && slot===STATE.chatId && slot===getPhoneChatSlotKey(getContext()) && subjects.every(rpSubjectCurrent) && (!origin || getContext()?.chat?.[origin.index]===origin.message && origin.message.mes===origin.raw) && rpMomentLikeJobs.get(moment)===job && STATE.moments.includes(moment) && source()===sourceKey;
+  const current = () => task.valid() && owner===rpArchiveAccountHandle && slot===STATE.chatId && slot===getPhoneChatSlotKey(getContext()) && (!origin || getContext()?.chat?.[origin.index]===origin.message && origin.message.mes===origin.raw) && rpMomentLikeJobs.get(moment)===job && STATE.moments.includes(moment) && source()===sourceKey;
   job.promise=(async()=>{
     try {
-      const context = personal?{charName:'',npcs:subjects.map(s=>s.name),npcDisplayNames:{}}:await rpGuardAwait(getMomentsCtx(),task); if (!current()) return false;
-      const declared=personal?[]:(await rpGuardAwait(rpPeopleUIApp().candidates(),task)).filter(person=>person.evidence==='declared').map(person=>person.name);
-      if(!current())return false;
-      const allowed = new Map();
-      for (const name of [context.charName,...(context.npcs || []),...Object.values(context.npcDisplayNames || {}),...declared]) {
-        if(!personal&&await rpGuardAwait(rpPeopleUIApp().isNarrativeTitle(name),task)){if(!current())return false;continue;}
-        if(!current())return false;
-        const canonical=resolveCanonicalPhoneName(name)||name, k=normNameKey(canonical);
-        if (!name || isPhoneUserName(name,getContext()) || isForbiddenPhoneContactName(name,getContext()) || isPhoneBlocked(name) || STATE.deletedContacts?.[normalizePhonePersonName(canonical)]) continue;
-        allowed.set(k,canonical);
-      }
+      const context=await rpGuardAwait(rpFreeMomentContext(task),task);if(!current()||!context?.current())return false;
+      const allowed=new Map();
+      for(const actor of context.actors){if(!actor.current())continue;for(const name of [actor.name,...(actor.snapshot.aliases||[])]){const canonical=resolveCanonicalPhoneName(actor.name)||actor.name;allowed.set(normNameKey(resolveCanonicalPhoneName(name)||name),canonical);}}
       const self=normNameKey(resolveCanonicalPhoneName(moment.name)||moment.name), existing=new Set((moment.likes || []).map(n=>normNameKey(resolveCanonicalPhoneName(n)||n))), additions=[];
       for (const name of names) {
         const person=allowed.get(normNameKey(resolveCanonicalPhoneName(name.trim())||name.trim()));
         if (!person || normNameKey(person)===self || existing.has(normNameKey(person))) continue;
         additions.push(person); existing.add(normNameKey(person));
       }
-      if (!current() || !additions.length) return false;
+      if (!current() || !context.current() || !additions.length) return false;
       moment.likes=Array.isArray(moment.likes)?moment.likes:[]; moment.likes.push(...additions); saveState();
       if (STATE.currentView==='moments') renderMoments(); return true;
     } catch (error) { if (current()) console.warn('[Phone] moment likes unavailable',rpErrorInfo(error)); return false; }
@@ -10681,10 +10672,7 @@ async function postUserMoment() {
   const text = String($('#rp-compose-text').val() || '').trim();
   const photos = rpComposePhotos(), location = rpComposeLocation(STATE.composeLocationDraft);
   if (rpComposeImageJob || (!text && !photos.length)) return;
-  const picked=await rpEnsurePeople('moments');
-  if(!picked?.length||!rpTask.valid())return;
-  const subjects=JSON.parse(JSON.stringify(picked.some(s=>s.id!=='legacy-card')?picked.filter(s=>s.id!=='legacy-card'):picked));
-  if(!subjects.every(rpSubjectCurrent)||rpComposeImageJob||text!==String($('#rp-compose-text').val()||'').trim()||JSON.stringify(photos)!==JSON.stringify(rpComposePhotos())||location!==rpComposeLocation(STATE.composeLocationDraft))return;
+  if(!rpTask.valid()||rpComposeImageJob||text!==String($('#rp-compose-text').val()||'').trim()||JSON.stringify(photos)!==JSON.stringify(rpComposePhotos())||location!==rpComposeLocation(STATE.composeLocationDraft))return;
   const now = new Date();
   const ts = resolvePhoneTime();
   const momentId = rpUniqueMomentId(`user_${now.getTime()}`, STATE.moments || []);
@@ -10701,7 +10689,6 @@ async function postUserMoment() {
     img: photos[0] || null,
     imgs: photos.slice(),
     location,
-    subjects,
     likes: [],
     comments: [],
   });
@@ -10711,7 +10698,7 @@ async function postUserMoment() {
   $('#rp-moments-list').scrollTop(0);
   saveState();
   // 先强制主角评论,再让 NPC 们自由互动
-  setTimeout(() => { if(!rpTask.valid()||!subjects.every(rpSubjectCurrent))return;momentsDiag('postUserMoment:runCharRespond', { momentId }); return charRespondToUserMoment(momentId); }, 800);
+  setTimeout(() => { if(!rpTask.valid())return;momentsDiag('postUserMoment:runCharRespond', { momentId }); return charRespondToUserMoment(momentId); }, 800);
   // 本地自动社交已禁用：用户动态不再自动触发 friendsInteractOnMoment。
 
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
@@ -12503,104 +12490,44 @@ function formatPhoneTimeFromDate(d) {
 }
 
 async function generateAIMoments() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-  const picked=await rpEnsurePeople('moments');
-  if(!picked?.length||!rpTask.valid())return;
-  const subjects=JSON.parse(JSON.stringify(picked.some(s=>s.id!=='legacy-card')?picked.filter(s=>s.id!=='legacy-card'):picked)),legacy=subjects.length===1&&subjects[0].id==='legacy-card';
-  if(!subjects.every(rpSubjectCurrent))return;
-  const btn = document.getElementById('rp-gen-moments');
-  const momentsJob = rpStartAppJob('moments', rpTask, '#rp-gen-moments');
-  if (!momentsJob) return;
-  if (btn) { btn.disabled = true; btn.classList.add('rp-spinning'); }
-  try {
-    const { npcs, recentChat, charPersona, npcPersonaMap } = legacy?await rpGuardAwait(getMomentsCtx(), rpTask):{npcs:[],recentChat:'见本次分开的人物资料与近期主楼正文。',charPersona:'',npcPersonaMap:{}};
-    const charName=subjects[0].name;
-    if(!subjects.every(rpSubjectCurrent))return;
-    // 每次随机挑选:char 固定 + 从 NPC 里随机取2个,保证每次刷新都不同
-    // Fisher-Yates 洗牌,保证真随机;每次最多取3个 NPC(限制 token 消耗)
-    const npcPool = [...npcs];
-    for (let i = npcPool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [npcPool[i], npcPool[j]] = [npcPool[j], npcPool[i]];
+  const rpTask=rpRuntime.task(),momentsJob=rpStartAppJob('moments',rpTask,'#rp-gen-moments');
+  if(!momentsJob)return;
+  document.getElementById('rp-gen-moments')?.classList.add('rp-spinning');
+  try{
+    const context=await rpGuardAwait(rpFreeMomentContext(rpTask),rpTask);
+    if(!context?.current()||!context.actors.length)throw new Error('未找到可确认的朋友圈人物');
+    const primary=context.actors.find(actor=>normNameKey(actor.name)===normNameKey(context.charName)),pool=context.actors.filter(actor=>actor!==primary);
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    const actors=primary?[primary,...pool.slice(0,3)]:pool.slice(0,4),current=()=>context.current()&&actors.every(actor=>actor.current());
+    const names=actors.map(actor=>actor.name),allNames=context.actors.map(actor=>actor.name);
+    const system='你是角色扮演故事中的社交媒体模拟器。以下人物各自用本人身份和第一人称发朋友圈，不把来源卡名当成另一个人，不混用其他人的性格、家人或称谓。\n'
+      +'本次候选：'+names.join('、')+'。每人最多一条，口语化1–2句；按各人的真实职业、关系和知识范围写自己的生活，不写管家/仆人/旁观者日志，不替用户发言或决定。\n'
+      +'只有本人资料中明确的设定才能使用；没有个人资料时只参考已发生的剧情，不借其他人的背景。只返回JSON。\n'+rpPhoneWorldContextRule()+rpPhoneSpeechLanguageRule();
+    const prompt='近期剧情：\n'+context.recentChat+'\n请从本次候选中写朋友圈，可只写有合适内容的人：'+names.join('、')
+      +'\n点赞者可从当前剧情所有真实人物中选择：'+JSON.stringify(allNames)+'；按关系与可见范围给0–3人，不替用户点赞，不给自己点赞。'
+      +'\n格式：[{"from":"人物全名","text":"内容","likes":["点赞者全名"]}]';
+    const response=await rpGuardAwait(rpCallSocialAPI(prompt,Math.min(3000,Math.max(600,actors.length*180)),system,rpTask,rpFreeMomentOptions(actors,rpTask)),rpTask);
+    if(!current())return;
+    if(!response)throw new Error('API无响应');
+    const raw=response.match(/\[[\s\S]*\]/)?.[0],posts=raw?JSON.parse(raw):null;
+    if(!Array.isArray(posts))throw new Error('朋友圈格式错误');
+    const authors=new Set(),oldPosts=new Set(STATE.moments||[]),now=new Date();
+    for(const [index,post]of posts.entries()){
+      if(!current())return;
+      if(!post||typeof post.from!=='string'||typeof post.text!=='string'||!post.text.trim())continue;
+      const actor=context.actors.find(person=>[person.name,...(person.snapshot.aliases||[])].some(name=>normNameKey(name)===normNameKey(post.from)));
+      if(!actor||!actor.current()||authors.has(normNameKey(actor.name)))continue;authors.add(normNameKey(actor.name));
+      const id=incomingMoment(actor.name,formatPhoneTimeFromDate(new Date(now.getTime()+index*60000)),post.text.trim(),post.img||null,null,null,true);
+      const moment=(STATE.moments||[]).find(item=>item.id===id);
+      if(moment){if(!oldPosts.has(moment)&&actor.subject)moment.subject=JSON.parse(JSON.stringify(actor.subject));void rpApplyMomentLikes(moment,post.likes);}
     }
-    const selectedNPCs = npcPool.slice(0, Math.min(3, npcPool.length));
-    const allChars = legacy?[charName, ...selectedNPCs]:subjects.map(s=>s.name);
-    const charList = allChars.join('、');
-    const npcPersonaText = selectedNPCs
-      .map(n => {
-        const p = resolveNpcPersonaByName(n, npcPersonaMap) || '';
-        return p ? ('- ' + n + ':' + p.replace(/\n/g, ';')) : '';
-      })
-      .filter(Boolean)
-      .join('\n');
-
-    // system message:人设 + 规则(每个角色分别说明,避免人设串台)
-    const npcRules = selectedNPCs.map(n => {
-      const p = resolveNpcPersonaByName(n, npcPersonaMap) || '';
-      return p ? ('- ' + n + ' 的人设:' + p.replace(/\n/g, ';').slice(0, 400) + '\n  禁止让 ' + n + ' 做任何与其身份地位不符的事') : ('- ' + n + ':无人设,请根据名字和剧情推断,不得借用任何其他角色的背景');
-    }).join('\n');
-    const npcPersonaLines = selectedNPCs.map(n => {
-      const p = resolveNpcPersonaByName(n, npcPersonaMap) || '';
-      return p ? ('- ' + n + '(有人设):' + p.replace(/\n/g,';').slice(0,200)) : ('- ' + n + '(无人设):请写与主角家庭完全无关的自己的日常生活');
-    }).join('\n');
-    const sysMsg = '你是一个角色扮演故事中的社交媒体模拟器。\n\n'
-      + (legacy?'【人物 '+charName+' 的人设】\n'+(charPersona||'(根据对话推断)'):'【本次分别发帖的人物】\n'+subjects.map(s=>s.name).join('、')+'。各用本人资料与第一人称，不以来源卡名发帖。') + '\n\n'
-      + '【NPC列表及人设】\n' + npcPersonaLines + '\n\n'
-      + '【铁律,全部必须遵守】\n'
-      + '1. 每条朋友圈必须从角色本人第一人称视角出发,写自己正在做的事或感受\n'
-      + '2. 【绝对禁止管家/仆人/旁观者视角】禁止出现"管家日志""今日流水""先生今日""小姐今日"等第三方叙述格式\n'
-      + '3. 有人设的角色:内容必须符合其身份职业,医生写医疗相关,商人写商务相关,不得跨界\n'
-      + '4. 无人设的角色:写与主角家庭完全无关的自己的个人日常,不得提及先生/小姐/主家\n'
-      + '5. 每人只能以自己的视角发帖(第一人称)，家人、称谓与关系分别按本人的明确设定，不套用其他人。\n'
-      + '6. 口语化,1-2句,只返回JSON。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
-    const prompt = '近期剧情(主楼层最新对话):\n' + recentChat
-      + '\n\n请为以下角色各写1条朋友圈(每人1条,不重复,与剧情相关):'
-      + charList
-      + '\n点赞者只能从这些本卡人物中选择：' + JSON.stringify(legacy?[charName,...npcs]:allChars)
-      + '\n按人设、关系和可见范围给每条动态选择0–3位点赞者；不替用户点赞，不给自己点赞，敌对或疏远时可以无人赞。'
-      + '\n格式:[{"from":"角色名","text":"内容","likes":["点赞者全名"]},...]';
-    const resp = await rpGuardAwait(rpCallSocialAPI(prompt, Math.min(3000,Math.max(600,allChars.length*180)), sysMsg, rpTask,rpSubjectOptions(subjects)), rpTask);
-    if(!subjects.every(rpSubjectCurrent))return;
-    if (!resp) throw new Error('API无响应');
-    const jsonStr = resp.match(/\[[\s\S]*\]/)?.[0];
-    if (!jsonStr) throw new Error('格式错误');
-    const posts = JSON.parse(jsonStr);
-    if(!Array.isArray(posts))throw new Error('格式错误');
-    if(!legacy&&allChars.some(name=>!posts.some(post=>post&&normNameKey(post.from)===normNameKey(name)&&typeof post.text==='string'&&post.text.trim())))throw new Error('人物动态未完整生成，原有动态已保留');
-    const generatedMomentIds = [];
-    const authors=new Set();
-    const now = new Date();
-    posts.forEach((post, i) => {
-      if (!post || typeof post.from!=='string' || typeof post.text!=='string' || !post.text.trim()) return;
-      const author=allChars.find(name=>normNameKey(name)===normNameKey(post.from)); if(!author) return;
-      if(!legacy&&authors.has(normNameKey(author)))return;authors.add(normNameKey(author));
-      const d = new Date(now.getTime() + i * 60000);
-      const ts = formatPhoneTimeFromDate(d);
-      // 生成按钮这批动态不要只依赖 incomingMoment 内部的通用自动互动；
-      // 这里显式收集 id，稍后用本批 allChars 作为评论候选触发，避免缓存/联系人时序导致无评论。
-      const momentId = incomingMoment(author, ts, post.text.trim(), post.img || null, null, null, true);
-      if (momentId) { const moment=STATE.moments.find(item=>item.id===momentId);if(moment){moment.subjects=JSON.parse(JSON.stringify(subjects));const subject=subjects.find(s=>normNameKey(s.name)===normNameKey(author));if(subject)moment.subject=JSON.parse(JSON.stringify(subject));}generatedMomentIds.push(momentId); void rpApplyMomentLikes(moment,post.likes); }
-    });
-    if(generatedMomentIds.length)saveState();
-    if (STATE.currentView === 'moments') renderMoments();
-    if (generatedMomentIds.length) {
-      // 本地自动社交已禁用：不再为生成按钮产出的动态自动补评论。
-    }
-  // [DISABLED]     setTimeout(() => momentAISocial(null), 1000);
-  } catch(e) {
-    if (!rpTask.valid()) return;
-
-    console.warn('[Moments] generateAIMoments error:', rpErrorInfo(e));
-    const container = $('#rp-moments-list');
-    container.prepend('<div style="color:#e55;padding:8px 12px;font-size:12px;text-align:center;background:rgba(255,80,80,.08);border-radius:8px;margin:8px">⚠️ 生成失败,请检查 API 设置</div>');
-    setTimeout(() => container.find('[style*="color:#e55"]').remove(), 3000);
-  } finally {
-    momentsJob.finish();
-  }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+    if(current()){saveState();if(STATE.currentView==='moments')renderMoments();}
+  }catch(error){
+    if(!rpTask.valid())return;
+    console.warn('[Moments] generateAIMoments error:',rpErrorInfo(error));
+    const container=$('#rp-moments-list');container.prepend('<div style="color:#e55;padding:8px 12px;font-size:12px;text-align:center">⚠️ 生成失败，请检查人物资料或 API 设置</div>');
+    setTimeout(()=>container.find('[style*="color:#e55"]').remove(),3000);
+  }finally{momentsJob.finish();}
 }
 
 function rpSocialSourceKey(item) {
@@ -12611,6 +12538,44 @@ function rpMomentNameSubjects(name) {
   const key=normNameKey(name);if(!key)return [];
   return Object.values(STATE.people?.entities||{}).filter(person=>[person.name,...(person.aliases||[])].some(value=>normNameKey(value)===key))
     .map(person=>(rpRefreshSubjects([{id:person.id}])||[])[0]).filter(Boolean);
+}
+// Request-only actors are never registered or written into historical subject fields.
+const rpFreeMomentGrants=new WeakMap();
+function rpFreeMomentSourceKey(){
+  const context=getContext()||{},group=context.groupId!=null?(context.groups||[]).find(item=>String(item.id)===String(context.groupId)):null;
+  const cards=group?(Array.isArray(context.characters)?context.characters:Object.values(context.characters||{})).filter(card=>(group.members||[]).includes(card?.avatar)):[context.characters?.[context.characterId]||context.char].filter(Boolean);
+  return JSON.stringify([context.name2,context.name1,context.characterId,context.groupId,context.chatMetadata?.world_info,(context.chat||[]).slice(-80).map(message=>[message?.is_user,message?.name]),cards.map(card=>[card.avatar,card.name,...['description','personality','scenario','mes_example','first_mes','system_prompt','post_history_instructions'].map(field=>card[field]||card.data?.[field]||''),card.data?.extensions?.world||card.extensions?.world,card.data?.character_book||card.character_book])]);
+}
+async function rpFreeMomentContext(task){
+  const owner=rpArchiveAccountHandle,slot=STATE.chatId,cardKey=rpPeopleCardKey(),sourceKey=rpFreeMomentSourceKey();
+  let sourceValid=true;
+  const current=()=>sourceValid&&task.valid()&&owner===rpArchiveAccountHandle&&slot===STATE.chatId&&cardKey===rpPeopleCardKey()&&getPhoneChatSlotKey(getContext())===slot&&sourceKey===rpFreeMomentSourceKey();
+  const context=getContext()||{},books=new Map(),discovery={...context};
+  if(!rpPhoneContextReady(context))throw rpPhoneApiError('context');
+  if(typeof context.loadWorldInfo==='function')discovery.loadWorldInfo=async name=>{const book=await rpGuardAwait(context.loadWorldInfo(name),task);if(!current())throw Object.assign(new Error('Moment source changed'),{name:'AbortError'});books.set(name,JSON.stringify(book));return book;};
+  const candidates=await rpGuardAwait(discoverPeople(discovery,STATE,{guard:promise=>rpGuardAwait(promise,task)}),task);if(!current())return null;
+  const validate=async()=>{if(!current())return false;try{for(const[name,signature]of books){const book=await rpGuardAwait(context.loadWorldInfo(name),task);if(!current()||JSON.stringify(book)!==signature){sourceValid=false;return false;}}return current();}catch(error){sourceValid=false;if(!task.valid())throw error;return false;}};
+  const rawChar=String(context.name2||context.characters?.[context.characterId]?.name||'').trim(),narrative=await rpGuardAwait(rpPeopleUIApp().isNarrativeTitle(rawChar,candidates),task);if(!current())return null;
+  const canonical=name=>{const exact=candidates.find(person=>normNameKey(person.name)===normNameKey(name));if(exact)return exact.name;const aliases=candidates.filter(person=>(person.aliases||[]).some(alias=>normNameKey(alias)===normNameKey(name)));return aliases.length===1?aliases[0].name:name;};
+  const single=context.groupId==null;
+  const names=[...(single&&!narrative?[rawChar]:[]),...candidates.map(person=>person.name)],actors=[],seen=new Set();
+  for(const raw of names){
+    if(typeof raw!=='string'||!raw.trim())continue;const name=canonical(raw.trim()),key=normNameKey(name);
+    if(seen.has(key)||isPhoneUserName(name,getContext())||isForbiddenPhoneContactName(name,getContext())||isPhoneBlocked(name)||STATE.deletedContacts?.[normalizePhonePersonName(name)])continue;
+    if(await rpGuardAwait(rpPeopleUIApp().isNarrativeTitle(name,candidates),task)){if(!current())return null;continue;}if(!current())return null;
+    const matches=rpMomentNameSubjects(name),subject=matches.length===1?JSON.parse(JSON.stringify(matches[0])):null,declared=candidates.find(person=>normNameKey(person.name)===key);
+    let temporaryId='moment-runtime-'+actors.length;for(let suffix=0;Object.hasOwn(STATE.people?.entities||{},temporaryId);suffix++)temporaryId='moment-runtime-'+actors.length+'-'+suffix;
+    const snapshot=subject||{id:temporaryId,name,note:'',aliases:(declared?.aliases||[]).slice(),cardKey,slotKey:slot};
+    const actor={name:snapshot.name,snapshot,subject,validate,current:()=>current()&&(!subject||rpSubjectCurrent(subject))&&!isForbiddenPhoneContactName(snapshot.name,getContext())&&!STATE.deletedContacts?.[normalizePhonePersonName(snapshot.name)]};
+    if(seen.has(normNameKey(actor.name)))continue;seen.add(key);seen.add(normNameKey(actor.name));actors.push(actor);
+  }
+  const charName=single&&!narrative?canonical(rawChar):'',userName=context.name1||'用户';
+  const recentChat=(context.chat||[]).slice(-30).map(message=>{const speaker=message?.is_user?userName:message?.name||rawChar;return(narrative&&normNameKey(speaker)===normNameKey(rawChar)?'主楼叙述':speaker)+': '+String(message?.mes||'').replace(/<think>[\s\S]*?<\/think>/gi,' ').replace(/<PHONE>[\s\S]*?<\/PHONE>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,220);}).join('\n')||'(暂无对话记录)';
+  return{charName,userName,recentChat,npcs:actors.filter(actor=>normNameKey(actor.name)!==normNameKey(charName)).map(actor=>actor.name),actors,current,validate};
+}
+function rpFreeMomentOptions(actors,task){
+  const options={phoneSubjects:actors.map(actor=>JSON.parse(JSON.stringify(actor.snapshot)))};
+  rpFreeMomentGrants.set(options,{task,actors:actors.slice(),signature:JSON.stringify(options.phoneSubjects),used:false});return options;
 }
 function rpMomentConfirmedReplyActor(moment, actorComment) {
   const comments=moment.comments||[];
@@ -12624,132 +12589,30 @@ function rpMomentConfirmedReplyActor(moment, actorComment) {
 }
 
 async function charRespondToUserMoment(momentId) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-  // 执行锁：同一 momentId 只执行一次
-  if (!STATE._charRespondDone) STATE._charRespondDone = new Set();
-  if (STATE._charRespondDone.has(momentId)) { momentsDiag('charRespondToUserMoment:skipAlreadyDone', { momentId }); return; }
-  STATE._charRespondDone.add(momentId);
-
-  const moment = (STATE.moments || []).find(function(m) { return m.id === momentId; });
-  if (!moment) { momentsDiag('charRespondToUserMoment:skipMissingMoment', { momentId }); STATE._charRespondDone.delete(momentId); return; }
-  const sourceKey = rpSocialSourceKey(moment);
-  const savedSubjects=Array.isArray(moment.subjects),refreshed=savedSubjects?rpRefreshSubjects(moment.subjects):null;
-  const captured=JSON.parse(JSON.stringify(refreshed||[]));
-  const current = () => rpTask.valid() && (STATE.moments || []).includes(moment) && rpSocialSourceKey(moment) === sourceKey && captured.every(rpSubjectCurrent);
-  const abandon = () => { STATE._charRespondDone?.delete(momentId); };
-  if(savedSubjects&&!captured.length){abandon();return;}
-  const people=captured.filter(s=>s.id!=='legacy-card');
-  if(people.length){
-    for(const subject of people){
-      if(!current()){abandon();return;}
-      if(isPhoneUserName(subject.name,getContext())||isPhoneBlocked(subject.name))continue;
-      const sys='本次只以 '+subject.name+' 本人的身份回应用户这条朋友圈。使用本人的设定和关系，不借用其他人物的性格或称谓。不预设亲密友好，不替用户发言或决定；仅返回一两句评论正文，无动作、引号或前缀。\n'+rpPhoneWorldContextRule()+rpPhoneSpeechLanguageRule();
-      const prompt='用户朋友圈：'+JSON.stringify({text:moment.text||'',hasImage:!!moment.img,location:rpComposeLocation(moment.location)||''})+'\n回复人物：'+subject.name+'。图片画面未提供，不捏造画面细节。';
+  const rpTask=rpRuntime.task();
+  STATE._charRespondDone ||= new Set();if(STATE._charRespondDone.has(momentId))return;STATE._charRespondDone.add(momentId);
+  const moment=(STATE.moments||[]).find(item=>item.id===momentId);if(!moment){STATE._charRespondDone.delete(momentId);return;}
+  const sourceKey=rpSocialSourceKey(moment),sourceCurrent=()=>rpTask.valid()&&(STATE.moments||[]).includes(moment)&&rpSocialSourceKey(moment)===sourceKey;
+  const abandon=()=>STATE._charRespondDone?.delete(momentId);
+  try{
+    const context=await rpGuardAwait(rpFreeMomentContext(rpTask),rpTask);if(!context?.current()||!sourceCurrent()){abandon();return;}
+    const done=new Set((moment.comments||[]).map(comment=>normNameKey(comment.name))),primary=context.actors.find(actor=>normNameKey(actor.name)===normNameKey(context.charName)),pool=context.actors.filter(actor=>actor!==primary&&!done.has(normNameKey(actor.name)));
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    const actors=[...(primary&&!done.has(normNameKey(primary.name))?[primary]:[]),...pool].slice(0,3);
+    for(const actor of actors){
+      const current=()=>sourceCurrent()&&context.current()&&actor.current();if(!current()){abandon();return;}
+      const system='本次只以 '+actor.name+' 本人的身份回应用户这条朋友圈。使用本人的设定和关系，不借用其他人物的性格或称谓。不预设亲密友好，不替用户发言或决定；仅返回一两句评论正文，无动作、引号或前缀。\n'+rpPhoneWorldContextRule()+rpPhoneSpeechLanguageRule();
+      const prompt='用户朋友圈：'+JSON.stringify({text:moment.text||'',hasImage:!!moment.img,location:rpComposeLocation(moment.location)||''})+'\n回复人物：'+actor.name+'。图片画面未提供，不捏造画面细节。';
       try{
-        const resp=await rpGuardAwait(rpCallSocialAPI(prompt,150,sys,rpTask,rpSubjectOptions([subject])),rpTask);
+        const response=await rpGuardAwait(rpCallSocialAPI(prompt,150,system,rpTask,rpFreeMomentOptions([actor],rpTask)),rpTask);
         if(!current()){abandon();return;}
-        const text=typeof resp==='string'?resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g,''):'';
-        if(text){moment.likes=Array.isArray(moment.likes)?moment.likes:[];if(!moment.likes.includes(subject.name))moment.likes.push(subject.name);incomingComment(momentId,subject.name,resolvePhoneTime(),text,null,{subject});}
-      }catch(error){if(!current()){abandon();return;}console.warn('[Moments] selected response unavailable',rpErrorInfo(error));}
+        const text=typeof response==='string'?response.trim().replace(/^[「"'\s]+|[」"'\s]+$/g,''):'';
+        if(text){moment.likes=Array.isArray(moment.likes)?moment.likes:[];if(!moment.likes.includes(actor.name))moment.likes.push(actor.name);incomingComment(momentId,actor.name,resolvePhoneTime(),text,null,actor.subject?{subject:actor.subject}:{});}
+      }catch(error){if(!current()){abandon();return;}console.warn('[Moments] response unavailable',rpErrorInfo(error));}
     }
-    if(current()){saveState();if(STATE.currentView==='moments')renderMoments();}return;
-  }
-  const ctx = await rpGuardAwait(getMomentsCtx(), rpTask);
-  if (!current()) { abandon(); return; }
-  const charName = ctx.charName;
-  const charPersona = ctx.charPersona;
-  if (!charName) { momentsDiag('charRespondToUserMoment:skipNoCharName', { momentId }); STATE._charRespondDone.delete(momentId); return; }
-  // 强制主角写一条评论
-  const { recentChat: _rc } = await rpGuardAwait(getMomentsCtx(), rpTask);
-  if (!current()) { abandon(); return; }
-  const sysMsg = '你正在扮演 ' + charName + '。\n'
-    + (charPersona ? '你的人设:' + charPersona.slice(0, 300) + '\n' : '')
-    + '你和"' + (getContext()?.name1 || '用户') + '"的关系以人设和当前剧情为准，不预设亲密或友好。'
-    + '按真实关系、知识范围和角色性格评论；疏离或敌对关系也须保持一致。\n'
-    + '近期对话参考(帮助判断关系和语境):\n' + (_rc ? _rc.slice(-300) : '无') + '\n'
-    + '简短1-2句,符合角色性格,只返回评论正文,不加引号或任何前缀。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
-  const prompt = '用户发了一条朋友圈:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
-    + (rpComposeLocation(moment.location) ? '\n用户手动填写的位置：'+rpComposeLocation(moment.location)+'\n' : '')
-    + (moment.img ? '\n附有图片；当前请求没有提供图片画面，请根据配文与人设自然回应，不编造画面细节。\n' : '')
-    + charName + '的评论(必须写,不允许只点赞):';
-  try {
-    const resp = await rpGuardAwait(rpCallSocialAPI(prompt, 150, sysMsg, rpTask), rpTask);
-    if (!current()) { abandon(); return; }
-    if (resp) {
-      const cleaned = resp.trim().replace(/^[\u300c"'\u300d"']+|[\u300d"'\u300c"']+ $/g, '').trim();
-      if (cleaned) {
-        const ts = resolvePhoneTime();
-        if (!moment.likes.includes(charName)) moment.likes.push(charName);
-        incomingComment(momentId, charName, ts, cleaned, null);
-        if (STATE.currentView === 'moments') renderMoments();
-        saveState();
-      }
-    }
-  } catch(e) {
-    if (!rpTask.valid()) return;
-
-    console.warn('[Moments] charRespondToUserMoment error:', rpErrorInfo(e));
-    if (STATE.currentView === 'moments') renderMoments();
-    saveState();
-  }
-  if (!current()) { abandon(); return; }
-  // NPC 们强制回复(逐个单独请求,避免雷同;按人数:1好友=1条,2=2条,3+取2条NPC)
-  setTimeout(async function() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  /* rp-cancel-boundary */ try {
-
-    if (!current()) { abandon(); return; }
-    const { npcs, npcPersonaMap, recentChat, userName } = await rpGuardAwait(getMomentsCtx(), rpTask);
-    if (!current()) { abandon(); return; }
-    const alreadyCommented = new Set((moment.comments || []).map(c => c.name));
-    const pendingNPCs = npcs.filter(n => !alreadyCommented.has(n));
-    const maxNPC = Math.min(pendingNPCs.length, Math.max(0, 3 - (alreadyCommented.has(charName) ? 1 : 0)));
-    // 随机打乱,避免永远是前两个 NPC
-    const shuffled = pendingNPCs.sort(() => Math.random() - 0.5);
-    for (let i = 0; i < maxNPC; i++) {
-      if (!current()) { abandon(); return; }
-      const npc = shuffled[i];
-      const npcPersona = resolveNpcPersonaByName(npc, npcPersonaMap) || '';
-      const authorPersona = moment.from === 'user' ? ('用户' + userName + '的相关语境:\n' + (recentChat || '').slice(-500)) : '';
-      const relHints = getMomentRelationHints(npc, userName, recentChat, npcPersona, authorPersona);
-      const sysNpc = '你正在扮演角色"' + npc + '"。'
-        + (npcPersona ? '\n你的人设/世界书摘要:\n' + npcPersona.slice(0, 320) + '\n' : '\n')
-        + (authorPersona ? ('\n动态作者相关语境:\n' + authorPersona + '\n') : '')
-        + (recentChat ? ('\n主楼近期上下文:\n' + recentChat.slice(-700) + '\n') : '')
-        + (relHints ? ('\n你与动态作者的关系线索:\n' + relHints + '\n') : '')
-        + '硬规则:\n'
-        + '1. 评论必须符合你的人设、世界书、主楼上下文。\n'
-        + '2. 若语境里存在敌对、厌恶、仇恨、戒备、看不起、疏离关系，禁止写成鼓励、支持、宠溺、暧昧。\n'
-        + '3. 称呼必须符合性别、身份、辈分与关系；禁止把男性叫姐/小姐姐，禁止把女性叫哥/大哥，除非上下文明确如此设定。\n'
-        + '4. 不知道时就少说、冷一点，也不要乱认亲、乱套近乎。\n'
-        + '5. 只返回一条简短评论正文，不加引号，不加前缀。\n' + rpPhoneWorldContextRule() + rpPhoneSpeechLanguageRule();
-      const promptNpc = '朋友圈内容:「' + (moment.text || (moment.img ? '[发了一张图片]' : '[动态]')) + '」\n'
-        + '动态作者:「' + userName + '」\n'
-        + '你的用户名是"' + npc + '",请基于人设/世界书/主楼上下文写评论，必须和其他人不同:';
-      const resp = await rpGuardAwait(rpCallSocialAPI(promptNpc, 120, sysNpc, rpTask), rpTask);
-      if (!current()) { abandon(); return; }
-      if (resp) {
-        const cleaned = resp.trim().replace(/^[「"'\s]+|[」"'\s]+$/g, '');
-        if (cleaned && cleaned.length > 2) {
-          const ts2 = resolvePhoneTime();
-          incomingComment(momentId, npc, ts2, cleaned, null);
-          if (STATE.currentView === 'moments') renderMoments();
-          saveState();
-        }
-      }
-      await rpGuardAwait(new Promise(r => setTimeout(r, 600)), rpTask);
-    }
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
-}, 1200);
-
-  } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
+    if(sourceCurrent()&&context.current()){saveState();if(STATE.currentView==='moments')renderMoments();}
+  }catch(error){if(!sourceCurrent()){abandon();return;}console.warn('[Moments] response unavailable',rpErrorInfo(error));abandon();}
 }
-
-
-
 
 async function generateAIReply(momentId, userCommentText, fromName, opts) {
   /* rp-task-scope */ const rpTask = rpRuntime.task();
@@ -12893,10 +12756,15 @@ async function rpSocialStickerPrompt(task, context) {
   return task.valid() ? rpStickerApp().prompt('moments', context) : '';
 }
 async function rpCallSocialAPI(prompt, maxTokens, sysMsg, task,options={}) {
-  const rule = await rpSocialStickerPrompt(task, prompt);
-  if (!task.valid()) return '';
-  if(Array.isArray(options.phoneSubjects)&&!options.phoneSubjects.every(rpSubjectCurrent))return '';
-  return lgCallAPI(prompt, maxTokens + (rule ? 160 : 0), sysMsg + rule,{...options,phoneTask:task});
+  const grant=rpFreeMomentGrants.get(options);
+  if(grant?.used)return '';if(grant)grant.used=true;
+  const current=()=>task.valid()&&(grant?grant.task===task&&grant.signature===JSON.stringify(options.phoneSubjects)&&grant.actors.every(actor=>actor.current()):!Array.isArray(options.phoneSubjects)||options.phoneSubjects.every(rpSubjectCurrent));
+  const validate=async()=>{if(!current())return false;if(grant)for(const check of new Set(grant.actors.map(actor=>actor.validate)))if(!await check())return false;return current();};
+  try{
+    if(!current())return '';
+    const rule=await rpSocialStickerPrompt(task,prompt);if(!await validate())return '';
+    const response=await lgCallAPI(prompt,maxTokens+(rule?160:0),sysMsg+rule,{...options,phoneTask:task});return await validate()?response:'';
+  }finally{if(grant)rpFreeMomentGrants.delete(options);}
 }
 function rpResolveSocialSticker(item, moment) {
   const id = rpStickerApp().extract(item.text).ids[0];

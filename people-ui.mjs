@@ -30,7 +30,7 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
  const legacy=()=>Object.freeze({id:'legacy-card',name:String(context()?.name2||context()?.characters?.[context()?.characterId]?.name||'TA').trim(),note:'',aliases:Object.freeze([]),cardKey:cardKey(),slotKey:state().chatId});
  function subjects(kind){kind=canonicalKind(kind);const m=model(),selection=selectionFor(m,kind),ids=Array.isArray(selection)?selection:selection?[selection]:[];return ids.map(id=>m.entities[id]).filter(Boolean).map(p=>subjectSnapshot(p,{cardKey:cardKey(),slotKey:state().chatId}));}
  async function candidates(){const own=scope();if(cache?.scope===own)return cache.promise;const promise=discoverPeople(context(),state(),{guard}).then(items=>scope()===own?items:[]);cache={scope:own,promise};try{return await promise;}catch(e){if(cache?.promise===promise)cache=null;throw e;}}
- async function isNarrativeTitle(name){
+ async function isNarrativeTitle(name,freshCandidates){
   const own=scope(),ctx=context()||{},key=norm(name);if(!key)return false;
   let title=legacy().name,nativeMultiple=false;
   if(ctx.groupId!=null){
@@ -41,7 +41,7 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
    nativeMultiple=hasMultipleGroupMembers(ctx);
   }
   if(key!==norm(title))return false;
-  const list=await candidates();if(closed||scope()!==own)return false;
+  const list=Array.isArray(freshCandidates)?freshCandidates:await candidates();if(closed||scope()!==own)return false;
   if(list.some(person=>person.evidence==='declared'&&[person.name,...(person.aliases||[])].some(alias=>norm(alias)===key)))return false;
   return nativeMultiple||requiresPersonChoice(list.filter(person=>person.evidence==='declared'&&person.sources?.includes('card')),title)||requiresPersonChoice(list.filter(person=>person.evidence==='declared'&&person.identityDeclared===true),title);
  }
@@ -123,7 +123,8 @@ export function createPeopleUI({document,state,context,scope,cardKey,save,onChan
  }
  function mount(){
   closed=false;
-  for(const view of ['diary','bank','xhs','moments','theatre']){const root=document.getElementById('rp-view-'+view);if(!root)continue;let bar=root.querySelector(':scope > .rp-people-bar');if(!bar){bar=document.createElement('div');bar.className='rp-people-bar';const nav=root.querySelector('.rp-nav-bar');if(nav)nav.after(bar);else root.prepend(bar);}bar.replaceChildren();
+  document.getElementById('rp-view-moments')?.querySelectorAll(':scope > .rp-people-bar').forEach(bar=>bar.remove());
+  for(const view of ['diary','bank','xhs','theatre']){const root=document.getElementById('rp-view-'+view);if(!root)continue;let bar=root.querySelector(':scope > .rp-people-bar');if(!bar){bar=document.createElement('div');bar.className='rp-people-bar';const nav=root.querySelector('.rp-nav-bar');if(nav)nav.after(bar);else root.prepend(bar);}bar.replaceChildren();
    for(const [kind,[target,label]]of Object.entries(kinds)){if(target!==view)continue;const b=document.createElement('button');b.type='button';b.dataset.peopleKind=kind;const names=subjects(kind).map(s=>s.name);b.textContent=label+'：'+(names.join('、')||(kind==='xhs'?'本卡剧情':'选择人物'))+' ▾';b.title=b.textContent;b.addEventListener('click',()=>{request(kind).catch(()=>{});});bar.append(b);}
    if(view==='bank'&&state().bankData){const b=document.createElement('button');b.type='button';b.id='rp-bank-legacy';b.textContent='查看旧版报告';b.addEventListener('click',()=>onChange('bankLegacy'));bar.append(b);const bind=document.createElement('button');bind.type='button';bind.id='rp-bank-bind-legacy';bind.textContent='关联旧报告';bind.addEventListener('click',()=>onChange('bankBindLegacy'));bar.append(bind);}
   }
