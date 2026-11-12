@@ -142,43 +142,72 @@ export function remapSubjectSnapshot(value,remap={}){
  return subjectSnapshot({...value,id},{cardKey:value.cardKey,slotKey:value.slotKey});
 }
 const on=value=>[true,1,'true','1'].includes(value),off=value=>[false,0,'false','0'].includes(value);
+const peopleContainer=/^(?:characters?|people|persons?|npcs?|人物|角色)$/i;
+const nonPeopleContainer=/^(?:compan(?:y|ies)|organizations?|organisations?|corporations?|groups?|business|locations?|places?|rules?|rulesets?|objects?|items?|inventory|公司|企业|集团|组织|机构|地点|地区|规则|物品|道具)$/i;
+const identityContainer=/^(?:identity|个人信息|身份信息|基本信息)$/i;
+const personFieldKey=/^(?:age|gender|sex|species|occupation|profession|personality|disposition|relations|relationships?|性别|年龄|职业|身份|性格|关系|种族)$/i;
 const personFields=text=>[...String(text).matchAll(/^[ \t]*(?:[-*][ \t]+)?(age|gender|sex|species|occupation|profession|personality|disposition|relations|relationships?|性别|年龄|职业|身份|性格|关系|种族)[ \t]*[:：][ \t]*\S+/gmi)];
 const fieldIndent=line=>line.match(/^[ \t]*/)[0].length+(/^[ \t]*[-*][ \t]+/.test(line)?2:0);
 const cleanDeclaredName=value=>String(value||'').replace(/\s+#.*$/,'').trim().replace(/^["'“‘]|["'”’]$/g,'').split(/[(（【\[,，]/)[0].trim();
 function declaredPeople(text){
- const result=[],source=String(text||'');
- const remember=(name,body)=>{
+ const result=[],source=String(text||'').replace(/^([ \t]*(?:[-*][ \t]+)?)\*\*([^*\r\n]+)\*\*([ \t]*[:：])?/gm,(line,prefix,label,colon)=>{
+  const key=label.replace(/[:：][ \t]*$/,'').trim();
+  if(!colon&&!/[:：][ \t]*$/.test(label))return line;
+  return /^(?:name|full_name|full name|姓名|名字|aliases?|别名|又名|英文名|profile|position)$/i.test(key)||personFieldKey.test(key)||peopleContainer.test(key)||identityContainer.test(key)||nonPeopleContainer.test(key)?prefix+key+':':line;
+ });
+ const remember=(name,body,identity=false)=>{
   name=nameValue(cleanDeclaredName(name));if(!name)return;
   const aliases=[];
   for(const match of String(body).matchAll(/^[ \t]*(?:[-*][ \t]+)?(?:aliases|alias|别名|又名|英文名)[ \t]*[:：][ \t]*([^\r\n]+)/gmi))for(const part of match[1].replace(/^\[|\]$/g,'').split(/[,，/|、]/)){const alias=nameValue(part.trim().replace(/^["']|["']$/g,''));if(alias)aliases.push(alias);}
-  result.push({name,aliases:aliasesValue(aliases.slice(0,PEOPLE_LIMITS.aliases),name),evidence:'declared'});
+  result.push({name,aliases:aliasesValue(aliases.slice(0,PEOPLE_LIMITS.aliases),name),evidence:'declared',...(identity?{identityDeclared:true}:{})});
  };
  // Valid JSON is parsed as data; an object's name alone still is not a person.
  if(/^\s*[{[]/.test(source))try{
-  const walk=(value,character=false,depth=0)=>{
+  const walk=(value,character=false,depth=0,container='',blocked=false,recordIdentity=false)=>{
    if(depth>PEOPLE_LIMITS.depth)return;
-   if(Array.isArray(value)){for(const item of value)walk(item,character,depth+1);return;}
+   if(Array.isArray(value)){for(const item of value)walk(item,character,depth+1,container,blocked);return;}
    if(!plain(value))return;
-   const name=['name','full_name','full name','姓名','名字'].map(key=>value[key]).find(raw=>typeof raw==='string');
-   if(name&&(character||Object.keys(value).some(key=>/^(?:age|gender|sex|species|occupation|profession|personality|disposition|relations|relationships?|性别|年龄|职业|身份|性格|关系|种族)$/i.test(key)))){
-    const rawAliases=value.aliases||value.alias||value.别名||[],aliases=Array.isArray(rawAliases)?rawAliases:typeof rawAliases==='string'?rawAliases.split(/[,，/|、]/):[];
-    const clean=nameValue(cleanDeclaredName(name));if(clean)result.push({name:clean,aliases:aliasesValue(aliases.slice(0,PEOPLE_LIMITS.aliases),clean),evidence:'declared'});
+   const fields=Object.entries(value),field=key=>fields.find(([name])=>name.toLowerCase()===key)?.[1];
+   const name=['name','full_name','full name','姓名','名字'].map(field).find(raw=>typeof raw==='string');
+   const meaningful=raw=>raw!=null&&(typeof raw==='string'?!!raw.trim():plain(raw)?Object.keys(raw).length>0:Array.isArray(raw)?raw.length>0:typeof raw==='boolean'||typeof raw==='number'&&Number.isFinite(raw));
+   const identity=identityContainer.test(container)&&(recordIdentity||meaningful(field('profile'))&&meaningful(field('position')));
+   if(name&&!blocked&&(character||fields.some(([key])=>personFieldKey.test(key))||identity)){
+    const rawAliases=field('aliases')||field('alias')||field('别名')||[],aliases=Array.isArray(rawAliases)?rawAliases:typeof rawAliases==='string'?rawAliases.split(/[,，/|、]/):[];
+    const clean=nameValue(cleanDeclaredName(name));if(clean)result.push({name:clean,aliases:aliasesValue(aliases.slice(0,PEOPLE_LIMITS.aliases),clean),evidence:'declared',...(identity?{identityDeclared:true}:{})});
    }
-   for(const[key,item]of Object.entries(value))if(!forbidden(key)&&item&&typeof item==='object')walk(item,/^(?:characters?|people|persons?|npcs?|人物|角色)$/i.test(key),depth+1);
+   for(const[key,item]of fields)if(!forbidden(key)&&item&&typeof item==='object')walk(item,peopleContainer.test(key),depth+1,key,peopleContainer.test(key)?false:blocked||nonPeopleContainer.test(key),identityContainer.test(key)&&plain(item)&&meaningful(field('profile'))&&meaningful(field('position')));
   };
   walk(JSON.parse(source));
  }catch{/* Non-JSON sources continue through declaration-only text parsing. */}
+ const identityPair=(body,indent)=>{
+  const lines=body.split('\n'),fields=new Set();
+  lines.forEach((line,i)=>{const m=line.match(/^[ \t]*(?:[-*][ \t]+)?(profile|position)[ \t]*[:：][ \t]*([^\r\n]*)$/i);if(!m||fieldIndent(line)!==indent)return;const value=m[2].trim(),next=lines.slice(i+1).find(item=>item.trim());if(value&&!/^(?:null|~|\[\]|\{\}|["']{2})$/i.test(value)||!value&&next&&fieldIndent(next)>indent)fields.add(m[1].toLowerCase());});
+  return fields.has('profile')&&fields.has('position');
+ };
  const scan=(body,isCharacter=false)=>{
   const fields=[...body.matchAll(/^[ \t]*(?:[-*][ \t]+)?(?:name|full_name|full name|姓名|名字)[ \t]*[:：][ \t]*([^\r\n]+)/gmi)];
   fields.forEach((field,i)=>{
-   const part=body.slice(field.index,fields[i+1]?.index??body.length).split(/\n(?=[ \t]*#{1,6}[ \t]+)/)[0],indent=fieldIndent(field[0]);
-   let parent=false;
+   const indent=fieldIndent(field[0]),lines=body.slice(field.index,fields[i+1]?.index??body.length).split('\n');
+   const end=lines.findIndex((line,i)=>i>0&&line.trim()&&(fieldIndent(line)<indent||/^[ \t]*#{1,6}[ \t]/.test(line)));
+   const part=(end<0?lines:lines.slice(0,end)).join('\n');
+   let parent=false,identity=false,blocked=false,parentIndent=indent,closest=true,identityScope=null,offset=field.index;
    for(const line of body.slice(0,field.index).split('\n').reverse()){
+    offset-=line.length+1;
     if(/^\s*(?:#{1,6}\s|<\/|[-*_]{3,}\s*$)/.test(line))break;
     const m=line.match(/^([ \t]*)([^:\n]+?)[ \t]*[:：][ \t]*$/);
-    if(m&&m[1].length<indent){parent=/^(?:characters?|people|persons?|npcs?|人物|角色)$/i.test(m[2].trim());break;}
+    if(m&&fieldIndent(line)<parentIndent){
+     const key=m[2].trim().replace(/^[-*][ \t]+/,'');if(closest){parent=peopleContainer.test(key);identity=identityContainer.test(key);if(identity)identityScope={index:offset+1,indent:fieldIndent(line)};closest=false;}
+     blocked ||= nonPeopleContainer.test(key);parentIndent=fieldIndent(line);
+    }
    }
-   if(isCharacter||parent||personFields(part).some(m=>fieldIndent(m[0])===indent))remember(field[1],part);
+   let recordIdentity=false;
+   if(identityScope){
+    const recordLines=body.slice(identityScope.index,fields[i+1]?.index??body.length).split('\n');
+    const recordEnd=recordLines.findIndex((line,j)=>j>0&&line.trim()&&(fieldIndent(line)<identityScope.indent||/^[ \t]*#{1,6}[ \t]/.test(line)||fieldIndent(line)===identityScope.indent&&identityContainer.test(line.replace(/^[ \t]*(?:[-*][ \t]+)?/,'').replace(/[ \t]*[:：][ \t]*$/,''))));
+    recordIdentity=identityPair((recordEnd<0?recordLines:recordLines.slice(0,recordEnd)).join('\n'),identityScope.indent);
+   }
+   const explicitIdentity=identity&&(identityPair(part,indent)||recordIdentity);
+   if(!blocked&&(isCharacter||parent||personFields(part).some(m=>fieldIndent(m[0])===indent)||explicitIdentity))remember(field[1],part,explicitIdentity);
   });
  };
  const rest=source.replace(/<character(?:[_-][^>\s]*)?\b([^>]*)>([\s\S]*?)<\/character(?:[_-][^>\s]*)?\s*>/gi,(_block,attrs,body)=>{
@@ -188,7 +217,8 @@ function declaredPeople(text){
  const headings=[...rest.matchAll(/^[ \t]*(?:#{1,6}[ \t]+([^\r\n]+)|\[([^\]\r\n]+)\])[ \t]*$/gm)];
  headings.forEach((heading,i)=>{
   const body=rest.slice(heading.index,headings[i+1]?.index??rest.length),title=String(heading[1]||heading[2]).replace(/[*_`]/g,'').replace(/[ \t]+#+[ \t]*$/,'').trim();
-  if(!/^[ \t]*(?:[-*][ \t]+)?(?:name|full_name|full name|姓名|名字)[ \t]*[:：]/mi.test(body)&&new Set(personFields(body).filter(m=>fieldIndent(m[0])===0).map(m=>m[1].toLowerCase())).size>=2)remember(title.split(/\s+[—–-]\s+|[|／/]/)[0],body);
+  const traits=personFields(body),traitIndent=traits.length?Math.min(...traits.map(m=>fieldIndent(m[0]))):0;
+  if(!nonPeopleContainer.test(title)&&!/^[ \t]*(?:[-*][ \t]+)?(?:name|full_name|full name|姓名|名字)[ \t]*[:：]/mi.test(body)&&new Set(traits.filter(m=>fieldIndent(m[0])===traitIndent).map(m=>m[1].toLowerCase())).size>=2)remember(title.split(/\s+[—–-]\s+|[|／/]/)[0],body);
  });
  return result;
 }
@@ -210,9 +240,9 @@ export async function discoverPeople(ctx={},state={},{guard=promise=>promise}={}
  const found=new Map(),add=(candidate,source)=>{
   const name=nameValue(candidate.name);if(!name||excludedName(name,ctx,state))return;
   const key=keyOf(name),old=found.get(key),order={declared:3,contact:2,speaker:1};
-  const sources=[...new Set([...(old?.sources||[]),source])];
-  if(!old||order[candidate.evidence]>order[old.evidence])found.set(key,{name,aliases:aliasesValue(candidate.aliases||[],name),evidence:candidate.evidence,sources});
-  else{old.sources=sources;if(candidate.evidence==='declared'&&old.evidence==='declared')old.aliases=aliasesValue([...old.aliases,...(candidate.aliases||[])].slice(0,PEOPLE_LIMITS.aliases),name);}
+  const sources=[...new Set([...(old?.sources||[]),source])],identityDeclared=!!old?.identityDeclared||!!candidate.identityDeclared;
+  if(!old||order[candidate.evidence]>order[old.evidence])found.set(key,{name,aliases:aliasesValue(candidate.aliases||[],name),evidence:candidate.evidence,sources,...(identityDeclared?{identityDeclared:true}:{})});
+  else{old.sources=sources;if(identityDeclared)old.identityDeclared=true;if(candidate.evidence==='declared'&&old.evidence==='declared')old.aliases=aliasesValue([...old.aliases,...(candidate.aliases||[])].slice(0,PEOPLE_LIMITS.aliases),name);}
  };
  const nativeGroup=ctx.groupId!=null;
  // A native group does not authorize a stale selected card or ctx.char. Its
@@ -244,7 +274,15 @@ export async function discoverPeople(ctx={},state={},{guard=promise=>promise}={}
   if(!thread||thread.type==='group'||String(thread.id||'').startsWith('grp_')||thread.members?.length>1)continue;
   add({name:thread.name,evidence:'contact'},'contact');
  }
- for(const message of(Array.isArray(ctx.chat)?ctx.chat:[]).slice(-80))if(message&&!message.is_user&&!message.is_system)add({name:message.name,evidence:'speaker'},'speaker');
+ const group=nativeGroup?(Array.isArray(ctx.groups)?ctx.groups:[]).find(item=>item&&String(item.id)===String(ctx.groupId)):null;
+ const memberNames=new Set(cards.map(card=>keyOf(card.name||card.data?.name)).filter(Boolean));
+ const groupTitle=keyOf(group?.name);
+ const cardTitles=nativeGroup?new Set(groupTitle&&!memberNames.has(groupTitle)?[groupTitle]:[]):new Set([ctx.name2,...cards.map(card=>card.name||card.data?.name)].map(keyOf).filter(Boolean));
+ for(const message of(Array.isArray(ctx.chat)?ctx.chat:[]).slice(-80))if(message&&!message.is_user&&!message.is_system){
+  const key=keyOf(message.name),known=found.get(key);
+  if(cardTitles.has(key)&&!['declared','contact'].includes(known?.evidence))continue;
+  add({name:message.name,evidence:'speaker'},'speaker');
+ }
  return[...found.values()];
 }
 export function requiresPersonChoice(candidates,cardName){
