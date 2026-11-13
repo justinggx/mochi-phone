@@ -433,6 +433,7 @@ function rpPruneImageWaitQueue(now = Date.now()) {
 }
 
 function rpResetChatTasks() {
+  rpCancelMenuPeopleRefreshes();
   rpPeopleUI?.reset();
   rpTheatre?.reset();
   rpClearPhoneMotion();
@@ -688,6 +689,7 @@ function rpSetPhoneOpen(open) {
   const phone = $('#rp-phone');
   if (!phone.length) return;
   if (!open) {
+      rpCancelMenuPeopleRefreshes();
       rpTheatre?.cancel('已停止接收本次生成，已有作品保留。');
       if (!rpPhoneIsOpen()) return;
       // 关闭手机前记住当前界面，下次直接恢复，不再强迫用户从锁屏/桌面重新点
@@ -4742,7 +4744,7 @@ function bindUI() {
   $(document).on('focusin.mochiPhone', function(event) {
     for(const view of ['diary','bank','xhs'])if(!$(event.target).closest('#rp-view-'+view+' .rp-app-nav-actions').length)rpSetAppMenu(view,false);
   });
-  $(document).on('click.mochiPhone','.rp-app-menu [data-people-kind]',function(){const view=this.closest('.rp-view').id.slice(8);rpSetAppMenu(view,false,true);void rpPeopleUIApp().request(this.dataset.peopleKind).catch(()=>toastr.warning('人物选择暂不可用，请重试。'));});
+  $(document).on('click.mochiPhone','.rp-app-menu [data-people-kind]',function(){const view=this.closest('.rp-view').id.slice(8);rpSetAppMenu(view,false,true);void rpRequestMenuPeople(view,this.dataset.peopleKind).catch(()=>toastr.warning('人物选择暂不可用，请重试。'));});
   $(document).on('click.mochiPhone','#rp-bank-legacy',()=>{rpSetAppMenu('bank',false,true);if(STATE.bankData)_paintBankBody(STATE.bankData);});
   $(document).on('click.mochiPhone','#rp-bank-bind-legacy',()=>{rpSetAppMenu('bank',false,true);void rpBindLegacyBank();});
   $(document).on("click.mochiPhone", "#rp-xhs-favorites", () => { rpSetXhsMenu(false, true); rpSetFavoritesOnly(!rpXhsFavoritesOnly); });
@@ -4989,9 +4991,7 @@ function bindUI() {
   });
 
   $(document).on("click.mochiPhone", '#rp-xhs-refresh', function() {
-    rpSetXhsMenu(false, true);
-    if (rpXhsFavoritesOnly) rpSetFavoritesOnly(false);
-    renderXHSFeed(true);
+    rpRefreshXhsFromMenu();
   });
   $(document).on('click.mochiPhone', '[data-xhs-retry-comments]', function() {
     generateXHSStrangerComments(String($(this).attr('data-xhs-retry-comments') || ''));
@@ -10375,6 +10375,43 @@ function rpSavePeopleChoice() {
   }
   saveState();
 }
+const rpMenuPeoplePending=new Map(),rpMenuPeopleActive=new Map();
+let rpMenuPeopleEpoch=0;
+function rpCancelMenuPeopleRefreshes(){
+  rpMenuPeopleEpoch++;
+  for(const intent of rpMenuPeoplePending.values()){intent.cancel();intent.dispose();}rpMenuPeoplePending.clear();
+  for(const intent of rpMenuPeopleActive.values())intent.cancel();
+}
+async function rpRequestMenuPeople(view,kind){
+  if(({bank:'bank',diary:'diaryAuthor',xhs:'xhs'})[view]!==kind)return;
+  const base=rpRuntime.task(),owner=rpPeopleOwner(),epoch=rpMenuPeopleEpoch;
+  const picked=await rpPeopleUIApp().request(kind);
+  if(!Array.isArray(picked)||kind!=='xhs'&&picked.length!==1||!base.valid()||owner!==rpPeopleOwner()||epoch!==rpMenuPeopleEpoch||!rpPhoneIsOpen())return;
+  const subjects=JSON.parse(JSON.stringify(picked));if(!subjects.every(rpSubjectCurrent))return;
+  const controller=new window.AbortController(),cancel=()=>controller.abort();base.signal.addEventListener('abort',cancel,{once:true});
+  const intent={subjects,cancel,dispose:()=>base.signal.removeEventListener('abort',cancel)};
+  intent.task={signal:controller.signal,valid:()=>!controller.signal.aborted&&base.valid()&&owner===rpPeopleOwner()&&epoch===rpMenuPeopleEpoch&&rpPhoneIsOpen()&&subjects.every(rpSubjectCurrent)};
+  const old=rpMenuPeoplePending.get(view);if(old){old.cancel();old.dispose();}
+  rpMenuPeoplePending.set(view,intent);rpDrainMenuPeopleRefresh(view);
+}
+function rpDrainMenuPeopleRefresh(view){
+  if(!['bank','diary','xhs'].includes(view))return;
+  window.queueMicrotask(()=>{
+    const intent=rpMenuPeoplePending.get(view);if(!intent)return;
+    if(!intent.task.valid()){rpMenuPeoplePending.delete(view);intent.cancel();intent.dispose();return;}
+    if(view==='diary'?rpDiaryJobs.has('generate'):rpAppJobs.has(view==='bank'?'bank':'xhs-feed'))return;
+    rpMenuPeoplePending.delete(view);rpMenuPeopleActive.set(view,intent);
+    let result;
+    try{result=view==='bank'?generateBankData(true,intent):view==='diary'?generateAIDiary(intent):rpRefreshXhsFromMenu(intent);}
+    catch(error){result=Promise.reject(error);}
+    Promise.resolve(result).catch(error=>{if(intent.task.valid())console.warn('[Phone] selected-person refresh unavailable',rpErrorInfo(error));}).finally(()=>{if(rpMenuPeopleActive.get(view)===intent)rpMenuPeopleActive.delete(view);intent.dispose();rpDrainMenuPeopleRefresh(view);});
+  });
+}
+function rpRefreshXhsFromMenu(intent){
+  if(STATE.currentView==='xhs'){rpSetXhsMenu(false,true);if(rpXhsFavoritesOnly)rpSetFavoritesOnly(false);}
+  else if(rpXhsFavoritesOnly)rpXhsFavoritesOnly=false;
+  return renderXHSFeed(true,intent);
+}
 function rpPeopleUIApp() {
   if(!document.getElementById('rp-people-style')){const style=document.createElement('style');style.id='rp-people-style';style.textContent=PEOPLE_CSS;document.head.append(style);}
   if(!rpPeopleUI)rpPeopleUI=createPeopleUI({document,state:()=>STATE,context:getContext,scope:rpPeopleOwner,cardKey:rpPeopleCardKey,save:rpSavePeopleChoice,
@@ -10502,6 +10539,7 @@ function rpStartAppJob(kind, task, controls, cleanup = () => {}) {
     $(controls).prop('disabled', false).removeClass('rp-spinning');
     rpSyncAppMenuBusy();
     cleanup();
+    rpDrainMenuPeopleRefresh(kind==='bank'?'bank':kind==='xhs-feed'?'xhs':'');
   };
   rpAppJobs.set(kind, job);
   task.signal.addEventListener('abort', job.finish, { once: true });
@@ -10526,6 +10564,7 @@ function rpStartDiaryJob(kind, task) {
     task.signal.removeEventListener('abort', job.abort);
     button.removeClass('rp-spinning').prop('disabled', false);
     rpSyncAppMenuBusy();
+    if(kind==='generate')rpDrainMenuPeopleRefresh('diary');
   };
   job.finish = finish;
   job.abort = () => { finish(); rpDiaryStatus(''); };
@@ -10540,9 +10579,9 @@ function rpStartDiaryJob(kind, task) {
 function rpDiaryFailure(error) {
   rpDiaryStatus('⚠️ ' + rpPhoneApiError(rpClassifyPhoneApiError(error).phoneApiCode).message + '；已有日记已保留。');
 }
-async function generateAIDiary() {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
-  const subjects=await rpEnsurePeople('diaryAuthor'), subject=subjects?.[0];
+async function generateAIDiary(refreshIntent) {
+  /* rp-task-scope */ const rpTask = refreshIntent?.task||rpRuntime.task();
+  const subjects=refreshIntent?.subjects||await rpEnsurePeople('diaryAuthor'), subject=subjects?.[0];
   if(!subject||!rpTask.valid())return;
   const diaryJob = rpStartDiaryJob('generate', rpTask);
   if (!diaryJob) return;
@@ -10569,7 +10608,7 @@ async function generateAIDiary() {
       + '\u6ce8\u610f\u4eba\u79f0\uff1a\u6839\u636e\u5bf9\u8bdd\u5185\u5bb9\u5224\u65ad\u7528\u6237\u89d2\u8272\u7684\u6027\u522b\uff0c\u4f7f\u7528\u6b63\u786e\u7684\u4eba\u79f0\u4ee3\u8bcd\uff08\u4ed6/\u5979/\u5b83\uff09\uff0c\u4e0d\u8981\u9ed8\u8ba4\u7528\u300c\u4ed6\u300d\u3002\n'
       + '\u4e25\u7981\uff1a\u4e0d\u5f97\u5305\u542b\u72b6\u6001\u680f\uff08\u4f53\u529b/\u7cbe\u795e/\u597d\u611f\u5ea6\u7b49\u6570\u503c\uff09\u3001\u4e16\u754c\u4e66\u7ec4\u4ef6\u3001\u7cfb\u7edf\u63d0\u793a\u683c\u5f0f\u3001Markdown\u683c\u5f0f\u3001HTML\u6807\u7b7e\u3001\u5c5e\u6027\u8868\u683c\uff0c\u76f4\u63a5\u5199\u7eaf\u6587\u5b57\u65e5\u8bb0\u5185\u5bb9\u3002';
     var prompt = charName + '的今日日记：请根据提供的角色背景和近期互动写作。';
-    var resp = await rpGuardAwait(lgCallAPI(prompt, RP_DIARY_MAX_TOKENS, sysMsg, { phoneDiary: true, ...rpSubjectOptions([subject]), reportErrors: true }), rpTask, RP_DIARY_TIMEOUT_MS);
+    var resp = await rpGuardAwait(lgCallAPI(prompt, RP_DIARY_MAX_TOKENS, sysMsg, { phoneDiary: true, ...rpSubjectOptions([subject]), reportErrors: true,phoneTask:rpTask }), rpTask, RP_DIARY_TIMEOUT_MS);
     if (typeof resp !== 'string' || !resp.trim()) throw rpPhoneApiError('empty');
     if(!rpSubjectCurrent(subject)){rpDiaryStatus('人物资料已变更，本次日记未保存；可重新生成。');return;}
     var ts = resolvePhoneTime();
@@ -13060,7 +13099,7 @@ function renderXHSCard(p) {
   `;
 }
 
-function renderXHSFeed(forceRefresh) {
+function renderXHSFeed(forceRefresh,refreshIntent) {
   $('#rp-xhs-feed-title').text(rpXhsFavoritesOnly?'我的收藏':'发现');
   $('#rp-xhs-favorites').text(rpXhsFavoritesOnly?'返回发现':'收藏');
   if(rpXhsFavoritesOnly){_renderXHSList();return;}
@@ -13087,12 +13126,12 @@ function renderXHSFeed(forceRefresh) {
       box.append(`<div id="rp-xhs-loading" class="rp-xhs-empty">正在加载最新动态...${xhsEst1 ? `<div id="rp-xhs-eta" style="font-size:11px;opacity:.72;margin-top:4px">预计还有 <span id="rp-xhs-eta-num">${xhsEst1}</span> 秒</div>` : ''}</div>`);
     }
     _xhsStartEtaTimer(xhsEst1);
-    const job = rpStartAppJob('xhs-feed', rpRuntime.task(), '#rp-xhs-refresh', () => {
+    const job = rpStartAppJob('xhs-feed', refreshIntent?.task||rpRuntime.task(), '#rp-xhs-refresh', () => {
       _xhsClearEtaTimer();
       $('#rp-xhs-refresh-loading,#rp-xhs-loading').remove();
       box.removeClass('rp-xhs-refreshing');
     });
-    if (job) buildXHSFeedWithAI(true).finally(job.finish);
+    if (job) return buildXHSFeedWithAI(true,refreshIntent).finally(job.finish);
     return;
   }
 
@@ -13392,15 +13431,15 @@ async function rpBankContext(rawCtx, charName, task, subject=null) {
 }
 
 
-async function generateBankData(force) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+async function generateBankData(force,refreshIntent) {
+  /* rp-task-scope */ const rpTask = refreshIntent?.task||rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
   const btn = document.getElementById('rp-bank-refresh');
   const body = document.getElementById('rp-bank-body');
   if (!body) return;
 
-  const subjects=await rpEnsurePeople('bank'),subject=subjects?.[0];
+  const subjects=refreshIntent?.subjects||await rpEnsurePeople('bank'),subject=subjects?.[0];
   if(!subject||!rpTask.valid())return;
   const explicit=subject.id!=='legacy-card',cached=explicit?STATE.bankByPerson?.[subject.id]:STATE.bankData;
   const cachedSignature=JSON.stringify(cached??null);
@@ -13523,7 +13562,7 @@ ${chatMsgs}
 
 请根据以上信息，生成 ${charName} 的完整资产JSON：`;
 
-    const resp = await rpGuardAwait(lgCallAPI(prompt, 2400, sysMsg, { structured: true, jsonMode: 'object', ...(explicit?{phoneBank:true,...rpSubjectOptions([subject])}:{}), reportErrors: true }), rpTask);
+    const resp = await rpGuardAwait(lgCallAPI(prompt, 2400, sysMsg, { structured: true, jsonMode: 'object', ...(explicit?{phoneBank:true,...rpSubjectOptions([subject])}:{}), reportErrors: true,phoneTask:rpTask }), rpTask);
     if (!resp) throw new Error('API 返回为空');
 
     // 解析 JSON
@@ -13578,8 +13617,8 @@ ${chatMsgs}
 }
 
 // XHS API 调用:直接复用 lgCallAPI,和其他功能保持一致
-async function xhsCallAPI(prompt, sysMsg,subjects=[]) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+async function xhsCallAPI(prompt, sysMsg,subjects=[],sourceTask) {
+  /* rp-task-scope */ const rpTask = sourceTask||rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
   const snapshot=JSON.parse(JSON.stringify(subjects));
@@ -13591,11 +13630,11 @@ async function xhsCallAPI(prompt, sysMsg,subjects=[]) {
   } catch (rpError) { if (!rpTask.valid()) return; throw rpError; }
 }
 
-async function buildXHSFeedWithAI(appendMode) {
-  /* rp-task-scope */ const rpTask = rpRuntime.task();
+async function buildXHSFeedWithAI(appendMode,refreshIntent) {
+  /* rp-task-scope */ const rpTask = refreshIntent?.task||rpRuntime.task();
   /* rp-cancel-boundary */ try {
 
-  const picked=await rpEnsurePeople('xhs');
+  const picked=refreshIntent?.subjects||await rpEnsurePeople('xhs');
   if(picked===null||!rpTask.valid())return;
   const subjects=JSON.parse(JSON.stringify(picked.some(s=>s.id!=='legacy-card')?picked.filter(s=>s.id!=='legacy-card'):picked));
   if(!subjects.every(rpSubjectCurrent))return;
@@ -13674,7 +13713,7 @@ cover要求:headline提炼本帖核心，不添加新事实，8-28字；highligh
     const charInfo = subjects.length?'本次分别讨论的人物：'+JSON.stringify(subjects.map(s=>s.name)):'按近期剧情中实际出现的人物与事件讨论，不预设卡名人物或单一主角。';
     const prompt = `角色信息:${charInfo}\n用户名:${userName}\n近期主楼剧情线索：见系统资料中同名段落，优先最新事件\n\n本次4条帖子话题方向:\n${chosenTopics.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\n生成JSON:`;
 
-    const resp = await rpGuardAwait(xhsCallAPI(prompt, sysMsg,subjects), rpTask);
+    const resp = await rpGuardAwait(xhsCallAPI(prompt, sysMsg,subjects,rpTask), rpTask);
     if(!subjects.every(rpSubjectCurrent))return;
     if (resp) {
       let items = [];
